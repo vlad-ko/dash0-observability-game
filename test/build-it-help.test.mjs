@@ -76,7 +76,7 @@ test('a specific note per span code, never naming the right parent', () => {
   const spec = b1Spec();
   const st = newBuildState(spec);
   setParent(spec, st, E, C);
-  assert.equal(note(spec, st, E), 'GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t be the parent.');
+  assert.equal(note(spec, st, E), 'GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.');
   assert.equal(note(spec, st, B), 'POST (storefront) is a root now, yet another span of trace 4bf92f35 was already running when it started. Which call was it doing work for?');
   setParent(spec, st, C, D);
   assert.equal(note(spec, st, C), 'POST /checkout (api-gateway) runs 15 to 85 ms, which is not inside validate cart (api-gateway) (20 to 30 ms). A parent starts first and is still running when its child ends.');
@@ -233,20 +233,46 @@ test('a same-name, same-service twin is named with the view\'s suffix in notes a
   Object.assign(spec.spans[4], { name: b.name, service: b.service }); // E becomes B's twin in trace 0af76519
   const st = newBuildState(spec);
   setParent(spec, st, E, C);
-  assert.equal(note(spec, st, E), 'POST (storefront, trace 0af76519) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t be the parent.');
+  assert.equal(note(spec, st, E), 'POST (storefront, trace 0af76519) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.');
   const placed = new Set([A, B, C, D, E]);
   assert.equal(text(hintFor(spec, st, C, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST (storefront, trace 4bf92f35) is the CLIENT call into api-gateway, and this is the SERVER span that handled it.');
   assert.equal(text(hintFor(spec, st, D, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST /checkout (api-gateway) is the innermost span of trace 4bf92f35 that runs around it (15 to 85 ms).');
 });
 
-test('noteFor with named: false does not repeat the span name, for kind, status, parent and links', () => {
-  const all = b1Spec();
-  const st = newBuildState(all);
-  for (const code of ['wrong-kind', 'wrong-status', 'missing-link', 'extra-link', 'wrong-parent']) {
-    const issue = { code, spanId: B, count: 2 };
-    const bare = text(noteFor(all, st, issue, escapeHtml, { named: false }));
-    const named = text(noteFor(all, st, issue, escapeHtml));
-    assert.equal(bare.includes('POST (storefront)'), false, `${code}: unnamed`);
-    assert.equal(named.includes('POST (storefront)'), true, `${code}: the default still names it`);
-  }
+test('noteFor with named: false does not repeat the span name, for every kind, status, parent and link note', () => {
+  const unnamed = (spec, st, id, name) => {
+    const issue = checkBuild(spec, st).issues.find((i) => i.spanId === id);
+    const bare = text(noteFor(spec, st, issue, escapeHtml, { named: false }));
+    const named = text(noteFor(spec, st, issue, escapeHtml));
+    assert.equal(bare.includes(name), false, `${issue.code}: unnamed (${bare})`);
+    assert.equal(named.includes(name), true, `${issue.code}: the default still names it`);
+    return bare;
+  };
+  const spec = b1Spec();
+  const st = newBuildState(spec);
+  assert.equal(unnamed(spec, st, B, 'POST (storefront)').startsWith('It is a root now'), true, 'root');
+  setParent(spec, st, C, D);
+  assert.equal(unnamed(spec, st, C, 'POST /checkout (api-gateway) runs').startsWith('It runs 15 to 85 ms'), true, 'not inside');
+  setParent(spec, st, C, null);
+  setParent(spec, st, D, A);
+  assert.equal(unnamed(spec, st, D, 'validate cart').startsWith('It runs inside POST /checkout (storefront), but a span closer'), true, 'closer');
+  // The parent contains the span and no span between them does, yet it is not the span it worked for.
+  const far = { ...b1Spec(), answer: { ...b1Spec().answer, [D]: { parentId: A } } };
+  const st3 = newBuildState(far);
+  setParent(far, st3, D, B);
+  assert.equal(unnamed(far, st3, D, 'validate cart').startsWith('It runs inside POST (storefront), but that is not the span'), true, 'not the span it worked for');
+  setParent(spec, st, E, C);
+  assert.equal(unnamed(spec, st, E, 'GET /products').startsWith('It carries trace ID'), true, 'cross-trace');
+  const all = { ...b1Spec(), edit: ['kind', 'status', 'links'], answer: { [E]: { kind: 'CONSUMER', status: 'ERROR', links: [A, B] } } };
+  const st2 = newBuildState(all);
+  setKind(all, st2, E, 'CLIENT');
+  toggleLink(all, st2, E, C);
+  const lines = checkBuild(all, st2).issues.map((i) => [i.code, text(noteFor(all, st2, i, escapeHtml, { named: false }))]);
+  assert.deepEqual(lines, [
+    ['wrong-kind', "The kind doesn't match what it did. Does it handle a call, make one, send a message, process one, or none of these?"],
+    ['wrong-status', 'Check the status. Only an operation that failed is ERROR.'],
+    ['missing-link', 'It should also point at a related span that is not its parent.'],
+    ['missing-link', 'It should also point at a related span that is not its parent.'],
+    ['extra-link', 'One of its links points at a span it is not related to.'],
+  ]);
 });

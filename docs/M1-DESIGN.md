@@ -179,7 +179,7 @@ View `lib/widgets/build-it-view.mjs` (redesigned in #146 from the owner-approved
   (`#ID-instr`, every row's `aria-describedby`, not a live region; parent mode: "Drag each span
   onto its parent, or pick a span and then its parent."), a root drop zone, the move status
   (`#ID-status`, live), a tick header, then one row per span: name and service, then the trace
-  id (8 hex characters, full id in a tooltip), kind, status and timing; indent elbows. Each row's
+  id (8 hex characters, full id in a tooltip), a labelled kind (`kind CLIENT`), the status (`status ERROR`) only where the level edits it or it is not UNSET, and timing; indent elbows. Each row's
   track is an SVG without a viewBox (real, unstretched text; positions are attributes, CSP):
   grid lines, connectors from parent to child, the bar labelled with duration and name. Bars
   are coloured by service (`--color-svc-0..5`, muted, legend below); ERROR is a

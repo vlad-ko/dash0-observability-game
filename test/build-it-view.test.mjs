@@ -139,7 +139,7 @@ test('a bar label is placed by labelFlips and drawn inside its own clip, so only
   assert.equal(q(`[data-span="${D}"] .wf-track`).querySelectorAll('.wf-label-clip').length, 1);
 });
 
-test('rows: name and service first, kind, status and timing secondary; 8-char trace IDs with the full id in a tooltip, no ellipsis', () => {
+test('rows: name and service first, a labelled kind and timing secondary (no status on a kind-only level); 8-char trace IDs with the full id in a tooltip, no ellipsis', () => {
   setup(withHelps({}));
   assert.deepEqual(placedIds(), [A, B, C, D, E], 'every span a root, trace 4bf9 then 0af7, by start');
   assert.equal(label(B), 'POST, storefront, kind CLIENT, 10 to 90 ms, trace 4bf92f35, root');
@@ -242,7 +242,7 @@ test('a cross-trace drop names both trace IDs', () => {
   drag(D, C);
   drag(E, C);
   assert.equal(counts.mistakes, 1);
-  assert.equal(status().includes('It carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t be the parent.'), true);
+  assert.equal(status().includes('It carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.'), true);
 });
 
 test('while a span moves: itself and its descendants are refused, a drop there is free and says it would loop', () => {
@@ -1522,4 +1522,5 @@ test('rows label kind and status; the status shows only where the level edits it
   const errored = setup({ ...b1Spec(), edit: ['parent'], spans: b1Spec().spans.map((s) => (s.spanId === B ? { ...s, status: 'ERROR' } : s)), helps: { tint: true, instant: true, hints: true } });
   errored.mount();
   assert.equal(meta().includes('status ERROR'), true, 'a non-UNSET status always shows');
+  assert.equal(label(B).includes('status ERROR'), true, 'and the spoken label says it');
 });
