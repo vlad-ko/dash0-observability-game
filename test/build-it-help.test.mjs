@@ -238,3 +238,15 @@ test('a same-name, same-service twin is named with the view\'s suffix in notes a
   assert.equal(text(hintFor(spec, st, C, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST (storefront, trace 4bf92f35) is the CLIENT call into api-gateway, and this is the SERVER span that handled it.');
   assert.equal(text(hintFor(spec, st, D, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST /checkout (api-gateway) is the innermost span of trace 4bf92f35 that runs around it (15 to 85 ms).');
 });
+
+test('noteFor with named: false does not repeat the span name, for kind, status, parent and links', () => {
+  const all = b1Spec();
+  const st = newBuildState(all);
+  for (const code of ['wrong-kind', 'wrong-status', 'missing-link', 'extra-link', 'wrong-parent']) {
+    const issue = { code, spanId: B, count: 2 };
+    const bare = text(noteFor(all, st, issue, escapeHtml, { named: false }));
+    const named = text(noteFor(all, st, issue, escapeHtml));
+    assert.equal(bare.includes('POST (storefront)'), false, `${code}: unnamed`);
+    assert.equal(named.includes('POST (storefront)'), true, `${code}: the default still names it`);
+  }
+});
