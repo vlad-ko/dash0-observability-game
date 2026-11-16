@@ -139,10 +139,10 @@ test('a bar label is placed by labelFlips and drawn inside its own clip, so only
   assert.equal(q(`[data-span="${D}"] .wf-track`).querySelectorAll('.wf-label-clip').length, 1);
 });
 
-test('rows: name and service first, kind, status and timing secondary; 8-char trace IDs with the full id in a tooltip, no ellipsis', () => {
+test('rows: name and service first, a labelled kind and timing secondary (no status on a kind-only level); 8-char trace IDs with the full id in a tooltip, no ellipsis', () => {
   setup(withHelps({}));
   assert.deepEqual(placedIds(), [A, B, C, D, E], 'every span a root, trace 4bf9 then 0af7, by start');
-  assert.equal(label(B), 'POST, storefront, CLIENT, UNSET, 10 to 90 ms, trace 4bf92f35, root');
+  assert.equal(label(B), 'POST, storefront, kind CLIENT, 10 to 90 ms, trace 4bf92f35, root');
   assert.deepEqual(qa(`[data-span="${E}"] [data-trace]`).map((t) => `${t.textContent}|${t.getAttribute('title')}`), ['trace 0af76519|trace ID 0af7651916cd43dd8448eb211c80319c']);
   assert.equal(q(`[data-span="${B}"] .wf-name`).textContent, 'POST');
   assert.equal(q(`[data-span="${B}"] .wf-svc`).textContent, 'storefront');
@@ -222,7 +222,7 @@ test('a wrong drop costs one mistake, says a specific note and stays; the same d
   mount();
   drag(B, 'root');
   assert.equal(counts.mistakes, 1);
-  assert.equal(status(), 'POST (storefront) is a root, but not quite. POST (storefront) is a root now, yet another span of trace 4bf92f35 was already running when it started. Which call was it doing work for? It stays here; move it when you are ready.');
+  assert.equal(status(), 'POST (storefront) is a root, but not quite. It is a root now, yet another span of trace 4bf92f35 was already running when it started. Which call was it doing work for? It stays here; move it when you are ready.');
   assert.equal(tone(), 'error', 'D7: a wrong drop costs a star, so it is the error tone');
   assert.equal(q(`[data-span="${B}"]`).dataset.verdict, 'no');
   assert.deepEqual(arriving(), [C], 'placed anyway; the next span arrives');
@@ -242,7 +242,7 @@ test('a cross-trace drop names both trace IDs', () => {
   drag(D, C);
   drag(E, C);
   assert.equal(counts.mistakes, 1);
-  assert.equal(status().includes('GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t be the parent.'), true);
+  assert.equal(status().includes('It carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t sit under POST /checkout (api-gateway).'), true);
 });
 
 test('while a span moves: itself and its descendants are refused, a drop there is free and says it would loop', () => {
@@ -719,7 +719,8 @@ test('kind editing with instant feedback: a wrong kind costs one and says why it
   click(`[data-span="${B}"]`);
   click('[data-kind="PRODUCER"]');
   assert.equal(counts.mistakes, 1);
-  assert.equal(status().startsWith('POST (storefront) is now PRODUCER, but not quite. POST (storefront): the kind doesn\'t match'), true);
+  assert.equal(status().startsWith('POST (storefront) is now PRODUCER, but not quite. The kind doesn\'t match'), true);
+  assert.equal(status().split('POST (storefront)').length - 1, 1, 'the span is named once');
   click('[data-kind="PRODUCER"]');
   assert.equal(counts.mistakes, 1, 'unchanged: free');
   click('[data-kind="SERVER"]');
@@ -737,8 +738,8 @@ test('a tier-3 kind hint on a span still wrong in its status is neutral and char
   click('#b1-hint');
   click('#b1-hint');
   assert.equal(counts.hints, 3);
-  assert.equal(label(B), 'POST, storefront, SERVER, UNSET, 10 to 90 ms, trace 4bf92f35, root, not right yet', 'the hint set the kind; the status is still UNSET');
-  assert.equal(status(), 'POST (storefront) is now SERVER, but not quite. POST (storefront): check the status. Only an operation that failed is ERROR. It stays here; move it when you are ready.');
+  assert.equal(label(B), 'POST, storefront, kind SERVER, status UNSET, 10 to 90 ms, trace 4bf92f35, root, not right yet', 'the hint set the kind; the status is still UNSET');
+  assert.equal(status(), 'POST (storefront) is now SERVER, but not quite. Check the status. Only an operation that failed is ERROR. It stays here; move it when you are ready.');
   assert.equal(tone(), 'neutral', 'a move the hint made is information, not an error');
   assert.deepEqual([counts.mistakes, counts.done], [0, 0], 'no mistake charged, and the board is not done');
 });
@@ -929,7 +930,7 @@ test('data text is escaped everywhere: rows, bars, panel, notes and problems', (
   q(`[data-drop="${B}"]`).ondrop(ev()); // a refused loop, through a drop: the panel disables it
   const hostile = () => qa('img').length + qa('b').filter((b) => b.textContent === 'store').length;
   assert.equal(hostile(), 0, 'no element came from data text');
-  assert.equal(label(A).startsWith('<img src=x>POST & "go", <b>store</b>, SERVER'), true);
+  assert.equal(label(A).startsWith('<img src=x>POST & "go", <b>store</b>, kind SERVER'), true);
   assert.equal(status(), 'POST (storefront) is already below <img src=x>POST & "go" (<b>store</b>), so that would make a loop.');
   click('#b1-check');
   assert.equal(counts.mistakes, 1);
@@ -1289,8 +1290,8 @@ test('twins get distinct screen-reader row labels, waiting and arrived; a unique
     'retry, api, trace 1111aaaa, span id \u2026a3c4, waiting, not arrived yet',
     'retry, api, trace 1111aaaa, span id \u2026a5d6, waiting, not arrived yet',
   ]);
-  assert.equal(q('[data-arriving]').getAttribute('aria-label').startsWith('solo, api, INTERNAL, '), true, 'a unique span keeps its label');
-  assert.equal(q('[data-span]:not([data-arriving])').getAttribute('aria-label'), 'retry, api, trace 1111aaaa, span id \u2026a1b2, INTERNAL, UNSET, 0 to 3 ms, trace 1111aaaa, root');
+  assert.equal(q('[data-arriving]').getAttribute('aria-label').startsWith('solo, api, kind INTERNAL, '), true, 'a unique span keeps its label');
+  assert.equal(q('[data-span]:not([data-arriving])').getAttribute('aria-label'), 'retry, api, trace 1111aaaa, span id \u2026a1b2, kind INTERNAL, 0 to 3 ms, trace 1111aaaa, root');
 });
 
 test('#17 P3 the success line counts a guide question as a hint; its stars are the side card stars, not a recount', () => {
@@ -1573,4 +1574,22 @@ test('#346 Reset scrolls its reply into view', () => {
   const calls = spyScrolls();
   click('#b1-reset');
   assert.equal(calls.length, 1);
+});
+
+test('rows label kind and status; the status shows only where the level edits it or it is not UNSET', () => {
+  const kindOnly = setup({ ...b1Spec(), edit: ['kind'], answer: { [B]: { kind: 'SERVER' } }, helps: { tint: true, instant: true, hints: true } });
+  kindOnly.mount();
+  const meta = () => qa(`[data-span="${B}"] .wf-l2 span`).map((x) => x.textContent);
+  assert.equal(meta().includes('kind CLIENT'), true, 'the kind is labelled');
+  assert.equal(meta().some((x) => x.includes('UNSET')), false, 'a default status the level does not edit stays hidden');
+  assert.equal(label(B).includes('UNSET'), false, 'the spoken label agrees');
+  assert.equal(label(B).includes('kind CLIENT'), true);
+  const withStatus = setup({ ...b1Spec(), edit: ['kind', 'status'], answer: { [B]: { kind: 'SERVER', status: 'ERROR' } }, helps: { tint: true, instant: true, hints: true } });
+  withStatus.mount();
+  assert.equal(meta().includes('status UNSET'), true, 'a level that edits status shows it');
+  assert.equal(label(B).includes('status UNSET'), true);
+  const errored = setup({ ...b1Spec(), edit: ['parent'], spans: b1Spec().spans.map((s) => (s.spanId === B ? { ...s, status: 'ERROR' } : s)), helps: { tint: true, instant: true, hints: true } });
+  errored.mount();
+  assert.equal(meta().includes('status ERROR'), true, 'a non-UNSET status always shows');
+  assert.equal(label(B).includes('status ERROR'), true, 'and the spoken label says it');
 });
