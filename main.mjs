@@ -4,10 +4,13 @@ import { createGame, liveRegistry } from './app.mjs';
 import { mountGlobe } from './lib/globe-render.mjs';
 import { isDebugMode } from './lib/debug-mode.mjs';
 import { prefersReducedMotion } from './lib/lesson-kit.mjs';
+import { takeReset } from './lib/reset-mode.mjs';
 import { takeSignin } from './lib/signin-param.mjs';
 import { createTelemetry } from './lib/telemetry.mjs';
 import { createPlayTelemetry } from './lib/play-telemetry.mjs';
 
+// ?mode=reset runs first: the saved state is gone before anything reads it.
+takeReset(window);
 const signin = takeSignin(window);
 
 function browserDeps() {
