@@ -79,8 +79,18 @@ test('two mistakes then finish scores 3 stars and reports once to onFinish', () 
   const result = ctx.finish({ cards: ['c1'] });
   assert.deepEqual(result, { stars: 3, cards: ['c1'], text: '' });
   assert.deepEqual(calls, [
-    ['lvl-a', { stars: 3, cards: ['c1'], text: '', at: '2026-01-01T00:00:00.000Z' }],
+    ['lvl-a', { stars: 3, cards: ['c1'], text: '', at: '2026-01-01T00:00:00.000Z', mistakes: 2, hintsUsed: 0 }],
   ]);
+});
+
+test('onFinish carries the mistakes and hints of the run; a guide question counts as a hint', () => {
+  const { ctx, calls } = setup();
+  ctx.mistake();
+  ctx.hint();
+  ctx.askedGuide();
+  ctx.finish();
+  assert.equal(calls[0][1].mistakes, 1);
+  assert.equal(calls[0][1].hintsUsed, 2);
 });
 
 test('a hint costs a star like a mistake', () => {

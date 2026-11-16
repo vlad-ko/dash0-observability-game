@@ -155,6 +155,7 @@ export function createGame(deps) {
     rendered = (el) => typeof el.getClientRects !== 'function' || el.getClientRects().length > 0,
     debug = false,
     telemetry = null,
+    play = null, // lib/play-telemetry.mjs (docs/GAME-EVENTS.md): the owner's play events, never the player's lab
     fetch: request = null,
     signin = null, // the `?signin=` value main.mjs read once (and stripped from the URL)
   } = deps;
@@ -163,6 +164,11 @@ export function createGame(deps) {
       reportError(e);
     } catch {
       // nothing left to tell
+    }
+    try {
+      play?.error(e);
+    } catch {
+      // play events never get in the way
     }
   };
   const cardFront = Object.fromEntries(deck.map((c) => [c.id, c.front]));
@@ -270,10 +276,19 @@ export function createGame(deps) {
     init() {
       win?.addEventListener('storage', (e) => this.onStorage(e));
       // Leaving the page (or entering the back/forward cache) frees the WebGL context.
-      win?.addEventListener('pagehide', () => this.hideGlobe());
+      win?.addEventListener('pagehide', (e) => {
+        this.hideGlobe();
+        // A page kept in the back/forward cache may come back mid-level, so it is not abandoned.
+        if (!e?.persisted) play?.abandon();
+        play?.flush({ final: true });
+      });
       win?.addEventListener('pageshow', (e) => {
         if (e?.persisted) this.showGlobe();
       });
+      doc.addEventListener?.('visibilitychange', () => {
+        if (doc.visibilityState === 'hidden') play?.flush({ final: true });
+      });
+      play?.init();
       this.showGlobe();
       guideClient?.status();
       this.loadAccount();
@@ -827,6 +842,7 @@ export function createGame(deps) {
       const controller = new AbortController();
       session = controller;
       this.currentLevelId = id;
+      play?.begin(id);
       this.openedFrom = from;
       this.overlayTitle = level.name;
       this.overlayNo = level.kind === 'boss' ? 'Incident' : level.no ? `Level ${level.no}` : '';
@@ -972,6 +988,7 @@ export function createGame(deps) {
 
     // Abort the open level (its timers stop, a stale finish is a no-op) and clear its DOM.
     endSession() {
+      play?.abandon(); // a no-op when the play already completed
       if (session) session.abort();
       session = null;
       this.howTo = NO_HOW_TO;
@@ -995,6 +1012,9 @@ export function createGame(deps) {
 
     // Called by the ctx with the id it captured at creation, never the level open now.
     completeLevel(levelId, result) {
+      // First, before endSession() would record it as an abandon.
+      play?.complete(levelId, result);
+      play?.flush();
       const level = registry.levels[levelId];
       const rec = recordCompletion(this.progress, levelId, result, registry);
       this.rewardDebug = this.debug;

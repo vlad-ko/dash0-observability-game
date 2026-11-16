@@ -164,7 +164,8 @@ exposes `hintsShown(h) = h + guided`, which every board's success line reads, so
 stars equal the level's. A board never asked is unchanged.
 
 `finish` computes `stars = scoreStars({mistakes, hintsUsed, elapsedMs: now() - startedAt}, level)`
-and calls `onFinish(level.id, {stars, cards, text, at: new Date(now()).toISOString()})`.
+and calls `onFinish(level.id, {stars, cards, text, at: new Date(now()).toISOString(), mistakes, hintsUsed})`
+(the two counts feed the play events, docs/GAME-EVENTS.md; `finish` still returns `{stars, cards, text}`).
 `level.id` is captured at creation. Returns `null` without calling `onFinish` if already
 finished or `signal.aborted`. Non-array `cards` → `[]`.
 
