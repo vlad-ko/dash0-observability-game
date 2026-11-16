@@ -530,6 +530,13 @@ const FAKE_GUIDE = Object.freeze({ configured: true, ask: async () => ({ kind: '
 // The "fifty" run (#371): when set, a click on a multiple-choice answer first uses that question's
 // enabled, unused 50/50 button, as a player would. `used` collects the button ids it pressed.
 let fifty = null;
+/** The tempting near-misses the 50/50 must never remove (`keep: true` in the level), as `level:pick`. */
+const KEEP_PICKS = new Set([
+  'span-kinds:provider',
+  'cardinality:sum',
+  'synthetic-checks:health-check',
+  'frontend-rum:page-origin-otlp-header',
+]);
 
 /** Press the 50/50 of the question `answer` belongs to, if it has one that is enabled. */
 function useFifty(answer) {
@@ -539,13 +546,17 @@ function useFifty(answer) {
   domClick(btn);
   fifty.used.push(btn.id);
   assert.equal(answer.hidden, false, `the 50/50 removed the driver's right answer ${answer.dataset.pick}`);
+  // keep (#371): a tempting near-miss is never removed.
+  for (const k of box.querySelectorAll('[data-pick]')) {
+    if (KEEP_PICKS.has(`${fifty.level}:${k.dataset.pick}`)) assert.equal(k.hidden, false, `the 50/50 removed the keep answer ${k.dataset.pick}`);
+  }
 }
 
 /** dom.mjs click, recording for its duration whether it hit the Finish button. */
 function click(elOrSel) {
   const el = typeof elOrSel === 'string' ? q(elOrSel) : elOrSel;
   if (fifty && el?.matches?.('[data-pick]')) useFifty(el);
-  current ={ sel: String(elOrSel), finish: !!el?.matches?.('[data-finish]') };
+  current = { sel: String(elOrSel), finish: !!el?.matches?.('[data-finish]') };
   try {
     domClick(elOrSel);
   } finally {
@@ -808,7 +819,7 @@ function derivedDriver(level) {
 /** The happy run of `level` with the 50/50 pressed wherever a question offers it: stars and the buttons used. */
 async function fiftyRun(level) {
   const driver = DRIVERS[level.id] ?? derivedDriver(level);
-  fifty = { used: [] };
+  fifty = { used: [], level: level.id };
   try {
     const opts = { telemetry: driver.telemetry?.() };
     const done = driver.async ? await playLevelAsync(level, driver.play, opts) : playLevel(level, driver.play, opts);
@@ -859,7 +870,9 @@ test('#371 the 50/50 run: every level still finishes, one penalty per 50/50 used
     if (expect.stars === clean) {
       assert.equal(stars, scoreStars({ mistakes: 0, hintsUsed: used.length, elapsedMs: 0 }, level), `${id}: stars after ${used.length} 50/50`);
     } else {
-      assert.ok(stars <= expect.stars, id);
+      // A level that does not finish clean must not offer a 50/50 here (it would be charged on top of its own penalty).
+      assert.equal(used.length, 0, `${id}: a level with a penalty in its happy run offers a 50/50; extend this run`);
+      assert.equal(stars, expect.stars, id);
     }
   }
   assert.ok(seen.length >= 1);

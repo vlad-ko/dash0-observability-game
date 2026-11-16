@@ -14,6 +14,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **Cardinality**: the number of unique values (or label combinations) a field has;
   for metrics, the number of time series. (Act 3)
 - **Hint**: help a board gives for a cost. Each hint counts as one penalty, and the Hint button shows what the next one costs.
+- **50/50**: on a multiple-choice question with four or more answers, removes two wrong answers. It counts as one hint, so it costs one penalty.
 - **Guide**: the on-call mentor you can ask a question on some steps. It never gives the answer away. Each answer you get counts as one hint; a reply it holds back, or an error, is free.
 - **Clue**: an evidence view on an incident board that helps explain the alert. Finding
   enough of them unlocks the causes.

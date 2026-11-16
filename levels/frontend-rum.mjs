@@ -95,6 +95,7 @@ const CORS = [
   },
   {
     key: 'page-origin-otlp-header',
+    keep: true, // the tempting near-miss: the 50/50 never removes it (#371)
     label: 'Allow <code>https://shop.kettle.example</code> on the OTLP endpoint, and <code>traceparent</code> in that endpoint\'s allowed headers',
     why: 'The origin is right. The header is not: <code>traceparent</code> is sent on the call to the checkout API, and the reply that blocks that call is the API\'s, which lists Content-Type and Authorization only. A longer list on the telemetry endpoint leaves that reply as it is, and payments keep failing.',
   },

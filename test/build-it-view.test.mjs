@@ -705,7 +705,7 @@ test('hints stop at three per span; with no hints on the level there is no butto
   assert.deepEqual([q('#b1-hint').textContent, q('#b1-hint').disabled], ['No more hints', true]);
   setup(withHelps({ instant: false }));
   assert.equal(qa('#b1-hint').length, 0);
-  assert.equal(q('#b1-hint-tier').textContent, 'No hints on this level.');
+  assert.equal(q('#b1-hint-tier').textContent, 'No hints on this step.');
 });
 
 // ---- other span fields (span-kinds, events-and-links) ---------------------------------

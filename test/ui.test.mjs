@@ -271,7 +271,7 @@ test('side: help chips say on or off in words; stars; the column keeps the help-
   assert.ok(col.includes('<p class="ui-score-rule">R</p>'));
   assert.ok(col.includes('<button type="button" class="ui-btn ui-btn--hint" id="b1-hint">Hint</button>'));
   const none = sideColumn({ id: 's1', titleHtml: 'T', counts: [] });
-  assert.ok(none.includes('<p class="ui-hints-tier" id="s1-hint-tier">No hints on this level.</p>'));
+  assert.ok(none.includes('<p class="ui-hints-tier" id="s1-hint-tier">No hints on this step.</p>'));
   assert.equal(none.includes('id="s1-hint"'), false);
   assert.equal(none.includes('ui-score-rule'), false);
   // The guide panel's slot (#17): one empty div, last in the column, with or without hints; no id, class or style.

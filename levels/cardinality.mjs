@@ -31,6 +31,7 @@ const CAP = 140;
 const COMBOS = [
   {
     key: 'sum',
+    keep: true, // the tempting near-miss: the 50/50 never removes it (#371)
     label: `${VALUES.method} + ${VALUES.route} + ${VALUES.status} = ${n(VALUES.method + VALUES.route + VALUES.status)}: one series for each value`,
     why: 'A series is one value of every attribute together, not one value alone. A POST to one route with a 200 and a GET to the same route with a 200 are two series, so adding the counts leaves most of them out.',
   },
