@@ -216,7 +216,7 @@ test('the-pager: Escalate moves to part 2; only Finish after all four asks ends 
     assert.equal(finishDisabled(), false);
     click('#pager-finish');
     assert.equal(finished.length, 1, `${looks} looks: finished once`);
-    assert.deepEqual({ ...finished[0], at: null }, { stars: 0, cards: [], text: REWARD, at: null });
+    assert.deepEqual({ ...finished[0], at: null }, { stars: 0, cards: [], text: REWARD, at: null, mistakes: 0, hintsUsed: 0 });
   }
 });
 

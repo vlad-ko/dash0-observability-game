@@ -6,6 +6,7 @@ import { isDebugMode } from './lib/debug-mode.mjs';
 import { prefersReducedMotion } from './lib/lesson-kit.mjs';
 import { takeSignin } from './lib/signin-param.mjs';
 import { createTelemetry } from './lib/telemetry.mjs';
+import { createPlayTelemetry } from './lib/play-telemetry.mjs';
 
 const signin = takeSignin(window);
 
@@ -25,6 +26,14 @@ function browserDeps() {
       clearTimeout: window.clearTimeout.bind(window),
       reportError: (e) => console.error(e),
       allowLocal: debug,
+    }),
+    // The owner's play events (docs/GAME-EVENTS.md): its own fetch, nothing at all in debug.
+    play: createPlayTelemetry({
+      fetch: window.fetch.bind(window),
+      sendBeacon: window.navigator.sendBeacon?.bind(window.navigator),
+      randomBytes: (n) => window.crypto.getRandomValues(new Uint8Array(n)),
+      monotonic: () => window.performance.now(),
+      debug,
     }),
     fetch: window.fetch.bind(window),
     signin,

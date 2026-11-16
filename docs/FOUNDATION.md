@@ -164,7 +164,8 @@ exposes `hintsShown(h) = h + guided`, which every board's success line reads, so
 stars equal the level's. A board never asked is unchanged.
 
 `finish` computes `stars = scoreStars({mistakes, hintsUsed, elapsedMs: now() - startedAt}, level)`
-and calls `onFinish(level.id, {stars, cards, text, at: new Date(now()).toISOString()})`.
+and calls `onFinish(level.id, {stars, cards, text, at: new Date(now()).toISOString(), mistakes, hintsUsed})`
+(the two counts feed the play events, docs/GAME-EVENTS.md; `finish` still returns `{stars, cards, text}`).
 `level.id` is captured at creation. Returns `null` without calling `onFinish` if already
 finished or `signal.aborted`. Non-array `cards` → `[]`.
 
@@ -502,7 +503,7 @@ Firefox, not Safari.
 ### 2.10 Server telemetry (#18)
 
 The `api/` functions send one trace per request to the owner's Dash0 when configured, and do nothing otherwise.
-Play events from the browser (`api/events.mjs`, resource `oncall-game-web`, one trace per event): docs/GAME-EVENTS.md.
+Play events from the browser (client `lib/play-telemetry.mjs`, receiver `api/events.mjs`, resource `oncall-game-web`, one trace per event): docs/GAME-EVENTS.md.
 Code: `lib/otel/` (`config.mjs`, `traceparent.mjs`, `attributes.mjs`, `export.mjs`, `server.mjs`) over the lab's `lib/otlp/encode.mjs`
 and `lib/otlp/send.mjs`; no package, no install step. Each `api/<name>.mjs` ends with the same three lines
 (`createServerTelemetry({name, env: process.env})`, the factory over `log: telemetry.log` (the guide and the sign-in
@@ -739,7 +740,7 @@ Mutations: `p < 2`; `>=` against par; drop the `scored` check.
   `class="bubble"`).
 - `shuffle` returns a new array; frozen input unchanged.
 - `mistake()` ×2 then `finish({cards:['c1']})` → `{stars:3, cards:['c1'], text:''}`;
-  `onFinish` once with `('lvl-a', {stars:3, cards:['c1'], text:'', at:'2026-01-01T00:00:00.000Z'})`
+  `onFinish` once with `('lvl-a', {stars:3, cards:['c1'], text:'', at:'2026-01-01T00:00:00.000Z', mistakes:2, hintsUsed:0})`
   (now = 1767225600000).
 - `now` 0 at create, 61000 at finish, `parMs 60000` → stars 4 (one penalty).
 - Second `finish` → null, `onFinish` count stays 1. Mutation: drop the `finished` flag.
