@@ -17,10 +17,10 @@ Evidence:
 - Same pattern in the `run()` of `status-and-errors.mjs:88-143`, `monitoring-vs-observability.mjs:97-150` and `spans-and-traces.mjs:93-173`.
 - Authors already began factoring it out: `the-signals.mjs:135-146` (`sortStep`), and the `next(onclick)` helper in `spans-and-traces.mjs:95-99`, `context-propagation.mjs:118-122` and `events-and-links.mjs:103-107`.
 
-**The data is already declarative.** `CONTENT.steps` is `{sort}`, `{build}` or `{id, question, choices}` (`auto-vs-manual.mjs:98-104`); 2.2 has a `{hunt}` step first (`span-kinds.mjs:119-124`, #364). The tests pin it (`test/act-2.test.mjs:286-318`).
+**The data is already declarative.** `CONTENT.steps` is `{sort}`, `{build}` or `{id, question, choices}` (`auto-vs-manual.mjs:98-104`); 2.2 has a `{hunt}` step first (`span-kinds.mjs:120-125`, #364). The tests pin it (`test/act-2.test.mjs:286-318`).
 
 **Facts each level states twice today:**
-- **Cards:** listed on the level and again in `finish`, always the same list. Examples: `auto-vs-manual.mjs:114` and `:191`; `status-and-errors.mjs` (`cards` and `finish`); `span-kinds.mjs:146` and `:335`; `the-pager.mjs:53` and `:96`; `checkout-is-slow.mjs:153` and `:172`.
+- **Cards:** listed on the level and again in `finish`, always the same list. Examples: `auto-vs-manual.mjs:114` and `:191`; `status-and-errors.mjs` (`cards` and `finish`); `span-kinds.mjs:147` and `:339`; `the-pager.mjs:53` and `:96`; `checkout-is-slow.mjs:153` and `:172`.
 - **`mechanics`:** written by hand, and always equal to the non-choice widgets the level uses. No UI reads it; the only reader is `lib/registry.mjs`.
 - **`widgets`** (#199, for the how-to-play help): the widgets a level plays, `choice` included, in play order. Run levels declare it by hand (absent means none, so no help card), and every non-choice entry must be in `mechanics`. It is not the same list as `mechanics`: `the-pager` lists `incident` in `mechanics` but declares no `widgets` (no help card), and `naming-your-service` declares `configure` but uses the env checker.
 - **`hintless`** (#199): the widgets of the level with no Hint button on any step. A play level derives it from its steps (`hints(spec)` of each step type, which mirrors its mount; choice and tradeoff never have hints and are never listed). A run level declares it by hand, as a unique subset of its `widgets` (absent means none); `test/live-registry.test.mjs` pins it for every live level.
@@ -29,7 +29,7 @@ Evidence:
 
 | Level | What | Where | Consequence |
 |---|---|---|---|
-| 2.2 span-kinds | a symptom hunt (#364): the hunt board is the level's own kit markup, and the alert, rates and "Map edges" line are redrawn from `serviceView` (`lib/service-view.mjs`) when the right fix is picked | `span-kinds.mjs:149-340` | stays `run(ctx)` |
+| 2.2 span-kinds | a symptom hunt (#364): the hunt board is the level's own kit markup, and the alert, rates and "Map edges" line are redrawn from `serviceView` (`lib/service-view.mjs`) when the right fix is picked | `span-kinds.mjs:150-345` | stays `run(ctx)` |
 | 2.4 context-propagation | hop and root lists built from data with `escapeHtml`; `CONTENT.steps[0].hops/roots` pinned | `context-propagation.mjs:125-144`; `act-2.test.mjs:480-488` | can migrate with `show` (those two tests become string checks); optional, last |
 | 2.6 events-and-links | an authored list of three short stories | `events-and-links.mjs:133`, `:140` | fits, via `show` |
 | 1.2 naming-your-service | env editor, Check and hint written inline, with its own `lastFailed` (M1-DESIGN §2); choice id `nys` used twice | `naming-your-service.mjs:145-189`, `:107`, `:201` | stays `run(ctx)` by decision on #3: a configure step exists now, but 1.2 is an env editor, not YAML |

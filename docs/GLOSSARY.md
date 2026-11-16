@@ -68,7 +68,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
   opens the spans to find its cause (level 2.2, the pilot, #364).
 - **Flag**: in a symptom hunt, naming a span as the cause. A flag that misses is **ruled
   out** (that span cannot be flagged again) and costs one penalty; once the culprit is
-  found, the other spans read **Hunt over**. (Act 2)
+  found, it reads **Flagged** and the other spans read **Hunt over**. (Act 2)
 - **Baggage**: user-defined key/values propagated with the context.
 - **Sampling**: keeping a subset of traces. *Head* sampling decides at the start;
   *tail* sampling decides after the trace completes. (Act 6)

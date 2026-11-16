@@ -8,7 +8,7 @@
 // game's simulation (lib/service-view.mjs); every figure on screen comes from serviceView.
 // Spec: docs/M1-DESIGN.md §6 Act 2.
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
-// Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#span-creation (SpanKind defaults to INTERNAL when not specified; confirmed in the fetched spec text)
+// Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#span-creation (SpanKind defaults to INTERNAL when not specified)
 import {
   actions, button, chip, eyebrow, feedback, finishButton, nextButton, note, option, options, panel, question, setFeedback, sideColumn, split,
   stats, step, stepHead, table,
@@ -131,7 +131,7 @@ const RULE = ruleText({
 
 const HINTS = [
   'A span with an <code>http.route</code> is serving a request. Which spans carry one?',
-  'Check the kind of each span that has a route. A span that serves a call should be SERVER, whether its caller is in this trace or outside it. Does one of them not match?',
+  'Check the kind of each span that has a route. A span that serves a call should be SERVER, whether its caller is in this trace or outside it. Does one of them have the wrong kind?',
   'Flag <code>POST /charge</code> in payments: it has a route and sits under checkout\'s CLIENT span, but it is INTERNAL.',
 ];
 
@@ -176,7 +176,7 @@ export default {
       sections: [
         `<div id="kinds-rates"></div>`,
         feedback({ id: 'kinds-edges' }),
-        note('This simulated view counts a service\'s requests from its SERVER spans and draws an edge from a CLIENT span to its SERVER child in another service. Backends can derive both from span kind.'),
+        note(`This simulated view counts a service's requests from its SERVER spans. Each trace stands for a flow at its own rate: checkouts at ${PER_MIN} a minute, refunds at one in ${REFUND_ONE_IN} of those. It draws an edge from a CLIENT span to its SERVER child in another service. Backends can derive both from span kind.`),
       ],
     });
 
