@@ -640,16 +640,21 @@ https://opentelemetry.io/docs/specs/otel/trace/sdk/#span-processor
 **2.2 `span-kinds`** (a symptom hunt, the pilot for the Build it redesign, #364): mechanics
 `['spot']`, widgets `['choice']`, cards `['span-kind-edges']`. Screen 1 is the hunt, the level's own
 kit markup (a split; the side column is the kit `sideColumn` wired by `mountHintLadder`): an alert
-for payments (0 requests/min) and a simulated Dash0 view (requests per service from SERVER spans,
-the "Map edges: …" line from `serviceEdges`; both from `lib/service-view.mjs`) sit above one
-checkout trace of seven spans, all Unset. Rows show service, time range and parent, never the
-kind; opening a span (free) shows its fields in a sidebar, and the player flags the culprit,
-payments `POST /charge`, recorded INTERNAL though it handles checkout's call. A wrong flag is one
-penalty (`ladder.miss()`), as is each of the three hint tiers. Screen 2 is a Choice: start it with
-SERVER (right; the alert resolves to 20 requests/min and the map gains checkout→payments),
-CLIENT, give it a parent, or rename it. Card: "Span kind is not cosmetic: service maps draw
-edges from CLIENT to SERVER and PRODUCER to CONSUMER pairs." Copy says "backends derive", not
-"the spec says". Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
+for payments (10 requests/min against the 20 it usually handles: a partial gap) and a simulated
+Dash0 view (requests per service from SERVER spans, the "Map edges: …" line from `serviceEdges`;
+both from `lib/service-view.mjs`) frame one checkout trace and a refund, nine spans, all Unset;
+payments has four, so a guess is no better than one in four. Rows show service, time range and
+parent, never the kind; opening a span (free) shows its fields in a sidebar beside the rows from
+960px (under them below), and the player flags the culprit, payments `POST /charge`, recorded
+INTERNAL though it handles checkout's call (it has an `http.route`, as does the correctly
+recorded SERVER `POST /refund`; `validate card` is INTERNAL with attributes and rightly so). A
+wrong flag is one penalty (`ladder.miss()`), as is each of the three hint tiers. Screen 2 is a
+Choice whose options preview the rates and map edges they would give: set `POST /charge` to
+SERVER (right; payments 20 and the map gains checkout→payments), set `POST provider/charges` to
+SERVER (clears the alert but draws no edge), set `POST /charge` to CLIENT, or rename it. The
+right pick moves focus to the alert so the Firing to Resolved change is seen. Card: "Span kind
+is not cosmetic: service maps draw edges from CLIENT to SERVER and PRODUCER to CONSUMER pairs."
+Copy says "backends can derive", not "the spec says". Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
 
 **2.3 `status-and-errors`**: cards `['span-status']`. Sort into `ok` / `wrong`: a
 storefront CLIENT `GET /products/999` 404 ERROR → ok; b catalog SERVER 404 ERROR → wrong (SERVER 4xx stays Unset); c

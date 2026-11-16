@@ -86,7 +86,7 @@ Each level lists **concept** / **OTel nuance** / **Dash0 tie-in** / **mechanic**
 | Level | Concept | Nuance | Dash0 tie-in | Mechanic |
 | --- | --- | --- | --- | --- |
 | 2.1 Spans and traces | Trace ID, span ID, parent, start/end, attributes | A trace is just spans sharing a trace ID; there is no trace object | Trace waterfall | Build it |
-| 2.2 Span kinds | SERVER, CLIENT, PRODUCER, CONSUMER, INTERNAL | Kinds drive service-map edges; wrong kinds break the map | Dash0 service map derives from client/server pairs | Build it |
+| 2.2 Span kinds | SERVER, CLIENT, PRODUCER, CONSUMER, INTERNAL | Kinds drive service-map edges; wrong kinds break the map | Dash0 service map derives from client/server pairs | Symptom hunt (a flag board, #364) + Choice |
 | 2.3 Status and errors | Unset, Error, Ok | A 404 is an error on the CLIENT span but not on the SERVER span; Ok is for overriding, not the default | Error rates in Dash0 follow span status | Spot it |
 | 2.4 Context propagation | W3C `traceparent` / `tracestate` across HTTP and queues | A proxy that drops headers splits one trace into two; async work needs links, not parents | Broken traces show as orphan roots | Spot it + Build it |
 | 2.5 Baggage | Key/values that travel with the context | Baggage isn't added to spans automatically, and it leaks to third parties | n/a | Sort it |

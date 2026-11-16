@@ -87,12 +87,14 @@ const PIN = {
           'checkout compute totals': ['INTERNAL', 'checkout POST /checkout'],
           'checkout POST payments': ['CLIENT', 'checkout POST /checkout'],
           'payments POST /charge': ['INTERNAL', 'checkout POST payments'],
+          'payments validate card': ['INTERNAL', 'payments POST /charge'],
           'payments POST provider/charges': ['CLIENT', 'payments POST /charge'],
+          'payments POST /refund': ['SERVER', null],
         },
       },
       {
         choice: 'kinds-fix',
-        keys: ['client', 'parent', 'rename', 'server'],
+        keys: ['client', 'provider', 'rename', 'server'],
         right: 'server',
         says: { server: 'SERVER' },
         question: 'Which change fixes the alert and the map?',
@@ -439,24 +441,39 @@ test('fixture B1 (test/fixtures/build-b1.mjs) is level 2.1\'s trace: same spans,
 });
 
 test('span-kinds: the map edges come from serviceEdges; only the SERVER fix gives payments requests and the checkout → payments edge', () => {
-  const { spans, culprit, perMin, watch } = KINDS.steps[0].hunt;
+  const hunt = KINDS.steps[0].hunt;
+  const { spans, culprit } = hunt;
   const edges = (list) => serviceEdges(list).map((x) => `${x.from}>${x.to}:${x.via}`);
-  const rate = (list) => serviceView(list, { perMin, watch }).watched;
+  const view = (list) => serviceView(list, hunt);
+  const EDGE = 'checkout>payments:client-server';
   assert.deepEqual(edges(spans), ['storefront>checkout:client-server'], 'before: no checkout > payments edge');
-  assert.equal(rate(spans), 0);
-  // The wrong fixes of step 2: another kind, a parent that is already there, a new name.
-  const wrong = {
-    client: withKind(spans, culprit, 'CLIENT'),
-    parent: spans.map((s) => (s.spanId === culprit ? { ...s, parentId: s.parentId } : s)),
-    rename: spans.map((s) => (s.spanId === culprit ? { ...s, name: 'payments.charge' } : s)),
-  };
-  for (const [key, list] of Object.entries(wrong)) {
-    assert.equal(rate(list), 0, `${key}: payments still counts no requests`);
-    assert.equal(edges(list).includes('checkout>payments:client-server'), false, `${key}: no checkout > payments edge`);
+  assert.equal(view(spans).watched, 10, 'before: a partial gap, not zero');
+  assert.equal(view(spans).firing, true);
+  assert.equal(hunt.expected, 20);
+  const choices = KINDS.steps[1].choices;
+  for (const c of choices) {
+    const after = view(c.spans);
+    assert.equal(c.label.includes(`Preview: payments ${after.watched} requests/min.`), true, `${c.key}: the label previews the rate`);
+    assert.equal(c.label.includes(`Map edges: ${after.edges.map((x) => `${x.from} → ${x.to}`).join(', ')}.`), true, `${c.key}: and the edges`);
+    const fixesBoth = after.firing === false && edges(c.spans).includes(EDGE);
+    assert.equal(fixesBoth, c.right === true, `${c.key}: only the right option fixes the alert and the map`);
   }
-  const fixed = withKind(spans, culprit, 'SERVER');
-  assert.equal(rate(fixed), 20);
-  assert.deepEqual(edges(fixed), ['checkout>payments:client-server', 'storefront>checkout:client-server']);
+  const by = Object.fromEntries(choices.map((c) => [c.key, view(c.spans)]));
+  assert.equal(by.provider.firing, false, 'the provider decoy clears the alert (its wrongness shows only in the map)');
+  assert.equal(edges(choices.find((c) => c.key === 'provider').spans).includes(EDGE), false);
+  assert.equal(by.client.firing, true);
+  assert.equal(by.rename.watched, view(spans).watched, 'a rename changes nothing');
+  assert.equal(by.server.watched, 20);
+  assert.deepEqual(edges(choices.find((c) => c.right).spans), [EDGE, 'storefront>checkout:client-server']);
+});
+
+test('span-kinds: a flag cannot be found without reading kinds: payments has several spans, and the culprit is not the only INTERNAL span with attributes', () => {
+  const { spans, culprit } = KINDS.steps[0].hunt;
+  const inPayments = spans.filter((s) => s.service === 'payments');
+  assert.equal(inPayments.length >= 4, true, 'a random payments flag is no better than one in four');
+  const decoys = inPayments.filter((s) => s.spanId !== culprit && s.kind === 'INTERNAL' && Object.keys(s.attributes).length > 0);
+  assert.equal(decoys.length >= 1, true, 'a correctly recorded INTERNAL span with attributes');
+  assert.equal(inPayments.some((s) => s.kind === 'SERVER' && s.spanId !== culprit), true, 'a correctly recorded SERVER span');
 });
 
 test('Act 2 card fronts match docs/M1-DESIGN.md §6 and fit a card (<=140)', () => {
@@ -473,7 +490,8 @@ const ACT2_FILES = LIVE.acts.find((a) => a.id === 'act-2').levelIds.map((id) => 
 
 test('span-kinds copy says "backends derive", and no Act 2 level file says "the spec says"', () => {
   const text = read('levels/span-kinds.mjs') + JSON.stringify(DECK.find((c) => c.id === 'span-kind-edges'));
-  assert.equal(/backends derive/i.test(text), true);
+  assert.equal(/backends (can )?derive/i.test(text), true);
+  assert.equal(/backends derive/i.test(read('levels/span-kinds.mjs')), false, 'the level says "can derive": the sources show kind as a dimension, not the counting rule');
   assert.equal(ACT2_FILES.length, Object.keys(LEVELS).length, 'every Act 2 level file is scanned');
   for (const f of ACT2_FILES) {
     assert.equal(/the spec says/i.test(read(f)), false, f);
@@ -827,18 +845,58 @@ test('span-kinds: the "Map edges" line is a status region and the alert changes 
   const line = () => q('#kinds-edges');
   assert.equal(line().getAttribute('role'), 'status');
   assert.equal(line().textContent, 'Map edges: storefront → checkout.');
-  assert.equal(q('#kinds-alert-title').textContent, 'payments: 0 requests/min');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 10 requests/min');
   assert.equal(q('#kinds-alert').textContent.includes('Firing'), true);
   solveHunt('span-kinds', 0);
   assert.equal(line().textContent, 'Map edges: storefront → checkout.', 'the hunt alone does not change the view');
   click('#kinds-next');
   assert.equal(line().textContent, 'Map edges: storefront → checkout.');
-  assert.equal(q('#kinds-alert-title').textContent, 'payments: 0 requests/min');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 10 requests/min');
+  click('[data-pick="provider"]'); // clears the alert's number but not the map: still a wrong pick
+  assert.equal(line().textContent, 'Map edges: storefront → checkout.', 'a wrong pick changes nothing on the view');
   click('[data-pick="server"]');
   assert.equal(line().textContent, 'Map edges: checkout → payments, storefront → checkout.');
   assert.equal(q('#kinds-alert-title').textContent, 'payments: 20 requests/min');
   assert.equal(q('#kinds-alert').textContent.includes('Resolved'), true);
-  assert.equal(q('#kinds-rates').textContent.includes('payments0 requests/min'), false, 'no tile still says 0');
+  assert.equal(q('#kinds-rates').textContent.includes('payments10 requests/min'), false, 'no tile still says 10');
+});
+
+test('span-kinds: every decoy has its own "not the cause" line, and flagging each one says so (no "undefined")', () => {
+  const { spans, culprit } = KINDS.steps[0].hunt;
+  const decoys = spans.filter((s) => s.spanId !== culprit);
+  start('span-kinds');
+  for (const s of decoys) {
+    click(`[data-open-span="${s.spanId}"]`);
+    click('#kinds-flag');
+    const text = q('#kinds-hunt-status').textContent;
+    assert.equal(text.includes('undefined'), false, `${s.name} (${s.service}): ${text}`);
+    assert.equal(text.startsWith(`Not quite. ${s.name} (${s.service}) is not the cause. `), true, text);
+    assert.equal(text.length > `Not quite. ${s.name} (${s.service}) is not the cause. That counts as one penalty.`.length, true, 'a reason is given');
+  }
+  assert.equal(q('#kinds-hunt-wrong').textContent, String(decoys.length), 'each wrong flag is one on the score card');
+});
+
+test('span-kinds: a ruled-out row is marked wrong, only the open row is pressed, and the culprit is marked correct', () => {
+  start('span-kinds');
+  const { ids } = huntOf('span-kinds', 0);
+  const state = (key) => q(`[data-open-span="${ids[key]}"]`).getAttribute('data-state');
+  const pressed = () => qa('[aria-pressed="true"]').filter((b) => b.dataset.openSpan !== undefined).map((b) => b.dataset.openSpan);
+  assert.deepEqual(pressed(), []);
+  click(`[data-open-span="${ids['checkout compute totals']}"]`);
+  assert.equal(state('checkout compute totals'), 'opened');
+  assert.deepEqual(pressed(), [ids['checkout compute totals']]);
+  click('#kinds-flag');
+  assert.equal(state('checkout compute totals'), 'wrong');
+  click(`[data-open-span="${ids['payments validate card']}"]`);
+  assert.deepEqual(pressed(), [ids['payments validate card']], 'only the open row is pressed');
+  assert.equal(state('checkout compute totals'), 'wrong', 'a ruled-out row stays ruled out when another is open');
+  assert.equal(state('payments validate card'), 'opened');
+  click(`[data-open-span="${ids['payments POST /charge']}"]`);
+  click('#kinds-flag');
+  assert.equal(state('payments POST /charge'), 'correct');
+  assert.equal(q('#kinds-flag').textContent, 'Flagged');
+  click(`[data-open-span="${ids['storefront POST /checkout']}"]`);
+  assert.equal(q('#kinds-flag').textContent, 'Hunt over', 'after the solve no other span still invites a flag');
 });
 
 test('span-kinds: opening a span shows its kind in the sidebar, and no row names a kind', () => {
@@ -865,6 +923,8 @@ test('focus walk: each step starts on its first control, moves on, and ends on F
       if (step.hunt) {
         const first = qa('[data-open-span]')[0].dataset.openSpan;
         assert.equal(focus.last(), `open-span:${first}`, `${id} step ${i + 1} starts on its first span`);
+        flag(id, i, Object.keys(step.spans).find((k) => k !== step.culprit));
+        assert.equal(focus.last(), '#kinds-hunt-status', `${id}: a wrong flag moves focus to its status line`);
         click(`[data-open-span="${huntOf(id, i).ids[step.culprit]}"]`);
         assert.equal(focus.last(), '#kinds-hunt-span-title', `${id}: opening a span focuses its sidebar heading`);
         flag(id, i, step.culprit);
@@ -896,7 +956,9 @@ test('focus walk: each step starts on its first control, moves on, and ends on F
         assert.equal(focus.last().startsWith('pick:'), true, `${id} step ${i + 1} starts on a choice`);
         click(`[data-pick="${step.right}"]`);
       }
-      const target = last ? `#${prefix}-finish` : `#${prefix}-next`;
+      // 2.2's fix shows its change first: the alert's heading takes focus (Finish stays in the footer, enabled).
+      const target = id === 'span-kinds' ? '#kinds-alert-title' : last ? `#${prefix}-finish` : `#${prefix}-next`;
+      if (id === 'span-kinds') assert.equal(q('#kinds-finish').disabled, false);
       assert.equal(focus.last(), target, `${id} step ${i + 1} hands focus to ${target}`);
       if (!last) click(target);
     });

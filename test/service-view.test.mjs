@@ -12,9 +12,10 @@ const sp = (spanId, service, kind, parentId = null) => ({
 });
 
 test('requestRates counts only SERVER spans, lists every service with a span and omits the rest', () => {
+  // Listed out of order (b first): the result is sorted by service name, not in the order spans arrive.
   const spans = [
-    sp('0000000000000001', 'a', 'SERVER'), sp('0000000000000002', 'a', 'SERVER'), sp('0000000000000003', 'a', 'CLIENT'),
-    sp('0000000000000004', 'a', 'CONSUMER'), sp('0000000000000005', 'a', 'INTERNAL'), sp('0000000000000006', 'b', 'INTERNAL'),
+    sp('0000000000000006', 'b', 'INTERNAL'), sp('0000000000000001', 'a', 'SERVER'), sp('0000000000000002', 'a', 'SERVER'),
+    sp('0000000000000003', 'a', 'CLIENT'), sp('0000000000000004', 'a', 'CONSUMER'), sp('0000000000000005', 'a', 'INTERNAL'),
   ];
   assert.deepEqual(requestRates(spans, { perMin: 7 }), [{ service: 'a', perMin: 14 }, { service: 'b', perMin: 0 }]);
   assert.deepEqual(requestRates([], { perMin: 7 }), [], 'a service with no spans is absent, never 0');
@@ -37,17 +38,25 @@ test('withKind returns copies, never changes its input, and answers null for an 
   assert.equal(withKind(spans, '0000000000000001', 'FOO'), null);
 });
 
-test('serviceView: the level\'s spans show payments at 0 and firing; the fix shows 20 and not firing; an unknown service is null', () => {
-  const { spans, culprit, perMin, watch } = CONTENT.steps[0].hunt;
-  const before = serviceView(spans, { perMin, watch });
-  assert.equal(before.watched, 0);
+test('serviceView: the level\'s spans show payments at 10 against the 20 it expects, firing; the fix shows 20, not firing; an unknown service is null', () => {
+  const { spans, culprit, perMin, watch, expected } = CONTENT.steps[0].hunt;
+  const before = serviceView(spans, { perMin, watch, expected });
+  assert.equal(before.watched, 10);
   assert.equal(before.firing, true);
-  const after = serviceView(withKind(spans, culprit, 'SERVER'), { perMin, watch });
+  const after = serviceView(withKind(spans, culprit, 'SERVER'), { perMin, watch, expected });
   assert.equal(after.watched, 20);
   assert.equal(after.firing, false);
-  const ghost = serviceView(spans, { perMin, watch: 'ghost' });
+  const ghost = serviceView(spans, { perMin, watch: 'ghost', expected });
   assert.equal(ghost.watched, null);
   assert.equal(ghost.firing, null);
+});
+
+test('serviceView: firing is "below what is expected", and with no expected rate only no requests at all fires', () => {
+  const spans = [sp('0000000000000001', 'a', 'SERVER'), sp('0000000000000002', 'b', 'INTERNAL')];
+  assert.equal(serviceView(spans, { perMin: 5, watch: 'a', expected: 5 }).firing, false, 'at the expected rate');
+  assert.equal(serviceView(spans, { perMin: 5, watch: 'a', expected: 6 }).firing, true, 'below it');
+  assert.equal(serviceView(spans, { perMin: 5, watch: 'a' }).firing, false, 'default: some requests');
+  assert.equal(serviceView(spans, { perMin: 5, watch: 'b' }).firing, true, 'default: none at all');
 });
 
 test('flagSpan: a decoy is wrong once and a repeat after, the culprit is right, then everything is closed', () => {
