@@ -1812,8 +1812,10 @@ test('the page scroll is locked while How to play, About or Save code is open, a
   assert.match(read('styles/base.css'), /html\.modal-open, html\.modal-open body \{ overflow: hidden; \}/);
 });
 
-test('the How to play header button stays on one line at 320px', () => {
-  assert.match(read('styles/hub.css'), /#ov-howto-open \{[^}]*white-space: nowrap/);
+test('the How to play and Feedback header buttons stay on one line at 320px, and the header wraps rather than squeezing the title', () => {
+  const css = read('styles/hub.css');
+  assert.match(css, /#ov-howto-open, #ov-feedback-open \{[^}]*white-space: nowrap/);
+  assert.match(css, /@media \(max-width: 520px\) \{[^@]*\.lesson-top \{ flex-wrap: wrap; \}/);
 });
 
 test('the level header names the level number, and Incident for a boss', () => {

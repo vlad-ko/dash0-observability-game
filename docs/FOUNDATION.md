@@ -147,6 +147,7 @@ ctx = {
   ovBody, ovActions: Element
   signal: AbortSignal      // aborted when the overlay closes; timer callbacks check it
   telemetry: facade | null // the injected lib/telemetry.mjs facade (below), null when the app has none
+  screen: number           // renderStep calls so far, 0 before the first (the step the feedback dialog names, §2.11)
 }
 ```
 `ctx.telemetry` has no token getter. `sessionId`, `status() -> {state: 'off'|'configured'|'connected',
@@ -534,7 +535,7 @@ callback also `fetch: telemetry.trace(globalThis.fetch)`), `export const {...} =
   `outcome` is only `dropped` or `not-configured`: an exported or not-sampled span logs nothing.
 - Local: `TELEMETRY_STUB=1 npm run dev` (or `startServer({telemetryStub: true})`) prints one line per span,
   `span <name> <kind> <status> <ms>ms <attributes>`, through the dev server's log. No network, no token. Under
-  `AUTH_STUB` and `GUIDE_STUB` the rebuilt handlers are wrapped the same way (`instrumented` in `tools/serve.mjs`).
+  `AUTH_STUB`, `GUIDE_STUB` and `FEEDBACK_STUB` the rebuilt handlers are wrapped the same way (`instrumented` in `tools/serve.mjs`).
   Without the flag a dev server with the three variables set sends real traces.
 - Owner steps to turn it on: (1) in the Vercel project set the three variables (Production, and Preview if wanted),
   using an ingest-only token for the dataset you want; pick the ingress that matches the Dash0 organisation's region
@@ -567,19 +568,21 @@ never reaches the browser (the CSP `connect-src` is unchanged). The wire contrac
   (8) the session, best effort; (9) one GitHub call, 201 `{v:1, ok:true, issue}` or 502 `{error:'upstream'}`. Any throw is
   a 500 `{error:'internal'}`; the error text is never logged.
 - Body, closed: exactly `{v:1, levelId, screen, kind, text}`. `levelId` is an own key of the registry's levels (never
-  `toString`), `screen` an integer 1..999, `kind` one of `unclear`, `wrong-fact`, `bug`, `idea`, `text` trimmed, 1 to 1000
-  code points. Another key is field `body`.
+  `toString`), `screen` an integer 1..999, `kind` one of `unclear`, `wrong-fact`, `bug`, `idea`, `text` without the stripped characters
+  (below), then trimmed, 1 to 1000 code points (so text of only stripped characters is field `text`). Another key is field `body`.
 - GitHub: `POST https://api.github.com/repos/{FEEDBACK_REPO}/issues` with `authorization: Bearer <token>`,
   `accept: application/vnd.github+json`, `x-github-api-version: 2022-11-28`, `user-agent: oncall-game-feedback`, body
   `{title, body, labels:['feedback']}`. Budget 6000 ms through the injected timers and an `AbortController` (aborted at the
   budget). A 201 whose `number` is not a positive integer is upstream. At most one call per accepted POST.
-- Title `Feedback: <level name> (<level id>)`, registry data only. Body: lines `Kind:`, `Level:`, `Screen:`, `Game commit:`,
+- Title `Feedback: <level name> (<level id>)`, registry data only. Body: lines `Kind:`, `Level:`, `Step:`, `Game commit:`,
   `From:`, then the text in a ```` ```text ```` fence longer than any backtick run in it. The text is cleaned first: C0
   controls except newline and tab, DEL and the bidi marks U+202A-202E, U+2066-2069 are removed, and every `@` becomes `@`
   plus U+200B so it cannot mention anyone. `From:` is the nickname in backticks only when the profile is listed, else
   `signed in, not listed` or `signed out`; a failed or impossible session lookup is `signed out` and never blocks.
 - Limits: `createLimiter({clientMax:5, clientWindowMs:600000, instanceMax:30, instanceWindowMs:60000})`, taken after a
   successful parse, so rejected bodies do not use the budget. In memory, per instance: slows a flood, not a quota.
+  GitHub's own content-creation limits (80 per minute, 500 per hour) are the ceiling; beyond them the 502 is the intended
+  outcome.
 - Log: one line `{msg:'feedback', outcome, status, levelId|null, kind|null, chars|null, issue|null, ms}`; outcome `sent`,
   `off`, `forbidden`, `media-type`, `too-large`, `bad-request`, `rate-limited`, `upstream`, `network`, `timeout`, `method`
   or `error`. Never the text, nickname, address, user agent, cookie or token. The GitHub call is a CLIENT span through
@@ -590,8 +593,10 @@ never reaches the browser (the CSP `connect-src` is unchanged). The wire contrac
 - Owner steps to turn it on: (1) the label `feedback` exists in the repo. (2) Create a fine-grained token for that repo
   only, with Issues read and write. (3) In the Vercel project's Production environment set `FEEDBACK_GITHUB_TOKEN` and
   `FEEDBACK_REPO=vlad-ko/dash0-observability-game`. (4) Turn on System Environment Variables, so `VERCEL_GIT_COMMIT_SHA`
-  reaches the function. (5) Redeploy and check that `GET /api/feedback` answers `{"v":1,"on":true}`. To turn it off, remove
-  the token.
+  reaches the function. (5) Redeploy and check that `GET /api/feedback` answers `{"v":1,"on":true}`. (6) Send a first note,
+  open the issue and check it carries the `feedback` label: GitHub silently drops labels from tokens without push access
+  (https://docs.github.com/en/rest/issues/issues), and the issues stay findable by their `Feedback:` title. To turn it
+  off, remove the token.
 - Not verified: that a fine-grained token may set labels on create, that an `@` inside the fence never notifies, and that
   every target browser sends `Origin` on a same-origin POST (a browser that does not gets a 403 and the dialog says it
   could not send).

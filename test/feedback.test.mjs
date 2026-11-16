@@ -87,6 +87,10 @@ test('3 off: POST is 503, reads no body and calls no GitHub', async () => {
   assert.deepEqual(await res.json(), { error: 'off' });
   assert.equal(reads.n, 0);
   assert.equal(gh.calls.length, 0);
+  const foreign = spied(post(body(), { headers: { origin: 'https://evil.example' } }));
+  assert.equal((await fb.POST(foreign.req)).status, 503, 'off answers before the Origin check');
+  assert.equal(foreign.reads.n, 0);
+  assert.equal(gh.calls.length, 0);
 });
 
 test('4 Origin: missing, null and foreign are 403; the same host reaches the parse', async () => {
@@ -132,6 +136,11 @@ test('6 parseFeedback is closed and strict', () => {
   assert.equal(p({ screen: 1 }).ok, true);
   assert.equal(p({ screen: 999 }).ok, true);
   assert.deepEqual(p({ text: '   ' }), { ok: false, field: 'text' });
+  assert.deepEqual(p({ text: '\u0000' }), { ok: false, field: 'text' }, 'only stripped characters is empty');
+  assert.deepEqual(p({ text: ' ‮ ' }), { ok: false, field: 'text' });
+  assert.deepEqual(p({ text: '\u0000‮\u007F' }), { ok: false, field: 'text' });
+  assert.deepEqual(p({ text: '\u0000 hi ‮' }), { ok: true, levelId: 'spans-and-traces', screen: 2, kind: 'unclear', text: 'hi', chars: 2 }, 'length counts the cleaned text');
+  assert.equal(p({ text: '\u0000'.repeat(MAX_TEXT) + 'ok' }).ok, true, 'stripped characters do not count toward the cap');
   assert.deepEqual(p({ text: 5 }), { ok: false, field: 'text' });
   assert.deepEqual(p({}, 'text'), { ok: false, field: 'text' });
   assert.equal(p({ text: '😀'.repeat(MAX_TEXT) }).ok, true, 'a code point is one character');
@@ -156,13 +165,20 @@ test('7 issueBody neutralises mentions, hidden direction marks and fence escapes
   const plain = issueBody({ kind: 'bug', screen: 1, level: registry.levels['lvl-b'], commit: 'abc1234', who: 'signed out', text: 'a\u0000b\u007Fc\td\ne⁦f' });
   assert.ok(plain.includes('abc\td\nef'), 'controls and bidi marks go, tab and newline stay');
   assert.ok(plain.includes('```text\n'), 'three backticks when the text has none');
+  // A stripped character can join two backtick runs: the fence is sized from the cleaned text, not the raw one.
+  const split = issueBody({ kind: 'bug', screen: 1, level: registry.levels['lvl-b'], commit: 'abc1234', who: 'signed out', text: 'a\n``\u0000``\nb' });
+  const sl = split.split('\n');
+  const sOpen = sl.findIndex((l) => l.startsWith('`'));
+  assert.equal(sl[sOpen], '`````text', 'four joined backticks need a fence of five');
+  assert.deepEqual(sl.filter((l, i) => i > sOpen && /^`{3,}$/.test(l)), ['````', '`````'], 'the joined run is shorter than the fence; only the last line closes it');
+  assert.equal(sl.at(-1), '`````');
 });
 
 test('8 the header lines and the title come from controlled data', () => {
   const level = liveRegistry().levels['spans-and-traces'];
   assert.equal(issueTitle(level), 'Feedback: Spans and traces (spans-and-traces)');
   const out = issueBody({ kind: 'wrong-fact', screen: 3, level, commit: 'abc1234', who: '`nick-1`', text: 'hi' });
-  for (const line of ['Kind: wrong-fact', 'Level: Spans and traces (spans-and-traces)', 'Screen: 3', 'Game commit: abc1234', 'From: `nick-1`']) {
+  for (const line of ['Kind: wrong-fact', 'Level: Spans and traces (spans-and-traces)', 'Step: 3', 'Game commit: abc1234', 'From: `nick-1`']) {
     assert.ok(out.split('\n').includes(line), line);
   }
   assert.ok(issueBody({ kind: 'bug', screen: 1, level, commit: 'not-a-sha', who: 'x', text: 'hi' }).includes('Game commit: unknown'));

@@ -133,6 +133,7 @@ test('Send on screen 2 posts exactly {v, levelId, screen, kind, text}; two quick
   await settle();
   assert.deepEqual(posts, [{ v: 1, levelId: 'spans-and-traces', screen: 2, kind: 'wrong-fact', text: '  The span is not a trace.  ' }]);
   assert.equal(msg(), 'Sent as issue #42 on GitHub. Thank you.');
+  assert.equal(q('#feedback-msg [data-feedback-text]').textContent.includes('Sending'), false);
   assert.equal(q('#feedback-send').disabled, true, 'a sent note is not sent twice');
 });
 
@@ -174,7 +175,71 @@ test('the dialog says the issue is public, offers each kind in plain words, and 
   assert.match(body.textContent, /This becomes a public GitHub issue\. Do not include anything private\./);
   assert.equal(body.querySelectorAll('form').length, 0, 'CSP form-action is none: Send is a click handler');
   assert.equal(qa('input[name="feedback-kind"]').filter((r) => r.hasAttribute('checked')).length, 1, 'one kind starts chosen');
-  assert.doesNotMatch(body.textContent, /—/, 'no em dashes');
+  assert.equal(body.textContent.includes(String.fromCharCode(0x2014)), false, 'no em dashes');
+  assert.match(body.textContent, /Tell us about this step/, 'the game calls the unit a step');
+  assert.match(q('#feedback-title').textContent, /^Tell us what you think$/);
+});
+
+test('after a sent note focus moves to Close, because the Send button it was on is now disabled', async () => {
+  const { game } = setup();
+  game.init(); await settle();
+  game.openLevel('spans-and-traces');
+  game.openFeedback();
+  type('Hello');
+  const closeFocus = [];
+  q('#feedback-close').focus = () => closeFocus.push('close');
+  click('#feedback-send'); await settle();
+  assert.equal(q('#feedback-send').disabled, true);
+  assert.deepEqual(closeFocus, ['close']);
+});
+
+test('a failure keeps focus where it is: Send is still usable', async () => {
+  const { game } = setup({ post: () => res(500, null) });
+  game.init(); await settle();
+  game.openLevel('spans-and-traces');
+  game.openFeedback();
+  type('Hello');
+  const closeFocus = [];
+  q('#feedback-close').focus = () => closeFocus.push('close');
+  click('#feedback-send'); await settle();
+  assert.deepEqual(closeFocus, []);
+});
+
+test('while the request is out the dialog says Sending..., then the outcome replaces it', async () => {
+  let release;
+  const { game } = setup({ post: () => new Promise((r) => { release = () => r(res(201, { v: 1, ok: true, issue: 9 })); }) });
+  game.init(); await settle();
+  game.openLevel('spans-and-traces');
+  game.openFeedback();
+  type('Hello');
+  click('#feedback-send'); await settle();
+  assert.equal(msg(), 'Sending...');
+  assert.equal(q('#feedback-send').disabled, true);
+  release(); await settle();
+  assert.equal(msg(), 'Sent as issue #9 on GitHub. Thank you.');
+});
+
+test('an answer that lands after the dialog closed does nothing; after close and reopen the new form stays untouched', async () => {
+  const pending = [];
+  const { game } = setup({ post: () => new Promise((r) => pending.push(() => r(res(201, { v: 1, ok: true, issue: 5 })))) });
+  game.init(); await settle();
+  game.openLevel('spans-and-traces');
+  game.openFeedback();
+  type('Hello');
+  click('#feedback-send'); await settle();
+  game.closeFeedback();
+  pending[0](); await settle(); // no throw: the form it would write to is gone
+  assert.equal(q('#feedback-body').innerHTML, '', 'a late answer draws nothing into a closed dialog');
+  // close and reopen: the late answer must not mark the new empty form as sent
+  game.openFeedback();
+  type('Second');
+  click('#feedback-send'); await settle();
+  game.closeFeedback();
+  game.openFeedback();
+  pending[1](); await settle();
+  assert.equal(q('#feedback-send').disabled, false, 'the new form can send');
+  assert.equal(q('#feedback-text').value, '');
+  assert.equal(msg(), '', 'the new form shows no message');
 });
 
 test('debug mode shows the button, sends nothing and says so; Escape closes only the feedback dialog and focus returns to its button', async () => {

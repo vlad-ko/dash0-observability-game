@@ -168,7 +168,7 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
   if (stub) log('GUIDE_STUB=1: /api/guide answers with a canned reply, no model is called');
   if (authStub) log('AUTH_STUB=1: sign-in is a stub (dev@dash0.com) over an in-memory Redis; use http://localhost, not 127.0.0.1');
   if (telemetryStub) log('TELEMETRY_STUB=1: every api request prints one span line, no trace is sent');
-  if (feedbackStub) log('FEEDBACK_STUB=1: /api/feedback accepts a note and prints the issue it would open, nothing goes to GitHub (sessions are not stubbed: From is signed out)');
+  if (feedbackStub) log('FEEDBACK_STUB=1: /api/feedback accepts a note and prints the issue title it would open, nothing goes to GitHub (sessions are not stubbed: From is signed out)');
   // The GitHub call under FEEDBACK_STUB: print the issue title and answer as GitHub does for a created issue.
   const stubIssueFetch = async (url, init) => {
     log(`feedback stub: would open issue "${JSON.parse(init.body).title}"`);

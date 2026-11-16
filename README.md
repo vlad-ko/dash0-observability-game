@@ -51,10 +51,17 @@ set is reported in the function log and changes nothing for players). `TELEMETRY
 span instead, with no network.
 
 Level feedback (`api/feedback.mjs`, docs/FOUNDATION.md §2.11) opens a GitHub issue for a player's note. To turn it on:
-create the label `feedback` in the repo; create a fine-grained token for that repo only with Issues read and write; in the
-Vercel Production environment set `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO=vlad-ko/dash0-observability-game`; turn on
-System Environment Variables (for the commit shown in the issue); redeploy and check that `GET /api/feedback` answers
-`{"v":1,"on":true}`. Remove the token to turn it off. Locally `FEEDBACK_STUB=1 npm run dev` prints the issue instead.
+
+1. Create the label `feedback` in the repo.
+2. Create a fine-grained token for that repo only with Issues read and write.
+3. In the Vercel Production environment set `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO=vlad-ko/dash0-observability-game`.
+4. Turn on System Environment Variables (for the commit shown in the issue).
+5. Redeploy and check that `GET /api/feedback` answers `{"v":1,"on":true}`.
+6. Send a first note, open the issue and check it carries the `feedback` label. GitHub silently drops labels from tokens
+   without push access ([create an issue](https://docs.github.com/en/rest/issues/issues)); the issues stay findable by
+   their `Feedback:` title.
+
+Remove the token to turn it off. Locally `FEEDBACK_STUB=1 npm run dev` prints the issue title instead.
 
 | Variable | Meaning |
 | --- | --- |
