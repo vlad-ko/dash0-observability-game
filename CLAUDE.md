@@ -11,6 +11,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
   (CSP included) and 404s what `.vercelignore` excludes, plus every dotfile (stricter
   than Vercel); `PORT=8080 npm run dev` to move it.
 - `?mode=debug` on the URL opens every act and level (bosses too) without saving anything; read once in `main.mjs`, never advertised in the UI.
+- `?mode=reset` clears the game's saved state (progress, dismissed help cards) once, strips itself from the URL, then loads normally; never advertised in the UI.
 - `npm test` runs `node --test` over `test/**/*.test.mjs`; CI runs the same on Node 22
   and `.nvmrc`, for pushes to `main` and for pull requests.
 
