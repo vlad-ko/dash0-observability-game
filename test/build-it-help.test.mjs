@@ -76,7 +76,7 @@ test('a specific note per span code, never naming the right parent', () => {
   const spec = b1Spec();
   const st = newBuildState(spec);
   setParent(spec, st, E, C);
-  assert.equal(note(spec, st, E), 'GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.');
+  assert.equal(note(spec, st, E), 'GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so GET /products (storefront) can\'t sit under POST /checkout (api-gateway).');
   assert.equal(note(spec, st, B), 'POST (storefront) is a root now, yet another span of trace 4bf92f35 was already running when it started. Which call was it doing work for?');
   setParent(spec, st, C, D);
   assert.equal(note(spec, st, C), 'POST /checkout (api-gateway) runs 15 to 85 ms, which is not inside validate cart (api-gateway) (20 to 30 ms). A parent starts first and is still running when its child ends.');
@@ -233,7 +233,7 @@ test('a same-name, same-service twin is named with the view\'s suffix in notes a
   Object.assign(spec.spans[4], { name: b.name, service: b.service }); // E becomes B's twin in trace 0af76519
   const st = newBuildState(spec);
   setParent(spec, st, E, C);
-  assert.equal(note(spec, st, E), 'POST (storefront, trace 0af76519) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.');
+  assert.equal(note(spec, st, E), 'POST (storefront, trace 0af76519) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST (storefront, trace 0af76519) can\'t sit under POST /checkout (api-gateway).');
   const placed = new Set([A, B, C, D, E]);
   assert.equal(text(hintFor(spec, st, C, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST (storefront, trace 4bf92f35) is the CLIENT call into api-gateway, and this is the SERVER span that handled it.');
   assert.equal(text(hintFor(spec, st, D, 3, { placed, e: escapeHtml }).html), 'Placed for you. POST /checkout (api-gateway) is the innermost span of trace 4bf92f35 that runs around it (15 to 85 ms).');

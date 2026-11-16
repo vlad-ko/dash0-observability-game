@@ -242,7 +242,7 @@ test('a cross-trace drop names both trace IDs', () => {
   drag(D, C);
   drag(E, C);
   assert.equal(counts.mistakes, 1);
-  assert.equal(status().includes('It carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so POST /checkout (api-gateway) can\'t be its parent.'), true);
+  assert.equal(status().includes('It carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs, so it can\'t sit under POST /checkout (api-gateway).'), true);
 });
 
 test('while a span moves: itself and its descendants are refused, a drop there is free and says it would loop', () => {
