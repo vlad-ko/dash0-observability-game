@@ -12,6 +12,7 @@ import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { checkBuild, newBuildState, setKind, setParent, setStatus, toggleLink, validateBuildSpec } from '../lib/widgets/build-it.mjs';
 import { serviceEdges } from '../lib/widgets/trace.mjs';
+import { flagSpan, newHunt, serviceView, withKind } from '../lib/service-view.mjs';
 import { isComplete, newSortState, place, validateSortSpec } from '../lib/widgets/sort-it.mjs';
 import { liveRegistry } from '../app.mjs';
 import { DECK } from '../cards/deck.mjs';
@@ -73,26 +74,28 @@ const PIN = {
   },
   'span-kinds': {
     prefix: 'kinds',
-    level: { no: '2.2', mechanics: ['build'], cards: ['span-kind-edges'], lights: ['payments'], scoring: { parMs: null } },
+    level: { no: '2.2', mechanics: ['spot'], cards: ['span-kind-edges'], lights: ['payments'], scoring: { parMs: null } },
     steps: [
       {
-        build: 'kinds-map',
-        edit: ['kind'],
+        hunt: 'kinds-hunt',
+        culprit: 'payments POST /charge',
+        // `service name` -> [kind, parent key]
         spans: {
-          'checkout POST /checkout': ['INTERNAL', 0, 120, 'c4e1', null, null, 'SERVER', [], 'UNSET', 'UNSET'],
-          'checkout POST payments': ['INTERNAL', 20, 100, 'c4e1', 'checkout POST /checkout', 'checkout POST /checkout', 'CLIENT', [], 'UNSET', 'UNSET'],
-          'payments POST /charge': ['INTERNAL', 25, 95, 'c4e1', 'checkout POST payments', 'checkout POST payments', 'SERVER', [], 'UNSET', 'UNSET'],
-          'payments POST provider/charges': ['INTERNAL', 30, 90, 'c4e1', 'payments POST /charge', 'payments POST /charge', 'CLIENT', [], 'UNSET', 'UNSET'],
-          'checkout compute totals': ['INTERNAL', 5, 15, 'c4e1', 'checkout POST /checkout', 'checkout POST /checkout', 'INTERNAL', [], 'UNSET', 'UNSET'],
-          'orders orders publish': ['INTERNAL', 130, 135, 'a1b2', null, null, 'PRODUCER', [], 'UNSET', 'UNSET'],
-          'shipping orders process': ['INTERNAL', 150, 170, '7d3e', null, null, 'CONSUMER', ['orders orders publish'], 'UNSET', 'UNSET'],
+          'storefront POST /checkout': ['SERVER', null],
+          'storefront POST checkout': ['CLIENT', 'storefront POST /checkout'],
+          'checkout POST /checkout': ['SERVER', 'storefront POST checkout'],
+          'checkout compute totals': ['INTERNAL', 'checkout POST /checkout'],
+          'checkout POST payments': ['CLIENT', 'checkout POST /checkout'],
+          'payments POST /charge': ['INTERNAL', 'checkout POST payments'],
+          'payments POST provider/charges': ['CLIENT', 'payments POST /charge'],
         },
       },
       {
-        choice: 'kinds',
-        keys: ['loses-edge', 'nothing', 'provider'],
-        right: 'loses-edge',
-        says: { 'loses-edge': 'checkout → payments' },
+        choice: 'kinds-fix',
+        keys: ['client', 'parent', 'rename', 'server'],
+        right: 'server',
+        says: { server: 'SERVER' },
+        question: 'Which change fixes the alert and the map?',
       },
     ],
   },
@@ -287,6 +290,14 @@ function answered(spec) {
 
 /** A step of CONTENT as the pin's plain shape (strings, numbers, booleans only). */
 function shape(step) {
+  if (step.hunt) {
+    const h = step.hunt;
+    return {
+      hunt: h.id,
+      culprit: nameOf(h.spans, h.culprit),
+      spans: Object.fromEntries(h.spans.map((s) => [keyOf(h.spans, s), [s.kind, nameOf(h.spans, s.parentId)]])),
+    };
+  }
   if (step.build) {
     const spec = step.build;
     const want = answered(spec);
@@ -326,6 +337,10 @@ for (const [id, [level, content]] of Object.entries(LEVELS)) {
     content.steps.forEach((step, i) => {
       const got = shape(step);
       const want = pin.steps[i];
+      if (want.hunt) {
+        assert.deepEqual(got, { hunt: want.hunt, culprit: want.culprit, spans: want.spans }, `step ${i + 1} hunt`);
+        return;
+      }
       if (want.build) {
         assert.deepEqual(got, { build: want.build, edit: want.edit, spans: want.spans }, `step ${i + 1} build`);
         return;
@@ -359,7 +374,15 @@ for (const [id, [level, content]] of Object.entries(LEVELS)) {
 
   test(`${id}: the reference answers pass the widgets' own checkers (I7)`, () => {
     for (const step of content.steps) {
-      if (step.build) {
+      if (step.hunt) {
+        // Reference solution: flag the culprit; no other span is the culprit (a decoy is never right).
+        const h = step.hunt;
+        assert.equal(flagSpan(h.spans, h.culprit, newHunt(), h.culprit).outcome, 'right', `${h.id}: the culprit is right`);
+        for (const s of h.spans.filter((x) => x.spanId !== h.culprit)) {
+          assert.equal(flagSpan(h.spans, h.culprit, newHunt(), s.spanId).outcome, 'wrong', `${h.id}: ${s.name} is a decoy`);
+        }
+        assert.equal(serviceView(h.spans, h).firing, true, `${h.id}: the alert fires before the fix`);
+      } else if (step.build) {
         const spec = step.build;
         assert.deepEqual(validateBuildSpec(spec), [], `${spec.id} is a valid BuildSpec`);
         assert.equal(checkBuild(spec, newBuildState(spec)).ok, false, `${spec.id}: the given state is not already right`);
@@ -415,14 +438,25 @@ test('fixture B1 (test/fixtures/build-b1.mjs) is level 2.1\'s trace: same spans,
   assert.equal(JSON.stringify(b1.edit), JSON.stringify(spec.edit));
 });
 
-test('span-kinds: the map edges come from serviceEdges, and /charge as INTERNAL loses checkout → payments', () => {
-  const spec = KINDS.steps[0].build;
-  const edges = (spans) => serviceEdges(spans).map((x) => `${x.from}>${x.to}:${x.via}`);
-  assert.deepEqual(edges(spec.spans), [], 'all INTERNAL: no edges');
-  const right = answered(spec);
-  assert.deepEqual(edges(right), ['checkout>payments:client-server', 'orders>shipping:producer-consumer']);
-  const charge = right.map((s) => (s.name === 'POST /charge' ? { ...s, kind: 'INTERNAL' } : s));
-  assert.deepEqual(edges(charge), ['orders>shipping:producer-consumer']);
+test('span-kinds: the map edges come from serviceEdges; only the SERVER fix gives payments requests and the checkout → payments edge', () => {
+  const { spans, culprit, perMin, watch } = KINDS.steps[0].hunt;
+  const edges = (list) => serviceEdges(list).map((x) => `${x.from}>${x.to}:${x.via}`);
+  const rate = (list) => serviceView(list, { perMin, watch }).watched;
+  assert.deepEqual(edges(spans), ['storefront>checkout:client-server'], 'before: no checkout > payments edge');
+  assert.equal(rate(spans), 0);
+  // The wrong fixes of step 2: another kind, a parent that is already there, a new name.
+  const wrong = {
+    client: withKind(spans, culprit, 'CLIENT'),
+    parent: spans.map((s) => (s.spanId === culprit ? { ...s, parentId: s.parentId } : s)),
+    rename: spans.map((s) => (s.spanId === culprit ? { ...s, name: 'payments.charge' } : s)),
+  };
+  for (const [key, list] of Object.entries(wrong)) {
+    assert.equal(rate(list), 0, `${key}: payments still counts no requests`);
+    assert.equal(edges(list).includes('checkout>payments:client-server'), false, `${key}: no checkout > payments edge`);
+  }
+  const fixed = withKind(spans, culprit, 'SERVER');
+  assert.equal(rate(fixed), 20);
+  assert.deepEqual(edges(fixed), ['checkout>payments:client-server', 'storefront>checkout:client-server']);
 });
 
 test('Act 2 card fronts match docs/M1-DESIGN.md §6 and fit a card (<=140)', () => {
@@ -548,6 +582,20 @@ function buildOf(id, i) {
   return { spec, ids };
 }
 
+/** The hunt step `i` of `id`: its spans and their ids by `service name`. */
+function huntOf(id, i) {
+  const spec = LEVELS[id][1].steps[i].hunt;
+  const ids = Object.fromEntries(spec.spans.map((s) => [keyOf(spec.spans, s), s.spanId]));
+  return { spec, ids };
+}
+/** Open span `key` of hunt step `i` and press Flag. */
+const flag = (id, i, key) => {
+  click(`[data-open-span="${huntOf(id, i).ids[key]}"]`);
+  click('#kinds-flag');
+};
+/** Solve the hunt of step `i`: flag the culprit. */
+const solveHunt = (id, i) => flag(id, i, PIN[id].steps[i].culprit);
+
 const put = (item, bucket) => {
   click(`[data-item="${item}"]`);
   click(`[data-bucket="${bucket}"]`);
@@ -593,7 +641,8 @@ function runWith(id, slips = {}) {
   const { prefix, steps } = PIN[id];
   steps.forEach((step, i) => {
     slips[i]?.();
-    if (step.build) solveBuild(id, i);
+    if (step.hunt) solveHunt(id, i);
+    else if (step.build) solveBuild(id, i);
     else if (step.sort) sortStep(step);
     else click(`[data-pick="${step.right}"]`);
     click(i === steps.length - 1 ? '[data-finish]' : `#${prefix}-next`);
@@ -618,14 +667,10 @@ const SLIPS = {
     'a wrong pick in the last question': { 2: () => click('[data-pick="lost-parent"]') },
   },
   'span-kinds': {
-    // 2.2 has instant feedback (#146): a wrong kind costs at once.
-    'a wrong kind (POST /charge called CLIENT)': {
-      0: () => {
-        click(`[data-span="${buildOf('span-kinds', 0).ids['payments POST /charge']}"]`);
-        click('[data-kind="CLIENT"]');
-      },
-    },
-    'a wrong pick in the question': { 1: () => click('[data-pick="nothing"]') },
+    // 2.2 is a symptom hunt: a wrong flag, a wrong fix and a hint each cost one star.
+    'a wrong flag (compute totals)': { 0: () => flag('span-kinds', 0, 'checkout compute totals') },
+    'a wrong pick in the fix question (CLIENT)': { 1: () => click('[data-pick="client"]') },
+    'one hint tier': { 0: () => click('#kinds-hunt-hint') },
   },
   'status-and-errors': {
     'a wrong placement (the SERVER 404 called right)': { 0: () => put('b', 'ok') },
@@ -713,7 +758,14 @@ test('every Act 2 step waits for its answer and states each outcome in words', (
       const last = i === steps.length - 1;
       const gate = () => q(last ? '[data-finish]' : `#${prefix}-next`).disabled;
       assert.equal(gate(), true, `${id} step ${i + 1}: gated before the answer`);
-      if (step.build) {
+      if (step.hunt) {
+        const decoy = Object.keys(step.spans).find((k) => k !== step.culprit);
+        flag(id, i, decoy);
+        assert.match(q('#kinds-hunt-status').textContent, /^Not quite\. /, `${id}: a wrong flag says so`);
+        assert.equal(gate(), true);
+        solveHunt(id, i);
+        assert.match(q('#kinds-hunt-status').textContent, /^Right\. /, `${id}: the right flag says so`);
+      } else if (step.build) {
         const fb = () => q(`#${step.build}-feedback`).textContent;
         if (qa(`#${step.build}-check`).length) {
           click(`#${step.build}-check`);
@@ -770,13 +822,38 @@ test('spans-and-traces: the cross-trace parent is named in words, with both trac
   assert.equal(q('#sat-tree-status').textContent.includes('GET /products (storefront) carries trace ID 0af76519, POST /checkout (api-gateway) carries 4bf92f35. Different trace IDs'), true);
 });
 
-test('span-kinds: the "Map edges" line is a status region, from serviceEdges before and after', () => {
+test('span-kinds: the "Map edges" line is a status region and the alert changes on the fix (from serviceView before and after)', () => {
   start('span-kinds');
   const line = () => q('#kinds-edges');
   assert.equal(line().getAttribute('role'), 'status');
-  assert.equal(line().textContent, 'Map edges: none.');
-  solveBuild('span-kinds', 0);
-  assert.equal(line().textContent, 'Map edges: checkout → payments, orders → shipping.');
+  assert.equal(line().textContent, 'Map edges: storefront → checkout.');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 0 requests/min');
+  assert.equal(q('#kinds-alert').textContent.includes('Firing'), true);
+  solveHunt('span-kinds', 0);
+  assert.equal(line().textContent, 'Map edges: storefront → checkout.', 'the hunt alone does not change the view');
+  click('#kinds-next');
+  assert.equal(line().textContent, 'Map edges: storefront → checkout.');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 0 requests/min');
+  click('[data-pick="server"]');
+  assert.equal(line().textContent, 'Map edges: checkout → payments, storefront → checkout.');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 20 requests/min');
+  assert.equal(q('#kinds-alert').textContent.includes('Resolved'), true);
+  assert.equal(q('#kinds-rates').textContent.includes('payments0 requests/min'), false, 'no tile still says 0');
+});
+
+test('span-kinds: opening a span shows its kind in the sidebar, and no row names a kind', () => {
+  start('span-kinds');
+  const { ids } = huntOf('span-kinds', 0);
+  assert.equal(q('#kinds-hunt-span').textContent.includes('Open a span to see its fields.'), true);
+  for (const row of qa('[data-open-span]')) {
+    assert.equal(/\b(SERVER|CLIENT|INTERNAL|PRODUCER|CONSUMER)\b/.test(row.textContent), false, `row "${row.textContent}" names no kind`);
+  }
+  click(`[data-open-span="${ids['checkout compute totals']}"]`);
+  assert.equal(q('#kinds-hunt-span').textContent.includes('INTERNAL'), true);
+  assert.equal(q('#kinds-flag').textContent, 'Flag this span');
+  click('#kinds-flag'); // wrong: that span is ruled out
+  assert.equal(q('#kinds-flag').disabled, true);
+  assert.equal(q('#kinds-flag').textContent, 'Ruled out');
 });
 
 test('focus walk: each step starts on its first control, moves on, and ends on Finish', () => {
@@ -785,6 +862,17 @@ test('focus walk: each step starts on its first control, moves on, and ends on F
     const { prefix, steps } = PIN[id];
     steps.forEach((step, i) => {
       const last = i === steps.length - 1;
+      if (step.hunt) {
+        const first = qa('[data-open-span]')[0].dataset.openSpan;
+        assert.equal(focus.last(), `open-span:${first}`, `${id} step ${i + 1} starts on its first span`);
+        click(`[data-open-span="${huntOf(id, i).ids[step.culprit]}"]`);
+        assert.equal(focus.last(), '#kinds-hunt-span-title', `${id}: opening a span focuses its sidebar heading`);
+        flag(id, i, step.culprit);
+        assert.equal(focus.last(), `#${step.hunt}-win-title`, `${id} step ${i + 1} announces the success card`);
+        assert.equal(q(`#${prefix}-next`).disabled, false);
+        click(`#${prefix}-next`);
+        return;
+      }
       if (step.build) {
         // With the arrival queue the arriving span takes focus (#146), else the first row.
         const firstRow = (qa('[data-arriving]')[0] ?? qa('[data-span]')[0]).dataset.span;

@@ -635,7 +635,7 @@ test('#156 a sort step may declare its helps and a hint; a typo is named with a 
 });
 
 test('#339 a hand-written Build it step with instant feedback does not promise a Check button', () => {
-  for (const id of ['span-kinds', 'spans-and-traces']) {
+  for (const id of ['spans-and-traces']) {
     const src = readFileSync(new URL(`../levels/${id}.mjs`, import.meta.url), 'utf8');
     assert.equal(/press Check/.test(src), false, `${id} names no Check`);
     assert.match(src, /buildReason\(/);

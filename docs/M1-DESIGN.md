@@ -212,7 +212,7 @@ View `lib/widgets/build-it-view.mjs` (redesigned in #146 from the owner-approved
   else to the root), through `setParent`, graded by `checkBuild` and never charged; the hint
   and the status say so, and when the lifted span lands wrong they add its note ("is not where
   it belongs yet: ..."). No `helps`: Check, and hints only when the spec has a `hint`. Ladder: 2.1 all;
-  2.2 tint, instant, hints (the guide needs parent editing); 2.4 Check and hints; 2.6 none;
+  2.2 is a symptom hunt (no Build it): flags and three hints through `mountHintLadder` (#364); 2.4 Check and hints; 2.6 none;
   4.2 (logs mode, no edit) the default: Check and three-tier hints with its authored hint as tier 1.
 - **Notes.** Each `checkBuild` code maps to a short, specific note that never names the
   expected parent or span (`noteFor`): cross-trace names both trace ids; wrong-parent says root,
@@ -637,12 +637,17 @@ share a trace ID, each exported on its own." Spec:
 https://opentelemetry.io/docs/specs/otel/overview/#traces ,
 https://opentelemetry.io/docs/specs/otel/trace/sdk/#span-processor
 
-**2.2 `span-kinds`**: build; cards `['span-kind-edges']`. Build `edit:['kind']`, all given
-INTERNAL; answer: checkout `POST /checkout` SERVER; checkout `POST payments` CLIENT; payments
-`POST /charge` SERVER; payments `POST provider/charges` CLIENT; checkout `compute totals`
-INTERNAL; orders `orders publish` PRODUCER; shipping `orders process` CONSUMER linked to the
-publish span. "Map edges: …" line from `serviceEdges`. Step 2 choice: `/charge` set to
-INTERNAL loses the checkout→payments edge. Card: "Span kind is not cosmetic: service maps draw
+**2.2 `span-kinds`** (a symptom hunt, the pilot for the Build it redesign, #364): mechanics
+`['spot']`, widgets `['choice']`, cards `['span-kind-edges']`. Screen 1 is the hunt, the level's own
+kit markup (a split; the side column is the kit `sideColumn` wired by `mountHintLadder`): an alert
+for payments (0 requests/min) and a simulated Dash0 view (requests per service from SERVER spans,
+the "Map edges: …" line from `serviceEdges`; both from `lib/service-view.mjs`) sit above one
+checkout trace of seven spans, all Unset. Rows show service, time range and parent, never the
+kind; opening a span (free) shows its fields in a sidebar, and the player flags the culprit,
+payments `POST /charge`, recorded INTERNAL though it handles checkout's call. A wrong flag is one
+penalty (`ladder.miss()`), as is each of the three hint tiers. Screen 2 is a Choice: start it with
+SERVER (right; the alert resolves to 20 requests/min and the map gains checkout→payments),
+CLIENT, give it a parent, or rename it. Card: "Span kind is not cosmetic: service maps draw
 edges from CLIENT to SERVER and PRODUCER to CONSUMER pairs." Copy says "backends derive", not
 "the spec says". Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
 
