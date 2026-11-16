@@ -1,9 +1,10 @@
 // Level 2.2: Span kinds, a symptom hunt (the pilot for the Build it redesign, #364). An alert fired
-// for payments (about half its usual requests), finance says the card provider billed a charge for
+// for payments (2 requests a minute against the 22 it usually handles), finance says the card provider billed a charge for
 // every checkout, and the simulated Dash0 view draws no checkout to payments edge. The player opens
 // the spans, reads their fields and flags the span that makes the view wrong (payments' POST /charge,
 // recorded INTERNAL although it handles checkout's call), then picks the change that fixes the alert
-// and the map, each option previewed with the rates and edges it would give. The view rules are the
+// and the map, each option previewing payments' rate after the change (the map shows once a pick is made:
+// in the redraw on the right pick, and in each wrong pick's text). The view rules are the
 // game's simulation (lib/service-view.mjs); every figure on screen comes from serviceView.
 // Spec: docs/M1-DESIGN.md §6 Act 2.
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
@@ -317,7 +318,7 @@ export default {
       ctx.renderStep(
         step({
           wide: true,
-          bodyHtml: `${ctx.speech('Checkout calls payments, so the map should draw checkout → payments, and payments should be back at its usual rate. Each option shows what the view would then show.')}` +
+          bodyHtml: `${ctx.speech('Checkout calls payments, so the map should draw checkout → payments, and payments should be back at its usual rate. Each option shows payments\' rate after the change; the map shows once you pick.')}` +
             `${shell()}${question({ id: 'kinds-q', html: fixStep.question })}${choiceHtml(ctx, fixStep.choices, { id: fixStep.id, labelledBy: 'kinds-q' })}`,
         }),
         actions({ wide: true, buttonsHtml: finishButton('kinds-finish', 'Pick the fix to finish the level.') }),
