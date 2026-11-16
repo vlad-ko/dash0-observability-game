@@ -178,6 +178,13 @@
 /* Spot it (lib/widgets/spot-it-view.mjs, #160): the instruction line, and the line text inside a
    kit option, where the global code chip (background, border) would double the card. Tokens only. */
 .spot-instr { color: var(--color-text-muted); font-size: 13.5px; margin: 0; }
+
+/* Level 2.2, the span kinds hunt (levels/span-kinds.mjs, #365): in a narrow step the span rows (and the fix question)
+   come before the view and the hunt's alert, so the step's first control is on screen when a How to play card closes. */
+@container level (max-width: 599px) {
+  .kinds-late { order: 1; }
+  .kinds-last { order: 2; }
+}
 [data-spot] [data-line] code { background: none; border: none; padding: 0; font-size: inherit; }
 
 /* Build it success swirl ring (lib/swirl.mjs, #176): the dots take the swirl colour from .ui-win-swirl. */

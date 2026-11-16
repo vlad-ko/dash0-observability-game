@@ -62,12 +62,9 @@ const OTEL_PARTS = [['start-span', 'api'], ['batch', 'sdk'], ['wire', 'otlp'], [
 // arrival queue (#146) the spans arrive in this order and E must be placed too, as a root.
 const SAT_TREE = [['b7ad6b7169203331', '00f067aa0ba902b7'], ['53995c3f42cd8ad8', 'b7ad6b7169203331'], ['1d5c3a2f8e4b6a90', '53995c3f42cd8ad8']];
 const SAT_E = '9e1f2a3b4c5d6e7f';
-// 2.2: checkout POST /checkout, POST payments; payments POST /charge, POST provider/charges;
-// orders publish; shipping orders process. checkout compute totals stays INTERNAL.
-const KINDS_MAP = [
-  ['3a7f5c9e1b2d4f60', 'SERVER'], ['6c2d8e0f4a1b3957', 'CLIENT'], ['b5f3a1c7e9d20486', 'SERVER'],
-  ['0d9e7c5b3a1f8264', 'CLIENT'], ['f1e2d3c4b5a69788', 'PRODUCER'], ['2b4d6f8091a3c5e7', 'CONSUMER'],
-];
+// 2.2 (a symptom hunt): the culprit is payments POST /charge; a decoy is the provider CLIENT span.
+const KINDS_CULPRIT = 'b5f3a1c7e9d20486';
+const KINDS_PROVIDER = '0d9e7c5b3a1f8264';
 
 // 2.3: a storefront CLIENT 404 Error ok; b catalog SERVER 404 Error wrong; c checkout SERVER
 // 500 Unset wrong; d inventory SERVER 200 Unset ok; e payments SERVER 503 Error ok. 2.5: what may ride in baggage.
@@ -196,18 +193,21 @@ const DRIVERS = {
   },
   'span-kinds': {
     play() {
-      buildAll('kind', KINDS_MAP); // instant feedback: the last right kind completes it
+      click(`[data-open-span="${KINDS_CULPRIT}"]`);
+      click('#kinds-flag');
       click('#kinds-next');
-      click('[data-pick="loses-edge"]');
+      click('[data-pick="server"]');
       click('#kinds-finish');
     },
     expect: { stars: 5, cards: ['span-kind-edges'] },
     sloppy: {
       play() {
-        buildAll('kind', KINDS_MAP);
+        click(`[data-open-span="${KINDS_PROVIDER}"]`);
+        click('#kinds-flag'); // one wrong flag
+        click(`[data-open-span="${KINDS_CULPRIT}"]`);
+        click('#kinds-flag');
         click('#kinds-next');
-        click('[data-pick="nothing"]'); // one wrong pick
-        click('[data-pick="loses-edge"]');
+        click('[data-pick="server"]');
         click('#kinds-finish');
       },
       expect: { stars: 4, cards: ['span-kind-edges'] },

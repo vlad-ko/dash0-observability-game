@@ -204,6 +204,15 @@ test('question, note, option and field label break inside a long unbreakable tok
   }
 });
 
+test('#365 a line option with a meta row stacks it under the label when the step is narrow, and only then', () => {
+  const css = read('styles/kit.css');
+  const m = css.match(/@container level \(max-width: (\d+)px\) \{ \.ui-option--line \{ grid-template-columns: minmax\(0, 1fr\); \} \}/);
+  assert.ok(m, 'the narrow rule for .ui-option--line exists');
+  assert.equal(Number(m[1]) < 960, true, 'it applies below the wide step (the side column stacks under the board from 960px)');
+  const base = Object.fromEntries(sheetRules('kit.css').filter((r) => r.selector === '.ui-option--line' && r.at.length === 0).flatMap((r) => decls(r.body)));
+  assert.equal(base['grid-template-columns'], undefined, 'wide keeps the base two-column grid (label, then meta beside it)');
+});
+
 test('lesson code breaks inside a long token: the lesson card clips, so an unbreakable token would be cut off', () => {
   const pick = (sel) => Object.fromEntries(sheetRules('kit.css').filter((r) => r.selector === sel).flatMap((r) => decls(r.body)));
   assert.equal(pick('.ui-lesson').overflow, 'hidden', 'premise: the card clips');

@@ -61,7 +61,7 @@ export const DECK = [
       'CONSUMER pairs.',
     back:
       'Span kind says which side of a call a span is on: CLIENT calls out and SERVER handles ' +
-      'the call; PRODUCER sends a message and CONSUMER processes it. Backends derive ' +
+      'the call; PRODUCER sends a message and CONSUMER processes it. Backends can derive ' +
       'service-map edges from those pairs, so a SERVER span recorded as INTERNAL leaves its ' +
       'caller with no edge, even though the call happened.',
     specUrl: 'https://opentelemetry.io/docs/specs/otel/trace/api/#spankind',
