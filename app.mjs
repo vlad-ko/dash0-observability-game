@@ -278,12 +278,16 @@ export function createGame(deps) {
       // Leaving the page (or entering the back/forward cache) frees the WebGL context.
       win?.addEventListener('pagehide', (e) => {
         this.hideGlobe();
-        // A page kept in the back/forward cache may come back mid-level, so it is not abandoned.
-        if (!e?.persisted) play?.abandon();
+        // Every pagehide ends the open play (a page that goes to the back/forward cache may never be
+        // seen again); pageshow starts a fresh play if it comes back mid-level.
+        play?.abandon();
         play?.flush({ final: true });
       });
       win?.addEventListener('pageshow', (e) => {
-        if (e?.persisted) this.showGlobe();
+        if (e?.persisted) {
+          this.showGlobe();
+          if (session) play?.begin(this.currentLevelId);
+        }
       });
       doc.addEventListener?.('visibilitychange', () => {
         if (doc.visibilityState === 'hidden') play?.flush({ final: true });

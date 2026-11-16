@@ -87,6 +87,7 @@ async function rig({ throwingPlay = false, registry = REG } = {}) {
     beacons,
     errors,
     pagehide: (ev) => fire(winListeners, 'pagehide', ev),
+    pageshow: (ev) => fire(winListeners, 'pageshow', ev),
     visibility: (v) => {
       visibility = v;
       fire(docListeners, 'visibilitychange', {});
@@ -111,32 +112,53 @@ test('1 finishing a level sends exactly one complete with its mistakes, and no a
   assert.deepEqual(r.beacons, [], 'nothing left to abandon');
 });
 
-test('2 closing a level mid-play abandons it; a level still open is abandoned only when the page really goes',async () => {
+test('2 closing a level mid-play abandons it (nothing is left for the page to end later)', async () => {
   const r = await rig();
   r.game.openLevel('x');
   r.game.closeOverlay();
-  r.pagehide({ persisted: true });
+  r.pagehide({ persisted: false });
   assert.deepEqual(r.beacons.map(outcomes), [['x:abandon']]);
   r.game.openLevel('x');
   assert.equal(r.game.openLevel('y'), false, 'the hub is inert behind an open level');
-  r.pagehide({ persisted: true });
-  assert.equal(r.beacons.length, 1, 'x is still open, nothing new to send');
   r.pagehide({ persisted: false });
   assert.deepEqual(r.beacons.map(outcomes).at(-1), ['x:abandon']);
 });
 
-test('3 pagehide abandons the open level unless the page is kept (back/forward cache), and always flushes', async () => {
-  const gone = await rig();
-  gone.game.openLevel('x');
-  gone.pagehide({ persisted: false });
-  assert.deepEqual(gone.beacons.map(outcomes), [['x:abandon']]);
+test('3 every pagehide ends the open play, persisted or not, and flushes it', async () => {
+  for (const persisted of [false, true]) {
+    const r = await rig();
+    r.game.openLevel('x');
+    r.pagehide({ persisted });
+    assert.deepEqual(r.beacons.map(outcomes), [['x:abandon']], `persisted ${persisted}`);
+  }
+});
 
-  const kept = await rig();
-  kept.game.openLevel('x');
-  kept.game.closeOverlay();
-  kept.game.openLevel('y');
-  kept.pagehide({ persisted: true });
-  assert.deepEqual(kept.beacons.map(outcomes), [['x:abandon']], 'y stays open; only the earlier abandon is flushed');
+test('3b a page restored from the back/forward cache mid-level starts a fresh play: one event per segment', async () => {
+  const r = await rig();
+  r.game.openLevel('x');
+  r.pagehide({ persisted: true });
+  r.pageshow({ persisted: true });
+  assert.deepEqual(r.beacons.map(outcomes), [['x:abandon']]);
+  ctxs.x.finish();
+  await tick();
+  assert.deepEqual(r.posts.map(outcomes), [['x:complete']], 'the restored segment completes once');
+  r.pagehide({ persisted: false });
+  assert.equal(r.beacons.length, 1, 'nothing more to abandon');
+
+  const closed = await rig();
+  closed.game.openLevel('x');
+  closed.game.closeOverlay();
+  closed.pagehide({ persisted: true });
+  closed.pageshow({ persisted: true });
+  closed.pagehide({ persisted: false });
+  assert.equal(closed.beacons.length, 1, 'no level open on return, no new play');
+
+  const plain = await rig();
+  plain.game.openLevel('x');
+  plain.pagehide({ persisted: false });
+  plain.pageshow({ persisted: false });
+  plain.pagehide({ persisted: false });
+  assert.equal(plain.beacons.length, 1, 'a pageshow that is not a cache restore begins nothing');
 });
 
 test('4 the page going hidden flushes with a beacon; visible does not', async () => {
@@ -159,7 +181,7 @@ test('5 a page error reaches play as a kind; a throwing play.error still leaves 
   r.pagehide({ persisted: true });
   assert.equal(r.beacons.length, 1);
   assert.equal(JSON.stringify(r.beacons[0]).includes('nick'), false);
-  assert.deepEqual(r.beacons[0].events.map((e) => [e.t, e.kind, e.level]), [['error', 'RangeError', 't']]);
+  assert.deepEqual(r.beacons[0].events.filter((e) => e.t === 'error').map((e) => [e.kind, e.level]), [['RangeError', 't']]);
 
   const bad = await rig({ registry, throwingPlay: true });
   assert.doesNotThrow(() => bad.game.openLevel('t'));

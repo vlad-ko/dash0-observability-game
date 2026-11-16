@@ -199,17 +199,63 @@ test('9 two flushes in a row send once (the buffer is taken before the send reso
   assert.equal(r.play.stats().buffered, 0);
 });
 
-test('10 while the probe is pending a normal flush keeps the buffer and a final one sends it', async () => {
+test('10 while the probe is pending, neither a normal nor a final flush sends anything; the buffer is kept', async () => {
   const r = rig({ probe: () => new Promise(() => {}) });
   r.play.init();
   r.play.begin('lvl-a');
   r.play.abandon();
   r.play.flush();
+  r.play.flush({ final: true });
   assert.equal(r.posts.length + r.beacons.length, 0);
   assert.equal(r.play.stats().buffered, 1);
-  r.play.flush({ final: true });
-  assert.equal(r.beacons.length, 1);
+});
+
+test('14 what waited for the probe is sent once when the probe says on', async () => {
+  let answer;
+  const r = rig({ probe: () => new Promise((resolve) => (answer = resolve)) });
+  const ready = r.play.init();
+  r.play.begin('lvl-a');
+  r.play.complete('lvl-a', { stars: 5, mistakes: 0, hintsUsed: 0 });
+  r.play.flush();
+  assert.equal(r.posts.length, 0);
+  answer(ON);
+  await ready;
+  assert.equal(r.posts.length, 1);
+  assert.deepEqual(sent(r)[0].events.map((e) => e.outcome), ['complete']);
   assert.equal(r.play.stats().buffered, 0);
+});
+
+test('15 an error whose name getter throws is _OTHER, and nothing throws', async () => {
+  const r = await on();
+  const hostile = { get name() { throw new Error('no'); } };
+  const { proxy, revoke } = Proxy.revocable({}, {});
+  revoke();
+  assert.doesNotThrow(() => {
+    r.play.error(hostile);
+    r.play.error(proxy);
+  });
+  r.play.flush();
+  assert.deepEqual(sent(r)[0].events.map((e) => e.kind), ['_OTHER', '_OTHER']);
+});
+
+test('16 a session id that is not 16 lowercase hex digits turns the client off', async () => {
+  for (const bytes of [new Uint8Array(4), new Uint8Array(9)]) {
+    const posts = [];
+    const play = createPlayTelemetry({
+      fetch: async (url, init) => (init?.method === 'POST' ? posts.push(init) : ON),
+      sendBeacon: (url, body) => posts.push(body),
+      randomBytes: () => bytes,
+      monotonic: () => 0,
+      debug: false,
+    });
+    await play.init();
+    play.begin('lvl-a');
+    play.abandon();
+    play.flush({ final: true });
+    assert.equal(posts.length, 0, String(bytes.length));
+  }
+  const throwing = createPlayTelemetry({ fetch: async () => ON, randomBytes: () => { throw new Error('no crypto'); }, monotonic: () => 0 });
+  assert.doesNotThrow(() => throwing.begin('lvl-a'));
 });
 
 test('11 the 20th event flushes while on; while pending the 21st is dropped and counted', async () => {

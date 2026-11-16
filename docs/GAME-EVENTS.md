@@ -73,12 +73,30 @@ valid, as a separate export, even for a refused or failed POST.
 The spans use `service.name` `oncall-game-web`, one trace per event. Each POST also exports the usual
 `oncall-game-api` server span for `POST /api/events`, as a separate export.
 
-## Client contract (for the page)
+## Client contract (the page)
 
-Probe once with GET; only `{"v":1,"on":true}` turns events on. Buffer events and send them when 20 are
-waiting, when a level completes, and when the page is hidden or closing (`navigator.sendBeacon`, falling
-back to `fetch` with `keepalive`). Never throw, never wait for the result, never report a failed send as a
-page error. Send nothing in debug mode. At most 10 error events per page.
+The client is `lib/play-telemetry.mjs` (`createPlayTelemetry`), built in `main.mjs` and handed to the game
+as `play`; `app.mjs` calls it at these seams: `init` (probe), `openLevel` (begin), `endSession` (abandon),
+the top of `completeLevel` (complete, then a flush), `pagehide` and `pageshow`, a hidden document, and
+`report` (error). The rules it implements:
+
+- Probe once with GET; only `{"v":1,"on":true}` turns events on, anything else (or a failed probe) turns
+  them off for the page and drops what was buffered. Nothing is ever sent until the probe says on, not even
+  on pagehide.
+- While the probe is pending, events are buffered, at most 20; the rest are dropped and counted. When the
+  probe says on, the buffer is sent at once.
+- Once on, events are sent when 20 are waiting, when a level completes, and when the page is hidden or closing
+  (`navigator.sendBeacon`, falling back to `fetch` with `keepalive`).
+- One `level.play` per play segment. Opening a level begins a play; completing it, closing the overlay or
+  opening another level ends it (`complete` once, otherwise `abandon`). Every `pagehide` ends the open play
+  as `abandon`, including one that enters the back/forward cache, because that page may never be seen again.
+  A `pageshow` with `persisted: true` while a level is still open begins a fresh play for it, so a level
+  left and returned to is two plays (an abandon, then its own complete or abandon), never one lost.
+- A duration that is not finite, is negative or is over the limit is not sent and is counted as dropped.
+- The session id comes from `randomBytes`; if it is not 16 lowercase hex digits the client stays off.
+- Never throw, never wait for the result, never report a failed send as a page error. Send nothing and make
+  no request in debug mode. At most 10 error events per page, each only a class name (`_OTHER` when the name
+  cannot be read).
 
 ## Turning it on (owner)
 
