@@ -204,8 +204,8 @@ test('the guide status is fetched once at init and the level ctx carries it (deb
     game.openLevel('x');
     game.closeOverlay();
     game.openLevel('x');
-    // The account's one GET (#273) rides along outside debug; debug never asks.
-    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/account', 'GET']];
+    // The feedback status (#370) and the account's one GET (#273) ride along outside debug; debug never asks.
+    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/feedback', 'GET'], ['/api/account', 'GET']];
     assert.deepEqual(calls, expected, 'one status request per page');
     assert.equal(ctxs.x.guide.configured, true);
     assert.equal(typeof ctxs.x.guide.ask, 'function');
@@ -2112,7 +2112,7 @@ test('index.html: the How to play control and modal', () => {
   assert.equal(modal.getAttribute('aria-modal'), 'true', 'modal');
   assert.equal(modal.getAttribute('aria-labelledby'), 'ov-howto-title');
   assert.equal(modal.getAttribute('x-show'), 'howToOpen');
-  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'howToOpen', 'the level is inert while it is open');
+  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'howToOpen || feedbackOpen', 'the level is inert while How to play or the feedback dialog is open');
   assert.equal(shell.querySelector('#ov-howto-title').getAttribute('tabindex'), '-1');
   const x = card.querySelector('#ov-howto-x');
   assert.deepEqual(x.getAttribute('class').split(' '), ['ui-btn', 'ui-btn--icon']);

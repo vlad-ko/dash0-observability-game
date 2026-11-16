@@ -52,6 +52,16 @@ test('renderStep fills body and actions and scrolls the body to the top', () => 
   assert.equal(dom.actions.innerHTML, '');
 });
 
+test('ctx.screen counts the screens the level has drawn: 0 before the first, then one per renderStep, empty actions included', () => {
+  const { ctx } = setup();
+  assert.equal(ctx.screen, 0);
+  ctx.renderStep('<p>a</p>', '<button>Go</button>');
+  assert.equal(ctx.screen, 1);
+  ctx.renderStep('<p>b</p>');
+  ctx.renderStep('<p>c</p>', '');
+  assert.equal(ctx.screen, 3);
+});
+
 test('ctx exposes speech, escapeHtml, reduceMotion, the overlay elements and the signal', () => {
   const { dom, ctx, controller } = setup();
   // The lesson voice is the kit's glow card (#158), its API unchanged.

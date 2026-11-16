@@ -35,6 +35,8 @@ import { cardTotals, emptyProgress, mergeProgress, recordCompletion, registryIds
 import { MAX_STARS } from './lib/scoring.mjs';
 import { runPlay, validatePlay } from './lib/play.mjs';
 import { buildRegistry } from './lib/registry.mjs';
+import { createFeedbackClient } from './lib/feedback-client.mjs';
+import { createFeedbackDialog } from './lib/feedback-dialog.mjs';
 import { createSaveDialog } from './lib/save-dialog.mjs';
 import { loadProgress, saveProgress, STORAGE_KEY } from './lib/storage.mjs';
 import { continueView, hubActs } from './lib/hub-view.mjs';
@@ -177,6 +179,10 @@ export function createGame(deps) {
   const guideClient = typeof request === 'function' ? createGuideClient({ fetch: request }) : null;
   // The account client (#273): without a fetch, or in debug, the game never asks and nothing changes.
   const accountClient = typeof request === 'function' && debug !== true ? createAccountClient({ fetch: request }) : null;
+  // Level feedback (#370): without a fetch, or in debug, the game never asks the server (debug still shows the button, and never sends).
+  const feedbackClient = typeof request === 'function' && debug !== true ? createFeedbackClient({ fetch: request }) : null;
+  let feedbackDialog = null;
+  let liveCtx = null; // the open level's ctx, read for the screen the player is on
   let syncing = null; // the running sync chain
   let syncAgain = false; // a sync was asked for while one ran
   let nudgeShown = false; // the sign-in nudge shows at most once per page session
@@ -242,6 +248,8 @@ export function createGame(deps) {
     rewardOpen: false,
     aboutOpen: false,
     saveOpen: false,
+    feedbackOn: false, // the server has feedback on (GET /api/feedback, asked once at init)
+    feedbackOpen: false,
     aboutSummary: GAME_SUMMARY,
     aboutLoop: GLOBE_LOOP,
     howTo: NO_HOW_TO,
@@ -295,6 +303,7 @@ export function createGame(deps) {
       play?.init();
       this.showGlobe();
       guideClient?.status();
+      feedbackClient?.status().then((on) => { this.feedbackOn = on; });
       this.loadAccount();
     },
     // Alpine calls this when the component is torn down.
@@ -816,6 +825,35 @@ export function createGame(deps) {
       saveDialog?.reset();
       this.focusSoon('#save-open');
     },
+    // ---------- level feedback (#370) ----------
+    // The Feedback button in the level overlay: shown when the server has it on, and always in debug (where Send says nothing was sent).
+    feedbackShown() {
+      return this.debug || this.feedbackOn;
+    },
+    // The dialog (#feedback-modal draws into #feedback-body, lib/feedback-dialog.mjs): only over an open level. It names the
+    // level and the screen on show; the overlay is inert while it is open, so neither can change under the form.
+    openFeedback() {
+      if (!this.overlayOpen || this.howToOpen || this.rewardOpen || this.feedbackOpen || !this.currentLevelId) return false;
+      feedbackDialog ??= createFeedbackDialog({
+        host: doc.getElementById('feedback-body'),
+        doc,
+        debug: this.debug,
+        send: (note) => feedbackClient?.send(note) ?? { kind: 'failed' },
+        context: () => ({ levelId: this.currentLevelId, screen: Math.max(1, liveCtx?.screen ?? 1) }),
+        close: () => this.closeFeedback(),
+      });
+      feedbackDialog.open();
+      this.feedbackOpen = true;
+      this.focusSoon('#feedback-title');
+      return true;
+    },
+    closeFeedback() {
+      if (!this.feedbackOpen) return;
+      this.feedbackOpen = false;
+      feedbackDialog?.reset();
+      this.focusSoon('#ov-feedback-open');
+    },
+
     // An import's merged record: saved like a completion (merged with what storage holds), and the
     // hub shows it. A refused save keeps it in memory for this visit, as a completion does.
     commitImport(merged) {
@@ -880,7 +918,7 @@ export function createGame(deps) {
         }
       };
       try {
-        const ctx = createLevelContext({
+        const ctx = liveCtx = createLevelContext({
           level,
           ovBody: doc.getElementById('ov-body'),
           ovActions: doc.getElementById('ov-actions'),
@@ -995,6 +1033,7 @@ export function createGame(deps) {
       play?.abandon(); // a no-op when the play already completed
       if (session) session.abort();
       session = null;
+      liveCtx = null;
       this.howTo = NO_HOW_TO;
       this.howToKey = null;
       this.howToFlagKey = null;
@@ -1157,7 +1196,7 @@ export function createGame(deps) {
     // The page behind an open kit modal must not scroll: a class on <html> (index.html x-effect keeps it
     // in step with the three flags; the rule is in base.css, never an inline style).
     scrollLocked() {
-      return this.howToOpen || this.aboutOpen || this.saveOpen || this.boardOpen || this.accountOpen;
+      return this.howToOpen || this.aboutOpen || this.saveOpen || this.boardOpen || this.accountOpen || this.feedbackOpen;
     },
     syncScrollLock() {
       doc.documentElement.classList.toggle('modal-open', this.scrollLocked());
@@ -1165,6 +1204,7 @@ export function createGame(deps) {
     // Tab (and Shift+Tab) wrap inside the open kit modal; the page behind is inert, so without this
     // focus would fall out to the browser's own controls. The level overlay and the reward card are trapped too (trapSelector).
     openModalSelector() {
+      if (this.feedbackOpen) return '#feedback-modal';
       if (this.howToOpen) return '#howto-modal';
       if (this.saveOpen) return '#save-modal';
       if (this.boardOpen) return '#board-modal';
@@ -1185,13 +1225,17 @@ export function createGame(deps) {
       return sel === null ? false : trapTab(e, doc.querySelector(sel), doc);
     },
 
-    // One window-level Escape handler: closes the reward, else the About dialog, else Save code, else the How to play modal, else the level, but never the
+    // One window-level Escape handler: closes the reward, else the feedback dialog (it sits over a level), else the About dialog, else Save code, else the How to play modal, else the level, but never the
     // level while the player is typing in it. A widget that handled the Escape (it called
     // preventDefault, e.g. Build it cancelling a pick) owns it.
     onEscape(e) {
       if (e?.defaultPrevented) return;
       if (this.rewardOpen) {
         this.closeReward();
+        return;
+      }
+      if (this.feedbackOpen) {
+        this.closeFeedback(); // over a level: only the dialog closes
         return;
       }
       if (this.aboutOpen) {
