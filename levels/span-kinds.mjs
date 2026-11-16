@@ -10,7 +10,7 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#span-creation (SpanKind defaults to INTERNAL when not specified)
 import {
-  actions, button, chip, eyebrow, feedback, finishButton, nextButton, note, option, options, panel, question, setFeedback, sideColumn, split,
+  actions, button, chip, clearFeedback, eyebrow, feedback, finishButton, nextButton, note, option, options, panel, question, setFeedback, sideColumn, split,
   stats, step, stepHead, table,
 } from '../lib/ui/index.mjs';
 import { choiceHtml, mountChoice } from '../lib/widgets/choice.mjs';
@@ -161,8 +161,8 @@ export default {
       const hourly = FINANCE_CHARGES.toLocaleString('en-US');
       const finance = `the card provider billed ${hourly} charges in the same hour, one for every checkout`;
       const text = firing
-        ? `By this view's count, ${e(watch)} handled ${view.watched} requests/min over the last 60 minutes, below the ${expected} it usually handles. Finance: ${finance}.`
-        : `By this view's count, ${e(watch)} is back at the ${expected} requests/min it usually handles. Finance: ${finance}.`;
+        ? `By this view's count, ${e(watch)} handled ${view.watched} requests/min over the last 60 minutes, below the ${expected} it usually handles. Finance: ${finance}. Payments did the work, so the count is wrong, not the service.`
+        : `By this view's count, ${e(watch)} is back at the ${expected} requests/min it usually handles. Finance: ${finance}. The count now matches the work.`;
       return panel({
         variant: firing ? 'alert' : undefined,
         headHtml: `${eyebrow(firing ? 'Firing' : 'Resolved')}<h3 id="kinds-alert-title" tabindex="-1">${e(watch)}: ${view.watched ?? 'no data'} requests/min</h3>`,
@@ -204,15 +204,16 @@ export default {
         sections: [options({ id: 'kinds-hunt-spans', itemsHtml: rows })],
       });
       // The span sidebar sits beside the rows from 960px (a nested kit split), under them below.
-      const detailHtml = `<div id="kinds-hunt-span" aria-live="polite">${note('Open a span to see its fields. Flag the span you think makes the view wrong. A wrong flag rules that span out and costs one penalty.')}</div>` +
+      const detailHtml = `<div id="kinds-hunt-span" aria-live="polite">${note('Open a span to see its fields. Flag the span whose kind makes the view miscount payments. A wrong flag rules that span out and costs one penalty.')}</div>` +
         feedback({ id: 'kinds-hunt-status', bar: true });
       const side = sideColumn({ id: 'kinds-hunt', titleHtml: 'Find the culprit', counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: RULE });
       ctx.renderStep(
         step({
           wide: true,
           bodyHtml: `${ctx.speech(
-            'You\'re on call. An alert fired for payments, but finance says the card provider billed a charge for every checkout. ' +
-              'Open the spans below, read their fields, and flag the span that makes the view wrong. Opening a span is free.',
+            'You\'re on call. The payments alert below says payments handled far fewer requests than usual, yet finance says the card provider billed a charge for every checkout. ' +
+              'Payments did the work, so the view is miscounting it. The view counts a service\'s requests from its SERVER spans and draws service edges from span kinds. ' +
+              'Open the spans, compare each span\'s kind with what it does, and flag the span recorded with the wrong kind. Opening a span is free; a wrong flag costs one penalty.',
           )}<div data-kinds-hunt>${split({ mainHtml: `<div id="kinds-alert" class="kinds-late"></div>${split({ mainHtml: board, sideHtml: detailHtml })}${lastView()}`, sideHtml: side })}</div>`,
         }),
         actions({ wide: true, buttonsHtml: nextButton('kinds-next', 'Flag the span behind the alert to continue.') }),
@@ -306,7 +307,11 @@ export default {
       };
 
       rowBtns.forEach((b) => {
-        b.onclick = () => showSpan(b.dataset.openSpan, { focus: true });
+        b.onclick = () => {
+          // A wrong-flag verdict is about the span just flagged; once the player moves on it would read as about this one.
+          if (!hunt.solved) clearFeedback(status);
+          showSpan(b.dataset.openSpan, { focus: true });
+        };
       });
       next.onclick = stepFix;
       paintRows();

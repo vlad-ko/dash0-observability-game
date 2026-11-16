@@ -955,6 +955,23 @@ test('span-kinds: opening a span shows its kind in the sidebar, and no row names
   assert.equal(q('#kinds-flag').textContent, 'Ruled out');
 });
 
+test('span-kinds: a wrong-flag verdict clears when another span is opened; the success verdict stays after the solve', () => {
+  start('span-kinds');
+  const { ids } = huntOf('span-kinds', 0);
+  const status = q('#kinds-hunt-status');
+  flag('span-kinds', 0, 'checkout compute totals');
+  assert.equal(status.hasAttribute('hidden'), false, 'the wrong-flag verdict shows');
+  assert.match(status.textContent, /^Not quite\. /);
+  click(`[data-open-span="${ids['storefront POST /checkout']}"]`);
+  assert.equal(status.hasAttribute('hidden'), true, 'opening another span hides the old verdict');
+  assert.equal(status.textContent, '');
+  flag('span-kinds', 0, 'payments POST /charge');
+  assert.match(status.textContent, /^Right\. /);
+  click(`[data-open-span="${ids['storefront POST /checkout']}"]`);
+  assert.equal(status.hasAttribute('hidden'), false, 'the success verdict stays');
+  assert.match(status.textContent, /^Right\. /);
+});
+
 test('focus walk: each step starts on its first control, moves on, and ends on Finish', () => {
   for (const id of Object.keys(PIN)) {
     const { focus } = start(id);
