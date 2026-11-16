@@ -430,14 +430,15 @@ test('the screens give neither answer: the reason is stated, the endpoint and pe
   const h = open(practiceTelemetry().tele);
   const first = h.text();
   assert.match(first, /The game sends from a browser tab/);
-  assert.doesNotMatch(first, /HTTP|gRPC|https:\/\//);
+  assert.match(first, /OTLP via HTTP/);
+  assert.doesNotMatch(first, /https:\/\//);
   press('#ctd-practice');
   const second = h.text();
   assert.match(second, /anyone can open with dev tools/);
   assert.doesNotMatch(second, /can only send|Two of the three|starting with|port 443|4318/);
   assert.equal(q('label[for="ctd-endpoint"]').textContent, 'Endpoint');
   assert.match(q('#ctd-endpoint-note').textContent, /copied exactly as Dash0 shows it/);
-  assert.doesNotMatch(q('#ctd-feedback').textContent + [...qa('label')].map((l) => l.textContent).join(' '), /OTLP over HTTP/);
+  assert.doesNotMatch(q('#ctd-feedback').textContent + [...qa('label')].map((l) => l.textContent).join(' '), /OTLP (over|via) HTTP/);
   for (const sel of ['#ctd-ep-grpc', '#ctd-ep-http']) assert.match(q(sel).textContent, /^https:\/\/ingress\.practice\.dash0\.invalid(:4317)?$/);
 });
 

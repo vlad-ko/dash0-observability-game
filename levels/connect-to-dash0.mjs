@@ -148,7 +148,8 @@ export default {
           ctx.speech(
             'Every level so far ran against a simulation. This one connects the game to a Dash0. ' +
               'A sender needs two things: the <b>endpoint</b> of your organization, and an <b>auth token</b>. ' +
-              'The game sends from a browser tab. Then it sends one test span, and you will see whether it was accepted.',
+              'The game sends from a browser tab, and browsers cannot make gRPC calls, so it uses the <b>OTLP via HTTP</b> endpoint. ' +
+              'Then it sends one test span, and you will see whether it was accepted.',
           ),
           chip({ text: 'Practice: a simulated Dash0, not your account', tone: 'attention' }),
           prose(
@@ -174,7 +175,8 @@ export default {
     const stepConnect = (mode) => {
       const practice = mode === MODE.practice;
       const host = PRACTICE_HOSTS[0];
-      // VERIFY (#195): the row labels of the endpoint reference ("OTLP over gRPC", "OTLP over HTTP")
+      // VERIFY (#195): the row labels of the endpoint reference ("OTLP via gRPC", "OTLP via HTTP";
+      // the owner's screenshot of real Dash0, 2026-11-16, shows both in the integrations list)
       // and the Create token button. The docs say the endpoint reference lives in the
       // organization's settings and that tokens are created in Settings -> Auth Tokens.
       const simulated = panel({
@@ -184,8 +186,8 @@ export default {
           prose(
             '<h4>Settings, Endpoints</h4>' +
               '<table><caption>Endpoints of this organization</caption><thead><tr><th scope="col">Name</th><th scope="col">Address</th></tr></thead><tbody>' +
-              `<tr><td>OTLP over gRPC</td><td><code id="ctd-ep-grpc">${breakableAddress(`https://${host}:4317`, e)}</code></td></tr>` +
-              `<tr><td>OTLP over HTTP</td><td><code id="ctd-ep-http">${breakableAddress(`https://${host}`, e)}</code></td></tr>` +
+              `<tr><td>OTLP via gRPC</td><td><code id="ctd-ep-grpc">${breakableAddress(`https://${host}:4317`, e)}</code></td></tr>` +
+              `<tr><td>OTLP via HTTP</td><td><code id="ctd-ep-http">${breakableAddress(`https://${host}`, e)}</code></td></tr>` +
               '</tbody></table>',
           ),
           '<h4>Settings, Auth Tokens: create a token</h4>' +
@@ -202,9 +204,9 @@ export default {
       // Live: where to look, without naming the answer. Cited in the header: the endpoint
       // reference and Auth Tokens are in the organization's Settings, and only Admins create tokens.
       const guide =
-        '<p>In Dash0, open the organization settings and find the endpoint reference. Copy the ' +
-        'endpoint the game should send to. Then open Settings, Auth Tokens and create a token ' +
-        'for this job. Only Admins can create tokens.</p>';
+        '<p>In Dash0, open the list of ways to send data and pick <b>OTLP via HTTP</b>. Copy its endpoint, ' +
+        'the address without a path, such as https://ingress.us-west-2.aws.dash0.com. The game adds /v1/traces itself. ' +
+        'Then open Settings, Auth Tokens and create a token for this job. Only Admins can create tokens.</p>';
       // Live cannot see a token's permission, so the player says which one they gave it. It is
       // charged by the same rule as the practice mint (chargeScope below).
       const liveScope =
@@ -217,9 +219,9 @@ export default {
         screen(
           ctx.speech(
             practice
-              ? 'Find the endpoint the game should send to, and make a token for the job. ' +
+              ? 'Copy the OTLP via HTTP endpoint and make a token for the job. ' +
                   'The token will sit in a browser tab that anyone can open with dev tools.'
-              : 'Find your endpoint and make a token for the job. ' +
+              : 'Copy the OTLP via HTTP endpoint and make a token for the job. ' +
                   'The token will sit in a browser tab that anyone can open with dev tools.',
           ),
           chip(practice
