@@ -91,11 +91,11 @@ test('what costs a star is built from the widget\'s own PENALTY: its costs, then
   for (const w of WIDGETS) {
     const [t] = howToView(level({ widgets: [w] })).topics;
     const p = part(t, 'What costs a star');
-    if (PENALTIES[w].free === '') assert.ok(p.text.endsWith('penalty.') || p.text.endsWith(' hint.'), `${w}: nothing free, nothing said`);
+    if (PENALTIES[w].free === '') assert.ok(p.text.endsWith('penalty.') || p.text.endsWith(' hint.') || p.text.endsWith(' 50/50.'), `${w}: nothing free, nothing said`);
     else assert.ok(p.text.endsWith(` ${PENALTIES[w].free}`), w);
     assert.equal(p.text.includes('undefined'), false, w);
   }
-  assert.equal(part(howToView(level({ widgets: ['choice'] })).topics[0], 'What costs a star').text, 'A wrong pick costs one penalty.');
+  assert.equal(part(howToView(level({ widgets: ['choice'] })).topics[0], 'What costs a star').text, 'Each of these costs one penalty: a wrong pick or a 50/50.');
   const text = (w) => part(howToView(level({ widgets: [w] })).topics[0], 'What costs a star').text;
   assert.equal(text('sort'), 'Each of these costs one penalty: a wrong placement or a hint. Retrying is free.');
   assert.equal(text('build'), 'Each of these costs one penalty: a wrong drop, a failed Check, a wrong pick or a hint. Retrying is free.');
@@ -135,6 +135,8 @@ test('the hint lines are plain sentences about one penalty per hint', () => {
   assert.equal(NO_HINTS, 'This step has no Hint button.');
   assert.equal(HOW_TO.sort.hints, 'The Hint button shows what the next one costs.');
   assert.equal(HOW_TO.query.hints, 'Some steps have no Hint button.');
+  assert.ok(HOW_TO.choice.hints.includes('50/50') && HOW_TO.choice.hints.includes('1 penalty'), 'the choice line names the 50/50 and its cost');
+  assert.notEqual(HOW_TO.choice.hints, NO_HINTS);
   assert.equal(HOW_TO.configure.hints, HOW_TO.query.hints);
 });
 

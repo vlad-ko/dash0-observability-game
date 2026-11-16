@@ -19,6 +19,7 @@ import { makeDom, q, qa, click as domClick } from './helpers/dom.mjs';
 import { definedClasses } from './helpers/css.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry } from '../lib/telemetry.mjs';
+import { scoreStars } from '../lib/scoring.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { liveRegistry } from '../app.mjs';
@@ -526,10 +527,25 @@ function pageClasses(into) {
 // checks below cover the panel on every step. It is never asked here (test/guide-panel.test.mjs does).
 const FAKE_GUIDE = Object.freeze({ configured: true, ask: async () => ({ kind: 'failed' }) });
 
+// The "fifty" run (#371): when set, a click on a multiple-choice answer first uses that question's
+// enabled, unused 50/50 button, as a player would. `used` collects the button ids it pressed.
+let fifty = null;
+
+/** Press the 50/50 of the question `answer` belongs to, if it has one that is enabled. */
+function useFifty(answer) {
+  const box = answer.closest('[id$="-choices"]');
+  const btn = box && q(`#${box.id.slice(0, -'-choices'.length)}-fifty`);
+  if (!btn || btn.disabled) return;
+  domClick(btn);
+  fifty.used.push(btn.id);
+  assert.equal(answer.hidden, false, `the 50/50 removed the driver's right answer ${answer.dataset.pick}`);
+}
+
 /** dom.mjs click, recording for its duration whether it hit the Finish button. */
 function click(elOrSel) {
   const el = typeof elOrSel === 'string' ? q(elOrSel) : elOrSel;
-  current = { sel: String(elOrSel), finish: !!el?.matches?.('[data-finish]') };
+  if (fifty && el?.matches?.('[data-pick]')) useFifty(el);
+  current ={ sel: String(elOrSel), finish: !!el?.matches?.('[data-finish]') };
   try {
     domClick(elOrSel);
   } finally {
@@ -788,6 +804,67 @@ function derivedDriver(level) {
   const slipAt = steps.findIndex(({ driver, spec }) => driver.slips(spec).length > 0);
   return { play: run(), expect: expect(5), sloppy: { play: run(slipAt), expect: expect(4) } };
 }
+
+/** The happy run of `level` with the 50/50 pressed wherever a question offers it: stars and the buttons used. */
+async function fiftyRun(level) {
+  const driver = DRIVERS[level.id] ?? derivedDriver(level);
+  fifty = { used: [] };
+  try {
+    const opts = { telemetry: driver.telemetry?.() };
+    const done = driver.async ? await playLevelAsync(level, driver.play, opts) : playLevel(level, driver.play, opts);
+    assert.equal(done.calls.length, 1, `${level.id}: finishes once`);
+    return { stars: done.calls[0].result.stars, used: fifty.used, expect: driver.expect };
+  } finally {
+    fifty = null;
+  }
+}
+
+// #371: the 50/50 costs one hint per use, never a mistake, and never removes the right answer.
+// B10 pins the real list of questions that offer it (four or more answers).
+const FIFTY_PINNED = [
+  'monitoring-vs-observability:mvo-fifty',
+  'the-signals:sig-fifty',
+  'why-opentelemetry:otel-fifty',
+  'naming-your-service:nys-fifty',
+  'naming-your-service:nys-fifty',
+  'span-kinds:kinds-fix-fifty',
+  'context-propagation:prop-tp-fifty',
+  'temporality:temp-convert-fifty',
+  'promql-basics:pql-unit-fifty',
+  'cardinality:cdn-combos-fifty',
+  'cardinality:cdn-dash0-fifty',
+  'red-and-use:ru-connector-fifty',
+  'the-bill:tbl-fix-fifty',
+  'ottl-and-transforms:ottl-backend-fifty',
+  'what-costs-money:wcm-host-fifty',
+  'good-alerts:ga-fix-fifty',
+  'slis-and-slos:sl-budget-fifty',
+  'burn-rate-alerts:br-rule-fifty',
+  'synthetic-checks:sc-alert-fifty',
+  'everything-is-green:eig-page-fifty',
+  'dashboards-as-code:dac-deploy-fifty',
+  'migrating-vendors:mv-fix-fifty',
+  'frontend-rum:frum-cors-fifty',
+  'ai-assisted-debugging:aad-why-fifty',
+  'the-trace-that-starts-in-the-middle:ttsm-verdict-fifty',
+];
+
+test('#371 the 50/50 run: every level still finishes, one penalty per 50/50 used, and the offering questions are pinned', async () => {
+  const seen = [];
+  for (const id of LIVE.order) {
+    const level = LIVE.levels[id];
+    const { stars, used, expect } = await fiftyRun(level);
+    for (const u of used) seen.push(`${id}:${u}`);
+    const clean = scoreStars({ mistakes: 0, hintsUsed: 0, elapsedMs: 0 }, level);
+    if (expect.stars === clean) {
+      assert.equal(stars, scoreStars({ mistakes: 0, hintsUsed: used.length, elapsedMs: 0 }, level), `${id}: stars after ${used.length} 50/50`);
+    } else {
+      assert.ok(stars <= expect.stars, id);
+    }
+  }
+  assert.ok(seen.length >= 1);
+  assert.deepEqual(seen, FIFTY_PINNED);
+});
 
 const PLAY_LEVELS = [
   ...Object.values(LIVE.levels).filter((l) => l.play && !DRIVERS[l.id]),

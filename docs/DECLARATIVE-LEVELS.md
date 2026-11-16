@@ -61,7 +61,7 @@ A level file keeps today's metadata (FOUNDATION §2.1) and declares `play` inste
 
 | Key | Spec | Mechanic | Status |
 |---|---|---|---|
-| `choice` | `{id, choices: [{key, label, why, right?}]}`, at least 2 choices | none | live (`choiceHtml`/`mountChoice`) |
+| `choice` | `{id, choices: [{key, label, why, right?}]}`, at least 2 choices | none; with 4 or more choices a 50/50 joker (#371) removes two wrong answers for one hint penalty | live (`choiceHtml`/`mountChoice`) |
 | `sort` | SortSpec (M1-DESIGN §4.1) | sort | live |
 | `build` | BuildSpec (§4.2); `edit` is a list of span fields (`parent`, `kind`, `status`, `links`) or exactly `['logs']` (logs mode: attach each record of `logs` to a span or to none; spans are read-only) | build | live |
 | `incident` | Scenario (§4.3) | incident | live |

@@ -94,7 +94,7 @@ feeds every template, and each template is only kit helpers.
 
 States are attributes, never extra classes: `aria-pressed` (selected; `data-picked` on a radio card), `data-state` (`correct`,
 `wrong`, `locked`, `opened`), `data-hinted`, `data-tone`, `disabled`, `hidden`. Hover, focus and
-disabled each have one rule in `kit.css`; besides it, a disabled toggle option, and a disabled choice option with no `data-state`, fades (its only cue), except a `drop` target, which goes muted and transparent instead, while an answered choice card (it has a `data-state`) stays legible.
+disabled each have one rule in `kit.css`; besides it, a disabled toggle option, and a disabled choice option with no `data-state`, fades (its only cue), except a `drop` target, which goes muted and transparent instead, while an answered choice card (it has a `data-state`) stays legible. A `hidden` option is removed from the layout (`.ui-option[hidden]` is `display: none`): a multiple-choice 50/50 (#371) hides and disables two wrong answers.
 
 ## Layout
 

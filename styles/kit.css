@@ -259,6 +259,8 @@
   border-radius: var(--radius); padding: 14px 40px 14px 15px; cursor: pointer; overflow-wrap: anywhere;
   transition: border-color var(--dur-fast), background-color var(--dur-fast);
 }
+/* A 50/50 removes an answer from the layout (#371); display: grid above would otherwise win over [hidden]. */
+.ui-option[hidden] { display: none; }
 .ui-option-label { min-width: 0; }
 .ui-option-meta {
   display: flex; flex-wrap: wrap; gap: 6px; align-items: center;

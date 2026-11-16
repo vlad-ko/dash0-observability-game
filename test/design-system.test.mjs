@@ -283,6 +283,12 @@ test('palette rule 7: a disabled toggle option fades (its only cue); answered ch
   }
 });
 
+test('#371 a removed 50/50 answer is gone from the layout: .ui-option[hidden] is display none', () => {
+  const rule = sheetRules('kit.css').find((r) => r.selector === '.ui-option[hidden]');
+  assert.ok(rule, 'the rule exists');
+  assert.equal(Object.fromEntries(decls(rule.body)).display, 'none');
+});
+
 // ---- T6 only lib/ui emits ui- classes ----------------------------------------------------
 
 test('class scanner: class attributes, className, setAttribute and classList; not :class or ${...}', () => {
