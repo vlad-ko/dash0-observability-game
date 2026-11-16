@@ -383,3 +383,22 @@ test('AUTH_STUB handlers are instrumented too', async () => {
     stub.server.close();
   }
 });
+
+test('FEEDBACK_STUB: a feedback POST is accepted and the issue is printed, not sent', async () => {
+  const lines = [];
+  const saved = globalThis.fetch;
+  globalThis.fetch = () => { throw new Error('no network in FEEDBACK_STUB'); };
+  const stub = await listen({ feedbackStub: true, log: (l) => lines.push(l) });
+  try {
+    assert.ok(lines.some((l) => l.startsWith('FEEDBACK_STUB=1')), 'the startup line says so');
+    assert.deepEqual(JSON.parse((await send(stub.port, 'GET', '/api/feedback')).body), { v: 1, on: true });
+    const payload = JSON.stringify({ v: 1, levelId: 'spans-and-traces', screen: 2, kind: 'bug', text: 'Hello.' });
+    const res = await send(stub.port, 'POST', '/api/feedback', { body: payload, headers: { ...JSON_TYPE, origin: `http://127.0.0.1:${stub.port}` } });
+    assert.equal(res.status, 201, res.body);
+    assert.deepEqual(JSON.parse(res.body), { v: 1, ok: true, issue: 1 });
+    assert.ok(lines.some((l) => l.includes('Feedback: Spans and traces (spans-and-traces)')), lines.join('\n'));
+  } finally {
+    globalThis.fetch = saved;
+    stub.server.close();
+  }
+});

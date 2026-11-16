@@ -548,6 +548,54 @@ callback also `fetch: telemetry.trace(globalThis.fetch)`), `export const {...} =
   `ingressStatus: 415`, and the encoder needs a protobuf body (a follow-up, not a game change). If no span arrives and the function log has no `telemetry` line, the variables did
   not reach the function: check step (1) and redeploy.
 
+### 2.11 Level feedback (#370)
+
+A player on any level can send a short note; `api/feedback.mjs` opens a GitHub issue for it with the owner's token, which
+never reaches the browser (the CSP `connect-src` is unchanged). The wire contract and the issue text are
+`lib/feedback.mjs` (pure, browser-importable: `KINDS`, `MAX_TEXT`, `MAX_BODY_BYTES`, `feedbackConfig`, `parseFeedback`,
+`issueTitle`, `issueBody`). The page side (dialog, client) is specified with the view code, not here.
+
+- Env: `FEEDBACK_GITHUB_TOKEN` (non-empty) and `FEEDBACK_REPO` (`owner/name`, `^[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}$`,
+  and not ending in `/.` or `/..`). Both valid is on; anything else is off. Off is dormant: GET says `on:false`, POST is a
+  503 that reads no body and makes no call. `VERCEL_GIT_COMMIT_SHA` (System Environment Variables) is shown in the issue
+  when it is a git sha, else `unknown`.
+- `GET /api/feedback` -> 200 `{v:1, on}`, never cached.
+- `POST /api/feedback`, checked in this order: (1) method, else 405; (2) off, 503 `{error:'off'}`; (3) an `Origin` that is
+  present, not `null`, and whose host is the request host, else 403; (4) `Content-Type: application/json`, else 415;
+  (5) a declared or actual body over 8192 bytes, 413 (a declared one is not read); (6) the body parses, else 400
+  `{error:'bad-request', field}`; (7) the limiter, 429 `{error:'rate-limited', retryAfterS}` plus `Retry-After`;
+  (8) the session, best effort; (9) one GitHub call, 201 `{v:1, ok:true, issue}` or 502 `{error:'upstream'}`. Any throw is
+  a 500 `{error:'internal'}`; the error text is never logged.
+- Body, closed: exactly `{v:1, levelId, screen, kind, text}`. `levelId` is an own key of the registry's levels (never
+  `toString`), `screen` an integer 1..999, `kind` one of `unclear`, `wrong-fact`, `bug`, `idea`, `text` trimmed, 1 to 1000
+  code points. Another key is field `body`.
+- GitHub: `POST https://api.github.com/repos/{FEEDBACK_REPO}/issues` with `authorization: Bearer <token>`,
+  `accept: application/vnd.github+json`, `x-github-api-version: 2022-11-28`, `user-agent: oncall-game-feedback`, body
+  `{title, body, labels:['feedback']}`. Budget 6000 ms through the injected timers and an `AbortController` (aborted at the
+  budget). A 201 whose `number` is not a positive integer is upstream. At most one call per accepted POST.
+- Title `Feedback: <level name> (<level id>)`, registry data only. Body: lines `Kind:`, `Level:`, `Screen:`, `Game commit:`,
+  `From:`, then the text in a ```` ```text ```` fence longer than any backtick run in it. The text is cleaned first: C0
+  controls except newline and tab, DEL and the bidi marks U+202A-202E, U+2066-2069 are removed, and every `@` becomes `@`
+  plus U+200B so it cannot mention anyone. `From:` is the nickname in backticks only when the profile is listed, else
+  `signed in, not listed` or `signed out`; a failed or impossible session lookup is `signed out` and never blocks.
+- Limits: `createLimiter({clientMax:5, clientWindowMs:600000, instanceMax:30, instanceWindowMs:60000})`, taken after a
+  successful parse, so rejected bodies do not use the budget. In memory, per instance: slows a flood, not a quota.
+- Log: one line `{msg:'feedback', outcome, status, levelId|null, kind|null, chars|null, issue|null, ms}`; outcome `sent`,
+  `off`, `forbidden`, `media-type`, `too-large`, `bad-request`, `rate-limited`, `upstream`, `network`, `timeout`, `method`
+  or `error`. Never the text, nickname, address, user agent, cookie or token. The GitHub call is a CLIENT span through
+  `telemetry.trace` (no body, no headers).
+- Local: `FEEDBACK_STUB=1 npm run dev` (or `startServer({feedbackStub: true})`) turns it on with a stub token, prints the
+  issue title instead of calling GitHub and answers issue 1. It does not combine with `AUTH_STUB` sessions: `From:` is
+  always `signed out` there.
+- Owner steps to turn it on: (1) the label `feedback` exists in the repo. (2) Create a fine-grained token for that repo
+  only, with Issues read and write. (3) In the Vercel project's Production environment set `FEEDBACK_GITHUB_TOKEN` and
+  `FEEDBACK_REPO=vlad-ko/dash0-observability-game`. (4) Turn on System Environment Variables, so `VERCEL_GIT_COMMIT_SHA`
+  reaches the function. (5) Redeploy and check that `GET /api/feedback` answers `{"v":1,"on":true}`. To turn it off, remove
+  the token.
+- Not verified: that a fine-grained token may set labels on create, that an `@` inside the fence never notifies, and that
+  every target browser sends `Origin` on a same-origin POST (a browser that does not gets a 403 and the dialog says it
+  could not send).
+
 ## 3. Invariants
 
 Registry (`validateRegistry` reports all at once): act and level ids unique across all acts
