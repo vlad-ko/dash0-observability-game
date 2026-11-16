@@ -38,13 +38,20 @@ test('withKind returns copies, never changes its input, and answers null for an 
   assert.equal(withKind(spans, '0000000000000001', 'FOO'), null);
 });
 
-test('serviceView: the level\'s spans show payments at 10 against the 20 it expects, firing; the fix shows 20, not firing; an unknown service is null', () => {
+test('requestRates: a span with oneIn counts a share of perMin; oneIn below 1 or not a number is refused', () => {
+  const refund = { ...sp('0000000000000001', 'a', 'SERVER'), oneIn: 10 };
+  assert.deepEqual(requestRates([refund, sp('0000000000000002', 'a', 'SERVER')], { perMin: 20 }), [{ service: 'a', perMin: 22 }]);
+  assert.deepEqual(requestRates([{ ...refund, kind: 'INTERNAL' }], { perMin: 20 }), [{ service: 'a', perMin: 0 }], 'only a SERVER span counts');
+  for (const oneIn of [0.5, 0, Number.NaN, '10']) assert.throws(() => requestRates([{ ...refund, oneIn }], { perMin: 20 }), TypeError, String(oneIn));
+});
+
+test('serviceView: the level\'s spans show payments at 2 against the 22 it expects, firing; the fix shows 22, not firing; an unknown service is null', () => {
   const { spans, culprit, perMin, watch, expected } = CONTENT.steps[0].hunt;
   const before = serviceView(spans, { perMin, watch, expected });
-  assert.equal(before.watched, 10);
+  assert.equal(before.watched, 2);
   assert.equal(before.firing, true);
   const after = serviceView(withKind(spans, culprit, 'SERVER'), { perMin, watch, expected });
-  assert.equal(after.watched, 20);
+  assert.equal(after.watched, 22);
   assert.equal(after.firing, false);
   const ghost = serviceView(spans, { perMin, watch: 'ghost', expected });
   assert.equal(ghost.watched, null);

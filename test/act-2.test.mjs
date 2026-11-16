@@ -447,14 +447,16 @@ test('span-kinds: the map edges come from serviceEdges; only the SERVER fix give
   const view = (list) => serviceView(list, hunt);
   const EDGE = 'checkout>payments:client-server';
   assert.deepEqual(edges(spans), ['storefront>checkout:client-server'], 'before: no checkout > payments edge');
-  assert.equal(view(spans).watched, 10, 'before: a partial gap, not zero');
+  assert.equal(view(spans).watched, 2, 'before: a partial gap, not zero');
   assert.equal(view(spans).firing, true);
-  assert.equal(hunt.expected, 20);
+  assert.equal(hunt.expected, 22);
   const choices = KINDS.steps[1].choices;
   for (const c of choices) {
     const after = view(c.spans);
+    const list = after.edges.map((x) => `${x.from} → ${x.to}`).join(', ');
     assert.equal(c.label.includes(`Preview: payments ${after.watched} requests/min.`), true, `${c.key}: the label previews the rate`);
-    assert.equal(c.label.includes(`Map edges: ${after.edges.map((x) => `${x.from} → ${x.to}`).join(', ')}.`), true, `${c.key}: and the edges`);
+    assert.equal(/Map edges|checkout → payments|storefront → checkout/.test(c.label), false, `${c.key}: but not the map edges, which show after the pick`);
+    if (!c.right) assert.equal(c.why.includes(`With that change the map edges would be: ${list}.`), true, `${c.key}: a wrong pick says what the map would show`);
     const fixesBoth = after.firing === false && edges(c.spans).includes(EDGE);
     assert.equal(fixesBoth, c.right === true, `${c.key}: only the right option fixes the alert and the map`);
   }
@@ -463,8 +465,44 @@ test('span-kinds: the map edges come from serviceEdges; only the SERVER fix give
   assert.equal(edges(choices.find((c) => c.key === 'provider').spans).includes(EDGE), false);
   assert.equal(by.client.firing, true);
   assert.equal(by.rename.watched, view(spans).watched, 'a rename changes nothing');
-  assert.equal(by.server.watched, 20);
+  assert.equal(by.server.watched, 22);
+  assert.equal(by.provider.watched, by.server.watched, 'the SERVER and provider previews read the same: only the map tells them apart');
   assert.deepEqual(edges(choices.find((c) => c.right).spans), [EDGE, 'storefront>checkout:client-server']);
+});
+
+test('span-kinds: the figures are derived: a refund is a small share of the checkouts, finance bills one charge per checkout, the usual rate is both', () => {
+  const hunt = KINDS.steps[0].hunt;
+  const refund = hunt.spans.find((s) => s.name === 'POST /refund');
+  assert.equal(refund.oneIn >= 5, true, 'refunds are a small share of checkouts');
+  const refunds = hunt.perMin / refund.oneIn;
+  assert.equal(hunt.expected, hunt.perMin + refunds, 'usual rate = checkouts + refunds');
+  start('span-kinds');
+  const hourly = (hunt.perMin * 60).toLocaleString('en-US');
+  assert.equal(q('#kinds-alert-text').textContent.includes(`${hourly} charges`), true, 'finance: one charge per checkout, from the same rate');
+  assert.equal(q('#kinds-alert-text').textContent.includes(`below the ${hunt.expected} it usually handles`), true);
+  assert.equal(q('#kinds-alert-title').textContent, `payments: ${refunds} requests/min`);
+});
+
+test('span-kinds: at 320px the rows (and the fix question) sort before the view and the hunt alert, so the first control is on screen', () => {
+  const css = read('styles/widgets.css');
+  assert.match(css, /@container level \(max-width: 599px\) \{\s*\.kinds-late \{ order: 1; \}\s*\.kinds-last \{ order: 2; \}\s*\}/);
+  start('span-kinds');
+  assert.equal(q('#kinds-alert').classList.contains('kinds-late'), true, 'the hunt alert sorts after the rows when narrow');
+  assert.equal(q('#kinds-view').parentElement.classList.contains('kinds-last'), true, 'the view sorts last');
+  solveHunt('span-kinds', 0);
+  click('#kinds-next');
+  assert.equal(q('#kinds-alert').classList.contains('kinds-late'), false, 'on the fix step the alert stays above the question');
+  assert.equal(q('#kinds-view').parentElement.classList.contains('kinds-last'), true, 'and the view sorts after the options');
+});
+
+test('span-kinds: the first payments row in the list is a correctly recorded span, not the culprit', () => {
+  const { spans, culprit } = KINDS.steps[0].hunt;
+  start('span-kinds');
+  const order = qa('[data-open-span]').map((b) => b.dataset.openSpan);
+  const first = spans.find((s) => s.spanId === order.find((id) => spans.find((s2) => s2.spanId === id).service === 'payments'));
+  assert.notEqual(first.spanId, culprit);
+  assert.equal(first.kind, 'SERVER');
+  assert.equal(order.length, spans.length, 'every span is a row');
 });
 
 test('span-kinds: a flag cannot be found without reading kinds: payments has several spans, and the culprit is not the only INTERNAL span with attributes', () => {
@@ -488,10 +526,12 @@ test('Act 2 card fronts match docs/M1-DESIGN.md §6 and fit a card (<=140)', () 
 /** The level files of Act 2, from the live registry (never a hand list). */
 const ACT2_FILES = LIVE.acts.find((a) => a.id === 'act-2').levelIds.map((id) => `levels/${id}.mjs`);
 
-test('span-kinds copy says "backends derive", and no Act 2 level file says "the spec says"', () => {
-  const text = read('levels/span-kinds.mjs') + JSON.stringify(DECK.find((c) => c.id === 'span-kind-edges'));
-  assert.equal(/backends (can )?derive/i.test(text), true);
-  assert.equal(/backends derive/i.test(read('levels/span-kinds.mjs')), false, 'the level says "can derive": the sources show kind as a dimension, not the counting rule');
+test('span-kinds copy says "backends can derive" (level and card), and no Act 2 level file says "the spec says"', () => {
+  const card = JSON.stringify(DECK.find((c) => c.id === 'span-kind-edges'));
+  for (const [where, text] of [['level', read('levels/span-kinds.mjs')], ['card', card]]) {
+    assert.equal(/backends can derive/i.test(text), true, `${where} says "can derive"`);
+    assert.equal(/backends derive/i.test(text), false, `${where}: the sources show kind as a dimension, not the counting rule`);
+  }
   assert.equal(ACT2_FILES.length, Object.keys(LEVELS).length, 'every Act 2 level file is scanned');
   for (const f of ACT2_FILES) {
     assert.equal(/the spec says/i.test(read(f)), false, f);
@@ -845,20 +885,21 @@ test('span-kinds: the "Map edges" line is a status region and the alert changes 
   const line = () => q('#kinds-edges');
   assert.equal(line().getAttribute('role'), 'status');
   assert.equal(line().textContent, 'Map edges: storefront → checkout.');
-  assert.equal(q('#kinds-alert-title').textContent, 'payments: 10 requests/min');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 2 requests/min');
   assert.equal(q('#kinds-alert').textContent.includes('Firing'), true);
   solveHunt('span-kinds', 0);
   assert.equal(line().textContent, 'Map edges: storefront → checkout.', 'the hunt alone does not change the view');
   click('#kinds-next');
   assert.equal(line().textContent, 'Map edges: storefront → checkout.');
-  assert.equal(q('#kinds-alert-title').textContent, 'payments: 10 requests/min');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 2 requests/min');
   click('[data-pick="provider"]'); // clears the alert's number but not the map: still a wrong pick
   assert.equal(line().textContent, 'Map edges: storefront → checkout.', 'a wrong pick changes nothing on the view');
+  assert.equal(q('#kinds-fix-feedback').textContent.includes('the map edges would be: storefront → checkout.'), true, 'but its text says what the map would show');
   click('[data-pick="server"]');
   assert.equal(line().textContent, 'Map edges: checkout → payments, storefront → checkout.');
-  assert.equal(q('#kinds-alert-title').textContent, 'payments: 20 requests/min');
+  assert.equal(q('#kinds-alert-title').textContent, 'payments: 22 requests/min');
   assert.equal(q('#kinds-alert').textContent.includes('Resolved'), true);
-  assert.equal(q('#kinds-rates').textContent.includes('payments10 requests/min'), false, 'no tile still says 10');
+  assert.equal(q('#kinds-rates').textContent.includes('payments2 requests/min'), false, 'no tile still says 2');
 });
 
 test('span-kinds: every decoy has its own "not the cause" line, and flagging each one says so (no "undefined")', () => {

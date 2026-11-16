@@ -32,8 +32,10 @@ const PAY_CALL = '6c2d8e0f4a1b3957';
 const CHARGE = 'b5f3a1c7e9d20486';
 const PROVIDER = '0d9e7c5b3a1f8264';
 
-// What one span stands for in the view: each checkout is 10 a minute, and each checkout is one charge.
-const PER_MIN = 10;
+// What one span stands for in the view: 20 checkouts a minute, each one charge the provider bills. A refund is
+// one checkout in REFUND_ONE_IN, so its span counts that share of the rate. Every figure on screen is derived from these.
+const PER_MIN = 20;
+const REFUND_ONE_IN = 10;
 const FINANCE_CHARGES = PER_MIN * 60;
 
 const span = (spanId, service, name, kind, startMs, endMs, parentId, attributes, traceId = CHECKOUT_TRACE) => ({
@@ -43,7 +45,7 @@ const server = (route) => ({ 'http.request.method': 'POST', 'http.route': route 
 const client = (address) => ({ 'http.request.method': 'POST', 'server.address': address });
 
 const SPANS = [
-  span(STORE_SERVER, 'storefront', 'POST /checkout', 'SERVER', 0, 140, null, server('/checkout')),
+  span(STORE_SERVER, 'storefront', 'POST /checkout', 'SERVER', 2, 140, null, server('/checkout')),
   span(STORE_CLIENT, 'storefront', 'POST checkout', 'CLIENT', 5, 135, STORE_SERVER, client('checkout')),
   span(CHECKOUT, 'checkout', 'POST /checkout', 'SERVER', 10, 130, STORE_CLIENT, server('/checkout')),
   span(TOTALS, 'checkout', 'compute totals', 'INTERNAL', 15, 25, CHECKOUT, {}),
@@ -51,8 +53,9 @@ const SPANS = [
   span(CHARGE, 'payments', 'POST /charge', 'INTERNAL', 35, 105, PAY_CALL, server('/charge')),
   span(VALIDATE, 'payments', 'validate card', 'INTERNAL', 38, 50, CHARGE, { 'card.brand': 'visa' }),
   span(PROVIDER, 'payments', 'POST provider/charges', 'CLIENT', 55, 100, CHARGE, client('provider')),
-  // A refund handled by payments, started by a webhook rather than by this checkout: its own trace, a root.
-  span(REFUND, 'payments', 'POST /refund', 'SERVER', 150, 190, null, server('/refund'), REFUND_TRACE),
+  // A refund handled by payments, started by a webhook rather than by this checkout: its own trace, a root, and one
+  // request in REFUND_ONE_IN. It starts first, so it is the first row of payments in the list (not the culprit).
+  { ...span(REFUND, 'payments', 'POST /refund', 'SERVER', 0, 40, null, server('/refund'), REFUND_TRACE), oneIn: REFUND_ONE_IN },
 ];
 
 const FLAG_WHY = {
@@ -72,18 +75,15 @@ const EXPECTED = serviceView(withKind(SPANS, CHARGE, 'SERVER'), { perMin: PER_MI
 /** The view of `spans`: the one expression of every figure on screen (rates, edges, the alert). */
 const viewOf = (spans) => serviceView(spans, { perMin: PER_MIN, watch: WATCH, expected: EXPECTED });
 
-/** "Map edges: a → b, c → d." for `edges` (service names escaped). */
-const edgesLine = (edges, e) => {
-  const list = edges.map((x) => `${e(x.from)} → ${e(x.to)}`);
-  return `Map edges: ${list.length ? list.join(', ') : 'none'}.`;
-};
+/** "a → b, c → d" (or "none") for `edges` (service names escaped). */
+const edgesList = (edges, e) => (edges.length ? edges.map((x) => `${e(x.from)} → ${e(x.to)}`).join(', ') : 'none');
+/** "Map edges: a → b, c → d." */
+const edgesLine = (edges, e) => `Map edges: ${edgesList(edges, e)}.`;
 
-// Step 2: each option changes one span; its label previews what the view would then show, so a wrong option
-// is wrong in the numbers. `why` follows "Right." or "Not quite.".
-const preview = (spans) => {
-  const v = viewOf(spans);
-  return `<br>Preview: ${WATCH} ${v.watched} requests/min. ${edgesLine(v.edges, escapeHtml)}`;
-};
+// Step 2: each option changes one span; its label previews payments' rate after the change. The map shows only after
+// the pick: in the redraw on the right pick, and in each wrong option's "Not quite." text. `why` follows "Right." or "Not quite.".
+const preview = (spans) => `<br>Preview: ${WATCH} ${viewOf(spans).watched} requests/min.`;
+const mapAfter = (spans) => ` With that change the map edges would be: ${edgesList(viewOf(spans).edges, escapeHtml)}.`;
 const FIX_CHANGES = {
   server: withKind(SPANS, CHARGE, 'SERVER'),
   provider: withKind(SPANS, PROVIDER, 'SERVER'),
@@ -100,17 +100,17 @@ const FIX = [
   {
     key: 'provider',
     label: `Set <code>POST provider/charges</code> to SERVER${preview(FIX_CHANGES.provider)}`,
-    why: 'That clears the alert but fixes the wrong span. It is payments\' own call out to the card provider, a CLIENT call, and its parent is a payments span, so it pairs with nothing and the checkout → payments edge stays missing.',
+    why: 'That clears the alert but fixes the wrong span. It is payments\' own call out to the card provider, a CLIENT call, and its parent is a payments span, so it pairs with nothing and the checkout → payments edge stays missing.' + mapAfter(FIX_CHANGES.provider),
   },
   {
     key: 'client',
     label: `Set <code>POST /charge</code> to CLIENT${preview(FIX_CHANGES.client)}`,
-    why: 'CLIENT marks the caller\'s side, but payments receives this call. The alert still fires, and an edge needs a CLIENT span with a SERVER child, so none draws.',
+    why: 'CLIENT marks the caller\'s side, but payments receives this call. The alert still fires, and an edge needs a CLIENT span with a SERVER child, so none draws.' + mapAfter(FIX_CHANGES.client),
   },
   {
     key: 'rename',
     label: `Rename <code>POST /charge</code> to <code>payments.charge</code>${preview(FIX_CHANGES.rename)}`,
-    why: 'The view reads the kind, not the name. Renamed, the span is still INTERNAL and nothing changes.',
+    why: 'The view reads the kind, not the name. Renamed, the span is still INTERNAL and nothing changes.' + mapAfter(FIX_CHANGES.rename),
   },
 ];
 // The spans each option leaves behind, for the view the player sees once the right one is picked (and for the tests).
@@ -130,7 +130,7 @@ const RULE = ruleText({
 
 const HINTS = [
   'A span with an <code>http.route</code> is serving a request. Which spans carry one?',
-  'Check the kind of each span that has a route. A span that serves a call comes under its caller\'s CLIENT span in another service. Does one of them not match its kind?',
+  'Check the kind of each span that has a route. A span that serves a call should be SERVER, whether its caller is in this trace or outside it. Does one of them not match?',
   'Flag <code>POST /charge</code> in payments: it has a route and sits under checkout\'s CLIENT span, but it is INTERNAL.',
 ];
 
@@ -185,7 +185,10 @@ export default {
       body.querySelector('#kinds-rates').innerHTML = stats(view.rates.map((r) => ({ label: r.service, value: `${r.perMin} requests/min` })));
       setFeedback(body.querySelector('#kinds-edges'), 'neutral', edgesLine(view.edges, e), { scroll });
     };
-    const shell = () => `<div id="kinds-alert"></div>${viewHtml()}`;
+    // At 320px the step's first control and its question must be on screen when the How to play card closes, so the
+    // view (and on the hunt screen the alert) sort after them (widgets.css; the markup order stays alert, board, view).
+    const lastView = () => `<div class="kinds-last">${viewHtml()}</div>`;
+    const shell = () => `<div id="kinds-alert"></div>${lastView()}`;
 
     const stepHunt = () => {
       const rows = waterfall(spans).rows.map((r) => {
@@ -196,11 +199,11 @@ export default {
         return option({ attr: 'open-span', value: s.spanId, kind: 'line', labelHtml: e(s.name), metaHtml: meta, pressed: false });
       }).join('');
       const board = panel({
-        headHtml: stepHead({ step: 1, titleHtml: 'Open the spans', noteHtml: 'The spans of a recent checkout, and a refund payments handled. Opening a span is free.' }),
+        headHtml: stepHead({ step: 1, titleHtml: 'Open the spans' }),
         sections: [options({ id: 'kinds-hunt-spans', itemsHtml: rows })],
       });
       // The span sidebar sits beside the rows from 960px (a nested kit split), under them below.
-      const detailHtml = `<div id="kinds-hunt-span" aria-live="polite">${note('Open a span to see its fields. Flag the span you think makes the view wrong: a flag that misses rules that span out and counts as one penalty.')}</div>` +
+      const detailHtml = `<div id="kinds-hunt-span" aria-live="polite">${note('Open a span to see its fields. Flag the span you think makes the view wrong. A wrong flag rules that span out and costs one penalty.')}</div>` +
         feedback({ id: 'kinds-hunt-status', bar: true });
       const side = sideColumn({ id: 'kinds-hunt', titleHtml: 'Find the culprit', counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: RULE });
       ctx.renderStep(
@@ -208,8 +211,8 @@ export default {
           wide: true,
           bodyHtml: `${ctx.speech(
             'You\'re on call. An alert fired for payments, but finance says the card provider billed a charge for every checkout. ' +
-              'Open the spans, read their fields, and flag the span that makes the view wrong.',
-          )}<div data-kinds-hunt>${split({ mainHtml: `<div id="kinds-alert"></div>${split({ mainHtml: board, sideHtml: detailHtml })}${viewHtml()}`, sideHtml: side })}</div>`,
+              'Open the spans below, read their fields, and flag the span that makes the view wrong. Opening a span is free.',
+          )}<div data-kinds-hunt>${split({ mainHtml: `<div id="kinds-alert" class="kinds-late"></div>${split({ mainHtml: board, sideHtml: detailHtml })}${lastView()}`, sideHtml: side })}</div>`,
         }),
         actions({ wide: true, buttonsHtml: nextButton('kinds-next', 'Flag the span behind the alert to continue.') }),
       );

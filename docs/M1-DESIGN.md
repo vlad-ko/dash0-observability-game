@@ -640,7 +640,8 @@ https://opentelemetry.io/docs/specs/otel/trace/sdk/#span-processor
 **2.2 `span-kinds`** (a symptom hunt, the pilot for the Build it redesign, #364): mechanics
 `['spot']`, widgets `['choice']`, cards `['span-kind-edges']`. Screen 1 is the hunt, the level's own
 kit markup (a split; the side column is the kit `sideColumn` wired by `mountHintLadder`): an alert
-for payments (10 requests/min against the 20 it usually handles: a partial gap) and a simulated
+for payments (2 requests/min against the 22 it usually handles: a partial gap, 20 checkouts a
+minute plus a refund for one checkout in ten, `oneIn`; finance billed 1,200 charges in the hour) and a simulated
 Dash0 view (requests per service from SERVER spans, the "Map edges: …" line from `serviceEdges`;
 both from `lib/service-view.mjs`) frame one checkout trace and a refund, nine spans, all Unset;
 payments has four, so a guess is no better than one in four. Rows show service, time range and
@@ -649,9 +650,10 @@ parent, never the kind; opening a span (free) shows its fields in a sidebar besi
 INTERNAL though it handles checkout's call (it has an `http.route`, as does the correctly
 recorded SERVER `POST /refund`; `validate card` is INTERNAL with attributes and rightly so). A
 wrong flag is one penalty (`ladder.miss()`), as is each of the three hint tiers. Screen 2 is a
-Choice whose options preview the rates and map edges they would give: set `POST /charge` to
-SERVER (right; payments 20 and the map gains checkout→payments), set `POST provider/charges` to
-SERVER (clears the alert but draws no edge), set `POST /charge` to CLIENT, or rename it. The
+Choice whose options preview payments' rate after the change (the map edges show after the pick:
+in the redraw on the right pick, and in each wrong option's text): set `POST /charge` to SERVER
+(right; payments 22 and the map gains checkout→payments), set `POST provider/charges` to SERVER
+(clears the alert, same 22, but draws no edge), set `POST /charge` to CLIENT, or rename it. The
 right pick moves focus to the alert so the Firing to Resolved change is seen. Card: "Span kind
 is not cosmetic: service maps draw edges from CLIENT to SERVER and PRODUCER to CONSUMER pairs."
 Copy says "backends can derive", not "the spec says". Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind
