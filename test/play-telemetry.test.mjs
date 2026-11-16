@@ -254,8 +254,21 @@ test('16 a session id that is not 16 lowercase hex digits turns the client off',
     play.flush({ final: true });
     assert.equal(posts.length, 0, String(bytes.length));
   }
-  const throwing = createPlayTelemetry({ fetch: async () => ON, randomBytes: () => { throw new Error('no crypto'); }, monotonic: () => 0 });
-  assert.doesNotThrow(() => throwing.begin('lvl-a'));
+  const requests = [];
+  const throwing = createPlayTelemetry({
+    fetch: async (url, init) => {
+      requests.push(init);
+      return ON;
+    },
+    sendBeacon: (url, body) => requests.push(body),
+    randomBytes: () => { throw new Error('no crypto'); },
+    monotonic: () => 0,
+  });
+  await throwing.init();
+  throwing.begin('lvl-a');
+  throwing.abandon();
+  throwing.flush({ final: true });
+  assert.equal(requests.length, 0, 'no id: not even the probe, no beacon, no post');
 });
 
 test('11 the 20th event flushes while on; while pending the 21st is dropped and counted', async () => {
