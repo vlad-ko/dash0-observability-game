@@ -153,7 +153,7 @@
        the initial markup: Alpine still initialises nodes added later, so level markup
        must not use Alpine attributes (x-, @, :). -->
   <div class="overlay" :class="overlayOpen ? 'show' : ''" x-cloak
-       role="dialog" aria-modal="true" :aria-label="overlayTitle" :inert="howToOpen">
+       role="dialog" aria-modal="true" :aria-label="overlayTitle" :inert="howToOpen || feedbackOpen">
     <div class="lesson-top">
       <button type="button" class="ui-btn ui-btn--icon" id="ov-back" aria-label="Back to the map" @click="closeOverlay()"><span aria-hidden="true">&larr;</span></button>
       <div class="lesson-heading">
@@ -163,6 +163,8 @@
       <button type="button" class="ui-btn ui-btn--ghost" id="ov-howto-open" x-show="howTo.topics.length > 0" x-cloak
               aria-haspopup="dialog" :aria-expanded="howToExpanded()" :aria-label="howToLabel()" aria-controls="ov-howto" @click="toggleHowTo()">How to play
         <span class="ui-chip" data-tone="attention" id="ov-howto-new" x-show="howToFlagged()" x-cloak aria-hidden="true">New</span></button>
+      <button type="button" class="ui-btn ui-btn--ghost" id="ov-feedback-open" x-show="feedbackShown()" x-cloak
+              aria-haspopup="dialog" aria-controls="feedback-modal" @click="openFeedback()">Feedback</button>
       <p class="visually-hidden" role="status" x-text="howToNote"></p>
     </div>
     <div class="level-host" x-ignore>
@@ -321,6 +323,22 @@
         <button type="button" class="ui-btn ui-btn--icon" id="account-x" aria-label="Close account" @click="closeAccount()"><span aria-hidden="true">&times;</span></button>
       </header>
       <div class="ui-modal-body" id="account-body" x-ignore></div>
+    </div>
+  </div>
+
+  <!-- FEEDBACK: a kit modal over an open level, like Save code. lib/feedback-dialog.mjs draws and wires its body,
+       so the body carries no Alpine attributes and no form (the CSP has form-action 'none'). The overlay is inert while it is open. -->
+  <div class="ui-modal" id="feedback-modal" x-show="feedbackOpen" x-cloak
+       role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+    <div class="ui-modal-card">
+      <header class="ui-modal-head">
+        <div class="ui-modal-heading">
+          <p class="ui-eyebrow">Feedback</p>
+          <h2 id="feedback-title" tabindex="-1">Tell us what you think</h2>
+        </div>
+        <button type="button" class="ui-btn ui-btn--icon" id="feedback-x" aria-label="Close feedback" @click="closeFeedback()"><span aria-hidden="true">&times;</span></button>
+      </header>
+      <div class="ui-modal-body" id="feedback-body" x-ignore></div>
     </div>
   </div>
 

@@ -2,7 +2,7 @@
 // headers vercel.json declares (so the CSP bites locally) and refuses whatever
 // .vercelignore keeps out of the deployment (node_modules/ included), plus dotfiles.
 // It also runs `api/<name>.mjs` at `/api/<name>` (GET and POST) through a Node-to-Web Request adapter, as
-// Vercel does (every Set-Cookie and any 3xx with its Location pass through unchanged); `GUIDE_STUB=1` swaps the guide's model call for a canned reply (local dev only, no key needed); `AUTH_STUB=1` gives the sign-in and account functions a stub Google user (dev@dash0.com) and an in-memory Redis (tools/fake-redis.mjs), data gone on restart; `TELEMETRY_STUB=1` prints one `span ...` line per span instead of sending traces (no network, no token; docs/FOUNDATION.md §2.10).
+// Vercel does (every Set-Cookie and any 3xx with its Location pass through unchanged); `GUIDE_STUB=1` swaps the guide's model call for a canned reply (local dev only, no key needed); `AUTH_STUB=1` gives the sign-in and account functions a stub Google user (dev@dash0.com) and an in-memory Redis (tools/fake-redis.mjs), data gone on restart; `TELEMETRY_STUB=1` prints one `span ...` line per span instead of sending traces (no network, no token; docs/FOUNDATION.md §2.10); `FEEDBACK_STUB=1` makes `/api/feedback` accept a note and print the issue title instead of calling GitHub (docs/FOUNDATION.md §2.11).
 // Usage: npm run dev   (PORT=8080 npm run dev to change the port)
 import { createServer } from 'node:http';
 import { readFile, realpath, stat } from 'node:fs/promises';
@@ -42,7 +42,9 @@ const AUTH_FACTORIES = { 'auth-start': 'createAuthStart', 'auth-callback': 'crea
 /** What a TELEMETRY_STUB server tells the telemetry config: valid and never contacted, since the exporter is the console. */
 const STUB_TELEMETRY_ENV = Object.freeze({ DASH0_OTLP_ENDPOINT: 'http://localhost:4318', DASH0_AUTH_TOKEN: 'auth_stub' });
 /** The functions that make an outbound call to trace: their factory takes the traced `fetch`. */
-const tracedFetch = (name, t) => (name === 'auth-callback' || name === 'guide' ? { fetch: t.trace(globalThis.fetch) } : {});
+const tracedFetch = (name, t) => (name === 'auth-callback' || name === 'guide' || name === 'feedback' ? { fetch: t.trace(globalThis.fetch) } : {});
+/** What a FEEDBACK_STUB server tells the feedback function: configured, and never contacted, since the fetch is the stub below. */
+const STUB_FEEDBACK_ENV = Object.freeze({ FEEDBACK_GITHUB_TOKEN: 'feedback_stub', FEEDBACK_REPO: 'stub/stub' });
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 
@@ -151,7 +153,7 @@ async function resolveFile(root, ignored, decoded) {
   return file;
 }
 
-export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log = console.log, stub = process.env.GUIDE_STUB === '1', authStub = process.env.AUTH_STUB === '1', telemetryStub = process.env.TELEMETRY_STUB === '1', env = null } = {}) {
+export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log = console.log, stub = process.env.GUIDE_STUB === '1', authStub = process.env.AUTH_STUB === '1', telemetryStub = process.env.TELEMETRY_STUB === '1', feedbackStub = process.env.FEEDBACK_STUB === '1', env = null } = {}) {
   const realRoot = realpathSync(root);
   const config = JSON.parse(readFileSync(join(realRoot, 'vercel.json'), 'utf8'));
   config.headers?.forEach((rule) => sourceRegExp(rule.source)); // fail at startup
@@ -166,6 +168,12 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
   if (stub) log('GUIDE_STUB=1: /api/guide answers with a canned reply, no model is called');
   if (authStub) log('AUTH_STUB=1: sign-in is a stub (dev@dash0.com) over an in-memory Redis; use http://localhost, not 127.0.0.1');
   if (telemetryStub) log('TELEMETRY_STUB=1: every api request prints one span line, no trace is sent');
+  if (feedbackStub) log('FEEDBACK_STUB=1: /api/feedback accepts a note and prints the issue title it would open, nothing goes to GitHub (sessions are not stubbed: From is signed out)');
+  // The GitHub call under FEEDBACK_STUB: print the issue title and answer as GitHub does for a created issue.
+  const stubIssueFetch = async (url, init) => {
+    log(`feedback stub: would open issue "${JSON.parse(init.body).title}"`);
+    return Response.json({ number: 1 }, { status: 201 });
+  };
   const modules = new Map();
   let authEnv = null; // built on first use: the port is known once listening
   let fakeRedis = null;
@@ -186,6 +194,9 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
         if (stub && name === 'guide') {
           return instrumented(name, (t) => mod.createGuide({ env: { ANTHROPIC_API_KEY: 'stub' }, fetch: t.trace(stubFetch), log: t.log }));
         }
+        if (feedbackStub && name === 'feedback') {
+          return instrumented(name, (t) => mod.createFeedback({ env: STUB_FEEDBACK_ENV, fetch: t.trace(stubIssueFetch), log: t.log }));
+        }
         if (authStub && Object.hasOwn(AUTH_FACTORIES, name)) {
           // One fake store and one secret for every auth function; AUTH_ORIGIN is http://localhost, the only origin the stub accepts.
           fakeRedis ??= createFakeRedis();
@@ -202,8 +213,8 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
           return instrumented(name, (t) => mod.createEvents({ env: STUB_TELEMETRY_ENV, send: consoleExporter(log), log: t.log }));
         }
         // Under TELEMETRY_STUB the module's own wiring (real env, real exporter) is replaced by a console one.
-        if (telemetryStub && (name === 'guide' || Object.hasOwn(AUTH_FACTORIES, name))) {
-          const factory = name === 'guide' ? 'createGuide' : AUTH_FACTORIES[name];
+        if (telemetryStub && (name === 'guide' || name === 'feedback' || Object.hasOwn(AUTH_FACTORIES, name))) {
+          const factory = name === 'guide' ? 'createGuide' : name === 'feedback' ? 'createFeedback' : AUTH_FACTORIES[name];
           return instrumented(name, (t) => mod[factory]({ log: t.log, ...tracedFetch(name, t) }));
         }
         return mod;

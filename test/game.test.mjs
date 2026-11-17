@@ -204,8 +204,8 @@ test('the guide status is fetched once at init and the level ctx carries it (deb
     game.openLevel('x');
     game.closeOverlay();
     game.openLevel('x');
-    // The account's one GET (#273) rides along outside debug; debug never asks.
-    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/account', 'GET']];
+    // The feedback status (#370) and the account's one GET (#273) ride along outside debug; debug never asks.
+    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/feedback', 'GET'], ['/api/account', 'GET']];
     assert.deepEqual(calls, expected, 'one status request per page');
     assert.equal(ctxs.x.guide.configured, true);
     assert.equal(typeof ctxs.x.guide.ask, 'function');
@@ -1812,8 +1812,10 @@ test('the page scroll is locked while How to play, About or Save code is open, a
   assert.match(read('styles/base.css'), /html\.modal-open, html\.modal-open body \{ overflow: hidden; \}/);
 });
 
-test('the How to play header button stays on one line at 320px', () => {
-  assert.match(read('styles/hub.css'), /#ov-howto-open \{[^}]*white-space: nowrap/);
+test('the How to play and Feedback header buttons stay on one line at 320px, and the header wraps rather than squeezing the title', () => {
+  const css = read('styles/hub.css');
+  assert.match(css, /#ov-howto-open, #ov-feedback-open \{[^}]*white-space: nowrap/);
+  assert.match(css, /@media \(max-width: 520px\) \{[^@]*\.lesson-top \{ flex-wrap: wrap; \}/);
 });
 
 test('the level header names the level number, and Incident for a boss', () => {
@@ -2112,7 +2114,7 @@ test('index.html: the How to play control and modal', () => {
   assert.equal(modal.getAttribute('aria-modal'), 'true', 'modal');
   assert.equal(modal.getAttribute('aria-labelledby'), 'ov-howto-title');
   assert.equal(modal.getAttribute('x-show'), 'howToOpen');
-  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'howToOpen', 'the level is inert while it is open');
+  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'howToOpen || feedbackOpen', 'the level is inert while How to play or the feedback dialog is open');
   assert.equal(shell.querySelector('#ov-howto-title').getAttribute('tabindex'), '-1');
   const x = card.querySelector('#ov-howto-x');
   assert.deepEqual(x.getAttribute('class').split(' '), ['ui-btn', 'ui-btn--icon']);
