@@ -122,7 +122,7 @@ it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:
 
 Behaviour: focus moves to the title on open and back to the opener on close (`app.mjs` `focusSoon`);
 Escape closes the top modal (`onEscape`); the page behind is inert (`#hub` via `hubInert()`, `.overlay`
-via `:inert="howToOpen"`, so How to play sits beside the overlay, never inside it); Tab and Shift+Tab wrap
+via `:inert="overlayInert()"`, so How to play sits beside the overlay, never inside it); Tab and Shift+Tab wrap
 inside (`lib/modal-focus.mjs`, `trapTab`); motion is a short fade and slide that the global
 reduced-motion rule shortens. The reward card is not this modal's markup (D3: it keeps its glow) but it keeps Tab inside the same way, and so does the open level overlay (`trapTab`); a card taller than the screen scrolls.
 How to play shows one guide at a time, for the step type the player is on (`ctx.widget(key)`, called

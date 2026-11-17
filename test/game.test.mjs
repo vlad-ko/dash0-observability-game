@@ -2114,7 +2114,7 @@ test('index.html: the How to play control and modal', () => {
   assert.equal(modal.getAttribute('aria-modal'), 'true', 'modal');
   assert.equal(modal.getAttribute('aria-labelledby'), 'ov-howto-title');
   assert.equal(modal.getAttribute('x-show'), 'howToOpen');
-  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'howToOpen || feedbackOpen', 'the level is inert while How to play or the feedback dialog is open');
+  assert.equal(shell.querySelector('.overlay').getAttribute(':inert'), 'overlayInert()', 'the level is inert while How to play or the feedback dialog is open (the truth table is in modals-table.test.mjs)');
   assert.equal(shell.querySelector('#ov-howto-title').getAttribute('tabindex'), '-1');
   const x = card.querySelector('#ov-howto-x');
   assert.deepEqual(x.getAttribute('class').split(' '), ['ui-btn', 'ui-btn--icon']);
