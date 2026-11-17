@@ -77,7 +77,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Each signal answers a different question. Traces: how does a request travel through a distributed system? Metrics: what is happening at the system level? Logs: what discrete events occurred? Profiles: which code is consuming resources?"
+          "text": "Each signal answers a different question. Traces: how does a request travel through a distributed system? Metrics: what is happening at the system level? Logs: what events happened? Profiles: which code is consuming resources?"
         },
         {
           "type": "paragraph",
@@ -115,7 +115,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "It is vendor- and tool-agnostic, so it can be used with a broad variety of observability backends. It follows two principles: you own the data that you generate, and there is no vendor lock-in. You only have to learn a single set of APIs and conventions."
+          "text": "It is vendor-neutral and tool-agnostic, so it can be used with a broad variety of observability backends. It follows two principles: you own the data that you generate, and there is no vendor lock-in. You only have to learn a single set of APIs and conventions."
         }
       ],
       "sources": [

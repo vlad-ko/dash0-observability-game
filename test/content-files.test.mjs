@@ -34,6 +34,11 @@ test('a duplicate key is caught, at any depth', () => {
   assert.deepEqual(read('d2.mjs', 'export default {"x":[{"k":1,"k":2}]};').errors, ['duplicate key "k"']);
 });
 
+test('escaped quotes and backslashes inside strings and keys are scanned correctly', () => {
+  assert.deepEqual(read('e1.mjs', 'export default {"a\\"b":1,"a\\"b":2};').errors, ['duplicate key "a\\"b"']);
+  assert.deepEqual(read('e2.mjs', 'export default {"a\\"":1,"a\\\\":2,"t":"say \\"hi\\": ok"};').errors, []);
+});
+
 test('the same key in different objects, or as a string value, is not a duplicate', () => {
   assert.deepEqual(read('s1.mjs', 'export default {"a":{"a":1},"b":[{"a":1},{"a":2}],"c":"a","d":"a"};').errors, []);
 });

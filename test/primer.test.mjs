@@ -61,6 +61,15 @@ const BAD = {
     },
     'placeholderNote',
   ],
+  'note with PLACEHOLDER not at the start': [
+    (p) => {
+      p.placeholder = true;
+      p.placeholderNote = 'Draft, PLACEHOLDER until reviewed';
+    },
+    'placeholderNote',
+  ],
+  'username only in the url': [(p) => (p.chapters[0].sources[0].url = 'https://u@opentelemetry.io/'), '.url'],
+  'lookalike host': [(p) => (p.chapters[0].sources[0].url = 'https://evilopentelemetry.io/docs/'), '.url'],
   'unknown key chapter': [(p) => (p.chapter = []), 'chapter'],
   'duplicate chapter id': [(p) => (p.chapters[1].id = 'c-one'), 'chapters[1].id'],
   'claap link marked public': [(p) => (p.chapters[0].sources[0] = { kind: 'claap', label: 'Call', url: 'https://app.claap.io/x', audience: 'public' }), '.audience'],
@@ -91,6 +100,37 @@ test('limits: a paragraph of exactly 600 characters, a list of 10 items and a cl
   });
   assert.deepEqual(errorsOf(p), []);
   assert.equal(LIMITS.paragraph, 600);
+});
+
+test('hosts: an uppercase host and a subdomain pass for their kind', () => {
+  for (const url of ['https://OpenTelemetry.IO/docs/', 'https://www.opentelemetry.io/docs/']) {
+    assert.deepEqual(errorsOf(mutate((p) => (p.chapters[0].sources[0].url = url))), [], url);
+  }
+});
+
+test('array holes are errors naming their path, never a throw', () => {
+  // A real hole (spread would fill it with undefined): the array is one longer than its last element.
+  const holey = (...items) => {
+    const a = [...items];
+    a.length += 1;
+    return a;
+  };
+  assert.equal(1 in holey('a'), false);
+  const withHole = (fn, path) => {
+    const r = check(mutate(fn));
+    assert.equal(r.ok, false, path);
+    assert.ok(r.errors.some((e) => e.includes(path)), `${path} in ${JSON.stringify(r.errors)}`);
+  };
+  withHole((p) => (p.chapters = holey(chapter('c-one'))), 'chapters[1]');
+  withHole((p) => (p.chapters[0].blocks = holey({ type: 'paragraph', text: 'x' })), 'chapters[0].blocks[1]');
+  withHole((p) => (p.chapters[0].sources = holey(otel())), 'chapters[0].sources[1]');
+  withHole((p) => (p.overview = [{ type: 'list', items: holey('a') }]), 'overview[0].items[1]');
+});
+
+test('options and views never throw on a null options argument', () => {
+  assert.equal(validatePrimer(P0(), null).ok, false, 'no act ids means the act is unknown');
+  assert.equal(validatePrimers([P0()], null).ok, false);
+  assert.equal(primerView(P0(), 2, null).next, 'Done');
 });
 
 test('block shapes: callout tone, code and list keys are checked', () => {
@@ -129,6 +169,19 @@ test('validatePrimers: a duplicate act names the act', () => {
   assert.equal(validatePrimers('x', { actIds: ACT_IDS }).ok, false);
 });
 
+test('buildPrimers: one primer per act, a deep-frozen copy that is not the input', () => {
+  const input = P0();
+  const twin = P0();
+  const { byAct, errors } = buildPrimers([input, twin], { acts: [{ id: 'a0' }] });
+  assert.deepEqual(Object.keys(byAct), ['a0']);
+  assert.ok(errors.some((e) => e.includes('act') && e.includes('a0')), JSON.stringify(errors));
+  assert.notEqual(byAct.a0, input);
+  assert.ok(Object.isFrozen(byAct.a0.chapters[0].sources[0]));
+  assert.ok(Object.isFrozen(byAct.a0.overview));
+  input.title = 'changed later';
+  assert.equal(byAct.a0.title, 'Act zero');
+});
+
 test('buildPrimers keeps the valid, drops the invalid, freezes byAct and reports', () => {
   const broken = { ...P0(), act: 'a1', title: '' };
   const { byAct, errors } = buildPrimers([P0(), broken], { acts: [{ id: 'a0' }, { id: 'a1' }] });
@@ -138,6 +191,9 @@ test('buildPrimers keeps the valid, drops the invalid, freezes byAct and reports
 });
 
 const stored = (e) => e;
+test('status: a repeated stored id counts once', () => {
+  assert.deepEqual(primerStatus(P0(), stored({ seen: true, skipped: false, read: ['c-one', 'c-one'] })), { status: 'reading', read: 1, total: 3 });
+});
 test('status: no entry is new', () => {
   assert.deepEqual(primerStatus(P0(), undefined), { status: 'new', read: 0, total: 3 });
 });
@@ -193,6 +249,7 @@ test('view: chapters carry position, next label and sources', () => {
   assert.equal(first.sources.length, 1);
   assert.equal(primerView(p, 1, { then: 'lv', thenName: 'Level' }).next, 'Next');
   assert.equal(primerView(p, 2, {}).next, 'Done');
+  assert.equal(primerView(p, 2, { then: 'lv' }).next, 'Done', 'no level name, no "Start: undefined"');
   assert.equal(primerView(p, 2, { then: 'lv', thenName: 'Monitoring vs observability' }).next, 'Start: Monitoring vs observability');
 });
 

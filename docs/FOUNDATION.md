@@ -606,15 +606,15 @@ never reaches the browser (the CSP `connect-src` is unchanged). The wire contrac
 Each act can have a primer: a short overview and a few chapters of reading, written by people, kept apart from code. Phase 1a
 ships the data, the validator and the saved state; the view and hub wiring come after. Authoring guide: `docs/PRIMERS.md`.
 
-- Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;` (leading `//`
-  comment lines allowed, none starting `// Spec:`), named after the registry act id. `content/core/primers/index.mjs` imports
+- Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;` (at least one
+  leading `//` comment line, none starting `// Spec:`, and no blank line between them and `export default`), named after the registry act id. `content/core/primers/index.mjs` imports
   each file into `PRIMERS`. The content test reads each file with `readJsonModule` (`test/helpers/content-files.mjs`: strips the
   wrapper, `JSON.parse`s, and reports duplicate keys, which `JSON.parse` drops silently) and deep-compares it with the import,
   so a trailing comma, a comment inside the object (`//` lines are allowed only before `export default`) or a repeated key
   fails, and so does a `// Spec:` line anywhere in the header. Text rules shared by every kind of authored
   content live in `lib/content/text-rules.mjs` (`isId`, `checkPlain`, `checkCode`: trimmed, no control characters, no em
   dash; code may hold newlines and tabs).
-- Shape (exact key sets, an unknown key is an error, every string trimmed and free of control characters; the limits are the
+- Shape (exact key sets, an unknown key is an error, every string trimmed and free of control characters, except that `code` text may hold newlines and tabs; the limits are the
   exported `LIMITS`, the enums `BLOCK_TYPES`, `LINK_KINDS`, `AUDIENCES`, `CALLOUT_TONES` and `KIND_HOSTS` in `lib/primer.mjs`):
   `{act, placeholder, placeholderNote?, title, overview: Block[], chapters: [{id, title, blocks: Block[], sources: Link[]}]}`.
   `act` is a registry act id, one primer per act. A chapter `id` is kebab-case, unique in its primer, and is the saved read key:
@@ -638,7 +638,7 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   is never written), `unavailable`, `invalid` (bad act id) or `full` (a 51st act, or over 50 read ids; nothing written).
 - Invariants: the merge (`mergePrimerEntry`) only moves up (seen OR, skipped OR, sorted read union), so it is commutative,
   associative and idempotent and two tabs cannot undo each other. Unknown acts and chapter ids already stored are kept. A corrupt
-  value is overwritten with no backup (it is a preference, not progress); an unreadable store means the primer simply shows.
+  value is overwritten with no backup (it is a preference, not progress); an unreadable store means the primer shows.
 
 ## 3. Invariants
 

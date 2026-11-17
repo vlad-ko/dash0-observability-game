@@ -13,9 +13,10 @@ problem, not as a broken page. The contract behind it is docs/FOUNDATION.md §2.
 3. Add the file to `content/core/primers/index.mjs`: one `import` line and one entry in `PRIMERS`.
 4. In a terminal in the repo folder, run `npm test`. Fix what it names.
 
-Keep the frame exactly: optional `//` comment lines, then `export default`, then one JSON object, then `;`. JSON is strict: every
-key and every string in double quotes, no trailing commas, no repeated key in one object. Comment lines are allowed only above
-`export default`, never inside the object, and never a line starting `// Spec:` (that marks level files).
+Keep the frame exactly: at least one `//` comment line saying what the file is, then `export default`, then one JSON object,
+then `;`. JSON is strict: every key and every string in double quotes, no trailing commas, no repeated key in one object.
+Comment lines go only above `export default`, with no blank line between them and it, never inside the object, and never a line
+starting `// Spec:` (that marks level files).
 
 ## Blocks
 

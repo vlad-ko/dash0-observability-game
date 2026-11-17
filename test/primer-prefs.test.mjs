@@ -57,6 +57,25 @@ test('recordPrimer: merge only goes up, keeps what was stored, and writes exactl
   assert.equal(store.data.get(PRIMER_KEY), '{"v":1,"acts":{"act-0":{"seen":true,"skipped":false,"read":["c-one","c-two"]}}}');
 });
 
+test('readPrimers: an older version reads as ok', () => {
+  const r = read(at('{"v":0,"acts":{"act-0":{"seen":true}}}'));
+  assert.equal(r.status, 'ok');
+  assert.equal(r.acts.get('act-0').seen, true);
+});
+
+test('readPrimers: read-side caps keep at most 50 acts and 50 read ids per act', () => {
+  const acts = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`act-${String(i).padStart(2, '0')}`, { seen: true, read: [] }]));
+  assert.equal(read(at(JSON.stringify({ v: 1, acts }))).acts.size, 50);
+  const many = Array.from({ length: 60 }, (_, i) => `c-${String(i).padStart(2, '0')}`);
+  assert.equal(read(at(JSON.stringify({ v: 1, acts: { 'act-0': { read: many } } }))).acts.get('act-0').read.length, 50);
+});
+
+test('recordPrimer: a null change is a no-op merge, not a throw', () => {
+  const store = at();
+  assert.deepEqual(recordPrimer(() => store, 'act-0', null), { saved: true });
+  assert.deepEqual(read(store).acts.get('act-0'), entry(false, false, []));
+});
+
 test('recordPrimer: seen and skipped are never unset by a later record', () => {
   const store = at();
   recordPrimer(() => store, 'act-0', { seen: true, skipped: true });
