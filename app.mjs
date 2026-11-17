@@ -977,7 +977,7 @@ export function createGame(deps) {
 
     // ---------- How to play modal ----------
     // A kit modal outside .overlay and the level's DOM: a step never wipes it. While it is open the
-    // overlay is inert (index.html :inert="howToOpen") and Tab stays inside (trapTab). Focus returns
+    // overlay is inert (index.html :inert="overlayInert()", from the MODALS table) and Tab stays inside (trapTab). Focus returns
     // to the header's How to play button when it closes.
     howToExpanded() {
       return this.howToOpen ? 'true' : 'false';
@@ -1245,7 +1245,7 @@ export function createGame(deps) {
       return sel === null ? false : trapTab(e, doc.querySelector(sel), doc);
     },
 
-    // One window-level Escape handler: closes the reward, else the feedback dialog (it sits over a level), else the About dialog, else Save code, else the How to play modal, else the level, but never the
+    // One window-level Escape handler: closes the reward first, then one modal in the MODALS escape order, and the level last, but never the
     // level while the player is typing in it. A widget that handled the Escape (it called
     // preventDefault, e.g. Build it cancelling a pick) owns it.
     onEscape(e) {
