@@ -222,7 +222,7 @@ test('S3 renderSort: kit markup in one split; the side column with a hidden succ
   setup();
   assert.deepEqual(qa('[data-bucket]').map((b) => b.dataset.bucket), ['metric', 'log', 'trace']);
   assert.deepEqual(qa('[data-bucket]').map((b) => b.textContent.replace(/\s+/g, ' ').trim()), ['Metric (0)', 'Log (0)', 'Trace (0)']);
-  // #261: no boxes. Each category is one zone holding its choice button, the heading with the tally and the placed items.
+  // #261: no boxes. Each category is one zone holding its choice button (name and tally) and the placed items.
   for (const b of qa('[data-bucket]')) {
     assert.equal(b.closest('[data-drop]')?.dataset.drop, b.dataset.bucket, `${b.dataset.bucket} is a choice button inside its own drop zone (#359)`);
     assert.equal(b.classList.contains('ui-option--choice'), true, `${b.dataset.bucket} is a kit choice option`);
@@ -555,7 +555,7 @@ test('#359 a drop on the heading, the placed list or the disabled button sorts t
     fire('drop', el, dataTransfer);
     return allowed;
   };
-  assert.equal(dropOn('i2', zoneOf('metric').querySelector('[data-bucket]')), true, 'dragover on the target button bubbles to the zone and allows the drop');
+  assert.equal(dropOn('i2', zoneOf('metric').querySelector('[data-bucket] .sort-group-name')), true, 'dragover on the name inside the target bubbles to the zone and allows the drop');
   assert.equal(counts.mistakes, 1, 'a wrong zone costs a mistake');
   assert.equal(placed('log'), '');
   assert.equal(dropOn('i2', zoneOf('log').querySelector('[data-bucket-list]')), true);
@@ -1253,6 +1253,11 @@ test('#321 a finished board keeps no live controls: no instructions, no item ban
   assert.equal(qa('[data-bucket]').length, 0, 'no drop buttons');
   assert.equal(q('[data-region="pool"]').innerHTML, '', 'the band is empty so the stylesheet can drop it');
   assert.equal(heading('metric'), 'Metric (2)');
+  for (const list of qa('[data-bucket-list]')) {
+    const named = qa(`[id="${list.getAttribute('aria-labelledby')}"]`);
+    assert.equal(named.length, 1, `${list.dataset.bucketList} list label resolves to one element`);
+    assert.equal(named[0].textContent.replace(/\s+/g, ' ').trim(), heading(list.dataset.bucketList), 'and reads the name and count');
+  }
   assert.equal(placed('metric'), 'Request rateQueue depth');
 });
 
