@@ -92,7 +92,7 @@ const DASH0 = [
     key: 'both',
     label: 'No: Dash0 accepts both temporalities, and you query with PromQL',
     right: true,
-    why: 'Dash0 takes delta and cumulative series, and you query metrics with PromQL. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. Dash0's docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram.',
+    why: 'Dash0 takes delta and cumulative series, and you query metrics with PromQL. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram.',
   },
   {
     key: 'processor',
