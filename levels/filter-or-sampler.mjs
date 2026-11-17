@@ -56,7 +56,7 @@ const VERDICT = [
     key: 'follow-up',
     label: 'The filter keeps whole traces when the spans of one trace reach the same Collector before the filter processor runs',
     why:
-      'That matters for a tail sampler, which needs every span of a trace in one Collector to decide. ' +
+      'Where the spans go does not change what a filter keeps. It matters for a tail sampler, which needs every span of a trace in one Collector to decide. ' +
       `A filter judges each span alone, so where the other spans go changes nothing: it still drops the ${DROPPED} healthy spans of the failed trace.`,
   },
 ];

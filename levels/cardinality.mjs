@@ -195,7 +195,7 @@ const DASH0 = [
   },
   {
     key: 'spam-free',
-    label: 'Add a spam filter on the metric: the data is dropped before it reaches ingest, so your services stop sending it',
+    label: 'Add a spam filter on the metric: the dropped points never reach ingest and stop counting toward the data you send',
     why: 'Dropped data is not stored, but it still passes through SignalControl and carries the ingest charge. A spam filter reduces what is stored, not what you send.',
   },
   {

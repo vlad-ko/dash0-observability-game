@@ -88,7 +88,7 @@ test('a panel is the evidence plus at most one sentence of interpretation: few s
 const CODE_LIKE = /[A-Za-z0-9]*(?:[_/:][A-Za-z0-9_/:.-]*|\d[A-Za-z0-9.]*|[A-Za-z]\.[A-Za-z][A-Za-z0-9._-]*)/g;
 const count = (re) => (text) => (text.match(re) ?? []).length;
 
-/** Measures of a label: name -> (plain text) -> number. Same rules as the Spot tells' text measures. */
+/** Measures of a label: name -> (plain text) -> number. Same rules as the Spot tells' text measures, minus length. */
 const MEASURES = {
   // No `length`: the length rank is bounded across boards in test/choice-tells.test.mjs (#383).
   words: count(/\w+/g),
@@ -133,18 +133,30 @@ test('no word, digit, comma, quote or code-name count picks the right cause on a
   assert.deepEqual(all, {});
 });
 
-test('the right cause is not the longest label on more than half the incident boards, nor the shortest on more than half (the rank band itself is in choice-tells)', async () => {
-  const boards = await incidentBosses();
-  let longest = 0;
-  let shortest = 0;
-  for (const { scenario } of boards) {
-    const labels = labelsOf(scenario);
-    const right = labels[scenario.hypotheses.findIndex((h) => h.right)];
-    if (labels.every((l) => l.length <= right.length)) longest++;
-    if (labels.every((l) => l.length >= right.length)) shortest++;
+const MAX_LENGTH_MARGIN = 10; // characters the right label may stick out past the next-longest or next-shortest one
+
+/** How many characters the right label sticks out past the others: past the longest or short of the shortest (0 when it is inside the range). */
+function lengthMargin(labels, rightIndex) {
+  const right = labels[rightIndex].length;
+  const others = labels.filter((_, i) => i !== rightIndex).map((l) => l.length);
+  return Math.max(0, right - Math.max(...others), Math.min(...others) - right);
+}
+
+test(`the right cause sticks out past the other labels by at most ${MAX_LENGTH_MARGIN} characters on any incident boss (the rank band itself is in choice-tells)`, async () => {
+  const over = {};
+  for (const { id, scenario } of await incidentBosses()) {
+    const m = lengthMargin(labelsOf(scenario), scenario.hypotheses.findIndex((h) => h.right));
+    if (m > MAX_LENGTH_MARGIN) over[id] = m;
   }
-  assert.equal(longest <= boards.length / 2, true, `${longest} of ${boards.length} boards have the right cause longest`);
-  assert.equal(shortest <= boards.length / 2, true, `${shortest} of ${boards.length} boards have the right cause shortest`);
+  assert.deepEqual(over, {});
+});
+
+test('the length margin has teeth: a 32-character gap past the longest or short of the shortest is caught, a small one is not', () => {
+  const others = ['a'.repeat(60), 'a'.repeat(70), 'a'.repeat(80)];
+  assert.equal(lengthMargin([...others, 'a'.repeat(112)], 3), 32);
+  assert.equal(lengthMargin(['a'.repeat(28), ...others], 0), 32);
+  assert.equal(lengthMargin([...others, 'a'.repeat(85)], 3), 5);
+  assert.equal(lengthMargin([...others, 'a'.repeat(65)], 3), 0);
 });
 
 test('the label tell rules have teeth: they flag a most-words or fewest-words answer and let a middle one pass', () => {
@@ -153,6 +165,11 @@ test('the label tell rules have teeth: they flag a most-words or fewest-words an
   assert.deepEqual(Object.keys(tellsOf('x', labels, 1)), ['x: fewest words']);
   assert.deepEqual(tellsOf('x', labels, 0), {});
   assert.deepEqual(Object.keys(tellsOf('x', ['a user_id one', 'a plain words', 'one plain bit', 'two plain bit'], 0)), ['x: most code-like words']);
+  // One fixture per remaining measure: the right label alone has the most (or fewest) of it.
+  assert.deepEqual(Object.keys(tellsOf('x', ['one, two', 'one two', 'one two', 'one two'], 0)), ['x: most commas']);
+  assert.equal(Object.keys(tellsOf('x', ['one 22', 'one two', 'one two', 'one two'], 0)).includes('x: most digits'), true); // a number is also a code-like word
+  assert.deepEqual(Object.keys(tellsOf('x', ['say "one"', 'one two', 'one two', 'one two'], 0)), ['x: most quotes']);
+  assert.deepEqual(tellsOf('x', ['one, two', 'one, two', 'one two', 'one two'], 0), {}, 'a tie of two is a coin flip, not a tell');
   assert.equal(pickShare([3, 3, 1, 1], 0, 'most'), 0.5, 'a tie of two is a coin flip, not a tell');
 });
 

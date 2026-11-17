@@ -129,7 +129,7 @@ const rankFromLongest = (hyps) => {
   return lens.filter((n) => n > lens[hyps.findIndex((h) => h.right)]).length;
 };
 
-test('the right incident cause is not concentrated at one length rank: no rank holds more than chance plus the band of the boards', async () => {
+test('the right incident cause is not concentrated at one length rank: no length rank holds more than the rounded-up chance plus 1 of the incident boards', async () => {
   const boards = await allIncidentBoards();
   assert.ok(boards.length >= 8, `found ${boards.length} incident boards`);
   const ranks = {};

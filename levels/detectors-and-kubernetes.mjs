@@ -132,7 +132,7 @@ const RBAC = [
   },
   {
     key: 'nothing',
-    label: 'No permission: it reads <code>k8s.pod.name</code> and <code>k8s.namespace.name</code> off the telemetry that arrives, with no lookup against the cluster or its API',
+    label: 'It reads <code>k8s.pod.name</code> and <code>k8s.namespace.name</code> off the telemetry that arrives, with no lookup against the cluster or its API',
     why: 'The processor looks the pod up: it keeps a record of the cluster\'s pods, and matches telemetry to one, by default through the IP address of the incoming connection. That lookup uses the Kubernetes API, which needs permissions.',
   },
 ];

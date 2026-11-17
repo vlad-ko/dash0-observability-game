@@ -185,7 +185,7 @@ const PARSE = [
 const DASH0 = [
   {
     key: 'log-ai',
-    label: 'Log AI infers a severity for them and groups similar messages into patterns, with named attributes',
+    label: 'Log AI infers a severity for them and groups similar messages into patterns, with the variable parts as named attributes',
     right: true,
     why: 'Log AI works on unstructured messages as they are ingested. It infers a severity where none is set, and it extracts patterns: the variable parts, such as order numbers, become placeholders in the pattern and named attributes you can filter and group by (the Patterns view, and the <code>dash0.log.pattern</code> attribute). It never overrides a severity that is already set, and it leaves structured logs such as JSON to JSON log processing. It relies on resource attributes, so on Kubernetes the <code>k8sattributes</code> processor still matters. A parser in the Collector stays the precise fix; Log AI is for text nobody parsed.',
   },
