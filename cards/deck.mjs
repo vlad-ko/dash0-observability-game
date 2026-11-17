@@ -145,11 +145,11 @@ export const DECK = [
       'Instrument the same library twice, say an injected agent plus your own SDK setup, and ' +
       'each call can appear twice.',
     back:
-      'Whether a second setup duplicates spans depends on the instrumentation. Patch-based ' +
-      'ones, such as the http and express server spans, unwrap before they wrap again, so ' +
-      'they stay single. Instrumentations built on diagnostics_channel, such as undici and ' +
-      "Node's fetch, subscribe to a channel, so a second setup subscribes again and each fetch call can get a CLIENT " +
-      "span from each setup. Run one setup: the operator's injected agent or your own SDK, and add business " +
+      'Whether a second setup duplicates spans depends on the instrumentation. In the cart ' +
+      'scenario, an injected agent and a tracing.js NodeSDK both instrument fetch, so each call gets a ' +
+      'CLIENT span from each setup. The undici instrumentation behind fetch subscribes to ' +
+      'diagnostics_channel, which a second setup can subscribe to again; this is the scenario, not a rule ' +
+      "for every library. Run one setup: the operator's injected agent or your own SDK, and add business " +
       'spans and attributes with the API.',
     specUrl: 'https://opentelemetry.io/docs/zero-code/js/',
     dash0Angle: null,
@@ -184,7 +184,7 @@ export const DECK = [
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
       'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
-      'backends, not for Dash0. Counters of either temporality work there. Its docs name one catch: a delta histogram ' +
+      'backends, not for Dash0. Its docs name one catch: a delta histogram ' +
       'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },
   {
@@ -290,7 +290,7 @@ export const DECK = [
       'RED (rate, errors, duration) reads a service\'s requests; USE (utilisation, saturation, errors) reads a resource.',
     back:
       'RED is Tom Wilkie\'s checklist for each request-driven service: Rate, the requests per second; Errors, how many ' +
-      'of them fail (usually shown as a share); Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
+      'of them fail (often shown as a rate); Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
       'resource, such as a CPU or a disk: Utilisation, how busy it is; Saturation, how much work waits for it, often a ' +
       'queue; Errors, the count of error events. A burst can saturate a resource while its average utilisation looks ' +
       'low. When a service sends traces but no metrics, the Collector\'s span_metrics connector (contrib) turns the spans ' +

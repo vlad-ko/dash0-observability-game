@@ -158,7 +158,7 @@ const CARDS = {
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
       'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
-      'backends, not for Dash0. Counters of either temporality work there. Its docs name one catch: a delta histogram ' +
+      'backends, not for Dash0. Its docs name one catch: a delta histogram ' +
       'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },
   'averages-hide-tails': {
@@ -225,7 +225,7 @@ const CARDS = {
       'RED (rate, errors, duration) reads a service\'s requests; USE (utilisation, saturation, errors) reads a resource.',
     back:
       'RED is Tom Wilkie\'s checklist for each request-driven service: Rate, the requests per second; Errors, how many ' +
-      'of them fail (usually shown as a share); Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
+      'of them fail (often shown as a rate); Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
       'resource, such as a CPU or a disk: Utilisation, how busy it is; Saturation, how much work waits for it, often a ' +
       'queue; Errors, the count of error events. A burst can saturate a resource while its average utilisation looks ' +
       'low. When a service sends traces but no metrics, the Collector\'s span_metrics connector (contrib) turns the spans ' +
