@@ -216,7 +216,7 @@ export default {
       ctx.renderStep(
         step({
           wide: false,
-          bodyHtml: `${ctx.speech('One of the four is still settling.')}${question({ id: 'sig-q-new', html: 'Which signal is the newest and still maturing?' })}${choiceHtml(ctx, NEWEST, { id: 'sig', labelledBy: 'sig-q-new' })}`,
+          bodyHtml: `${ctx.speech('One of the four is still settling.')}${question({ id: 'sig-q-new', html: 'Which OpenTelemetry signal is the newest and still maturing?' })}${choiceHtml(ctx, NEWEST, { id: 'sig', labelledBy: 'sig-q-new' })}`,
         }),
         actions({ wide: false, buttonsHtml: finishButton('sig-finish', 'Pick the right answer to finish the level.') }),
       );

@@ -295,6 +295,15 @@ test('every Act 0 step waits for its answer and states each outcome in words', (
   }
 });
 
+test('the-signals: the newest-signal question names OpenTelemetry (#372)', () => {
+  start('the-signals');
+  PIN['the-signals'].steps.slice(0, -1).forEach((step) => {
+    sortStep(step);
+    click('#sig-next');
+  });
+  assert.match(q('#sig-q-new').textContent, /OpenTelemetry signal/);
+});
+
 test('focus walk: each step starts on its first control, moves on, and ends on Finish', () => {
   for (const id of Object.keys(PIN)) {
     const { focus } = start(id);
