@@ -35,7 +35,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Spans that share a trace ID and point to their parents with a parent ID form a trace. The root span has no parent ID. Spans can be nested: child spans represent sub-operations."
+          "text": "A trace is the path of a request through your application. The root span denotes the beginning and end of the entire operation. Spans can be nested: child spans represent sub-operations."
         },
         {
           "type": "paragraph",

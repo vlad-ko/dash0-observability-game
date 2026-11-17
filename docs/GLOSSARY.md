@@ -66,6 +66,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **Span link**: a reference to another span that is related but not a parent, used
   for batches and fan-in.
 - **Context**: the active trace/span (and baggage) carried through a process.
+- **Span context**: the part of a span that travels with the context: its trace ID, its span ID, trace flags and trace state.
 - **Context propagation**: passing context between processes, usually via W3C
   `traceparent` and `tracestate` headers. (Act 2)
 - **Symptom hunt**: a level shape where an alert and a view show the symptom and the player
