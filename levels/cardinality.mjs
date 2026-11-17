@@ -31,6 +31,8 @@ const TIER_AND_KIND = sum(ROUTE_STATUS, TIER_KIND, 0);
 const CAP = 140;
 
 // What each {{name}} in the content file is replaced with (every name is used, and every figure in the copy is here).
+// The old copy printed some of the small counts raw and some through n(); every one is under 1,000, so both print the
+// same and one var serves both. A count that could pass 1,000 (user, the products) goes through n() here.
 const VARS = {
   method: VALUES.method,
   route: VALUES.route,

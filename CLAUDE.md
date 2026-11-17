@@ -19,7 +19,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
 - `index.html`, `main.mjs` (the only file that touches Alpine), `styles/`.
 - `lib/` pure modules, `levels/` one file per level + `levels/index.mjs` registry,
   `cards/deck.mjs`, `hub/` globe data.
-- `content/core/` the words, as strict-JSON modules (level text in `levels/`, act primers in `primers/`), and `lib/content/` the shared code that checks and joins them to a level's logic (docs/CONTENT.md, docs/PRIMERS.md, docs/FOUNDATION.md §2.12 and §2.13); `content/` is deployed.
+- `content/core/` the words, as strict-JSON modules, and `lib/content/` the shared code that checks and joins them to a level's logic: docs/CONTENT.md, docs/PRIMERS.md; `content/` is deployed.
 - `lib/otel/` server telemetry for `api/`, off unless the Dash0 variables are set: docs/FOUNDATION.md §2.10.
 - `vendor/` self-hosted Alpine 3.14.1, js-yaml 5.5.0 (an ES module, imported by `lib/configure/`) and three.js 0.180.0 (`vendor/three-0.180.0/`, upstream file names, imported by `lib/globe-render.mjs` and `lib/swirl-render.mjs`), pinned by `vendor/SHA256SUMS`.
 - `test/` (`*.test.mjs`; `test/helpers/dom.mjs` is the linkedom DOM + click helpers).

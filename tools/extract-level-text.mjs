@@ -1,7 +1,8 @@
 // Prints every content-allowlisted text field of a level as a content file (#391, docs/CONTENT.md), the first
 // step of converting a level: `node tools/extract-level-text.mjs <level-id>`. Text only, in the order the level
 // shows it, each element carrying the id or key it joins on; answers, figures and wiring stay in the level file.
-// Values print as they are today, so a `${...}` in old copy appears as its result: put `{{name}}` back by hand.
+// Values print as they are today, so a `${...}` in old copy appears as its result: put `{{name}}` back by hand. Run it on a level that is not converted yet: on a converted
+// one the keys come out in the merged order (the logic's keys first), so the text is the same but the file differs.
 // A developer tool, kept out of the deployed site by .vercelignore.
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -12,9 +13,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 // The text and the joining ids inside `node`, or undefined when it holds none. Identity keys come first.
-function pick(node, key) {
+function pick(node) {
   if (Array.isArray(node)) {
-    const list = node.map((x) => pick(x, key)).filter((x) => x !== undefined);
+    const list = node.map((x) => pick(x)).filter((x) => x !== undefined);
     return list.length ? list : undefined;
   }
   if (!isObject(node)) return undefined;
@@ -26,13 +27,13 @@ function pick(node, key) {
     if (k === MAP_KEY && isObject(v)) out[k] = { ...v };
     else if (TEXT_KEYS.includes(k) && typeof v === 'string') out[k] = v;
     else if (CONTAINER_KEYS.includes(k)) {
-      const inner = pick(v, k);
+      const inner = pick(v);
       if (inner === undefined) continue;
       out[k] = inner;
     } else continue;
     found = true;
   }
-  return found || key === 'steps' ? out : undefined;
+  return found ? out : undefined;
 }
 
 /** The content object of a level (its default export), in the shape bindLevel reads. */
@@ -44,7 +45,7 @@ export function extractLevelText(level) {
       const s = {};
       for (const k of ['intro', 'question', 'show', 'code']) if (typeof step[k] === 'string') s[k] = step[k];
       const type = STEP_TYPE_KEYS.find((k) => k in step);
-      s[type] = pick(step[type], type) ?? { id: step[type].id };
+      s[type] = pick(step[type]) ?? { id: step[type].id };
       return s;
     });
     out.play = { finish: level.play.finish, steps };

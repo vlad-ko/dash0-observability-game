@@ -6,7 +6,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { liveRegistry } from '../app.mjs';
+import { bindText } from '../lib/content/bind.mjs';
 import { validatePlay } from '../lib/play.mjs';
+import { contentFileText, extractLevelText } from '../tools/extract-level-text.mjs';
 import { readJsonModule } from './helpers/content-files.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,13 +68,30 @@ test('changing the content changes the level, and withText does not touch what i
     edited.name = 'An edited name';
     edited.play.finish = 'An edited finish text for this level.';
     edited.play.steps[0].intro = 'An edited intro for the first step.';
+    const given = structuredClone(edited);
     const level = mod.withText(edited);
     assert.equal(level.name, 'An edited name', id);
     assert.equal(level.play.finish, 'An edited finish text for this level.', id);
     assert.equal(level.play.steps[0].intro, 'An edited intro for the first step.', id);
     assert.equal(level.id, id);
-    assert.deepEqual(edited.name, 'An edited name');
-    assert.notDeepEqual(level, mod.default, id);
+    assert.deepEqual(edited, given, `${id}: withText left its input as it was given`);
+    level.play.steps[0].intro = 'changed after the build';
+    assert.equal(edited.play.steps[0].intro, 'An edited intro for the first step.', `${id}: the level shares nothing with its input`);
+  }
+});
+
+test('the extract tool reproduces a converted level without fill-ins byte for byte', async () => {
+  const mod = await load('good-alerts');
+  assert.equal(contentFileText(mod.default), readFileSync(join(DIR, 'good-alerts.mjs'), 'utf8'));
+});
+
+test('the extracted text of every live play level binds with no errors (any live copy can move to a content file)', () => {
+  const reg = liveRegistry();
+  const played = reg.order.map((id) => reg.levels[id]).filter((l) => l.play);
+  assert.ok(played.length >= 40, `the corpus is large (${played.length})`);
+  for (const level of played) {
+    const { errors } = bindText(extractLevelText(level), { id: level.id });
+    assert.deepEqual(errors, [], level.id);
   }
 });
 
@@ -86,10 +105,10 @@ test('the logic file holds no copy: no text key on any code line', () => {
   }
 });
 
-test('a converted level refuses text that its logic already holds', async () => {
+test('a converted level refuses an answer flag in its content, naming the level and the key', async () => {
   const mod = await load('good-alerts');
   const core = (await import(pathToFileURL(join(DIR, 'good-alerts.mjs')).href)).default;
   const bad = structuredClone(core);
   bad.play.steps[1].choice.choices[2].right = true;
-  assert.throws(() => mod.withText(bad), /good-alerts/);
+  assert.throws(() => mod.withText(bad), /good-alerts[\s\S]*choices\[2\]\.right: "right" is not a content key/);
 });

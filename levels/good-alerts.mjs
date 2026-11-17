@@ -22,7 +22,7 @@
 import CORE from '../content/core/levels/good-alerts.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
 
-// The figures the copy quotes. This level's copy has none that a grader computes over, so there are no placeholders.
+// The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
 const SKELETON = {

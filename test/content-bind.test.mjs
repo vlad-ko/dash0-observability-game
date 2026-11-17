@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { bindLevel, bindText, ContentError } from '../lib/content/bind.mjs';
 
+const DASH = String.fromCharCode(0x2014);
+
 const skeleton = () => ({
   id: 'lv',
   no: '1.1',
@@ -156,19 +158,42 @@ test('bind: a value on one side only is taken whole', () => {
   assert.deepEqual(v.play.steps[1].spot.whyNot, { l1: 'Not <b>this</b>.' });
 });
 
-test('bind: placeholders are filled, a missing or unused var is an error, an id holds none', () => {
+test('bind: a step is found by its widget key and id together, so a sort step is not a choice step', () => {
+  const t = text();
+  t.play.steps[0] = { intro: 'I', question: 'Q', sort: { id: 'c1', items: [{ id: 'x', label: 'X' }] } };
+  const errors = bind(t).errors;
+  assert.ok(errors.some((e) => /the steps differ: logic has \[choice:c1, spot:s1\], content has \[sort:c1, spot:s1\]/.test(e)), errors.join('\n'));
+});
+
+test('bind: a container in the content cannot meet a plain value in the logic, and the content never wins', () => {
+  const s = skeleton();
+  s.play.steps[1].spot.lines = 'not a list';
+  const r = bind(text(), s);
+  assert.ok(r.errors.some((e) => /spot\.lines: set in both the logic and the content/.test(e)), r.errors.join('\n'));
+  assert.notDeepEqual(r.value.play.steps[1].spot.lines, text().play.steps[1].spot.lines);
+});
+
+test('bind: finish may hold line breaks, like code; other plain fields may not', () => {
+  const t = text();
+  t.play.finish = 'First line.\nSecond line.';
+  assert.deepEqual(bind(t).errors, []);
+  t.name = 'Two\nlines';
+  assert.ok(bind(t).errors.some((e) => /name must not contain control characters/.test(e)));
+});
+
+test('bind: fill-ins are filled, a missing or unused var is an error, an id holds none', () => {
   assert.ok(bind(text(), skeleton(), {}).errors.some((e) => /\{\{n\}\} has no value/.test(e)));
   assert.ok(bind(text(), skeleton(), { n: 1, spare: 2 }).errors.some((e) => /var "spare" is never used/.test(e)));
   const t = text();
   t.play.steps[0].choice.choices[0].key = '{{n}}';
-  assert.ok(bind(t).errors.some((e) => /an id must not hold a placeholder/.test(e)));
+  assert.ok(bind(t).errors.some((e) => /an id must not hold a fill-in/.test(e)));
 });
 
 test('bind: filled text is checked by the text rules for its field', () => {
   const t = text();
   t.play.finish = ' padded ';
   t.play.steps[0].intro = 'see <a href="x">here</a>';
-  t.play.steps[0].choice.choices[1].why = 'a — b';
+  t.play.steps[0].choice.choices[1].why = `a ${DASH} b`;
   t.play.steps[1].spot.whyNot.l1 = '<script>x</script>';
   t.play.steps[1].spot.lines[0].text = '<a & b>';
   const errors = bind(t).errors;
@@ -187,7 +212,7 @@ test('bind: a value that fills into HTML is checked after the fill', () => {
 test('bind: reports every problem at once, and bindLevel throws one ContentError with all of them and the level id', () => {
   const t = text();
   t.play.steps[0].question = 3;
-  t.play.steps[1].intro = 'x — y';
+  t.play.steps[1].intro = `x ${DASH} y`;
   const s = skeleton();
   s.name = 'oops';
   const found = bind(t, s).errors;
