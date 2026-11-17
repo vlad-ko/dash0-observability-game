@@ -63,6 +63,12 @@ test('each converted level is withText of its content file, and its play validat
 // New text for a field, keeping the field's fill-ins: a {{name}} used only there must stay used.
 const FILL_IN = /\{\{[a-z][a-z0-9-]*\}\}/g;
 const editText = (text, original) => [text, ...(original.match(FILL_IN) ?? [])].join(' ');
+// The built field starts with the edited words and has every fill-in filled; with none in the original, it is exactly the words.
+const assertEdited = (built, text, original, at) => {
+  assert.ok(built.startsWith(text), `${at}: ${built}`);
+  assert.ok(!built.includes('{{'), `${at}: a fill-in left unfilled: ${built}`);
+  if (original.match(FILL_IN) === null) assert.equal(built, text, at);
+};
 
 test('changing the content changes the level, and withText does not touch what it is given', async () => {
   for (const id of IDS) {
@@ -74,9 +80,9 @@ test('changing the content changes the level, and withText does not touch what i
     edited.play.steps[0].intro = editText('An edited intro for the first step.', core.play.steps[0].intro);
     const given = structuredClone(edited);
     const level = mod.withText(edited);
-    assert.ok(level.name.startsWith('An edited name'), `${id}: ${level.name}`);
-    assert.ok(level.play.finish.startsWith('An edited finish text for this level.'), `${id}: ${level.play.finish}`);
-    assert.ok(level.play.steps[0].intro.startsWith('An edited intro for the first step.'), `${id}: ${level.play.steps[0].intro}`);
+    assertEdited(level.name, 'An edited name', core.name, `${id} name`);
+    assertEdited(level.play.finish, 'An edited finish text for this level.', core.play.finish, `${id} finish`);
+    assertEdited(level.play.steps[0].intro, 'An edited intro for the first step.', core.play.steps[0].intro, `${id} intro`);
     assert.equal(level.id, id);
     assert.deepEqual(edited, given, `${id}: withText left its input as it was given`);
     level.play.steps[0].intro = 'changed after the build';
