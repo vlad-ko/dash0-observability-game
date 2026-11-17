@@ -627,6 +627,8 @@ const REVIEW_REPLIES = [
   ['agw-config', 'Route by traceID.'],
   ['agw-config', 'Hash on traceID so a trace stays together.'],
   ['agw-config', 'Pick traceID as the key.'],
+  ['agw-config', 'Use the trace ID as the routing key.'],
+  ['col-config', 'Set line_start_pattern to the timestamp.'],
   ['col-config', 'Add a regex_parser.'],
   ['col-config', 'Parse it with a regex_parser that sets severity.'],
   ['col-config', 'Start each entry at ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.'],

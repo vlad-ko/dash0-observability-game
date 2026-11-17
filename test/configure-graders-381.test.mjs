@@ -66,7 +66,7 @@ test('the explain of agw-config and col-config leaves the later answers to their
 
 test('withhold: a configure spec may list [word] or [key, value] entries for the Guide; anything else is a spec problem', () => {
   assert.deepEqual(validateConfigureSpec(AGW), []);
-  assert.deepEqual(AGW.withhold, [['routing_key', 'traceID'], ['routing_key', 'service'], ['traceID']]);
+  assert.deepEqual(AGW.withhold, [['routing_key', 'traceID'], ['routing_key', 'service'], ['routing_key', 'trace ID'], ['traceID']]);
   assert.deepEqual(validateConfigureSpec({ ...AGW, withhold: [['traceID']] }), [], 'a one-item entry is valid');
   for (const bad of [[], 'routing_key', [[]], [['']], [['routing_key', '']], [['a', 'b', 'c']], [[1, 2]]]) {
     assert.equal(validateConfigureSpec({ ...AGW, withhold: bad }).some((p) => p.startsWith('withhold')), true, JSON.stringify(bad));

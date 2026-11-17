@@ -119,7 +119,7 @@ const CONFIG = {
   given: GIVEN,
   reference: REFERENCE,
   uses: { logs: ['filelog/shipping', 'otlp_grpc/dash0'] },
-  withhold: [['start_at', 'beginning'], ['regex_parser', 'operator'], ['line_start_pattern', 'multiline'], ['regex_parser'], ['^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}']], // settings left out of the reference that the Guide must not give (#381)
+  withhold: [['start_at', 'beginning'], ['regex_parser', 'operator'], ['line_start_pattern', 'multiline'], ['line_start_pattern', 'timestamp'], ['multiline', 'timestamp'], ['regex_parser'], ['^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}']], // settings left out of the reference that the Guide must not give (#381)
   helps: { hints: true },
   hint: 'A pipeline list must match a receiver\'s id exactly. The id is the type, plus a slash and a name when there is one. Compare the id where the receiver is defined with the one the logs pipeline lists, character by character, and change the list, not the definition. Keep the file receiver; do not swap in another.',
   explain:
