@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans), start and end timestamps, a span context, attributes, events, links and a status."
+          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans), start and end timestamps, a trace ID and a span ID with a few more trace details, attributes, events, links and a status."
         },
         {
           "type": "paragraph",
@@ -127,7 +127,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span event is like a structured log message on a span, used for a meaningful, single point in time. When deciding between an event and an attribute, ask whether a specific timestamp is meaningful."
+          "text": "A span event is a timestamped note inside a span, used for a meaningful, single point in time. When deciding between an event and an attribute, ask whether a specific timestamp is meaningful."
         },
         {
           "type": "paragraph",
@@ -135,7 +135,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Zero-code instrumentation adds the OpenTelemetry API and SDK to your application, typically as an agent. It instruments the libraries you use, such as requests, database calls and message queues. Your own application code is not typically instrumented, which needs code-based instrumentation."
+          "text": "Zero-code instrumentation adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent. It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need code-based instrumentation."
         }
       ],
       "sources": [

@@ -1,9 +1,9 @@
-// Act 3 primer (#389). PLACEHOLDER: drafted from official OpenTelemetry and Prometheus pages, two Dash0
-// docs pages and one outside article (the USE method), pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
+// Act 3 primer (#389). PLACEHOLDER: drafted from official OpenTelemetry, Prometheus and Dash0 docs pages
+// and the USE method's own page by its originator, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-3",
   "placeholder": true,
-  "placeholderNote": "PLACEHOLDER: drafted from public OpenTelemetry and Dash0 docs pages; the Dash0 team replaces it with its own words, then sets placeholder to false and removes this note.",
+  "placeholderNote": "PLACEHOLDER: drafted from public OpenTelemetry, Prometheus and Dash0 docs pages and the USE method's own page; the Dash0 team replaces it with its own words, then sets placeholder to false and removes this note.",
   "title": "Metrics: how much, how often",
   "overview": [
     {
@@ -39,7 +39,7 @@ export default {
             "Counter: a value that accumulates over time, like the odometer of a car. It only ever goes up.",
             "UpDownCounter: a value that accumulates over time but can also go down again.",
             "Gauge: measures a current value at the time it is read, like the fuel gauge in a vehicle.",
-            "Histogram: a client-side aggregation of values. A good choice if you are interested in value statistics."
+            "Histogram: combines many values into one summary on the client side. A good choice if you are interested in value statistics."
           ]
         },
         {
@@ -62,7 +62,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Sums and histograms in OTLP carry an aggregation temporality, which is either delta or cumulative. It is used to understand the context in which the value was calculated."
+          "text": "Sums and histograms in OTLP carry an aggregation temporality, which is either delta or cumulative. It tells you how the value was calculated."
         },
         {
           "type": "paragraph",
@@ -74,7 +74,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A gauge is different: it represents a sampled value at a given time, and does not provide an aggregation semantic."
+          "text": "A gauge is different: it has no aggregation temporality."
         }
       ],
       "sources": [
@@ -92,11 +92,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A histogram data point conveys a population of recorded measurements in a compressed format. It bundles a set of events into divided populations with an overall count and a sum. It can also carry a min and a max, and buckets with explicit boundaries and a count of the observations in each."
+          "text": "A histogram data point sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
         },
         {
           "type": "paragraph",
-          "text": "A φ-quantile, with φ between 0 and 1, is the observation value that ranks at number φ times N among N observations. The 0.5-quantile is known as the median. The 0.95-quantile is also called the 95th percentile."
+          "text": "An exponential histogram is an alternative form. It works out its bucket boundaries from a scale with an exponential formula, and a larger scale gives more precision."
+        },
+        {
+          "type": "paragraph",
+          "text": "A quantile is a value from the observations, picked by rank after sorting them from smallest to largest. You name it with a number between 0 and 1. The 0.5-quantile is known as the median. The 0.95-quantile is also called the 95th percentile."
         },
         {
           "type": "paragraph",
@@ -129,17 +133,27 @@ export default {
         {
           "type": "list",
           "items": [
-            "rate(v range-vector) calculates the per-second average rate of increase of the time series in the range vector.",
-            "increase(v range-vector) calculates the increase in the time series in the range vector.",
-            "histogram_quantile(φ, b) calculates the φ-quantile from a classic or native histogram."
+            "rate(): the average increase per second of a time series, over the time range you give it.",
+            "increase(): how much a time series grew over the time range you give it.",
+            "histogram_quantile(): works out a quantile from a classic or native histogram."
           ]
         },
         {
           "type": "paragraph",
-          "text": "Breaks in monotonicity, such as counter resets due to target restarts, are automatically adjusted for by rate() and increase(). Each bucket sample of a classic histogram carries an le label, whose value is the inclusive upper bound of the bucket."
+          "text": "When a counter starts over, for example because its target restarted, rate() and increase() adjust for it. Each bucket series of a classic histogram has a label called le, which holds the bucket's upper bound. The bound itself is included in the bucket."
+        },
+        {
+          "type": "paragraph",
+          "text": "For Prometheus-style backends, OpenTelemetry metric names are translated. Characters Prometheus discourages are replaced with an underscore, and a unit word and a type-specific suffix can be added."
         }
       ],
       "sources": [
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Prometheus and OpenMetrics compatibility",
+          "url": "https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/",
+          "audience": "public"
+        },
         {
           "kind": "article",
           "label": "Prometheus: Query functions",
@@ -212,11 +226,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The USE method is a methodology for analyzing the performance of any system. It directs the construction of a checklist, and begins by posing questions instead of starting from given metrics. The checks are utilization, saturation and errors."
+          "text": "The USE method is a way to analyse the performance of any system. It gives you a checklist, and it starts from questions instead of from the metrics you happen to have. The checks are utilisation, saturation and errors."
         },
         {
           "type": "paragraph",
-          "text": "Utilization is the average time that a resource was busy servicing work. Saturation is the degree to which a resource has extra work that it cannot service."
+          "text": "Utilisation is the average time that a resource was busy servicing work. Saturation is how much extra work a resource has that it cannot service."
         }
       ],
       "sources": [

@@ -1,5 +1,5 @@
-// Act 1 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry resources page and one Dash0
-// docs page only, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
+// Act 1 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry resources, service attributes
+// and Kubernetes Collector components pages and one Dash0 docs page, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-1",
   "placeholder": true,
@@ -112,7 +112,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In a Collector, the Kubernetes Attributes Processor adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API to discover the pods in a cluster and records their IP addresses, pod UIDs and metadata."
+          "text": "In a Collector, the Kubernetes Attributes Processor (k8sattributes) adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API to discover the pods in a cluster and records their IP addresses, pod UIDs and metadata."
         }
       ],
       "sources": [

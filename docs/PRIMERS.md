@@ -38,7 +38,7 @@ chapter instead.
 
 Until the Dash0 team has written its own words, a primer is a placeholder: set `"placeholder": true` and give a
 `"placeholderNote"` that starts with `PLACEHOLDER` and says where the text came from. Draft placeholders only from official
-pages (opentelemetry.io and dash0.com), and make every sentence something a cited page says. When the team has replaced the text,
+project pages (opentelemetry.io, prometheus.io and dash0.com) and, for a named method, its originator's own page, and make every sentence something a cited page says. When the team has replaced the text,
 set `"placeholder": false` and delete the note; a note on a finished primer is an error. Act 0 is a placeholder today, and a test
 (`test/primers-content.test.mjs`, "act-0 is a placeholder in this phase") says so: when Act 0's text is final, change that test in the same pull request.
 

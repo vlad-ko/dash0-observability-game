@@ -44,7 +44,7 @@ export default {
         {
           "type": "list",
           "items": [
-            "Body: the body of the log record.",
+            "Body: the message of the log record.",
             "Attributes: additional information about the event.",
             "Resource: describes the observed entity that generated the log.",
             "SeverityText: the original string for the severity, also known as the log level.",
@@ -74,7 +74,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When you add auto-instrumentation or activate an SDK, OpenTelemetry automatically correlates your existing logs with any active trace and span. The SDK can inject the trace ID and span ID into a log record. OpenTelemetry reaches existing logging frameworks through logging bridges."
+          "text": "When you add auto-instrumentation or activate an SDK, OpenTelemetry automatically correlates your existing logs with any active trace and span: a log written while a span is active can carry that trace ID and span ID, which the SDK injects into the log record. OpenTelemetry connects to existing logging frameworks through logging bridges."
         },
         {
           "type": "paragraph",
