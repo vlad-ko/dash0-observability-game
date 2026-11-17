@@ -89,6 +89,8 @@ const feedback = () => q('#signals-feedback [data-feedback-text]').textContent;
 const tone = () => q('#signals-feedback').getAttribute('data-tone');
 const placed = (bucket) => q(`[data-bucket-list="${bucket}"]`).textContent;
 const text = (sel) => q(sel).textContent.replace(/\s+/g, ' ').trim();
+// A category's name and count: on its target button while sorting, on its heading once the board is done (#384).
+const heading = (bucket) => text(`[data-drop="${bucket}"] [data-bucket], [data-drop="${bucket}"] .sort-group-title`);
 /** The "Sorted N of M" line, read from the widget's text (dt/dd or one line), normalised. */
 function sorted() {
   const m = q('[data-sort]').textContent.replace(/\s+/g, ' ').match(/Sorted\s*(\d+) of (\d+)/);
@@ -137,6 +139,25 @@ test('S0 category targets are kit drop options in an equal-width drops row, enab
   for (const b of targets) assert.ok(b.classList.contains('ui-option--drop'), b.dataset.bucket);
   assert.ok(q('.ui-options--drops [data-bucket]'));
   for (const it of qa('[data-item]')) assert.equal(it.classList.contains('ui-option--drop'), false);
+});
+
+test('#384 a live category shows its name once, with the count, on the target; its list is named by that name', () => {
+  const spec = fixture();
+  makeDom(`<div data-sort>${renderSort(spec, newSortState(spec))}</div>`);
+  for (const z of qa('[data-drop]')) {
+    const name = spec.buckets.find((b) => b.id === z.dataset.drop).label;
+    const words = z.textContent.replace(/\s+/g, ' ').split(name).length - 1;
+    assert.equal(words, 1, `${name} appears once in its zone`);
+    assert.equal(z.querySelector('[data-bucket]').textContent.replace(/\s+/g, ' ').trim(), `${name} (0)`, 'the target carries name and count');
+    assert.equal(z.querySelector('.sort-group-title') === null, true, 'no second heading while sorting');
+    const labelled = z.querySelector('[data-bucket-list]').getAttribute('aria-labelledby');
+    assert.equal(q(`[id="${labelled}"]`).textContent.trim(), name, 'the list is named by the bucket name');
+  }
+});
+
+test('#384 a drop target fills its column', () => {
+  const rule = rules(read('styles/kit.css')).find((r) => r.selector === '.ui-option--drop');
+  assert.equal(Object.fromEntries(decls(rule.body)).width, '100%');
 });
 
 test('S1 sortView: the pool is the remaining items in display order, the buckets in spec order with their placed items; placed plus left is total', () => {
@@ -200,8 +221,8 @@ test('S3 renderSort: kit markup in one split; the side column with a hidden succ
   assert.equal(describedBy(), 'signals-instr', 'still after a placement');
   setup();
   assert.deepEqual(qa('[data-bucket]').map((b) => b.dataset.bucket), ['metric', 'log', 'trace']);
-  assert.deepEqual(qa('[data-bucket]').map((b) => b.textContent.trim()), ['Metric', 'Log', 'Trace']);
-  // #261: no boxes. Each category is one zone holding its choice button, the heading with the tally and the placed items.
+  assert.deepEqual(qa('[data-bucket]').map((b) => b.textContent.replace(/\s+/g, ' ').trim()), ['Metric (0)', 'Log (0)', 'Trace (0)']);
+  // #261: no boxes. Each category is one zone holding its choice button (name and tally) and the placed items.
   for (const b of qa('[data-bucket]')) {
     assert.equal(b.closest('[data-drop]')?.dataset.drop, b.dataset.bucket, `${b.dataset.bucket} is a choice button inside its own drop zone (#359)`);
     assert.equal(b.classList.contains('ui-option--choice'), true, `${b.dataset.bucket} is a kit choice option`);
@@ -212,7 +233,7 @@ test('S3 renderSort: kit markup in one split; the side column with a hidden succ
     assert.equal(g.classList.contains('ui-panel'), false, 'a group is not a panel');
     assert.equal(g.querySelector('[data-bucket-list]').dataset.bucketList, g.dataset.drop, 'its list sits in its group');
   }
-  assert.deepEqual(qa('.sort-group-title').map((t) => t.textContent.replace(/\s+/g, ' ').trim()), ['Metric (0)', 'Log (0)', 'Trace (0)']);
+  assert.deepEqual(qa('[data-drop]').map((z) => heading(z.dataset.drop)), ['Metric (0)', 'Log (0)', 'Trace (0)']);
   assert.deepEqual(enabledBuckets(), [], 'nothing selected: every bucket is disabled');
   assert.deepEqual(qa('[data-bucket-list]').map((l) => `${l.getAttribute('data-bucket-list')}:${l.textContent}`), ['metric:', 'log:', 'trace:']);
   assert.equal(qa('[id="signals-instr"]').length, 1, 'one instruction line');
@@ -251,7 +272,7 @@ test('S3 renderSort: the selected item is pressed and only its untried categorie
   assert.deepEqual(enabledBuckets(), ['log', 'trace']);
   assert.equal(placed('metric'), 'Request rate');
   assert.equal(placed('log'), '');
-  assert.equal(text('[data-drop="metric"] .sort-group-title'), 'Metric (1)', 'the tally follows the placed items');
+  assert.equal(heading('metric'), 'Metric (1)', 'the tally follows the placed items');
   assert.equal(sorted(), 'Sorted 1 of 4');
 });
 
@@ -262,7 +283,7 @@ test('each group heading tallies its own category, not the board', () => {
   ({ state } = place(spec, state, 'i3', 'trace'));
   makeDom();
   globalThis.document.body.innerHTML = renderSort(spec, state, { selected: null, escapeHtml });
-  assert.deepEqual(qa('.sort-group-title').map((t) => t.textContent.replace(/\s+/g, ' ').trim()), ['Metric (2)', 'Log (0)', 'Trace (1)']);
+  assert.deepEqual(qa('[data-drop]').map((z) => heading(z.dataset.drop)), ['Metric (2)', 'Log (0)', 'Trace (1)']);
 });
 
 test('renderSort: labels are trusted HTML, labelledBy makes [data-sort] a group, a bad labelledBy is a TypeError', () => {
@@ -503,7 +524,7 @@ test('#359 the drop zone is the dashed box plus its heading and list; the button
   mount();
   for (const b of qa('[data-bucket]')) {
     const zone = b.closest('[data-drop]');
-    assert.equal(zone.querySelector('.sort-group-title') !== null && zone.querySelector('[data-bucket-list]') !== null, true, 'the zone holds the heading and the list');
+    assert.equal(zone.querySelector('[data-bucket-list]') !== null, true, 'the zone holds the button and the list');
     assert.equal(b.ondrop ?? null, null, 'the button is no drop target of its own');
   }
   // No card picked: every dashed box is disabled, and a drag over it (bubbling to its zone) still sorts.
@@ -534,7 +555,7 @@ test('#359 a drop on the heading, the placed list or the disabled button sorts t
     fire('drop', el, dataTransfer);
     return allowed;
   };
-  assert.equal(dropOn('i2', zoneOf('metric').querySelector('.sort-group-title')), true, 'dragover on the heading allows the drop');
+  assert.equal(dropOn('i2', zoneOf('metric').querySelector('[data-bucket] .sort-group-name')), true, 'dragover on the name inside the target bubbles to the zone and allows the drop');
   assert.equal(counts.mistakes, 1, 'a wrong zone costs a mistake');
   assert.equal(placed('log'), '');
   assert.equal(dropOn('i2', zoneOf('log').querySelector('[data-bucket-list]')), true);
@@ -1231,7 +1252,12 @@ test('#321 a finished board keeps no live controls: no instructions, no item ban
   assert.equal(qa('.sort-instr').length, 0);
   assert.equal(qa('[data-bucket]').length, 0, 'no drop buttons');
   assert.equal(q('[data-region="pool"]').innerHTML, '', 'the band is empty so the stylesheet can drop it');
-  assert.equal(text('[data-drop="metric"] .sort-group-title'), 'Metric (2)');
+  assert.equal(heading('metric'), 'Metric (2)');
+  for (const list of qa('[data-bucket-list]')) {
+    const named = qa(`[id="${list.getAttribute('aria-labelledby')}"]`);
+    assert.equal(named.length, 1, `${list.dataset.bucketList} list label resolves to one element`);
+    assert.equal(named[0].textContent.replace(/\s+/g, ' ').trim(), heading(list.dataset.bucketList), 'and reads the name and count');
+  }
   assert.equal(placed('metric'), 'Request rateQueue depth');
 });
 
