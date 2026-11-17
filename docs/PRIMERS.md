@@ -45,7 +45,7 @@ set `"placeholder": false` and delete the note; a note on a finished primer is a
 ## Claap recordings are internal
 
 A link to a Claap recording (`"kind": "claap"`) must have `"audience": "internal"`. Players will see internal links marked
-"Dash0 team only" (the view that does this comes in a later phase), because players outside Dash0 cannot open them. Never put
+"Dash0 team only", because players outside Dash0 cannot open them. Never put
 a customer-facing claim only in a Claap link; give the public page as a source too.
 
 ## Style

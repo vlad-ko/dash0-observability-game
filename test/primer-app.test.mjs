@@ -69,7 +69,7 @@ test('the tile exists only for an act with a primer', () => {
   assert.equal(setup({ primers: [] }).game.primerTile('a0'), null);
 });
 
-test('index.html: the tile is a button before the level list, and the modal is a kit shell with the owner\'s button words', () => {
+test('index.html: the tile is a button before the level list, and the modal foot has the overview and chapter buttons', () => {
   const shell = parseHTML(html).document;
   const body = shell.querySelector('template[x-for="act in acts"]').content.querySelector('.act-body');
   const tpl = body.querySelector('template[x-if]');
