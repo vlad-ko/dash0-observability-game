@@ -60,23 +60,27 @@ test('each converted level is withText of its content file, and its play validat
   }
 });
 
+// New text for a field, keeping the field's fill-ins: a {{name}} used only there must stay used.
+const FILL_IN = /\{\{[a-z][a-z0-9-]*\}\}/g;
+const editText = (text, original) => [text, ...(original.match(FILL_IN) ?? [])].join(' ');
+
 test('changing the content changes the level, and withText does not touch what it is given', async () => {
   for (const id of IDS) {
     const mod = await load(id);
     const core = (await import(pathToFileURL(join(DIR, `${id}.mjs`)).href)).default;
     const edited = structuredClone(core);
-    edited.name = 'An edited name';
-    edited.play.finish = 'An edited finish text for this level.';
-    edited.play.steps[0].intro = 'An edited intro for the first step.';
+    edited.name = editText('An edited name', core.name);
+    edited.play.finish = editText('An edited finish text for this level.', core.play.finish);
+    edited.play.steps[0].intro = editText('An edited intro for the first step.', core.play.steps[0].intro);
     const given = structuredClone(edited);
     const level = mod.withText(edited);
-    assert.equal(level.name, 'An edited name', id);
-    assert.equal(level.play.finish, 'An edited finish text for this level.', id);
-    assert.equal(level.play.steps[0].intro, 'An edited intro for the first step.', id);
+    assert.ok(level.name.startsWith('An edited name'), `${id}: ${level.name}`);
+    assert.ok(level.play.finish.startsWith('An edited finish text for this level.'), `${id}: ${level.play.finish}`);
+    assert.ok(level.play.steps[0].intro.startsWith('An edited intro for the first step.'), `${id}: ${level.play.steps[0].intro}`);
     assert.equal(level.id, id);
     assert.deepEqual(edited, given, `${id}: withText left its input as it was given`);
     level.play.steps[0].intro = 'changed after the build';
-    assert.equal(edited.play.steps[0].intro, 'An edited intro for the first step.', `${id}: the level shares nothing with its input`);
+    assert.equal(edited.play.steps[0].intro, given.play.steps[0].intro, `${id}: the level shares nothing with its input`);
   }
 });
 
