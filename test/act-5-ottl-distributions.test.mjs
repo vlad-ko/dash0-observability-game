@@ -75,7 +75,7 @@ const CARDS = {
       'Redact PII in the Collector before export. A spam filter drops whole points after they reach Dash0 and cannot edit one attribute.',
     back:
       'OTTL statements in the transform processor change telemetry inside the pipeline. A rename is a set followed by a delete_key, ' +
-      'a redaction is a delete_key, a masking set or a replace_pattern, and dropping whole telemetry is the job of the filter processor. ' +
+      'or one replace_all_patterns on the key, a redaction is a delete_key, a masking set or a replace_pattern, and dropping whole telemetry is the job of the filter processor. ' +
       'Sensitive values have to go before the exporter sends them, so the processor must be listed in every pipeline that carries them: ' +
       'defined but not listed does nothing. A statement that deletes from the wrong map, a misspelled key or a where clause that matches ' +
       'only some spans still leaks. Dash0 spam filters are the backend-side drop: they drop whole spans, logs or data points that match, ' +

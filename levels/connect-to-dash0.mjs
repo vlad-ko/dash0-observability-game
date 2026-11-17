@@ -7,7 +7,12 @@
 // DOM in the same click; it is never kept, shown or logged by this file (docs/DASH0-LAB.md).
 // Spec: https://www.dash0.com/docs/dash0/miscellaneous/glossary/auth-tokens , https://www.dash0.com/docs/dash0/miscellaneous/glossary/endpoints , https://www.dash0.com/docs/dash0/miscellaneous/glossary/datasets , https://opentelemetry.io/docs/specs/otlp/
 // Dash0 docs: auth tokens are `auth_...`, belong to one organization and are created by Admins in
-// Settings -> Auth Tokens; the Permissions options are All permissions, Ingesting and Reading;
+// Settings -> Auth Tokens; the Permissions options are All permissions, Ingesting, Reading and Signal
+// Control edge (sends telemetry and reads Signal Control Edge settings). The game lists the first three
+// only: it is a curated choice for the ingest question, not a copy of Dash0's list, and the options are
+// the telemetry session's PRACTICE_SCOPE keys. A token "drops the telemetry of each signal it has no
+// action for, without an error" (glossary/auth-tokens), so the copy says the span is not stored, not
+// that Dash0 refuses it;
 // "Restrict tokens to Ingesting whenever you distribute them publicly, for example in
 // OpenTelemetry instrumentation running in web browsers" (glossary/auth-tokens). The endpoint
 // reference is in the organization's settings and its hosts name the region (glossary/endpoints).
@@ -42,8 +47,8 @@ const SCOPES = [
     key: 'read',
     label: 'Reading',
     wrong:
-      'A Reading token can only query data. It cannot send telemetry, so Dash0 will refuse the ' +
-      'test span. Create an Ingesting token instead.',
+      'A Reading token can only query data. It cannot send telemetry, so the test span is not ' +
+      'stored. Create an Ingesting token instead.',
   },
 ];
 

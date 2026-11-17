@@ -12,6 +12,8 @@
 // Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/spanmetricsconnector/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 // Dash0 tie-in: n/a. No Dash0 docs page was checked for this scenario, and nothing below names a Dash0 feature.
 //
+// The gateway is one pod, on purpose: tail sampling needs all the spans of a trace at one instance, so two gateway pods would
+// need a first tier that routes by trace ID (level 5.4; the sampling concepts page).
 // Facts used (each read on the pages above): tail sampling decides on all or most of the spans of a trace, and one thing it can
 // do is always sample traces that contain an error (sampling concepts). The tail_sampling processor has a `status_code` policy
 // (`status_codes: [ERROR]`) and a `probabilistic` policy (`sampling_percentage`), and a trace that another policy sampled is not
@@ -122,7 +124,7 @@ const SCENARIO = {
       label: 'Gateway Collector health',
       costMin: 3,
       kind: 'neutral',
-      html: '<p>2 of 2 gateway pods are Ready, with no restarts in 24 hours and memory at 38% of the limit. The Collector is healthy.</p>',
+      html: '<p>The one gateway pod is Ready, with no restarts in 24 hours and memory at 38% of the limit. The Collector is healthy.</p>',
     },
     {
       id: 'backend-ingest',

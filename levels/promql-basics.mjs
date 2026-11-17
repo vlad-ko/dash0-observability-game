@@ -6,6 +6,7 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#otlp-metric-points-to-prometheus , https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#sums
 // Spec: https://prometheus.io/docs/prometheus/latest/querying/functions/#rate , https://prometheus.io/docs/prometheus/latest/querying/functions/#increase , https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators
 // Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/metrics/understand-otel-metric-names , https://www.dash0.com/docs/dash0/telemetry/metrics/understand-synthetic-metrics
+// Docs (the rate query copy: OTel attribute names written with underscores in PromQL, `service.name` as `service_name`; the practice labels `service`, `route`, `status` are the game's own): https://www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation
 
 // Step 1. `why` follows "Right." or "Not quite.".
 const UNIT = [
@@ -107,7 +108,8 @@ export default {
         intro:
           'A counter only goes up, so its raw value is rarely useful. <code>rate(x[5m])</code> gives the per-second ' +
           'increase over the last 5 minutes, and <code>sum by (label)</code> adds the series up, keeping one per label ' +
-          'value. Checkout has been returning 500s since its deploy.',
+          'value. Checkout has been returning 500s since its deploy. The label names in this data (<code>service</code>, <code>route</code>, <code>status</code>) are Kettle &amp; Co\'s own; ' +
+          'in Dash0 they arrive as <code>service_name</code>, <code>http_route</code> and <code>http_response_status_code</code>.',
         question: 'Write a query for the 500s per second of each checkout route, over the last 5 minutes.',
         qid: 'pql-q-rate',
         query: {

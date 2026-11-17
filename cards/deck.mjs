@@ -1,5 +1,9 @@
 // Nuance cards a level can award (docs/FOUNDATION.md §2.3), checked by validateDeck:
 // { id, front (<=140 chars), back, specUrl ('https://...'), dash0Angle (text or null) }.
+// Docs (card delta-needs-converting, the delta histogram catch): https://www.dash0.com/docs/dash0/telemetry/metrics/common-metric-query-issues
+// Docs (card double-instrumentation, GitHub README, not an allowed Spec host; it says the package subscribes to diagnostics_channel and does not say a second setup doubles the spans): https://github.com/open-telemetry/opentelemetry-js-contrib/blob/main/packages/instrumentation-undici/README.md
+// Docs (card redact-in-the-pipeline, the two ways to rename, GitHub README): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md
+// Source (card red-and-use, Errors as "the number of failing requests"): https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
 export const DECK = [
   {
     id: 'unknown-service',
@@ -144,8 +148,8 @@ export const DECK = [
       'Whether a second setup duplicates spans depends on the instrumentation. Patch-based ' +
       'ones, such as the http and express server spans, unwrap before they wrap again, so ' +
       'they stay single. Instrumentations built on diagnostics_channel, such as undici and ' +
-      "Node's fetch, subscribe once per setup, so each fetch call gets two CLIENT spans " +
-      "today. Run one setup: the operator's injected agent or your own SDK, and add business " +
+      "Node's fetch, subscribe to a channel, so a second setup subscribes again and each fetch call can get a CLIENT " +
+      "span from each setup. Run one setup: the operator's injected agent or your own SDK, and add business " +
       'spans and attributes with the API.',
     specUrl: 'https://opentelemetry.io/docs/zero-code/js/',
     dash0Angle: null,
@@ -180,7 +184,8 @@ export const DECK = [
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
       'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
-      'backends, not for Dash0.',
+      'backends, not for Dash0. Counters of either temporality work there. Its docs name one catch: a delta histogram ' +
+      'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },
   {
     id: 'averages-hide-tails',
@@ -284,8 +289,8 @@ export const DECK = [
     front:
       'RED (rate, errors, duration) reads a service\'s requests; USE (utilisation, saturation, errors) reads a resource.',
     back:
-      'RED is Tom Wilkie\'s checklist for each request-driven service: Rate, the requests per second; Errors, the share ' +
-      'of them that fail; Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
+      'RED is Tom Wilkie\'s checklist for each request-driven service: Rate, the requests per second; Errors, how many ' +
+      'of them fail (usually shown as a share); Duration, how long they take, as a distribution. USE is Brendan Gregg\'s checklist for each ' +
       'resource, such as a CPU or a disk: Utilisation, how busy it is; Saturation, how much work waits for it, often a ' +
       'queue; Errors, the count of error events. A burst can saturate a resource while its average utilisation looks ' +
       'low. When a service sends traces but no metrics, the Collector\'s span_metrics connector (contrib) turns the spans ' +
@@ -412,7 +417,7 @@ export const DECK = [
       'cannot edit one attribute.',
     back:
       'OTTL statements in the transform processor change telemetry inside the pipeline. A rename is a set followed ' +
-      'by a delete_key, a redaction is a delete_key, a masking set or a replace_pattern, and dropping whole ' +
+      'by a delete_key, or one replace_all_patterns on the key, a redaction is a delete_key, a masking set or a replace_pattern, and dropping whole ' +
       'telemetry is the job of the filter processor. Sensitive values have to go before the exporter sends them, so ' +
       'the processor must be listed in every pipeline that carries them: defined but not listed does nothing. A ' +
       'statement that deletes from the wrong map, a misspelled key or a where clause that matches only some spans ' +

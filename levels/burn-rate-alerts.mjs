@@ -3,6 +3,7 @@
 // in numbers: a 5-minute window alone pages on a blip, a 1-hour window alone keeps paging after the fix, both together do neither
 // (Choice). PromQL here has no and/or/unless, so the two-window rule cannot be a query. Hints are on for the Query it step only, as in 7.2.
 // Spec: https://prometheus.io/docs/prometheus/latest/querying/functions/#rate , https://prometheus.io/docs/prometheus/latest/querying/operators/#arithmetic-binary-operators , https://prometheus.io/docs/concepts/metric_types/#counter
+// Docs (the labels note: OTel attribute names written with underscores in PromQL; the practice labels are the game's own): https://www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/alerting/slos , https://www.dash0.com/docs/dash0/monitoring/alerting/alert-on-slos , https://www.dash0.com/docs/dash0/monitoring/alerting/about-notifications
 //
 // Facts used (each read on the page named in its parentheses, 2026-11-07): rate() calculates the per-second average rate of increase
@@ -77,7 +78,7 @@ export default {
           'Kettle &amp; Co\'s checkout has an SLO of <b>99.9%</b> good requests over 30 days (the window is illustrative: the data is one hour), so its error budget is the other 0.1%. ' +
           'The <b>burn rate</b> says how fast that budget is being spent: 1 spends it exactly as the window closes, 10 spends it ten times faster. ' +
           'It is the error ratio divided by the share the SLO allows, <code>1 - 0.999</code>. ' +
-          'The counter <code>http_server_requests_total</code> has the labels <code>service</code>, <code>route</code> and <code>status</code>, and a failure has status 500. Checkout deployed 20 minutes ago.',
+          'The counter <code>http_server_requests_total</code> has the labels <code>service</code>, <code>route</code> and <code>status</code> (Kettle &amp; Co\'s own names; in Dash0 they arrive as <code>service_name</code>, <code>http_route</code> and <code>http_response_status_code</code>), and a failure has status 500. Checkout deployed 20 minutes ago.',
         question: 'Write checkout\'s burn rate over the last hour.',
         qid: 'br-q-burn',
         query: {

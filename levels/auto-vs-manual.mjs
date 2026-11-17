@@ -2,6 +2,7 @@
 // from what only their own code adds, finds why each of cart's fetch calls shows two CLIENT
 // spans (an injected agent plus a tracing.js NodeSDK), and picks the fix.
 // Spec: docs/M1-DESIGN.md §6 Act 2.
+// Docs (GitHub README, not an allowed Spec host; it says instrumentation-undici subscribes to diagnostics_channel and does not state that two setups double the spans, so the copy is the scenario, not a general claim): https://github.com/open-telemetry/opentelemetry-js-contrib/blob/main/packages/instrumentation-undici/README.md
 // Spec: https://opentelemetry.io/docs/zero-code/js/ , https://opentelemetry.io/docs/platforms/kubernetes/operator/automatic/ , https://opentelemetry.io/docs/specs/otel/trace/api/#spankind , https://opentelemetry.io/docs/concepts/signals/traces/
 
 // Step 1. Label wording must not give the bucket away (test/sort-tells.test.mjs).
@@ -81,7 +82,7 @@ const WHY = [
     key: 'two-setups',
     label: 'Two setups: the injected agent and <code>tracing.js</code> each instrument fetch',
     right: true,
-    why: 'The operator\'s <code>NODE_OPTIONS</code> loads the auto-instrumentation agent, and <code>tracing.js</code> starts a second NodeSDK with the same instrumentations. Fetch instrumentation subscribes once per setup, so each call gets two CLIENT spans.',
+    why: 'The operator\'s <code>NODE_OPTIONS</code> loads the auto-instrumentation agent, and <code>tracing.js</code> starts a second NodeSDK with the same instrumentations. Fetch instrumentation subscribes to a diagnostics channel, so a second setup subscribes again, and in this scenario each call gets a CLIENT span from each setup.',
   },
   {
     key: 'collector',
