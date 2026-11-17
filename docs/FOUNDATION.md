@@ -606,16 +606,17 @@ never reaches the browser (the CSP `connect-src` is unchanged). The wire contrac
 Each act can have a primer: a short overview and a few chapters of reading, written by people, kept apart from code. Phase 1a
 ships the data, the validator and the saved state; the view and hub wiring come after. Authoring guide: `docs/PRIMERS.md`.
 
-- Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;` (at least one
-  leading `//` comment line, none starting `// Spec:`, and no blank line between them and `export default`), named after the registry act id. `content/core/primers/index.mjs` imports
-  each file into `PRIMERS`. The content test reads each file with `readJsonModule` (`test/helpers/content-files.mjs`: strips the
-  wrapper, `JSON.parse`s, and reports duplicate keys, which `JSON.parse` drops silently) and deep-compares it with the import,
-  so a trailing comma, a comment inside the object (`//` lines are allowed only before `export default`) or a repeated key
-  fails, and so does a `// Spec:` line anywhere in the header. Text rules shared by every kind of authored
-  content live in `lib/content/text-rules.mjs` (`isId`, `checkPlain`, `checkCode`: trimmed, no control characters, no em
-  dash; code may hold newlines and tabs).
-- Shape (exact key sets, an unknown key is an error, every string trimmed and free of control characters, except that `code` text may hold newlines and tabs; the limits are the
-  exported `LIMITS`, the enums `BLOCK_TYPES`, `LINK_KINDS`, `AUDIENCES`, `CALLOUT_TONES` and `KIND_HOSTS` in `lib/primer.mjs`):
+- Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;`, named after
+  the registry act id. Above `export default` goes a header of at least one `//` comment line, none starting `// Spec:`, and
+  no blank lines in it. `content/core/primers/index.mjs` imports each file into `PRIMERS`. The content test reads each file
+  with `readJsonModule` (`test/helpers/content-files.mjs`: strips the wrapper, `JSON.parse`s, and reports duplicate keys,
+  which `JSON.parse` drops silently) and deep-compares it with the import, so a trailing comma, a comment inside the object
+  (`//` lines are allowed only before `export default`) or a repeated key fails, and so does a `// Spec:` line anywhere in
+  the header. Text rules shared by every kind of authored content live in `lib/content/text-rules.mjs` (`isId`, `checkPlain`,
+  `checkCode`: trimmed, no control characters, no em dash; code may hold newlines and tabs).
+- Shape (exact key sets, an unknown key is an error, every string trimmed and free of control characters, except that `code`
+  text may hold newlines and tabs; the limits are the exported `LIMITS`, the enums `BLOCK_TYPES`, `LINK_KINDS`, `AUDIENCES`,
+  `CALLOUT_TONES` and `KIND_HOSTS` in `lib/primer.mjs`):
   `{act, placeholder, placeholderNote?, title, overview: Block[], chapters: [{id, title, blocks: Block[], sources: Link[]}]}`.
   `act` is a registry act id, one primer per act. A chapter `id` is kebab-case, unique in its primer, and is the saved read key:
   never rename one. `placeholderNote` is required and starts `PLACEHOLDER` when `placeholder` is true, and forbidden when false.
@@ -625,11 +626,14 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   A `claap` link must be `internal`; the view (phase 1b) will mark an internal link "Dash0 team only".
 - `lib/primer.mjs` (pure): `validatePrimer(p, {actIds})` and `validatePrimers(list, {actIds})` return `{ok, errors}` with every
   error naming its path and never throw; `buildPrimers(list, registry)` keeps the valid ones in a frozen `byAct` and returns the
-  rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile({status, read, total})` the tile words and tone;
-  `primerView(primer, screen, {then, thenName})` the screen (-1 is the overview, 0..N-1 the chapters).
-- Status: with k the number of stored read ids that are still chapter ids of the primer and N the chapter count: no stored entry
-  is `new`; k equal to N is `read`; k of at least 1 is `reading`; skipped with k equal to 0 is
-  `skipped`; any other stored entry (such as seen with nothing read) is `reading`. Only current chapter ids count, so a removed chapter is ignored and a renamed one is unread.
+  rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile({status, read, total})` the tile
+  words and tone; `primerView(primer, screen, {then, thenName})` the screen (-1 is the overview, 0..N-1 the chapters). The
+  last chapter's button reads `Start: <thenName>` only when both `then` and `thenName` are given, else `Done`; the others
+  read `Next`.
+- Status: with k the number of distinct stored read ids that are still chapter ids of the primer and N the chapter count: no
+  stored entry is `new`; k equal to N is `read`; k of at least 1 is `reading`; skipped with k equal to 0 is `skipped`; any
+  other stored entry (such as seen with nothing read) is `reading`. Only current chapter ids count, so a removed chapter is
+  ignored and a renamed one is unread.
 - Saved state: `lib/primer-prefs.mjs`, key `oncall.primers`, never `oncall.progress`. Value
   `{"v":1,"acts":{"act-0":{"seen":true,"skipped":false,"read":["chapter-id"]}}}`, at most 50 acts and 50 read ids per act, all
   kebab ids, keys sorted. `readPrimers(getStorage)` gives `{status: 'fresh'|'ok'|'corrupt'|'future'|'unavailable', acts: Map}`

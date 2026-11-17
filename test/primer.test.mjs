@@ -171,15 +171,28 @@ test('validatePrimers: a duplicate act names the act', () => {
 
 test('buildPrimers: one primer per act, a deep-frozen copy that is not the input', () => {
   const input = P0();
-  const twin = P0();
+  const twin = { ...P0(), title: 'Second primer' };
   const { byAct, errors } = buildPrimers([input, twin], { acts: [{ id: 'a0' }] });
   assert.deepEqual(Object.keys(byAct), ['a0']);
   assert.ok(errors.some((e) => e.includes('act') && e.includes('a0')), JSON.stringify(errors));
+  assert.equal(byAct.a0.title, 'Act zero', 'the first primer is kept, the second does not overwrite it');
   assert.notEqual(byAct.a0, input);
   assert.ok(Object.isFrozen(byAct.a0.chapters[0].sources[0]));
   assert.ok(Object.isFrozen(byAct.a0.overview));
   input.title = 'changed later';
   assert.equal(byAct.a0.title, 'Act zero');
+});
+
+test('a hole in the primer list is an error naming primers[1], for validatePrimers and buildPrimers', () => {
+  const list = [P0()];
+  list.length = 2;
+  assert.equal(1 in list, false);
+  const v = validatePrimers(list, { actIds: ACT_IDS });
+  assert.equal(v.ok, false);
+  assert.ok(v.errors.some((e) => e.includes('primers[1]')), JSON.stringify(v.errors));
+  const b = buildPrimers(list, { acts: [{ id: 'a0' }] });
+  assert.deepEqual(Object.keys(b.byAct), ['a0']);
+  assert.ok(b.errors.some((e) => e.includes('primers[1]')), JSON.stringify(b.errors));
 });
 
 test('buildPrimers keeps the valid, drops the invalid, freezes byAct and reports', () => {
