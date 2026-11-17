@@ -61,8 +61,8 @@ const ROUTE = [
 ];
 
 // Step 2: the config. The logs pipeline lists `filelog`, but the receiver is defined as `filelog/shipping`:
-// the Collector would refuse to start. The reference lists the defined id and carries the settings the
-// next steps explain.
+// the Collector would refuse to start. The reference lists the defined id and nothing more: the settings
+// the next steps ask about (`multiline`, `operators`) stay out, so the tier 3 apply answers none of them (#381).
 const GIVEN = [
   'receivers:',
   '  otlp:',
@@ -95,14 +95,6 @@ const REFERENCE = [
   '      grpc:',
   '  filelog/shipping:',
   '    include: [/var/log/shipping/agent.log]',
-  '    start_at: beginning',
-  '    multiline:',
-  '      line_start_pattern: ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}',
-  '    operators:',
-  '      - type: regex_parser',
-  "        regex: '(?s)^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]+) (?P<msg>.*)$'",
-  '        severity:',
-  '          parse_from: attributes.sev',
   'processors:',
   '  batch:',
   'exporters:',
@@ -127,6 +119,7 @@ const CONFIG = {
   given: GIVEN,
   reference: REFERENCE,
   uses: { logs: ['filelog/shipping', 'otlp_grpc/dash0'] },
+  withhold: [['start_at', 'beginning'], ['regex_parser', 'operator'], ['line_start_pattern', 'multiline'], ['line_start_pattern', 'timestamp'], ['multiline', 'timestamp'], ['regex_parser'], ['^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}']], // settings left out of the reference that the Guide must not give (#381)
   helps: { hints: true },
   hint: 'A pipeline list must match a receiver\'s id exactly. The id is the type, plus a slash and a name when there is one. Compare the id where the receiver is defined with the one the logs pipeline lists, character by character, and change the list, not the definition. Keep the file receiver; do not swap in another.',
   explain:
@@ -136,9 +129,8 @@ const CONFIG = {
     'Pointing the logs pipeline at <code>otlp</code> instead would start the Collector too, but shipping\'s file would never be read, ' +
     'so the task needs <code>filelog/shipping</code> in the logs pipeline, which exports to Dash0. The receiver produces logs, so it ' +
     'belongs in a logs pipeline, and it is a contrib component. Its settings do the reading: <code>include</code> says which files, ' +
-    '<code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped), ' +
-    '<code>multiline</code> where an entry starts and <code>operators</code> how to parse it. This game checks the wiring, not the ' +
-    'settings; the next steps are about them.',
+    'and <code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped). ' +
+    'This game checks the wiring, not the settings; the next steps are about two more of them.',
 };
 
 // Step 3: multiline. The sample is what the vendor's agent writes: one stack trace between two records.

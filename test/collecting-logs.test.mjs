@@ -173,18 +173,39 @@ test('config: the reference passes; the given is wrong (invalid); a wrong try th
   assert.equal(runConfigure(spec, first.state, spec.reference).outcome, 'right');
 });
 
-test('config: the settings are taught but not graded: the reference without multiline and operators still passes (as the copy says)', () => {
-  const bare = config().reference.replace(/ {4}start_at: beginning\n {4}multiline:\n(?: {6}.*\n)+ {4}operators:\n(?: {6,}.*\n)+(?=processors:)/, '');
-  assert.equal(bare.includes('multiline'), false, 'the settings are gone');
+// The settings the Choice steps teach (col-multiline, col-parse). They are not in the step's reference (#381: the tier 3 apply
+// would answer those questions), so the checks of the taught values read them from here, spliced into the reference.
+const TAUGHT = () => config().reference.replace(
+  '    include: [/var/log/shipping/agent.log]\n',
+  () => [
+    '    include: [/var/log/shipping/agent.log]',
+    '    start_at: beginning',
+    '    multiline:',
+    '      line_start_pattern: ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}',
+    '    operators:',
+    '      - type: regex_parser',
+    "        regex: '(?s)^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]+) (?P<msg>.*)$'",
+    '        severity:',
+    '          parse_from: attributes.sev',
+    '',
+  ].join('\n'),
+);
+
+test('config: the settings are taught but not graded: the reference carries none of them, and it passes with or without (as the copy says)', () => {
+  const bare = config().reference;
+  assert.equal(bare.includes('multiline'), false, 'the settings are not in the reference');
+  assert.equal(TAUGHT().includes('multiline'), true);
   assert.equal(runConfigure(config(), newConfigureState(), bare).outcome, 'right');
+  assert.equal(runConfigure(config(), newConfigureState(), TAUGHT()).outcome, 'right');
   const text = plain(config().explain);
-  for (const w of ['checks the wiring, not the settings', 'include', 'start_at', 'multiline', 'operators', 'contrib']) {
+  for (const w of ['checks the wiring, not the settings', 'include', 'start_at', 'contrib']) {
     assert.equal(text.includes(w), true, w);
   }
+  assert.equal(/multiline|operators/.test(text), false, 'the next steps ask about those');
 });
 
 test('config: the receiver is read from the start of the file, split on timestamps and parsed with a regex_parser that sets severity', () => {
-  const r = docOf(config().reference).receivers['filelog/shipping'];
+  const r = docOf(TAUGHT()).receivers['filelog/shipping'];
   assert.deepEqual(r.include, ['/var/log/shipping/agent.log']);
   assert.equal(r.start_at, 'beginning');
   assert.deepEqual(Object.keys(r.multiline), ['line_start_pattern'], 'exactly one of line_start_pattern and line_end_pattern');
@@ -206,7 +227,7 @@ const entries = (startPattern) => {
 };
 
 test('multiline: the reference line_start_pattern keeps the stack trace as one entry of four lines; a frame pattern glues the next record on', () => {
-  const start = asJs(docOf(config().reference).receivers['filelog/shipping'].multiline.line_start_pattern);
+  const start = asJs(docOf(TAUGHT()).receivers['filelog/shipping'].multiline.line_start_pattern);
   assert.deepEqual(entries(start).map((e) => e.length), [4, 1]);
   assert.equal(entries(start)[1][0].includes('INFO'), true);
   const frames = entries(/^\s+at /);
@@ -215,9 +236,9 @@ test('multiline: the reference line_start_pattern keeps the stack trace as one e
 });
 
 test('regex_parser: the reference regex reads time, level and message from a whole multiline entry; without (?s) it misses it', () => {
-  const regex = docOf(config().reference).receivers['filelog/shipping'].operators[0].regex;
+  const regex = docOf(TAUGHT()).receivers['filelog/shipping'].operators[0].regex;
   assert.equal(regex.startsWith('(?s)'), true);
-  const entry = entries(asJs(docOf(config().reference).receivers['filelog/shipping'].multiline.line_start_pattern))[0].join('\n');
+  const entry = entries(asJs(docOf(TAUGHT()).receivers['filelog/shipping'].multiline.line_start_pattern))[0].join('\n');
   const m = asJs(regex).exec(entry);
   assert.deepEqual(
     { time: m.groups.time, sev: m.groups.sev, first: m.groups.msg.split('\n')[0], lines: m.groups.msg.split('\n').length },

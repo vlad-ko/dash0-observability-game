@@ -299,7 +299,7 @@ test('agent-vs-gateway: the exporter routes by trace ID; service keeps a service
 const agw = () => stepOf('agent-vs-gateway', 'configure', 'agw-config');
 const AG_REF = () => agw().reference;
 const runAg = (text, state = newConfigureState()) => runConfigure(agw(), state, text);
-const LB_DEF = '  load_balancing:\n    routing_key: traceID\n    protocol:\n      otlp:\n        tls:\n          insecure: true\n    resolver:\n      dns:\n        hostname: gateway-collector-headless\n';
+const LB_DEF = '  load_balancing:\n    protocol:\n      otlp:\n        tls:\n          insecure: true\n    resolver:\n      dns:\n        hostname: gateway-collector-headless\n';
 const TRACES_LB = '      processors: [memory_limiter, batch]\n      exporters: [load_balancing]\n';
 const TRACES_GW = '      processors: [memory_limiter, batch]\n      exporters: [otlp_grpc/gateway]\n';
 
@@ -312,14 +312,14 @@ test('agent config: the given does not start (traces names a load_balancing expo
   assert.deepEqual(given.verdict.inactive, []);
 });
 
-test('agent config: the reference sends traces through load_balancing keyed by traceID and metrics straight to the gateway', () => {
+test('agent config: the reference sends traces through load_balancing, with no routing_key (the next question), and metrics straight to the gateway', () => {
   const ref = checkConfig(AG_REF(), COLLECTOR_SCHEMA);
   assert.equal(ref.ok, true);
   assert.deepEqual(ref.verdict.pipelines.map((p) => `${p.name}=${p.flowing}`), ['traces=true', 'metrics=true']);
   assert.deepEqual(ref.verdict.inactive, []);
   assert.deepEqual(ref.doc.service.pipelines.traces.exporters, ['load_balancing']);
   assert.deepEqual(ref.doc.service.pipelines.metrics.exporters, ['otlp_grpc/gateway']);
-  assert.equal(ref.doc.exporters.load_balancing.routing_key, 'traceID');
+  assert.equal(Object.hasOwn(ref.doc.exporters.load_balancing, 'routing_key'), false);
   assert.equal(ref.doc.exporters.load_balancing.resolver.dns.hostname, 'gateway-collector-headless');
   assert.deepEqual(agw().uses, { traces: ['load_balancing'], metrics: ['otlp_grpc/gateway'] });
   assert.equal(Object.hasOwn(agw(), 'target'), false);
@@ -370,10 +370,11 @@ test('agent config: deleting the traces pipeline leaves a required pipeline that
 });
 
 test('agent config: the routing key is a setting the schema does not model, so this step grades the wiring and the Choice step grades the key', () => {
-  const byService = replaced(AG_REF(), 'routing_key: traceID', 'routing_key: service');
+  const byService = replaced(AG_REF(), '  load_balancing:\n', '  load_balancing:\n    routing_key: service\n');
   assert.equal(runAg(byService).outcome, 'right', 'not graded here: the schema keeps component settings as any');
   const text = plain(agw().explain);
-  for (const w of ['wiring', 'not the settings', 'routing_key', 'traceID', 'tail']) assert.equal(text.includes(w), true, w);
+  for (const w of ['wiring', 'not the settings', 'routing key', 'resolver']) assert.equal(text.includes(w), true, w);
+  assert.equal(text.includes('traceID'), false, 'the key itself is the next question\'s answer');
 });
 
 // ---- both levels --------------------------------------------------------------------

@@ -18,6 +18,9 @@
 // wrong twice over: metrics must keep otlp_grpc/gateway (`uses`) and `forbids` rejects load_balancing there; the explain says metrics are not routed by trace ID.
 // Accepted gap: pipelines are graded by name, so a second pipeline (say `traces/direct`) that sends traces to otlp_grpc/gateway
 // is not caught by `forbids`; only the `traces` list is read. Not worth modelling for this level.
+// Accepted gap (#381): the settings are not graded, so an empty `load_balancing:`, one without `resolver` and `routing_key: service`
+// all pass. The task therefore promises only the wiring ("every name its pipelines list is defined", never "starts"), and the
+// reference leaves `routing_key` out (traceID is the default for traces) so the tier 3 apply does not answer the next question.
 
 // Step 1: the patterns. `why` follows "Right." or "Not quite.".
 const PATTERN = [
@@ -94,7 +97,6 @@ const REFERENCE = GIVEN.replace(
     '  otlp_grpc/gateway:',
     '    endpoint: gateway-collector:4317',
     '  load_balancing:',
-    '    routing_key: traceID',
     '    protocol:',
     '      otlp:',
     '        tls:',
@@ -113,13 +115,14 @@ const CONFIG = {
   reference: REFERENCE,
   uses: { traces: ['load_balancing'], metrics: ['otlp_grpc/gateway'] },
   forbids: { traces: ['otlp_grpc/gateway'], metrics: ['load_balancing'] },
+  withhold: [['routing_key', 'traceID'], ['routing_key', 'service'], ['routing_key', 'trace ID'], ['traceID']], // settings left out of the reference that the Guide must not give (agw-key's answer, #381)
   helps: { hints: true },
   hint: 'Every span of one trace has to reach the same gateway replica; metrics have no such need. That is why the traces list names an exporter of its own: give that name a definition rather than pointing traces where metrics already go.',
   explain:
     'A pipeline can only list an exporter that is defined, and one that is defined but not listed does nothing. Pointing traces at <code>otlp_grpc/gateway</code>, the Service in front of the replicas, ' +
-    'would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key: with <code>routing_key: traceID</code> every span of a trace goes to the same replica, ' +
-    'so tail sampling there sees whole traces. For traces, <code>traceID</code> is also the default, so spelling it out only makes the intent clear. The resolver, DNS on a headless Service here, lists the replicas. ' +
-    'Metrics are not routed by trace ID, which is not a valid key for metrics, so they keep their own exporter. The exporter\'s type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, ' +
+    'would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key, which the next question is about. ' +
+    'The resolver, DNS on a headless Service here, lists the replicas. ' +
+    'Metrics keep their own exporter. The exporter\'s type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, ' +
     'but this task asks for the current name, so a different id is a different component here. This game checks the wiring, not the settings: the routing key is the next question.',
 };
 
@@ -176,7 +179,7 @@ export default {
         intro:
           'The platform team\'s answer is two tiers: the agents route, and the gateway replicas, behind a headless Service, sample. ' +
           'This is an agent\'s config. Its traces pipeline names a <code>load_balancing</code> exporter that nobody defined, so it will not start.',
-        question: 'Fix the agent config so it starts and sends traces through the <code>load_balancing</code> exporter. Metrics keep going straight to the gateway.',
+        question: 'Fix the agent config so every name its pipelines list is defined, and traces go through the <code>load_balancing</code> exporter. Metrics keep going straight to the gateway.',
         qid: 'agw-q-config',
         configure: CONFIG,
       },
