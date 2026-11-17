@@ -64,10 +64,11 @@ test('the explain of agw-config and col-config leaves the later answers to their
   assert.equal(col.includes('include') && col.includes('start_at'), true);
 });
 
-test('withhold: a configure spec may list [key, value] pairs for the Guide; anything else is a spec problem', () => {
+test('withhold: a configure spec may list [word] or [key, value] entries for the Guide; anything else is a spec problem', () => {
   assert.deepEqual(validateConfigureSpec(AGW), []);
-  assert.deepEqual(AGW.withhold, [['routing_key', 'traceID'], ['routing_key', 'service']]);
-  for (const bad of [[], 'routing_key', [['routing_key']], [['routing_key', '']], [['a', 'b', 'c']], [[1, 2]]]) {
+  assert.deepEqual(AGW.withhold, [['routing_key', 'traceID'], ['routing_key', 'service'], ['traceID']]);
+  assert.deepEqual(validateConfigureSpec({ ...AGW, withhold: [['traceID']] }), [], 'a one-item entry is valid');
+  for (const bad of [[], 'routing_key', [[]], [['']], [['routing_key', '']], [['a', 'b', 'c']], [[1, 2]]]) {
     assert.equal(validateConfigureSpec({ ...AGW, withhold: bad }).some((p) => p.startsWith('withhold')), true, JSON.stringify(bad));
   }
 });
@@ -80,6 +81,18 @@ test('the Guide withholds the settings a later step asks on its config step, tho
   assert.equal(withholds('Set start_at to beginning and use a regex_parser operator.', tokens({ ...COL, withhold: undefined })), false);
 });
 
+test('a withheld single word does not block what the step itself asks: load_balancing, the resolver, the exporters, "trace ID" in words', () => {
+  const agw = answerTokens(STEP_TYPES.configure, AGW);
+  const col = answerTokens(STEP_TYPES.configure, COL);
+  for (const ok of ['Define load_balancing and list it in the traces pipeline.', 'Metrics keep otlp_grpc/gateway.', 'Every span of a trace has to reach the same replica, so look at the trace ID.']) {
+    assert.equal(withholds(ok, agw), false, ok);
+  }
+  for (const ok of ['List filelog/shipping in the logs pipeline.', 'The receiver id must match the definition exactly.']) assert.equal(withholds(ok, col), false, ok);
+  for (const no of ['Route by traceID.', 'Add a regex_parser.', 'Start each entry at ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.']) {
+    assert.equal(withholds(no, no.includes('traceID') ? agw : col), true, no);
+  }
+});
+
 test('otlp-config tier 1 stops at the rule: it does not say to make each list name the exporter', () => {
   const t = plain(hintFor(OTLP, newConfigureState(), '', 1, { e: escapeHtml }).html);
   assert.equal(/make each list|name it/i.test(t), false, t);
@@ -90,7 +103,7 @@ test('otlp-config tier 1 stops at the rule: it does not say to make each list na
 
 const BUDGET = stepOf('cardinality', 'tradeoff', 'cdn-budget').tradeoff;
 
-test('cdn-budget tier 2: on the two-option customer knob a wrong pick has no decoy, so it does not name the knob; the next wrong knob is used, else tier 1', () => {
+test('cdn-budget tier 2: on the two-option customer knob a wrong pick has no decoy, so it does not name the knob; the next wrong knob is used, else a line on what the plan lacks', () => {
   const right = { ...BUDGET.answer };
   const lastOnly = tradeoffHint(BUDGET, { ...right, customer: 'nothing' }, 2);
   assert.deepEqual(lastOnly.hinted, []);
@@ -99,4 +112,21 @@ test('cdn-budget tier 2: on the two-option customer knob a wrong pick has no dec
   assert.equal(/Look again|customer|attribute|counter/i.test(plain(lastOnly.html)), false, 'no knob is named');
   const over = tradeoffHint(BUDGET, { ...right, customer: 'nothing', requests: 'route-status-tier' }, 2);
   assert.deepEqual(over.hinted.map((x) => x.knob), ['requests', 'requests'], 'a wrong knob that has a decoy is hinted first');
+});
+
+test('trade-off tier 2 with no decoy anywhere: the wording for over the cap and for one or several needs lost, exactly', () => {
+  const need = (id) => ({ id, label: id });
+  const spec = {
+    cap: 100,
+    needs: [need('n-one'), need('n-two')],
+    answer: { k: 'good' },
+    knobs: [{ id: 'k', label: 'The knob', options: [{ id: 'good', label: 'Good', cost: 10, keeps: ['n-one', 'n-two'] }, { id: 'bad', label: 'Bad', cost: 200 }] }],
+  };
+  const say = (s, picks) => tradeoffHint(s, picks, 2);
+  assert.equal(say(spec, { k: 'bad' }).html, '<p>Your picks are over the cap, and 2 of the needs are not kept yet.</p>', 'over, two lost: plural');
+  const oneLost = { ...spec, knobs: [{ ...spec.knobs[0], options: [{ ...spec.knobs[0].options[0], keeps: ['n-one'] }, { ...spec.knobs[0].options[1], keeps: ['n-one'] }] }], needs: [need('n-one'), need('n-two')] };
+  assert.equal(say(oneLost, { k: 'bad' }).html, '<p>Your picks are over the cap, and 1 of the needs is not kept yet.</p>', 'over, one lost: singular');
+  const noneLost = { ...spec, needs: [need('n-one')], knobs: [{ ...spec.knobs[0], options: [{ ...spec.knobs[0].options[0], keeps: ['n-one'] }, { ...spec.knobs[0].options[1], keeps: ['n-one'] }] }] };
+  assert.equal(say(noneLost, { k: 'bad' }).html, '<p>Your picks are over the cap.</p>', 'over, nothing lost');
+  assert.deepEqual([say(spec, { k: 'bad' }).hinted, say(spec, { k: 'bad' }).apply], [[], null]);
 });

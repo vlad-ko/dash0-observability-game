@@ -115,7 +115,7 @@ const CONFIG = {
   reference: REFERENCE,
   uses: { traces: ['load_balancing'], metrics: ['otlp_grpc/gateway'] },
   forbids: { traces: ['otlp_grpc/gateway'], metrics: ['load_balancing'] },
-  withhold: [['routing_key', 'traceID'], ['routing_key', 'service']], // agw-key's answer, kept out of the reference (#381)
+  withhold: [['routing_key', 'traceID'], ['routing_key', 'service'], ['traceID']], // settings left out of the reference that the Guide must not give (agw-key's answer, #381)
   helps: { hints: true },
   hint: 'Every span of one trace has to reach the same gateway replica; metrics have no such need. That is why the traces list names an exporter of its own: give that name a definition rather than pointing traces where metrics already go.',
   explain:

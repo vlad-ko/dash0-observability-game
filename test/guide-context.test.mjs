@@ -623,6 +623,13 @@ const REVIEW_REPLIES = [
   ['agw-config', 'Set the dns hostname to gateway-collector-headless.'],
   ['det-config', 'List k8s.pod.name, k8s.pod.uid and k8s.namespace.name under metadata.'],
   ['col-config', 'Set start_at to beginning and use a regex_parser operator.'],
+  // #381 re-review: single words the reference used to give, now carried by `withhold`.
+  ['agw-config', 'Route by traceID.'],
+  ['agw-config', 'Hash on traceID so a trace stays together.'],
+  ['agw-config', 'Pick traceID as the key.'],
+  ['col-config', 'Add a regex_parser.'],
+  ['col-config', 'Parse it with a regex_parser that sets severity.'],
+  ['col-config', 'Start each entry at ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.'],
   ['pipe-config', 'Add health_check under service.extensions and memory_limiter to the processors list.'],
   ['cor-build', 'Order accepted belongs to POST /checkout.'],
   ['cor-build', 'Cart validated goes with the validate cart span.'],
