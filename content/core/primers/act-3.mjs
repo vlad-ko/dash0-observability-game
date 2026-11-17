@@ -1,5 +1,5 @@
-// Act 3 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry metrics page and one Dash0
-// docs page only, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
+// Act 3 primer (#389). PLACEHOLDER: drafted from official OpenTelemetry and Prometheus pages, two Dash0
+// docs pages and one outside article (the USE method), pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-3",
   "placeholder": true,

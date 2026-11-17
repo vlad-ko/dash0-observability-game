@@ -1,5 +1,5 @@
-// Act 4 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry pages and one Dash0 docs
-// page only, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
+// Act 4 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry logs, logs data model and
+// context propagation pages and one Dash0 docs page, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-4",
   "placeholder": true,
