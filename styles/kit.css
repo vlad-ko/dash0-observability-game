@@ -308,10 +308,12 @@
 /* An answered card stays legible (no fade); a toggle that cannot be picked yet fades, its only
    cue (palette rule 7). */
 .ui-option:disabled { cursor: default; }
-.ui-option--toggle:disabled, .ui-option--choice:disabled:not([data-state], .ui-option--drop) { opacity: var(--opacity-disabled); cursor: not-allowed; }
+.ui-option--toggle:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; }
+/* An unpicked choice after the right pick keeps its explanation readable: muted token text (4.5:1 or better), not a fade (#384). */
+.ui-option--choice:disabled:not([data-state], .ui-option--drop) { color: var(--color-text-muted); cursor: not-allowed; }
 /* A drop target (dashed means a drop zone): centred, and legible while inactive. Inactive is muted text on
    a transparent card, not a fade; active is full-strength text with a full-strength dashed border. */
-.ui-option--drop { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: var(--space-4) var(--space-3); border-style: dashed; border-width: 2px; border-color: var(--color-text-muted); }
+.ui-option--drop { width: 100%; grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; padding: var(--space-4) var(--space-3); border-style: dashed; border-width: 2px; border-color: var(--color-text-muted); }
 .ui-option--drop:enabled:not([data-state]) { border-color: var(--color-text); }
 .ui-option--drop:disabled:not([data-state]) { color: var(--color-text-muted); background: transparent; }
 .ui-option--drop:disabled { pointer-events: none; } /* a disabled button swallows drag events: let them reach the drop zone around it */

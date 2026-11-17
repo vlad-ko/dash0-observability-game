@@ -283,6 +283,18 @@ test('palette rule 7: a disabled toggle option fades (its only cue); answered ch
   }
 });
 
+test('#384 a disabled choice option keeps its explanation readable: muted token text, no fade, 4.5:1 on its card', () => {
+  const rule = sheetRules('kit.css').find((r) => splitTop(r.selector).some((s) => /^\.ui-option--choice:disabled:not\(/.test(s)));
+  assert.ok(rule, 'the disabled choice rule exists');
+  const d = Object.fromEntries(decls(rule.body));
+  assert.equal(d.opacity, undefined, 'a fade put the text at 4.36:1');
+  assert.equal(d.color, 'var(--color-text-muted)');
+  for (const bg of ['--color-surface', '--color-bg']) {
+    const r = contrast('--color-text-muted', bg);
+    assert.ok(r >= 4.5, `muted on ${bg} is ${r.toFixed(2)}`);
+  }
+});
+
 test('#371 a removed 50/50 answer is gone from the layout: .ui-option[hidden] is display none', () => {
   const rule = sheetRules('kit.css').find((r) => r.selector === '.ui-option[hidden]');
   assert.ok(rule, 'the rule exists');
