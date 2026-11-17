@@ -4,7 +4,7 @@
 // from the replies the intro shows; the sources and what the copy does not claim. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { ACT_REGIONS, COUNTRY_NAMES, LEVEL_COUNTRY } from '../hub/globe-map.mjs';
@@ -17,7 +17,7 @@ import { waterfall } from '../lib/widgets/trace.mjs';
 
 const ID = 'frontend-rum';
 const LIVE = liveRegistry();
-const SRC = readFileSync(new URL(`../levels/${ID}.mjs`, import.meta.url), 'utf8');
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
 const level = LIVE.levels[ID];
 const [BUILD_STEP, CORS_STEP] = level.play.steps;

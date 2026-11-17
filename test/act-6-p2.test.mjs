@@ -5,14 +5,14 @@
 // booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { allPlans, checkTradeoff, evaluatePlan, newTradeoffState, pickOption } from '../lib/widgets/trade-off.mjs';
 
 const LIVE = liveRegistry();
 const ID = 'what-costs-money';
 const LEVEL = LIVE.levels[ID];
-const SRC = readFileSync(new URL('../levels/what-costs-money.mjs', import.meta.url), 'utf8');
+const SRC = levelSource('what-costs-money');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const steps = LEVEL.play.steps;
 const kindOf = (s) => ['choice', 'tradeoff'].find((k) => s[k]);

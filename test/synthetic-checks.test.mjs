@@ -3,7 +3,7 @@
 // certificate shown against each alert); the card; the sources. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { ACT_REGIONS, COUNTRY_NAMES, LEVEL_COUNTRY } from '../hub/globe-map.mjs';
@@ -14,7 +14,7 @@ import { scoreStars } from '../lib/scoring.mjs';
 
 const ID = 'synthetic-checks';
 const LIVE = liveRegistry();
-const SRC = readFileSync(new URL(`../levels/${ID}.mjs`, import.meta.url), 'utf8');
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const level = LIVE.levels[ID];
 const [SORT_STEP, ALERT_STEP] = level.play.steps;

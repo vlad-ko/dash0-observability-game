@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -523,23 +524,23 @@ test('Act 2 card fronts match docs/M1-DESIGN.md §6 and fit a card (<=140)', () 
   }
 });
 
-/** The level files of Act 2, from the live registry (never a hand list). */
-const ACT2_FILES = LIVE.acts.find((a) => a.id === 'act-2').levelIds.map((id) => `levels/${id}.mjs`);
+/** The level ids of Act 2, from the live registry (never a hand list). */
+const ACT2_FILES = LIVE.acts.find((a) => a.id === 'act-2').levelIds;
 
 test('span-kinds copy says "backends can derive" (level and card), and no Act 2 level file says "the spec says"', () => {
   const card = JSON.stringify(DECK.find((c) => c.id === 'span-kind-edges'));
-  for (const [where, text] of [['level', read('levels/span-kinds.mjs')], ['card', card]]) {
+  for (const [where, text] of [['level', levelSource('span-kinds')], ['card', card]]) {
     assert.equal(/backends can derive/i.test(text), true, `${where} says "can derive"`);
     assert.equal(/backends derive/i.test(text), false, `${where}: the sources show kind as a dimension, not the counting rule`);
   }
   assert.equal(ACT2_FILES.length, Object.keys(LEVELS).length, 'every Act 2 level file is scanned');
   for (const f of ACT2_FILES) {
-    assert.equal(/the spec says/i.test(read(f)), false, f);
+    assert.equal(/the spec says/i.test(levelSource(f)), false, f);
   }
 });
 
 test('baggage copy never calls baggage encrypted or private, and names the baggage span processor', () => {
-  const text = read('levels/baggage.mjs') + JSON.stringify(DECK.find((c) => c.id === 'baggage-leaks'));
+  const text = levelSource('baggage') + JSON.stringify(DECK.find((c) => c.id === 'baggage-leaks'));
   assert.equal(/encrypt|private to|is secret/i.test(text), false);
   assert.equal(/baggage span processor/i.test(JSON.stringify(BAGGAGE)), true, 'the right answer names it');
 });
@@ -1031,11 +1032,11 @@ test('auto-vs-manual: the card back says duplicates depend on the instrumentatio
   assert.equal(/depend/i.test(card.back), true, 'duplicates depend on the instrumentation');
   assert.equal(/fetch/i.test(card.back) && /undici/i.test(card.back), true, 'fetch/undici client spans are named');
   assert.equal(/every (request|span)/i.test(card.back), false, 'no claim that everything doubles');
-  assert.equal(/zero-code\/js/.test(read('levels/auto-vs-manual.mjs')), true, 'the level cites the zero-code JS page');
+  assert.equal(/zero-code\/js/.test(levelSource('auto-vs-manual')), true, 'the level cites the zero-code JS page');
 });
 
 test('auto-vs-manual: step 2 names the fetch CLIENT spans and both setups, not doubled requests', () => {
-  const src = read('levels/auto-vs-manual.mjs');
+  const src = levelSource('auto-vs-manual');
   for (const w of ['fetch', 'CLIENT', 'NODE_OPTIONS', 'tracing.js', 'getNodeAutoInstrumentations()']) {
     assert.equal(src.includes(w), true, w);
   }

@@ -9,7 +9,7 @@
 // (test/play.test.mjs). Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -29,7 +29,6 @@ const ID = 'errors-tripled';
 const BOSS = LIVE.levels[ID];
 const S = BOSS.play.steps[0].incident;
 const CHOICE = BOSS.play.steps[1].choice.choices;
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const view = (id) => S.views.find((v) => v.id === id);
 const plain = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 const cost = (kind) => S.views.filter((v) => v.kind === kind).reduce((n, v) => n + v.costMin, 0);
@@ -124,7 +123,7 @@ test('errors-tripled: star totals count the boss (the derived scored-level max),
 });
 
 test('errors-tripled: no em dash in the level file', () => {
-  assert.equal(read(`levels/${ID}.mjs`).includes('\u2014'), false);
+  assert.equal(levelSource(ID).includes('\u2014'), false);
 });
 
 // ---- one table of figures: alert, views, hypotheses and Choice agree -------------------
@@ -327,7 +326,7 @@ test('the policies shown, run over 1,000 requests of which 40 fail, keep exactly
 // ---- sources -------------------------------------------------------------------------
 
 test('sources: Spec lines are opentelemetry.io, Docs lines are GitHub READMEs, the invented figures are marked', () => {
-  const src = read(`levels/${ID}.mjs`);
+  const src = levelSource(ID);
   const lines = src.split('\n');
   const spec = lines.filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.equal(spec.length > 0 && spec.every((u) => new URL(u).host === 'opentelemetry.io'), true);

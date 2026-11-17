@@ -6,7 +6,7 @@
 // standalone record that carries ids. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { expectedStarMax } from './helpers/stars.mjs';
@@ -17,7 +17,6 @@ import { attachLog, checkBuild, newBuildState, validateBuildSpec } from '../lib/
 
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {
@@ -400,7 +399,7 @@ test('correlation uses Build it for its log records: one build step, in logs mod
 
 test('the Act 4 level files cite the pages their facts come from', () => {
   const urls = (f) =>
-    read(`levels/${f}.mjs`).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+    levelSource(f).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   const sl = urls('structured-logs');
   for (const u of [
     'https://opentelemetry.io/docs/specs/otel/logs/data-model/',
@@ -415,9 +414,9 @@ test('the Act 4 level files cite the pages their facts come from', () => {
     'https://www.w3.org/TR/trace-context/#trace-id',
     'https://www.w3.org/TR/trace-context/#parent-id',
   ]) assert.equal(cor.includes(u), true, u);
-  const dash0 = read('levels/correlation.mjs');
+  const dash0 = levelSource('correlation');
   for (const u of ['telemetry/logging/log-sidebar', 'telemetry/logging/related-logs', 'telemetry/tracing/span-sidebar']) {
     assert.equal(dash0.includes(`https://www.dash0.com/docs/dash0/${u}`), true, u);
   }
-  for (const f of ACT_4) assert.equal(/\bthe spec says\b/i.test(read(`levels/${f}.mjs`)), false, f);
+  for (const f of ACT_4) assert.equal(/\bthe spec says\b/i.test(levelSource(f)), false, f);
 });

@@ -24,6 +24,7 @@ import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { liveRegistry } from '../app.mjs';
 import { stepsOf } from './helpers/step-drivers.mjs';
+import { frameOf, recordFrames } from './helpers/snapshot.mjs';
 import fixtureLevel, { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
 import { playFixture } from './fixtures/play-level.mjs';
 import * as V from './fixtures/variant-levels.mjs';
@@ -598,9 +599,14 @@ function openLevel(level, { telemetry = null } = {}) {
     guide: FAKE_GUIDE,
   });
   const render = ctx.renderStep;
+  // LEVEL_SNAPSHOT=<dir> (test/helpers/snapshot.mjs): the live overlay as each step is left and
+  // entered. Collected always (cheap), written only when the variable is set.
+  const frames = [];
   ctx.renderStep = (body, actions) => {
     steps.push(`${body}${actions ?? ''}`);
+    if (steps.length > 1) frames.push(frameOf('leave', dom.body, dom.actions));
     render(body, actions);
+    frames.push(frameOf('step', dom.body, dom.actions));
   };
   const classes = new Set();
   seenClasses = classes;
@@ -630,7 +636,8 @@ function openLevel(level, { telemetry = null } = {}) {
     end() {
       injected.push(...liveAlpineAttrs(dom.body, dom.actions));
       pageClasses(classes);
-      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets };
+      frames.push(frameOf('end', dom.body, dom.actions));
+      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames };
     },
   };
 }
@@ -712,16 +719,16 @@ function alpineAttrs(html) {
 }
 
 /** Every check a play-through must pass; returns the stars earned. */
-function checkRun(level, run) {
-  return assertRun(level, run, playLevel(level, run.play, { telemetry: run.telemetry?.() }));
+function checkRun(level, run, label = 'happy') {
+  return assertRun(level, run, playLevel(level, run.play, { telemetry: run.telemetry?.() }), label);
 }
 
 /** checkRun for a driver whose play awaits (`async: true` on the DRIVERS entry). */
-async function checkRunAsync(level, run) {
-  return assertRun(level, run, await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() }));
+async function checkRunAsync(level, run, label = 'happy') {
+  return assertRun(level, run, await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() }), label);
 }
 
-function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets }) {
+function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames }, label) {
   // The How to play modal follows the step the player is on: every widget a level declares is
   // reported as its step mounts, and nothing it does not declare (#316).
   if (level.widgets) assert.deepEqual([...new Set(widgets)].sort(), [...new Set(level.widgets)].sort(), 'ctx.widget reports the level\'s declared widgets');
@@ -750,17 +757,18 @@ function assertRun(level, run, { calls, steps, first, injected, classes, attrs, 
     assert.ok(!s.includes('\u2014'), `step copy has an em dash: ${s.slice(0, 80)}`);
     assert.deepEqual(alpineAttrs(s), [], `step uses an Alpine attribute: ${s.slice(0, 80)}`);
   }
+  recordFrames(process.env, level.id, label, frames, result.text);
   return result.stars;
 }
 
 /** Happy run, then sloppy: required and worse for scored levels; optional and 0 if unscored. */
 function checkLevel(level, driver) {
-  return judge(level, driver, checkRun(level, driver), () => driver.sloppy && checkRun(level, driver.sloppy));
+  return judge(level, driver, checkRun(level, driver), () => driver.sloppy && checkRun(level, driver.sloppy, 'sloppy'));
 }
 
 async function checkLevelAsync(level, driver) {
   return judge(level, driver, await checkRunAsync(level, driver),
-    () => driver.sloppy && checkRunAsync(level, driver.sloppy));
+    () => driver.sloppy && checkRunAsync(level, driver.sloppy, 'sloppy'));
 }
 
 // `sloppy` is a thunk giving the sloppy run's stars (or a promise of them).

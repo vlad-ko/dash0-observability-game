@@ -5,7 +5,7 @@
 // Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { DOTS } from '../hub/globe-data.mjs';
 import { COUNTRY_NAMES, LEVEL_COUNTRY, MIN_DOTS, MIN_DOTS_EXCEPTIONS } from '../hub/globe-map.mjs';
@@ -15,8 +15,7 @@ import { waterfall } from '../lib/widgets/trace.mjs';
 
 const ID = 'the-trace-that-starts-in-the-middle';
 const LIVE = liveRegistry();
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
-const SRC = read(`levels/${ID}.mjs`);
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const level = LIVE.levels[ID];
 const [VERDICT_STEP, BUILD_STEP] = level.play.steps;
@@ -285,7 +284,7 @@ test('how 9.4 differs from 2.4 and 8.4: its own ids, names, prefix and qids; one
   const others = ['context-propagation', 'frontend-rum'].map((id) => LIVE.levels[id]);
   const ownIds = new Set(tree.spans.flatMap((s) => [s.spanId, s.traceId]));
   for (const o of others) {
-    const text = JSON.stringify(o.play ?? {}) + read(`levels/${o.id}.mjs`);
+    const text = JSON.stringify(o.play ?? {}) + levelSource(o.id);
     for (const id of ownIds) assert.equal(text.includes(id), false, `${id} appears in ${o.id}`);
     assert.notEqual(o.play?.prefix, level.play.prefix);
     assert.notEqual(o.name, level.name);
