@@ -608,7 +608,7 @@ ships the data, the validator and the saved state; the view and hub wiring come 
 
 - Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;`, named after
   the registry act id. Above `export default` goes a header of at least one `//` comment line, none starting `// Spec:`, and
-  no blank lines in it. `content/core/primers/index.mjs` imports each file into `PRIMERS`. The content test reads each file
+  no blank lines in it or between it and `export default`. `content/core/primers/index.mjs` imports each file into `PRIMERS`. The content test reads each file
   with `readJsonModule` (`test/helpers/content-files.mjs`: strips the wrapper, `JSON.parse`s, and reports duplicate keys,
   which `JSON.parse` drops silently) and deep-compares it with the import, so a trailing comma, a comment inside the object
   (`//` lines are allowed only before `export default`) or a repeated key fails, and so does a `// Spec:` line anywhere in

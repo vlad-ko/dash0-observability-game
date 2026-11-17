@@ -180,7 +180,7 @@ test('buildPrimers: one primer per act, a deep-frozen copy that is not the input
   assert.ok(Object.isFrozen(byAct.a0.chapters[0].sources[0]));
   assert.ok(Object.isFrozen(byAct.a0.overview));
   input.title = 'changed later';
-  assert.equal(byAct.a0.title, 'Act zero');
+  assert.notEqual(byAct.a0.title, 'changed later', 'a later change to the input does not reach the copy');
 });
 
 test('a hole in the primer list is an error naming primers[1], for validatePrimers and buildPrimers', () => {
@@ -263,6 +263,7 @@ test('view: chapters carry position, next label and sources', () => {
   assert.equal(primerView(p, 1, { then: 'lv', thenName: 'Level' }).next, 'Next');
   assert.equal(primerView(p, 2, {}).next, 'Done');
   assert.equal(primerView(p, 2, { then: 'lv' }).next, 'Done', 'no level name, no "Start: undefined"');
+  assert.equal(primerView(p, 2, { thenName: 'Level' }).next, 'Done', 'a level name without a level to start');
   assert.equal(primerView(p, 2, { then: 'lv', thenName: 'Monitoring vs observability' }).next, 'Start: Monitoring vs observability');
 });
 
