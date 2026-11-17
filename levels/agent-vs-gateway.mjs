@@ -18,6 +18,9 @@
 // wrong twice over: metrics must keep otlp_grpc/gateway (`uses`) and `forbids` rejects load_balancing there; the explain says metrics are not routed by trace ID.
 // Accepted gap: pipelines are graded by name, so a second pipeline (say `traces/direct`) that sends traces to otlp_grpc/gateway
 // is not caught by `forbids`; only the `traces` list is read. Not worth modelling for this level.
+// Accepted gap (#381): the settings are not graded, so an empty `load_balancing:`, one without `resolver` and `routing_key: service`
+// all pass. The task therefore promises only the wiring ("every name its pipelines list is defined", never "starts"), and the
+// reference leaves `routing_key` out (traceID is the default for traces) so the tier 3 apply does not answer the next question.
 
 // Step 1: the patterns. `why` follows "Right." or "Not quite.".
 const PATTERN = [
@@ -94,7 +97,6 @@ const REFERENCE = GIVEN.replace(
     '  otlp_grpc/gateway:',
     '    endpoint: gateway-collector:4317',
     '  load_balancing:',
-    '    routing_key: traceID',
     '    protocol:',
     '      otlp:',
     '        tls:',
@@ -176,7 +178,7 @@ export default {
         intro:
           'The platform team\'s answer is two tiers: the agents route, and the gateway replicas, behind a headless Service, sample. ' +
           'This is an agent\'s config. Its traces pipeline names a <code>load_balancing</code> exporter that nobody defined, so it will not start.',
-        question: 'Fix the agent config so it starts and sends traces through the <code>load_balancing</code> exporter. Metrics keep going straight to the gateway.',
+        question: 'Fix the agent config so every name its pipelines list is defined, and traces go through the <code>load_balancing</code> exporter. Metrics keep going straight to the gateway.',
         qid: 'agw-q-config',
         configure: CONFIG,
       },

@@ -103,12 +103,12 @@ const ANSWERS = {
   'agent-vs-gateway': [
     'choice agw-pattern: gateway',
     'choice agw-why: same-instance',
-    'configure agw-config: receivers: otlp: protocols: grpc: endpoint: 0.0.0.0:4317 processors: memory_limiter: check_interval: 1s limit_mib: 400 batch: exporters: otlp_grpc/gateway: endpoint: gateway-collector:4317 load_balancing: routing_key: traceID protocol: otlp: tls: insecure: true resolver: dns: hostname: gateway-collector-headless service: pipelines: traces: receivers: [otlp] processors: [memory_limiter, batch] exporters: [load_balancing] metrics: receivers: [otlp] processors: [memory_limiter, batch] exporters: [otlp_grpc/gateway]',
+    'configure agw-config: receivers: otlp: protocols: grpc: endpoint: 0.0.0.0:4317 processors: memory_limiter: check_interval: 1s limit_mib: 400 batch: exporters: otlp_grpc/gateway: endpoint: gateway-collector:4317 load_balancing: protocol: otlp: tls: insecure: true resolver: dns: hostname: gateway-collector-headless service: pipelines: traces: receivers: [otlp] processors: [memory_limiter, batch] exporters: [load_balancing] metrics: receivers: [otlp] processors: [memory_limiter, batch] exporters: [otlp_grpc/gateway]',
     'choice agw-key: trace-id',
   ],
   'collecting-logs': [
     'choice col-route: otlp-appender',
-    'configure col-config: receivers: otlp: protocols: grpc: filelog/shipping: include: [/var/log/shipping/agent.log] start_at: beginning multiline: line_start_pattern: ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} operators: - type: regex_parser regex: \'(?s)^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]+) (?P<msg>.*)$\' severity: parse_from: attributes.sev processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [filelog/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
+    'configure col-config: receivers: otlp: protocols: grpc: filelog/shipping: include: [/var/log/shipping/agent.log] processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [filelog/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
     'choice col-multiline: line-start',
     'choice col-parse: collector-regex',
     'choice col-dash0: log-ai',

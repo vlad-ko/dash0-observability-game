@@ -89,7 +89,7 @@ test('the secrets of a step are derived from its reference, not empty', () => {
   for (const { level, spec } of STEPS) assert.ok(secrets(spec).size > 0, `${level}/${spec.id}`);
   const known = secrets(STEPS.find((s) => s.level === 'pipelines').spec);
   assert.ok(known.has('memory_limiter') && known.has('health_check'));
-  assert.ok(secrets(STEPS.find((s) => s.level === 'agent-vs-gateway').spec).has('traceID'), 'a scalar the reference writes');
+  assert.ok(secrets(STEPS.find((s) => s.level === 'agent-vs-gateway').spec).has('gateway-collector-headless'), 'a scalar the reference writes');
   assert.ok(secrets(STEPS.find((s) => s.level === 'collecting-logs').spec).has('filelog'), 'a name the fix renames away');
 });
 

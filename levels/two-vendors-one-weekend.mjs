@@ -19,6 +19,8 @@
 //
 // COLLECTOR_SCHEMA (docs/M1-DESIGN.md §4.8) does not model component settings, so the configure step grades the wiring (`uses`
 // requires both exporters in traces, metrics and logs) and says so; the header form is not graded, and the explain shows it.
+// Accepted gap (#381): an empty `otlp_grpc/dash0:`, a header without `Bearer` and the token in the URL all pass, so the task does
+// not ask for the header (the reference and the explain still show it).
 // Accepted gap: pipelines are graded by name, so a separate pipeline (say `traces/dash0`) that sends traces to otlp_grpc/dash0
 // is valid in a real Collector, as the architecture page's `traces/2` shows, but fails here. The question says "in the existing
 // pipelines" and the explain says why.
@@ -140,7 +142,7 @@ export default {
         intro:
           'The platform team started the change. The Collector\'s config now sends traces to an exporter for Dash0 only, and nobody defined that exporter, so the config is invalid. Metrics and logs still go to the old vendor. ' +
           'Dash0 needs an endpoint and a token: both are in environment variables, <code>DASH0_ENDPOINT</code> and <code>DASH0_AUTH_TOKEN</code>.',
-        question: 'Fix the config so it is valid, the old vendor keeps getting traces, metrics and logs, and Dash0 gets them too, in the existing pipelines. Send the token in an <code>Authorization</code> header as <code>Bearer</code>, a space, then the token.',
+        question: 'Fix the config so it is valid, the old vendor keeps getting traces, metrics and logs, and Dash0 gets them too, in the existing pipelines.',
         qid: 'tvw-q-config',
         configure: CONFIG,
       },

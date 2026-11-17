@@ -61,8 +61,8 @@ const ROUTE = [
 ];
 
 // Step 2: the config. The logs pipeline lists `filelog`, but the receiver is defined as `filelog/shipping`:
-// the Collector would refuse to start. The reference lists the defined id and carries the settings the
-// next steps explain.
+// the Collector would refuse to start. The reference lists the defined id and nothing more: the settings
+// the next steps ask about (`multiline`, `operators`) stay out, so the tier 3 apply answers none of them (#381).
 const GIVEN = [
   'receivers:',
   '  otlp:',
@@ -95,14 +95,6 @@ const REFERENCE = [
   '      grpc:',
   '  filelog/shipping:',
   '    include: [/var/log/shipping/agent.log]',
-  '    start_at: beginning',
-  '    multiline:',
-  '      line_start_pattern: ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}',
-  '    operators:',
-  '      - type: regex_parser',
-  "        regex: '(?s)^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]+) (?P<msg>.*)$'",
-  '        severity:',
-  '          parse_from: attributes.sev',
   'processors:',
   '  batch:',
   'exporters:',

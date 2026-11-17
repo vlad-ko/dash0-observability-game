@@ -527,12 +527,21 @@ test('hintFor tier 2: the decoy is never the current pick, so the pair does not 
       }
     }
   }
-  // Every reachable wrong state of a two-option knob has no decoy left: the outline would be the answer.
+  // Every reachable wrong state of a two-option knob has no decoy left: naming the knob would name the answer (#381),
+  // so the tier 1 text stands in, and a later wrong knob with a decoy is hinted instead.
   const two = fixture();
   two.knobs[1].options = two.knobs[1].options.filter((o) => o.id !== 'none');
   const h = hintFor(two, { sampling: 'tail', attrs: 'user' }, 2);
-  assert.deepEqual([h.hinted, h.html.includes('Look again at: User attribute')], [[], true]);
-  assert.equal(h.html.includes('outlined'), false);
+  assert.deepEqual([h.hinted, h.html], [[], hintFor(two, {}, 1).html]);
+  assert.equal(h.html.includes('Look again'), false);
+  const skip = fixture();
+  skip.knobs[0].options = skip.knobs[0].options.filter((o) => o.id !== 'all');
+  assert.deepEqual(hintFor(skip, { sampling: 'head' }, 2).hinted.map((x) => x.knob), ['attrs', 'attrs'], 'the wrong two-option knob is skipped, the next wrong knob is hinted');
+  const both = fixture();
+  both.knobs[0].options = both.knobs[0].options.filter((o) => o.id !== 'all');
+  both.knobs[1].options = both.knobs[1].options.filter((o) => o.id !== 'none');
+  const last = hintFor(both, { sampling: 'head', attrs: 'user' }, 2);
+  assert.deepEqual([last.hinted, last.html], [[], hintFor(both, {}, 1).html], 'every wrong knob is two-option: the tier 1 text');
   // With nothing picked on that knob the decoy is any non-answer option.
   assert.equal(hintFor(two, { sampling: 'tail' }, 2).hinted.length, 2);
 });

@@ -171,7 +171,7 @@ test('listing a name that is not defined under exactly that id fails to start: t
 test('the header form is not graded (the schema holds no component settings): the question and the explain state it instead', () => {
   const bare = run(REF.replace('Authorization: "Bearer ${env:DASH0_AUTH_TOKEN}"', 'token: ${env:DASH0_AUTH_TOKEN}'));
   assert.equal(bare.outcome, 'right', 'a wrong header key still passes: an accepted gap, said in the file header');
-  assert.match(plain(CONFIG_STEP.question), /Authorization.*Bearer.*a space, then the token/);
+  assert.doesNotMatch(plain(CONFIG_STEP.question), /Authorization|Bearer|header/, 'the task does not ask for what the grader does not check (#381)');
   assert.match(plain(spec.explain), /the name is Authorization and the value is Bearer, a space and the token/);
   assert.match(plain(spec.explain), /checks the wiring, not the settings/);
 });
