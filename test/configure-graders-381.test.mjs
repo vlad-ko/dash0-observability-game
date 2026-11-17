@@ -8,7 +8,9 @@ import assert from 'node:assert/strict';
 import { ACTS } from '../levels/index.mjs';
 import { escapeHtml } from '../lib/lesson-kit.mjs';
 import { hintFor } from '../lib/widgets/configure-it-help.mjs';
-import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs';
+import { newConfigureState, runConfigure, validateConfigureSpec } from '../lib/widgets/configure-it.mjs';
+import { STEP_TYPES } from '../lib/play.mjs';
+import { answerTokens, withholds } from '../lib/guide/context.mjs';
 import { hintFor as tradeoffHint } from '../lib/widgets/trade-off-help.mjs';
 
 const levels = ACTS.flatMap((a) => [...a.levels, ...(a.boss ? [a.boss] : [])]);
@@ -26,7 +28,10 @@ const withExporter = (spec, id, body) => spec.reference.replace(new RegExp(`  ${
 
 test('agw-config: the task does not promise the Collector starts, because an empty or wrongly routed load_balancing passes', () => {
   const bare = AGW.reference.replace(/  load_balancing:\n(    .*\n)*/, '  load_balancing:\n');
-  const service = AGW.reference.replace('routing_key: traceID', 'routing_key: service');
+  const marker = '  load_balancing:\n';
+  assert.equal(AGW.reference.includes(marker), true, 'the reference defines load_balancing');
+  const service = AGW.reference.replace(marker, `${marker}    routing_key: service\n`);
+  assert.equal(service.includes('routing_key: service'), true, 'the wrong key was injected');
   assert.equal(outcome(AGW, bare), 'right', 'the gap: an empty load_balancing has no resolver and passes');
   assert.equal(outcome(AGW, service), 'right', 'the gap: routing_key service is the wrong answer of the next question and passes');
   const task = plain(stepOf('agent-vs-gateway', 'configure', 'agw-config').question);
@@ -51,6 +56,30 @@ test('tier 3 of col-config and agw-config applies a config without the settings 
   for (const spec of [COL, AGW]) assert.equal(outcome(spec, hintFor(spec, newConfigureState(), '', 3).apply), 'right', `${spec.id}: the applied config still passes`);
 });
 
+test('the explain of agw-config and col-config leaves the later answers to their own steps', () => {
+  const agw = plain(AGW.explain);
+  assert.equal(/traceID|every span of a trace goes/.test(agw), false, agw);
+  const col = plain(COL.explain);
+  assert.equal(/multiline|operators/.test(col), false, col);
+  assert.equal(col.includes('include') && col.includes('start_at'), true);
+});
+
+test('withhold: a configure spec may list [key, value] pairs for the Guide; anything else is a spec problem', () => {
+  assert.deepEqual(validateConfigureSpec(AGW), []);
+  assert.deepEqual(AGW.withhold, [['routing_key', 'traceID'], ['routing_key', 'service']]);
+  for (const bad of [[], 'routing_key', [['routing_key']], [['routing_key', '']], [['a', 'b', 'c']], [[1, 2]]]) {
+    assert.equal(validateConfigureSpec({ ...AGW, withhold: bad }).some((p) => p.startsWith('withhold')), true, JSON.stringify(bad));
+  }
+});
+
+test('the Guide withholds the settings a later step asks on its config step, though the reference no longer writes them', () => {
+  const tokens = (spec) => answerTokens(STEP_TYPES.configure, spec);
+  assert.equal(withholds('Set routing_key to traceID.', tokens(AGW)), true);
+  assert.equal(withholds('Set routing_key to traceID.', tokens({ ...AGW, withhold: undefined })), false, 'it is the withhold list that does it');
+  assert.equal(withholds('Set start_at to beginning and use a regex_parser operator.', tokens(COL)), true);
+  assert.equal(withholds('Set start_at to beginning and use a regex_parser operator.', tokens({ ...COL, withhold: undefined })), false);
+});
+
 test('otlp-config tier 1 stops at the rule: it does not say to make each list name the exporter', () => {
   const t = plain(hintFor(OTLP, newConfigureState(), '', 1, { e: escapeHtml }).html);
   assert.equal(/make each list|name it/i.test(t), false, t);
@@ -65,8 +94,9 @@ test('cdn-budget tier 2: on the two-option customer knob a wrong pick has no dec
   const right = { ...BUDGET.answer };
   const lastOnly = tradeoffHint(BUDGET, { ...right, customer: 'nothing' }, 2);
   assert.deepEqual(lastOnly.hinted, []);
-  assert.equal(lastOnly.html, tradeoffHint(BUDGET, {}, 1).html, 'only the two-option knob is wrong: the tier 1 text');
-  assert.equal(lastOnly.html.includes('Look again at'), false);
-  const two = tradeoffHint(BUDGET, { ...right, customer: 'nothing', served: 'none' }, 2);
-  assert.deepEqual([...new Set(two.hinted.map((x) => x.knob))], ['served'], 'a later wrong knob with a decoy is hinted instead');
+  assert.notEqual(lastOnly.html, tradeoffHint(BUDGET, {}, 1).html, 'a tier 2 that repeats tier 1 costs a hint for nothing');
+  assert.equal(lastOnly.html, '<p>Your picks fit the cap, but 1 of the needs is not kept yet.</p>', 'what the plan lacks, from the evaluation');
+  assert.equal(/Look again|customer|attribute|counter/i.test(plain(lastOnly.html)), false, 'no knob is named');
+  const over = tradeoffHint(BUDGET, { ...right, customer: 'nothing', requests: 'route-status-tier' }, 2);
+  assert.deepEqual(over.hinted.map((x) => x.knob), ['requests', 'requests'], 'a wrong knob that has a decoy is hinted first');
 });

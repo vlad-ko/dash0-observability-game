@@ -198,9 +198,10 @@ test('config: the settings are taught but not graded: the reference carries none
   assert.equal(runConfigure(config(), newConfigureState(), bare).outcome, 'right');
   assert.equal(runConfigure(config(), newConfigureState(), TAUGHT()).outcome, 'right');
   const text = plain(config().explain);
-  for (const w of ['checks the wiring, not the settings', 'include', 'start_at', 'multiline', 'operators', 'contrib']) {
+  for (const w of ['checks the wiring, not the settings', 'include', 'start_at', 'contrib']) {
     assert.equal(text.includes(w), true, w);
   }
+  assert.equal(/multiline|operators/.test(text), false, 'the next steps ask about those');
 });
 
 test('config: the receiver is read from the start of the file, split on timestamps and parsed with a regex_parser that sets severity', () => {

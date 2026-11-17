@@ -373,7 +373,8 @@ test('agent config: the routing key is a setting the schema does not model, so t
   const byService = replaced(AG_REF(), '  load_balancing:\n', '  load_balancing:\n    routing_key: service\n');
   assert.equal(runAg(byService).outcome, 'right', 'not graded here: the schema keeps component settings as any');
   const text = plain(agw().explain);
-  for (const w of ['wiring', 'not the settings', 'routing_key', 'traceID', 'tail']) assert.equal(text.includes(w), true, w);
+  for (const w of ['wiring', 'not the settings', 'routing key', 'resolver']) assert.equal(text.includes(w), true, w);
+  assert.equal(text.includes('traceID'), false, 'the key itself is the next question\'s answer');
 });
 
 // ---- both levels --------------------------------------------------------------------

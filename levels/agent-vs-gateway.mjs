@@ -115,13 +115,14 @@ const CONFIG = {
   reference: REFERENCE,
   uses: { traces: ['load_balancing'], metrics: ['otlp_grpc/gateway'] },
   forbids: { traces: ['otlp_grpc/gateway'], metrics: ['load_balancing'] },
+  withhold: [['routing_key', 'traceID'], ['routing_key', 'service']], // agw-key's answer, kept out of the reference (#381)
   helps: { hints: true },
   hint: 'Every span of one trace has to reach the same gateway replica; metrics have no such need. That is why the traces list names an exporter of its own: give that name a definition rather than pointing traces where metrics already go.',
   explain:
     'A pipeline can only list an exporter that is defined, and one that is defined but not listed does nothing. Pointing traces at <code>otlp_grpc/gateway</code>, the Service in front of the replicas, ' +
-    'would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key: with <code>routing_key: traceID</code> every span of a trace goes to the same replica, ' +
-    'so tail sampling there sees whole traces. For traces, <code>traceID</code> is also the default, so spelling it out only makes the intent clear. The resolver, DNS on a headless Service here, lists the replicas. ' +
-    'Metrics are not routed by trace ID, which is not a valid key for metrics, so they keep their own exporter. The exporter\'s type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, ' +
+    'would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key, which the next question is about. ' +
+    'The resolver, DNS on a headless Service here, lists the replicas. ' +
+    'Metrics keep their own exporter. The exporter\'s type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, ' +
     'but this task asks for the current name, so a different id is a different component here. This game checks the wiring, not the settings: the routing key is the next question.',
 };
 

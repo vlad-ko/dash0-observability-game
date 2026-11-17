@@ -148,6 +148,6 @@ export default {
       },
     ],
     finish:
-      'A pipeline that lists two exporters sends each a copy, so trying a second vendor does not take the first one away: define the new exporter, read its endpoint and token from the environment, and list it beside the old one.',
+      'A pipeline that lists two exporters sends each a copy, so trying a second vendor does not take the first one away: define the new exporter and list it beside the old one.',
   },
 };
