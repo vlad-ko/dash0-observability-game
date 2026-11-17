@@ -191,12 +191,12 @@ const DASH0 = [
   },
   {
     key: 'rewrites-all',
-    label: 'Log AI rewrites the severity of every record, JSON logs and severities you set in the Collector included',
+    label: 'Log AI rewrites the severity of each record, JSON logs and severities you set in the Collector included',
     why: 'It does not. A severity that is explicitly set is respected, and structured logs are handled separately, by JSON log processing.',
   },
   {
     key: 'needs-parser',
-    label: 'Nothing: without a parser in the Collector the records stay plain text with no severity',
+    label: 'It cannot help: without a parser in the Collector the records stay plain text with no severity',
     why: 'Dash0 does not wait for a parser. Log AI infers a severity and extracts patterns from unstructured messages as they are ingested. A parser in the Collector is still the better fix when you can write one.',
   },
 ];

@@ -214,11 +214,7 @@ test('step 1 is a Choice: holds, wrong, follow-up; exactly one right answer, "wr
   assert.equal(VERDICT_STEP.choice.id, 'ser-verdict');
   assert.deepEqual(choices.map((c) => c.key), ['holds', 'wrong', 'follow-up']);
   assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['wrong']);
-  assert.deepEqual(
-    choices.map((c) => c.label.split(':')[0]),
-    ['It holds', 'It is wrong', 'Ask first'],
-  );
-  for (const c of choices) assert.equal(c.label.startsWith({ holds: 'It holds:', wrong: 'It is wrong:', 'follow-up': 'Ask first:' }[c.key]), true, c.key);
+  for (const c of choices) assert.equal(/^(It holds|It is wrong|Ask first)/.test(c.label), false, `${c.key}: no verdict opener on a label (#383)`);
   assert.equal(plain(VERDICT_STEP.question), 'Does the presenter\'s answer hold?');
 });
 
@@ -431,7 +427,7 @@ test('9.1 step 1 is the Act 9 verdict Choice: holds, wrong, follow-up; exactly o
   assert.equal(V91.choice.id, 'fos-verdict');
   assert.deepEqual(choices91.map((c) => c.key), ['holds', 'wrong', 'follow-up']);
   assert.deepEqual(choices91.filter((c) => c.right).map((c) => c.key), ['wrong']);
-  for (const c of choices91) assert.equal(c.label.startsWith({ holds: 'It holds:', wrong: 'It is wrong:', 'follow-up': 'Ask first:' }[c.key]), true, c.key);
+  for (const c of choices91) assert.equal(/^(It holds|It is wrong|Ask first)/.test(c.label), false, `${c.key}: no verdict opener on a label (#383)`);
   assert.equal(plain(V91.question), "Does the presenter's answer hold?");
   assert.match(plain(V91.intro), /presenter/);
   assert.match(plain(V91.intro), /filter/);
@@ -637,7 +633,7 @@ test('9.5 step 1 is a verdict Choice with exactly one right answer, "counters an
   assert.equal(at > 0, true, 'the right choice is not first');
   assert.equal(lens[at] < Math.max(...lens) && lens[at] > Math.min(...lens), true, `lengths ${lens.join(', ')}`);
   assert.equal(Math.max(...lens) - Math.min(...lens) <= 10, true, `lengths ${lens.join(', ')}`);
-  assert.match(plain(choices95[at].label), /counters and histograms/);
+  assert.match(plain(choices95[at].label), /counters and histograms/i);
   assert.match(plain(choices95.find((c) => c.key === 'all-delta').label), /UpDownCounters/, 'the tempting pick is every series');
   assert.match(plain(V95.intro), /presenter/);
   assert.match(plain(V95.intro), /OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta/);

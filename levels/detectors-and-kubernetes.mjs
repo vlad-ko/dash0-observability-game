@@ -147,12 +147,12 @@ const DASH0 = [
   },
   {
     key: 'nothing',
-    label: 'Nothing, until you add an SDK to each app and set <code>k8s.pod.name</code> and <code>k8s.namespace.name</code> yourself in each app\'s configuration',
+    label: 'It adds none of them: you add an SDK to each app and set <code>k8s.pod.name</code> and <code>k8s.namespace.name</code> yourself in each app\'s configuration',
     why: 'That is the work the operator takes off you: it instruments supported runtimes and sets the Kubernetes resource attributes for the workload.',
   },
   {
     key: 'logs-only',
-    label: 'It only collects pod logs and metrics; the <code>k8s.*</code> resource attributes stay yours to set by hand in each app\'s environment',
+    label: 'It collects pod logs and metrics; the <code>k8s.*</code> resource attributes stay yours to set by hand in each app\'s environment',
     why: 'The operator does collect pod logs, and metrics too, but it also instruments workloads and adds Kubernetes resource attributes to them.',
   },
 ];

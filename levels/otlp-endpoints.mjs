@@ -127,12 +127,12 @@ const TOKEN = [
   },
   {
     key: 'url',
-    label: 'In the endpoint URL, as a query parameter appended to the address the exporter sends every batch of spans, metrics and logs to',
+    label: 'In the endpoint URL, as a query parameter appended to the address the exporter sends each batch of spans, metrics and logs to',
     why: 'The endpoint is only an address. Dash0 reads the token from the <code>Authorization</code> header, and a token in a URL tends to end up in logs and config files.',
   },
   {
     key: 'resource',
-    label: 'As a resource attribute such as <code>auth.token</code> on the service\'s Resource, and it travels with every batch of telemetry',
+    label: 'As a resource attribute such as <code>auth.token</code> on the service\'s Resource, and it travels with each batch of telemetry',
     why: 'Resource attributes describe what produces the telemetry and travel with it as data, so the token would be sent along with every batch. Authentication is a header on the request, not part of the data.',
   },
 ];

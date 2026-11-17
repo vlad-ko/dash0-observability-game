@@ -117,7 +117,7 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'inventory-reply',
-      label: 'Inventory renamed a field in its reply and orders cannot read it',
+      label: 'Inventory renamed a field in its reply, and orders cannot read it, so the order fails',
       right: true,
       why: 'Every ERROR record says orders is missing field reserved_qty, the trace shows the call to inventory succeeded and the failure is in orders\' parse reservation step, and inventory 3.1.0, deployed at 03:01, one minute before the burst, renamed that field. The log led to the trace, and the trace led to the deploy.',
     },

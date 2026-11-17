@@ -149,7 +149,7 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'inventory-failing',
-      label: 'Checkout\'s stock reservations at the inventory service are failing, and checkout returns them as 500s',
+      label: 'Checkout\'s stock reservations at the inventory service are failing, and checkout returns them as 500s on both versions',
       right: true,
       why:
         `The failing trace shows checkout's call to inventory.kettle.example returning 503 and checkout answering 500, with no payment call after it. The failures begin at ${TABLE.failuresFrom} on both versions, ` +

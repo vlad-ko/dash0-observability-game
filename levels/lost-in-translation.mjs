@@ -28,17 +28,17 @@
 const VERDICT = [
   {
     key: 'all-delta',
-    label: 'It is wrong: every metric is now delta, UpDownCounters and gauges too',
+    label: 'Every metric is now delta, UpDownCounters and gauges too',
     why: 'Not every instrument turns delta. UpDownCounters stay cumulative, and a gauge has no temporality, so it is not converted either.',
   },
   {
     key: 'holds',
-    label: 'It holds: delta only changes how the SDK keeps its own state',
+    label: 'Delta changes just how the SDK keeps its state',
     why: 'The setting changes what the SDK exports, not only what it keeps. A delta point is the change since the last report, and a cumulative-only backend cannot store it as it is.',
   },
   {
     key: 'wrong',
-    label: 'It is wrong: counters and histograms now arrive as delta points',
+    label: 'Counters and histograms now arrive as delta points',
     right: true,
     why:
       'With the preference set to delta, Counter, Asynchronous Counter and Histogram instruments export delta, and UpDownCounter and Asynchronous UpDownCounter instruments stay cumulative. ' +

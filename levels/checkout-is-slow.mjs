@@ -110,7 +110,7 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'n-plus-one',
-      label: 'An N+1 query in the inventory service that runs one query per item',
+      label: 'An N+1 query in the inventory service',
       right: true,
       why: 'One request makes a query per item instead of one query for all items: 40 sequential SELECT stock CLIENT spans under one GET /stock. It started with inventory 2.4.0, which every slow request runs.',
     },
