@@ -644,6 +644,16 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   associative and idempotent and two tabs cannot undo each other. Unknown acts and chapter ids already stored are kept. A corrupt
   value is overwritten with no backup (it is a preference, not progress); an unreadable store means the primer shows.
 
+### 2.13 Level content apart from level logic (#391)
+
+A level's words can live in `content/core/levels/<id>.mjs` (strict JSON, the same wrapper as a primer) while `levels/<id>.mjs`
+keeps its id, answer flags, figures and wiring. The level file exports `withText(text)` and `export default withText(CORE)`;
+`withText` is `bindLevel(text, SKELETON, {vars})` from `lib/content/bind.mjs`, which joins the two by id, fills `{{name}}`
+placeholders from the level's figures (`lib/content/placeholders.mjs`) and applies the shared text rules, including `checkHtml`
+(`lib/content/text-rules.mjs`). The built level has the same shape as before, so the registry, `lib/play.mjs` and the widgets
+are unchanged. The file convention, merge rules, key allowlist, editions and the step-by-step conversion are in `docs/CONTENT.md`;
+primers keep their own schema (§2.12) over the same text rules.
+
 ## 3. Invariants
 
 Registry (`validateRegistry` reports all at once): act and level ids unique across all acts

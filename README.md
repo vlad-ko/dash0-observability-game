@@ -21,6 +21,7 @@ Next is the platform milestone (OUTLINE §8). Foundation design:
 - [docs/M1-DESIGN.md](docs/M1-DESIGN.md): M1 design (Act 0 and Act 2 content, widgets)
 - [docs/DECLARATIVE-LEVELS.md](docs/DECLARATIVE-LEVELS.md): M2 declarative level format (#71)
 - [docs/CHANGING-A-LEVEL.md](docs/CHANGING-A-LEVEL.md): how to change a level's content and get it merged
+- [docs/CONTENT.md](docs/CONTENT.md): how level text lives apart from level logic (content files, placeholders, converting a level)
 - [docs/PRIMERS.md](docs/PRIMERS.md): how to write an act primer (the reading before an act)
 - [docs/GAME-EVENTS.md](docs/GAME-EVENTS.md): play events from the browser to the owner's Dash0 (wire contract, owner steps)
 - [docs/LIVE-DEMO.md](docs/LIVE-DEMO.md): Act 9 Live Demo foundation (privacy, template, sign-off gates)

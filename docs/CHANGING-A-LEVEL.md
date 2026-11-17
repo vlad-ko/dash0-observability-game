@@ -1,16 +1,16 @@
 # Changing a level
 
-For Dash0 engineers who know OpenTelemetry but not this codebase. It covers changing the content of a level (a fact, a question, a choice, a step, a card) and getting the change merged. The full step format is in [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md); this guide does not repeat it. The worked example is `levels/good-alerts.mjs` (level 7.1), a short declarative level. To change an act primer (the reading before an act) instead, see [PRIMERS.md](PRIMERS.md).
+For Dash0 engineers who know OpenTelemetry but not this codebase. It covers changing the content of a level (a fact, a question, a choice, a step, a card) and getting the change merged. The full step format is in [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md); this guide does not repeat it. The worked example is `levels/good-alerts.mjs` (level 7.1), a short declarative level. A level's words may live in a separate content file; [CONTENT.md](CONTENT.md) explains the split and is the guide for converting a level. To change an act primer (the reading before an act) instead, see [PRIMERS.md](PRIMERS.md).
 
 ## 1. Find the file
 
-Every level is one file in `levels/`, named by its id. Search for text the player sees, or for the level name:
+Every level has a file in `levels/`, named by its id: its answers, figures and wiring. A level whose words have been moved out (`good-alerts` and `cardinality` so far, see [CONTENT.md](CONTENT.md)) keeps those words in `content/core/levels/<id>.mjs`. Search both places for text the player sees, or for the level name:
 
 ```
-grep -rn "How do you fix CheckoutErrors" levels/
+grep -rn "How do you fix CheckoutErrors" levels/ content/
 ```
 
-That finds `levels/good-alerts.mjs`. Player text is HTML inside JS strings, so search for a short phrase without quotes or entities (`&amp;` for `&`, `\'` for an apostrophe). A level that has `play: { steps: [...] }` is declarative. A level with `run(ctx)` and `mechanics` (for example `levels/checkout-is-slow.mjs`) is hand-written: its steps are code, and its test is a driver (see below). Prefer a declarative level for your first change.
+That finds `content/core/levels/good-alerts.mjs`. Player text is HTML inside JS strings, so search for a short phrase without quotes or entities (`&amp;` for `&`, `\'` for an apostrophe). A level that has `play: { steps: [...] }` is declarative. A level with `run(ctx)` and `mechanics` (for example `levels/checkout-is-slow.mjs`) is hand-written: its steps are code, and its test is a driver (see below). Prefer a declarative level for your first change.
 
 In-game player feedback becomes a GitHub issue titled `Feedback: <level name> (<level id>)`, so the id in the title is the file name. Those issues are a good source of edits.
 
@@ -29,9 +29,9 @@ Open `http://localhost:3000/?mode=debug` to open every act and level (bosses too
 
 ### Fix copy or a fact
 
-Edit the string in the level file. Every fact has a source on a comment line at the top of the file. `// Spec: <https URL>` carries the URL the tests check, on the OpenTelemetry, W3C, Prometheus, Perses, MDN or Dash0 (www.dash0.com) pages. `// Dash0 docs: <URL>` (see the head of `levels/good-alerts.mjs`) is extra context and is not checked. Read the page, keep the "Facts used" comment true, and add the URL if you used a new page. `test/content.test.mjs` fails if a level has no `// Spec:` line, if a Spec URL is on any other host, or if the copy has an em dash.
+Edit the string in the level file, or in its content file `content/core/levels/<id>.mjs` when the level has one (strict JSON, and `{{name}}` marks a figure that the level file supplies: see [CONTENT.md](CONTENT.md)). Every fact has a source on a comment line at the top of the file. `// Spec: <https URL>` carries the URL the tests check, on the OpenTelemetry, W3C, Prometheus, Perses, MDN or Dash0 (www.dash0.com) pages. `// Dash0 docs: <URL>` (see the head of `levels/good-alerts.mjs`) is extra context and is not checked. Read the page, keep the "Facts used" comment true, and add the URL if you used a new page. `test/content.test.mjs` fails if a level has no `// Spec:` line, if a Spec URL is on any other host, or if the copy has an em dash.
 
-Each level also has its own test, here `test/act-7.test.mjs`, which pins keys, counts and some phrases (for example that the `delta` explanation says `gauges`). If your edit rewords a pinned phrase, that test fails: update the expected text in the same commit. The same fact may also sit in the design docs ([M1-DESIGN.md](M1-DESIGN.md) and the other `docs/` files that describe levels): grep `docs/` for a distinctive word of the old text and fix what you find. A test of a level's text (a URL, an em dash, a markup pattern) reads the source with `levelSource(id)` from `test/helpers/level-source.mjs`, not with `readFileSync`. A few tests still read the raw level files, among them `test/content.test.mjs` (moves to `levelSource` in P1 of #391), `test/act-5-exporter-types.test.mjs` (scrapes the `//` lines), `test/design-system.test.mjs` T1 (colour literals; moves in P1), and the two ladder tests `test/sort-ladder.test.mjs` and `test/spot-ladder.test.mjs`, which list `levels/` and import each module.
+Each level also has its own test, here `test/act-7.test.mjs`, which pins keys, counts and some phrases (for example that the `delta` explanation says `gauges`). If your edit rewords a pinned phrase, that test fails: update the expected text in the same commit. The same fact may also sit in the design docs ([M1-DESIGN.md](M1-DESIGN.md) and the other `docs/` files that describe levels): grep `docs/` for a distinctive word of the old text and fix what you find. A test of a level's text (a URL, an em dash, a markup pattern) reads the source with `levelSource(id)` from `test/helpers/level-source.mjs`, not with `readFileSync`. A few tests still read the raw level files, among them `test/content.test.mjs` and `test/design-system.test.mjs` T1 (the em dash, "costs a star" and colour scans: they read `levels/` and also scan every file under `content/`), `test/act-5-exporter-types.test.mjs` (scrapes the `//` lines), and the two ladder tests `test/sort-ladder.test.mjs` and `test/spot-ladder.test.mjs`, which list `levels/` and import each module.
 
 ### Change a choice question
 

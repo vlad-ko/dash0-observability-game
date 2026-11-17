@@ -3,7 +3,7 @@
 // the logic file plus the decoded string leaves of that file, so source scans keep seeing the copy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { levelSource } from './helpers/level-source.mjs';
@@ -12,8 +12,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_ROOT = join(ROOT, 'test', 'fixtures', 'level-source');
 const EM_DASH = String.fromCharCode(0x2014);
 
-test('with no content file, levelSource is the level file exactly (every level)', () => {
-  const ids = readdirSync(join(ROOT, 'levels')).filter((f) => f.endsWith('.mjs') && f !== 'index.mjs').map((f) => f.slice(0, -4));
+test('with no content file, levelSource is the level file exactly (every level not yet converted)', () => {
+  const ids = readdirSync(join(ROOT, 'levels'))
+    .filter((f) => f.endsWith('.mjs') && f !== 'index.mjs')
+    .map((f) => f.slice(0, -4))
+    .filter((id) => !existsSync(join(ROOT, 'content', 'core', 'levels', `${id}.mjs`)));
   assert.ok(ids.length >= 50);
   for (const id of ids) {
     assert.equal(levelSource(id), readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8'), id);
