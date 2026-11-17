@@ -922,6 +922,8 @@ test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames, and a fix
       assert.ok(steps >= stepsOf(level).length, `${label}: a step frame per step`);
       assert.deepEqual(ats, [...Array(steps - 1).fill(['step', 'leave']).flat(), 'step', 'end'], `${label}: step, leave, step ... step, end`);
       assert.ok(frames.every((f) => f.body.length > 0), `${label}: every frame holds the screen`);
+      assert.ok(frames[0].body.includes('alert: OrdersWaiting'), `${label}: the first step frame holds the level's first screen`);
+      assert.notEqual(frames[0].body, frames[0].actions, `${label}: body and actions are recorded apart`);
       assert.ok(frames.some((f) => f.actions.includes('data-finish')), `${label}: the Finish button is in some frame`);
       assert.ok(finish.length > 10, `${label}: the finish text`);
     }

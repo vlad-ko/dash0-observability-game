@@ -22,10 +22,14 @@ test('canonical tells two different values apart', () => {
   assert.notEqual(canonical({ a: undefined }), canonical({ a: null }));
 });
 
-test('a level file holds its copy and its default export', async () => {
+test('a level fingerprint holds its copy, its default export and every named export', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'fp-c-'));
   try {
     await writeFingerprints(dir);
+    const exported = Object.keys(await import('../levels/baggage.mjs')).sort();
+    assert.ok(exported.includes('CONTENT') && exported.includes('default'), 'baggage has a named export besides default');
+    const written = Object.keys(JSON.parse(readFileSync(join(dir, 'baggage.json'), 'utf8'))).sort();
+    assert.deepEqual(written, exported, 'baggage.json has one top-level key per export of the module');
     const text = readFileSync(join(dir, 'good-alerts.json'), 'utf8');
     assert.ok(text.includes('The counter only grows, so a bigger threshold only delays the page'), 'a wrong-answer why is in the file');
     assert.match(text, /^ {2}"default": /m);
