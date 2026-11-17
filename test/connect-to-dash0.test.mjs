@@ -4,7 +4,7 @@
 // the stars) is DRIVERS['connect-to-dash0'] in test/levels-play.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa } from './helpers/dom.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry } from '../lib/telemetry.mjs';
@@ -691,7 +691,7 @@ test('the practice token shown after Create token is gone from the page once Con
 });
 
 test('the level file never touches storage, the URL, the console or the cookie jar', () => {
-  const src = readFileSync(new URL('../levels/connect-to-dash0.mjs', import.meta.url), 'utf8');
+  const src = levelSource('connect-to-dash0');
   const code = src.split('\n').filter((l) => !l.trimStart().startsWith('//')).join('\n');
   for (const banned of [/localStorage/, /sessionStorage/, /document\.cookie/, /\blocation\b/, /\bhistory\b/, /console\./, /indexedDB/, /reportError/, /fetch\(/, /innerHTML\s*=\s*[^;]*token/i]) {
     assert.doesNotMatch(code, banned);

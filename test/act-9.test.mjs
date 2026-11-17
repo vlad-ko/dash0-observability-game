@@ -5,7 +5,7 @@
 // (docs/LIVE-DEMO.md). Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
@@ -35,8 +35,7 @@ const LEVELS9 = [ID91, ID92, ID93, ID94, ID95, ID96, ID97, ID98];
 const ID = ID92; // the 9.2 tests below
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
-const SRC = read(`levels/${ID}.mjs`);
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {
@@ -53,7 +52,7 @@ const [VERDICT_STEP, PLAN_STEP] = level.play.steps;
 const choices = VERDICT_STEP.choice.choices;
 const spec = PLAN_STEP.tradeoff;
 const copyOf = (step) => plain([step.intro, step.show ?? '', step.question].join(' '));
-const SRC91 = read(`levels/${ID91}.mjs`);
+const SRC91 = levelSource(ID91);
 const level91 = LIVE.levels[ID91];
 // Optional chaining so a registry without 9.1 fails the act and globe tests on their assertions, not this file at load.
 const [V91, S91_STEP] = level91?.play.steps ?? [];
@@ -606,7 +605,7 @@ test('globe: 9.2 lights Australia, 9.1 New Zealand, 9.3 Papua New Guinea, 9.4 th
 
 // ---- level 9.5: Lost in translation --------------------------------------------------------------
 
-const SRC95 = read(`levels/${ID95}.mjs`);
+const SRC95 = levelSource(ID95);
 const level95 = LIVE.levels[ID95];
 const [V95, S95_STEP] = level95.play.steps;
 const choices95 = V95.choice.choices;

@@ -7,7 +7,7 @@
 // Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -63,7 +63,7 @@ test('checkout-is-slow: star totals count the boss (the derived scored-level max
 });
 
 test('checkout-is-slow: no em dash in the level file', () => {
-  const src = readFileSync(new URL('../levels/checkout-is-slow.mjs', import.meta.url), 'utf8');
+  const src = levelSource('checkout-is-slow');
   assert.equal(src.includes('—'), false);
 });
 

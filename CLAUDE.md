@@ -25,6 +25,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
 - `tools/serve.mjs` dev server; `.github/workflows/ci.yml`; `tools/pr-findings.mjs` (findings
   detector) and `tools/pr-findings-status.mjs`, run by `.github/workflows/pr-findings.yml`
   (triggered by `pr-findings-relay.yml` for PR and review events).
+- Content-move checks (#391): `node tools/level-fingerprint.mjs <dir>` writes every level's canonical exports; `LEVEL_SNAPSHOT=<dir>` makes `test/levels-play.test.mjs` write each run's screens. Diff before and after.
 - Play events (epic #18, docs/GAME-EVENTS.md): `lib/play-telemetry.mjs` is the browser client (off in debug, never throws), `lib/play-events.mjs` the wire contract, `api/events.mjs` the receiver; separate from the Act 9 lab `lib/telemetry.mjs`.
 - Act primers (#389, docs/FOUNDATION.md §2.12): `content/core/primers/<act-id>.mjs` is strict-JSON content kept apart from code, `lib/primer.mjs` the pure validator, status and view, `lib/primer-prefs.mjs` the saved state (`oncall.primers`), `lib/content/` the text rules shared by authored content; authoring guide: docs/PRIMERS.md.
 - Level feedback (#370, docs/FOUNDATION.md §2.11): `lib/feedback.mjs` is the wire contract and issue text (pure, browser-importable), `api/feedback.mjs` opens the GitHub issue; off unless `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO` are set; `FEEDBACK_STUB=1` for local dev.

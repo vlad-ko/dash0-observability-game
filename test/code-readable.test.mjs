@@ -1,9 +1,9 @@
 // #321 P2: authored evidence markup. Log output wraps (data-wrap), a multi-line snippet is a code block.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 
-const src = (f) => readFileSync(new URL(`../levels/${f}.mjs`, import.meta.url), 'utf8');
+const src = (f) => levelSource(f);
 
 test('log and command output is a wrapping pre; the silence error line is one of them', () => {
   for (const f of ['silence', 'everything-is-green', 'ai-assisted-debugging']) {

@@ -7,7 +7,7 @@
 // the level's data. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -28,7 +28,6 @@ const MAX_STARS = expectedStarMax(LIVE);
 const ID = 'ai-assisted-debugging';
 const LEVEL = LIVE.levels[ID];
 const S = LEVEL.play.steps[0].incident;
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const view = (id) => S.views.find((v) => v.id === id);
 const plain = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 const cost = (kind) => S.views.filter((v) => v.kind === kind).reduce((n, v) => n + v.costMin, 0);
@@ -136,7 +135,7 @@ test('globe: 8.5 lights the Philippines and, last of the act, completes Southeas
 });
 
 test('8.5: no em dash in the level file or this level\'s copy', () => {
-  assert.equal(read(`levels/${ID}.mjs`).includes(String.fromCharCode(0x2014)), false);
+  assert.equal(levelSource(ID).includes(String.fromCharCode(0x2014)), false);
   assert.equal(JSON.stringify(LEVEL.play).includes(String.fromCharCode(0x2014)), false);
 });
 
@@ -245,7 +244,7 @@ test('the copy says the agent is simulated once, in the alert (not again in the 
 // ---- sources ---------------------------------------------------------------------------
 
 test('sources: one Spec line on opentelemetry.io, Dash0 docs lines on www.dash0.com, the not-claimed and invented parts marked, no pricing', () => {
-  const src = read(`levels/${ID}.mjs`);
+  const src = levelSource(ID);
   const lines = src.split('\n');
   const urls = (re) => lines.filter((l) => re.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.deepEqual(urls(/^\/\/ Spec: /), ['https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/']);

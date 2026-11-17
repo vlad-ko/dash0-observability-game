@@ -6,7 +6,7 @@
 // own data. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { expectedStarMax } from './helpers/stars.mjs';
@@ -20,7 +20,6 @@ import { COLLECTOR_SCHEMA } from '../lib/configure/collector.mjs';
 
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {
@@ -537,7 +536,7 @@ test('spot: the explain teaches the nuance with the recomputed figures: the span
 // ---- both levels --------------------------------------------------------------------
 
 const urls = (f, prefix) =>
-  read(`levels/${f}.mjs`).split('\n').filter((l) => l.startsWith(prefix)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+  levelSource(f).split('\n').filter((l) => l.startsWith(prefix)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
 
 test('the 6.1 and 6.2 level files cite the pages their facts come from: Spec lines on allowed hosts, Docs lines for the READMEs', () => {
   const head = urls('head-sampling', '// Spec: ');
@@ -561,20 +560,20 @@ test('the 6.1 and 6.2 level files cite the pages their facts come from: Spec lin
   ]) assert.equal(docs.includes(u), true, u);
   for (const f of ['head-sampling', 'tail-sampling']) {
     for (const u of [...urls(f, '// Spec: ')]) assert.equal(['opentelemetry.io', 'www.w3.org', 'prometheus.io'].includes(new URL(u).host), true, `${f} Spec line ${u}`);
-    assert.equal(/^\/\/ Spec: .*github\.com/m.test(read(`levels/${f}.mjs`)), false, `${f}: GitHub is a Docs source, not a Spec source`);
+    assert.equal(/^\/\/ Spec: .*github\.com/m.test(levelSource(f)), false, `${f}: GitHub is a Docs source, not a Spec source`);
   }
 });
 
 test('the level headers say which widget grades what, and why Spot it stands in for a config check', () => {
-  const head = read('levels/head-sampling.mjs');
+  const head = levelSource('head-sampling');
   assert.equal(/Trade-off/.test(head) && /not run|does not simulate|authored/.test(head), true, 'the header says Trade-off prices authored options');
-  const tail = read('levels/tail-sampling.mjs');
+  const tail = levelSource('tail-sampling');
   assert.equal(/Spot it/.test(tail) && /does not parse/.test(tail), true, 'the header says Spot it does not parse the config');
 });
 
 test('no em dash in the two level files or the two new cards', () => {
   const dash = String.fromCharCode(0x2014);
-  for (const f of ['head-sampling', 'tail-sampling']) assert.equal(read(`levels/${f}.mjs`).includes(dash), false, f);
+  for (const f of ['head-sampling', 'tail-sampling']) assert.equal(levelSource(f).includes(dash), false, f);
   for (const c of DECK.filter((d) => Object.keys(CARDS).includes(d.id))) assert.equal(JSON.stringify(c).includes(dash), false, c.id);
 });
 
