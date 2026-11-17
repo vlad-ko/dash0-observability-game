@@ -157,7 +157,7 @@ const SCENARIO = {
     },
     {
       id: 'bad-release',
-      label: 'The checkout release that went out this morning, 2.14.0, has a bug that fails some orders',
+      label: 'The checkout release that went out this morning has a bug that fails some orders',
       right: false,
       why:
         `Both versions fail at the same rate from ${TABLE.failuresFrom}: ${per1000(OLD.afterErrors, OLD.afterRequests)} per 1,000 requests for ${OLD.v}, which did not change, and ${per1000(NEW.afterErrors, NEW.afterRequests)} for ${NEW.v}. ` +

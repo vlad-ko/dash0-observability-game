@@ -1,9 +1,11 @@
 // Copy rules for the seven incident bosses (#182): each boss has its own scenario line, which does
 // not repeat what the generic lesson card says; a panel with a table, list or code block is the
 // evidence plus at most one more sentence; and the cause labels give nothing away by their shape:
-// the right one is neither the longest nor the shortest, and no length or word count, digit count,
-// comma count, quote count or count of code-like words picks it out (the tell rules of
-// test/spot-tells.test.mjs, here over four labels). Hints: test/authored-hints.test.mjs.
+// no word count, digit count, comma count, quote count or count of code-like words picks the right
+// one out (the tell rules of test/spot-tells.test.mjs, here over four labels). Label length is
+// not checked per board here: "always in the middle" is itself a tell, so the length rank of the
+// right cause is spread across boards and bounded in test/choice-tells.test.mjs (#383).
+// Hints: test/authored-hints.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTS } from '../levels/index.mjs';
@@ -17,9 +19,9 @@ async function incidentBosses() {
   for (const act of ACTS) {
     for (const level of [...act.levels, ...(act.boss ? [act.boss] : [])]) {
       const mod = await import(`../levels/${level.id}.mjs`);
-      const step = (mod.default.play?.steps ?? []).find((s) => s.incident);
-      if (step) out.push({ id: level.id, intro: step.intro, scenario: step.incident });
-      else if (mod.CONTENT?.scenario) out.push({ id: level.id, intro: mod.CONTENT.intro, scenario: mod.CONTENT.scenario });
+      const steps = (mod.default.play?.steps ?? []).filter((s) => s.incident);
+      for (const step of steps) out.push({ id: level.id, intro: step.intro, scenario: step.incident });
+      if (!steps.length && mod.CONTENT?.scenario) out.push({ id: level.id, intro: mod.CONTENT.intro, scenario: mod.CONTENT.scenario });
     }
   }
   return out;
@@ -88,7 +90,7 @@ const count = (re) => (text) => (text.match(re) ?? []).length;
 
 /** Measures of a label: name -> (plain text) -> number. Same rules as the Spot tells' text measures. */
 const MEASURES = {
-  length: (t) => t.length,
+  // No `length`: the length rank is bounded across boards in test/choice-tells.test.mjs (#383).
   words: count(/\w+/g),
   digits: count(/\d/g),
   commas: count(/,/g),
@@ -123,7 +125,7 @@ function tellsOf(id, labels, rightIndex) {
 
 const labelsOf = (scenario) => scenario.hypotheses.map((h) => plain(h.label));
 
-test('no length, word, digit, comma, quote or code-name count picks the right cause on any incident boss', async () => {
+test('no word, digit, comma, quote or code-name count picks the right cause on any incident boss', async () => {
   const all = {};
   for (const { id, scenario } of await incidentBosses()) {
     Object.assign(all, tellsOf(id, labelsOf(scenario), scenario.hypotheses.findIndex((h) => h.right)));
@@ -131,19 +133,24 @@ test('no length, word, digit, comma, quote or code-name count picks the right ca
   assert.deepEqual(all, {});
 });
 
-test('the right cause is neither the longest nor the shortest label, in characters, on any incident boss', async () => {
-  for (const { id, scenario } of await incidentBosses()) {
+test('the right cause is not the longest label on more than half the incident boards, nor the shortest on more than half (the rank band itself is in choice-tells)', async () => {
+  const boards = await incidentBosses();
+  let longest = 0;
+  let shortest = 0;
+  for (const { scenario } of boards) {
     const labels = labelsOf(scenario);
     const right = labels[scenario.hypotheses.findIndex((h) => h.right)];
-    assert.equal(labels.some((l) => l.length > right.length), true, `${id}: a longer label than "${right}"`);
-    assert.equal(labels.some((l) => l.length < right.length), true, `${id}: a shorter label than "${right}"`);
+    if (labels.every((l) => l.length <= right.length)) longest++;
+    if (labels.every((l) => l.length >= right.length)) shortest++;
   }
+  assert.equal(longest <= boards.length / 2, true, `${longest} of ${boards.length} boards have the right cause longest`);
+  assert.equal(shortest <= boards.length / 2, true, `${shortest} of ${boards.length} boards have the right cause shortest`);
 });
 
-test('the label tell rules have teeth: they flag a longest or fewest-words answer and let a middle one pass', () => {
+test('the label tell rules have teeth: they flag a most-words or fewest-words answer and let a middle one pass', () => {
   const labels = ['aaaa bbbb cccc', 'aa', 'aaaa bbbb', 'aaaaaa bbbbbb cccccc dddddd'];
-  assert.deepEqual(Object.keys(tellsOf('x', labels, 3)).sort(), ['x: most length', 'x: most words'].sort());
-  assert.deepEqual(Object.keys(tellsOf('x', labels, 1)).sort(), ['x: fewest length', 'x: fewest words'].sort());
+  assert.deepEqual(Object.keys(tellsOf('x', labels, 3)), ['x: most words']);
+  assert.deepEqual(Object.keys(tellsOf('x', labels, 1)), ['x: fewest words']);
   assert.deepEqual(tellsOf('x', labels, 0), {});
   assert.deepEqual(Object.keys(tellsOf('x', ['a user_id one', 'a plain words', 'one plain bit', 'two plain bit'], 0)), ['x: most code-like words']);
   assert.equal(pickShare([3, 3, 1, 1], 0, 'most'), 0.5, 'a tie of two is a coin flip, not a tell');

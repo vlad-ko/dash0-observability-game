@@ -122,7 +122,7 @@ const SCENARIO = {
     },
     {
       id: 'redis',
-      label: 'Redis is overloaded by the cart and session lookups that checkout makes first',
+      label: 'Redis is overloaded by the cart and session lookups that checkout makes',
       right: false,
       why: 'Redis shows no sign of load, and the slow time sits in database spans under inventory.',
     },

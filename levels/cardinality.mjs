@@ -195,12 +195,12 @@ const DASH0 = [
   },
   {
     key: 'spam-free',
-    label: 'Add a spam filter on the metric: dropped data is free, and the ingest cost falls to zero',
+    label: 'Add a spam filter on the metric: the data is dropped before it reaches ingest, so your services stop sending it',
     why: 'Dropped data is not stored, but it still passes through SignalControl and carries the ingest charge. A spam filter reduces what is stored, not what you send.',
   },
   {
     key: 'leave',
-    label: 'Leave it: a high cardinality score is a number, and storage handles many series',
+    label: 'Leave it: storage handles a large number of series well, so a high cardinality score is a warning to ignore',
     why: 'A high score is not always a problem, but it is a prompt to ask whether all of those dimensions are needed. Here a user id is the reason for it, and nothing needs a series for every user.',
   },
 ];

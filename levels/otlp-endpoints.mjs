@@ -30,7 +30,7 @@ const PORT = [
   },
   {
     key: 'same-port',
-    label: 'Nothing: port 4317 serves both OTLP/gRPC and OTLP/HTTP on every Collector, so the cause is somewhere else',
+    label: 'Port 4317 serves both OTLP/gRPC and OTLP/HTTP on the Collector, so the cause is somewhere else',
     why: 'Each OTLP transport has its own default port, 4317 for gRPC and 4318 for HTTP. A client has to use the one that matches its protocol.',
   },
   {

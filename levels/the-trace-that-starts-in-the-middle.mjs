@@ -98,7 +98,7 @@ const PASS_ROWS = [row(['web to cart', header(traceparent(WEB_C))]), row(['cart 
 const VERDICT = [
   {
     key: 'holds',
-    label: 'Cart\'s SDK ignored the header, so its span is an orphan',
+    label: 'Cart\'s SDK ignored the header and left its span an orphan',
     why: `Cart's spans carry trace ${T.slice(0, 8)}, web's trace ID, so its SDK continued the trace and did not start one. The orphan is a parent-ID problem, not a trace-ID problem.`,
   },
   {

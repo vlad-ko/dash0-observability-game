@@ -83,7 +83,7 @@ const WHY = [
   },
   {
     key: 'errors-only',
-    label: 'The ids are added by severity: ERROR records get a trace ID, and these records are below ERROR',
+    label: 'Trace IDs are added by severity: ERROR records get one, and these records are below ERROR',
     why: 'Severity plays no part. The ids come from the context at the moment of the call, so an INFO or DEBUG record written inside a span carries them, and an ERROR written outside one does not.',
   },
 ];

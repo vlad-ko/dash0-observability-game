@@ -97,7 +97,7 @@ const SORT = {
 const POD = [
   {
     key: 'same-thing',
-    label: 'A span attribute and a resource attribute are the same thing, so you can set it on either',
+    label: 'A span attribute and a resource attribute are the same thing, so you can set either one',
     why: 'They are not. A Resource is attached to the provider once, and every span, metric and log from it carries the Resource. A span attribute belongs to that one span.',
   },
   {
