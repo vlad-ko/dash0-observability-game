@@ -111,6 +111,26 @@ const STATE_LABELS = Object.freeze({
 // <input> types that take no text: Escape on them still closes the level.
 const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file']);
 
+/**
+ * The kit modals (index.html `.ui-modal`), the one list scrollLocked, openModalSelector, dialogOpen, the overlay's
+ * inert binding and onEscape all derive from (#378). Table order is the Tab-trap priority (openModalSelector: the first
+ * open entry wins). A new kit modal is one entry here plus its markup (test/modals-table.test.mjs checks they agree).
+ *  - id: the modal's element id; flag: the game state that shows it; close: the game method that closes it.
+ *  - overLevel: it sits over an open level, so it is not a dialogOpen (the level already is) and it makes `.overlay` inert.
+ *  - escape: its place in the Escape order (lowest first, after the reward card); the Escape order differs from the
+ *    Tab-trap order (About closes before How to play), so it is its own field; needsLevel: it only closes on Escape
+ *    while a level is open (How to play opens beside the level; the level's own Escape closes it last).
+ */
+export const MODALS = Object.freeze([
+  { id: 'feedback-modal', flag: 'feedbackOpen', close: 'closeFeedback', overLevel: true, escape: 1, needsLevel: false },
+  { id: 'howto-modal', flag: 'howToOpen', close: 'closeHowTo', overLevel: true, escape: 6, needsLevel: true },
+  { id: 'save-modal', flag: 'saveOpen', close: 'closeSave', overLevel: false, escape: 3, needsLevel: false },
+  { id: 'board-modal', flag: 'boardOpen', close: 'closeBoard', overLevel: false, escape: 4, needsLevel: false },
+  { id: 'account-modal', flag: 'accountOpen', close: 'closeAccount', overLevel: false, escape: 5, needsLevel: false },
+  { id: 'about-modal', flag: 'aboutOpen', close: 'closeAbout', overLevel: false, escape: 2, needsLevel: false },
+].map((m) => Object.freeze(m)));
+const ESCAPE_ORDER = Object.freeze([...MODALS].sort((a, b) => a.escape - b.escape));
+
 /** True when `el` is (inside) a text-entry control: textarea, select, contenteditable or a text-like input. */
 function isTyping(el) {
   if (!el || typeof el.closest !== 'function') return false;
@@ -726,9 +746,14 @@ export function createGame(deps) {
 
     // ---------- dialogs ----------
     // The one answer to "is a dialog open": the hub goes inert and openLevel / openAbout
-    // refuse while it is true.
+    // refuse while it is true. The over-a-level modals (How to play, feedback) are left out on purpose: they only
+    // open over a level, which already counts.
     dialogOpen() {
-      return this.overlayOpen || this.rewardOpen || this.aboutOpen || this.saveOpen || this.boardOpen || this.accountOpen;
+      return this.overlayOpen || this.rewardOpen || MODALS.some((m) => !m.overLevel && this[m.flag]);
+    },
+    // The level overlay is inert while a modal over it is open (the :inert binding in index.html).
+    overlayInert() {
+      return MODALS.some((m) => m.overLevel && this[m.flag]);
     },
     hubInert() {
       return this.dialogOpen();
@@ -952,7 +977,7 @@ export function createGame(deps) {
 
     // ---------- How to play modal ----------
     // A kit modal outside .overlay and the level's DOM: a step never wipes it. While it is open the
-    // overlay is inert (index.html :inert="howToOpen") and Tab stays inside (trapTab). Focus returns
+    // overlay is inert (index.html :inert="overlayInert()", from the MODALS table) and Tab stays inside (trapTab). Focus returns
     // to the header's How to play button when it closes.
     howToExpanded() {
       return this.howToOpen ? 'true' : 'false';
@@ -1194,9 +1219,9 @@ export function createGame(deps) {
     },
 
     // The page behind an open kit modal must not scroll: a class on <html> (index.html x-effect keeps it
-    // in step with the three flags; the rule is in base.css, never an inline style).
+    // in step with the modal flags; the rule is in base.css, never an inline style).
     scrollLocked() {
-      return this.howToOpen || this.aboutOpen || this.saveOpen || this.boardOpen || this.accountOpen || this.feedbackOpen;
+      return MODALS.some((m) => this[m.flag]);
     },
     syncScrollLock() {
       doc.documentElement.classList.toggle('modal-open', this.scrollLocked());
@@ -1204,13 +1229,8 @@ export function createGame(deps) {
     // Tab (and Shift+Tab) wrap inside the open kit modal; the page behind is inert, so without this
     // focus would fall out to the browser's own controls. The level overlay and the reward card are trapped too (trapSelector).
     openModalSelector() {
-      if (this.feedbackOpen) return '#feedback-modal';
-      if (this.howToOpen) return '#howto-modal';
-      if (this.saveOpen) return '#save-modal';
-      if (this.boardOpen) return '#board-modal';
-      if (this.accountOpen) return '#account-modal';
-      if (this.aboutOpen) return '#about-modal';
-      return null;
+      const open = MODALS.find((m) => this[m.flag]);
+      return open ? `#${open.id}` : null;
     },
     // An open level (or the reward) keeps Tab too, at any width (#327): the hub behind is inert, and
     // without a trap Tab would leave for the browser's own controls and come back on the hub or body.
@@ -1225,7 +1245,7 @@ export function createGame(deps) {
       return sel === null ? false : trapTab(e, doc.querySelector(sel), doc);
     },
 
-    // One window-level Escape handler: closes the reward, else the feedback dialog (it sits over a level), else the About dialog, else Save code, else the How to play modal, else the level, but never the
+    // One window-level Escape handler: closes the reward first, then one modal in the MODALS escape order, and the level last, but never the
     // level while the player is typing in it. A widget that handled the Escape (it called
     // preventDefault, e.g. Build it cancelling a pick) owns it.
     onEscape(e) {
@@ -1234,31 +1254,14 @@ export function createGame(deps) {
         this.closeReward();
         return;
       }
-      if (this.feedbackOpen) {
-        this.closeFeedback(); // over a level: only the dialog closes
-        return;
-      }
-      if (this.aboutOpen) {
-        this.closeAbout();
-        return;
-      }
-      if (this.saveOpen) {
-        this.closeSave();
-        return;
-      }
-      if (this.boardOpen) {
-        this.closeBoard();
-        return;
-      }
-      if (this.accountOpen) {
-        this.closeAccount();
+      // The modals in MODALS' escape order; an over-a-level one (feedback) closes alone, leaving the level open.
+      // A needsLevel one (How to play) only counts while a level is open, and the level itself comes after it.
+      for (const m of ESCAPE_ORDER) {
+        if (!this[m.flag] || (m.needsLevel && !this.overlayOpen)) continue;
+        this[m.close]();
         return;
       }
       if (!this.overlayOpen) return;
-      if (this.howToOpen) {
-        this.closeHowTo();
-        return;
-      }
       if (!isTyping(e?.target)) this.closeOverlay();
     },
 

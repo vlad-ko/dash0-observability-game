@@ -6,13 +6,14 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseHTML } from 'linkedom';
 import { focusables, trapTab } from '../lib/modal-focus.mjs';
+import { MODALS } from '../app.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const shell = parseHTML(readFileSync(join(ROOT, 'index.html'), 'utf8')).document;
 
 test('every dialog on the page but the reward is one kit modal: the same shell, a named close, a focusable title', () => {
   const modals = [...shell.querySelectorAll('.ui-modal')];
-  assert.deepEqual(modals.map((m) => m.id), ['howto-modal', 'about-modal', 'save-modal', 'board-modal', 'account-modal', 'feedback-modal']);
+  assert.deepEqual(modals.map((m) => m.id).sort(), MODALS.map((m) => m.id).sort(), 'the shells are the MODALS table in app.mjs');
   for (const m of modals) {
     assert.equal(m.getAttribute('role'), 'dialog', m.id);
     assert.equal(m.getAttribute('aria-modal'), 'true', m.id);
