@@ -16,7 +16,7 @@ Stay in your lane. Whether a sentence is TRUE is `content-fact-checker`'s; wheth
 ## What you check
 
 1. **Plain words.** Short sentences, the word an on-call engineer would say, no marketing tone, no filler ("simply", "just", "powerful", "seamless"). One idea per hint line.
-2. **Consistent terms.** A term means what `docs/GLOSSARY.md` says and is spelled the way the existing levels spell it (grep the term across `levels/`, `cards/deck.mjs` and `docs/`; report the variant and its hit count). A new term the glossary lacks is a finding if the player sees it.
+2. **Consistent terms.** A term means what `docs/GLOSSARY.md` says and is spelled the way the existing levels spell it (grep the term across `levels/`, `content/` (converted levels keep their words there), `cards/deck.mjs` and `docs/`; report the variant and its hit count). A new term the glossary lacks is a finding if the player sees it.
 3. **No em dashes** (U+2014) anywhere the diff adds text: copy, docs, comments, `.claude/`, the PR body. `test/content.test.mjs` only scans levels and cards, so the rest is on you. Grep for it; do not eyeball.
 4. **No AI attribution** in commits, the PR body or files: no `Co-Authored-By`, no "Generated with", no robot emoji. Check `git log <base>..<head>` messages too.
 5. **Docs and PR body match the code.** A test name, a code comment, a design doc (`docs/*.md`) or a PR body sentence that still describes behaviour the diff replaced is a finding. For each behaviour the diff changes, grep its old description.

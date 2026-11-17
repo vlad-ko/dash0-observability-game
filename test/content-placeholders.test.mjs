@@ -1,22 +1,22 @@
-// Text placeholders: `{{name}}` in content (lib/content/placeholders.mjs, #391, docs/CONTENT.md).
+// Fill-ins: `{{name}}` in content (lib/content/placeholders.mjs, #391, docs/CONTENT.md).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fill } from '../lib/content/placeholders.mjs';
 
-test('fill: replaces each placeholder and reports the names used', () => {
+test('fill: replaces each fill-in and reports the names used', () => {
   const r = fill('{{a}} + {{b-2}} = {{a}}{{b-2}}', { a: 'x', 'b-2': 'y' });
   assert.equal(r.text, 'x + y = xy');
   assert.deepEqual([...r.used].sort(), ['a', 'b-2']);
   assert.deepEqual(r.errors, []);
 });
 
-test('fill: text with no placeholder comes back unchanged', () => {
+test('fill: text with no fill-in comes back unchanged', () => {
   const r = fill('plain <code>x</code> & more', {});
   assert.equal(r.text, 'plain <code>x</code> & more');
   assert.equal(r.used.size, 0);
 });
 
-test('fill: a name with no value is an error and the placeholder stays, never an empty string', () => {
+test('fill: a name with no value is an error and the fill-in stays, never an empty string', () => {
   const r = fill('a {{gone}} b', { other: 1 }, 'play.finish');
   assert.equal(r.text, 'a {{gone}} b');
   assert.equal(r.errors.length, 1);
@@ -24,12 +24,10 @@ test('fill: a name with no value is an error and the placeholder stays, never an
 });
 
 test('fill: a name on the prototype is not a value', () => {
-  for (const name of ['constructor']) {
-    const r = fill(`{{${name}}}`, {});
-    assert.equal(r.errors.length, 1, name);
-    assert.match(r.errors[0], /has no value/, name);
-    assert.equal(r.text, `{{${name}}}`);
-  }
+  const r = fill('{{constructor}}', {});
+  assert.equal(r.errors.length, 1);
+  assert.match(r.errors[0], /has no value/);
+  assert.equal(r.text, '{{constructor}}');
 });
 
 test('fill: every other {{ is malformed', () => {

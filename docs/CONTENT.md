@@ -10,7 +10,7 @@ Only play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](D
 
 - Words: `content/core/levels/<level-id>.mjs`. The file name is the level id. `core` is the edition (see section 8).
 - Logic: `levels/<level-id>.mjs`, with the `// Spec:` and `// Dash0 docs:` lines, "Facts used" and "Invented" comments kept at the top. The sources stay with the logic for now.
-- Shared code: `lib/content/` (`bind.mjs` joins, `placeholders.mjs` fills in the `{{name}}` marks, `text-rules.mjs` checks text, `keys.mjs` lists the allowed keys). Do not add a second way to store content anywhere else.
+- Shared code: `lib/content/` (`bind.mjs` joins, `placeholders.mjs` fills in the `{{name}}` marks (the file keeps its older name), `text-rules.mjs` checks text, `keys.mjs` lists the allowed keys). Do not add a second way to store content anywhere else.
 - `content/` is deployed with the site (it is not in `.vercelignore`), because the level imports it.
 
 ## 2. The content file
