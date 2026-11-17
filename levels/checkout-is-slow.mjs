@@ -110,7 +110,7 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'n-plus-one',
-      label: 'An N+1 query in the inventory service',
+      label: 'An N+1 query in the inventory service that runs one query per item',
       right: true,
       why: 'One request makes a query per item instead of one query for all items: 40 sequential SELECT stock CLIENT spans under one GET /stock. It started with inventory 2.4.0, which every slow request runs.',
     },
@@ -122,13 +122,13 @@ const SCENARIO = {
     },
     {
       id: 'redis',
-      label: 'Redis is overloaded by the cart and session lookups',
+      label: 'Redis is overloaded by the cart and session lookups that checkout makes first',
       right: false,
       why: 'Redis shows no sign of load, and the slow time sits in database spans under inventory.',
     },
     {
       id: 'replicas',
-      label: 'The database needs more replicas to keep up at p95',
+      label: 'The database needs more read replicas to keep up with the load at p95',
       right: false,
       why: 'The database is not saturated (30% CPU, replica lag near 0). More replicas would not shorten 40 queries that run one after another.',
     },

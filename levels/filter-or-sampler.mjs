@@ -54,7 +54,7 @@ const VERDICT = [
   },
   {
     key: 'follow-up',
-    label: 'The answer depends on routing: do the spans of one trace reach the same Collector before the filter processor runs',
+    label: 'The spans of one trace may not reach the same Collector before the filter processor runs, which decides the answer',
     why:
       'That matters for a tail sampler, which needs every span of a trace in one Collector to decide. ' +
       `A filter judges each span alone, so where the other spans go changes nothing: it still drops the ${DROPPED} healthy spans of the failed trace.`,

@@ -149,7 +149,7 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'inventory-failing',
-      label: 'Checkout\'s stock reservations at the inventory service are failing, and checkout returns them as 500s on both versions',
+      label: 'Checkout\'s stock reservations at the inventory service are failing, and checkout returns them as 500s',
       right: true,
       why:
         `The failing trace shows checkout's call to inventory.kettle.example returning 503 and checkout answering 500, with no payment call after it. The failures begin at ${TABLE.failuresFrom} on both versions, ` +
@@ -157,7 +157,7 @@ const SCENARIO = {
     },
     {
       id: 'bad-release',
-      label: 'The checkout release that went out this morning, version 2.14.0, has a bug that fails some customer orders',
+      label: 'The checkout release that went out this morning, 2.14.0, has a bug that fails some orders',
       right: false,
       why:
         `Both versions fail at the same rate from ${TABLE.failuresFrom}: ${per1000(OLD.afterErrors, OLD.afterRequests)} per 1,000 requests for ${OLD.v}, which did not change, and ${per1000(NEW.afterErrors, NEW.afterRequests)} for ${NEW.v}. ` +

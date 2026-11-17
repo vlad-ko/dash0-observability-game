@@ -72,7 +72,7 @@ const BUILD = {
 const WHY = [
   {
     key: 'stripped',
-    label: 'Something in the pipeline stripped them: OpenTelemetry stamps a trace ID on each log record it exports',
+    label: 'Something in the pipeline stripped them: OpenTelemetry stamps a trace ID on the log records it exports',
     why: 'It does not. A record carries ids only when it was emitted with a context that holds a span. Outside any span there is nothing to stamp, so there is nothing to strip.',
   },
   {
@@ -83,7 +83,7 @@ const WHY = [
   },
   {
     key: 'errors-only',
-    label: 'Records at ERROR or above get trace IDs, and these records have none',
+    label: 'The ids are added by severity: ERROR records get a trace ID, and these records are below ERROR',
     why: 'Severity plays no part. The ids come from the context at the moment of the call, so an INFO or DEBUG record written inside a span carries them, and an ERROR written outside one does not.',
   },
 ];
@@ -103,7 +103,7 @@ const FIX = [
   },
   {
     key: 'in-message',
-    label: 'Write the trace ID and span ID into the message text of each log call by hand and search the text for them',
+    label: 'Write the trace ID and span ID into the message text of the log calls by hand and search the text for them',
     why: 'A backend links records through the TraceId and SpanId fields of the record, or for non-OTLP logs through recognised attribute names. Text inside the Body is neither, so the record stays unlinked.',
   },
 ];

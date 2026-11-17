@@ -50,12 +50,12 @@ const ROUTE = [
   },
   {
     key: 'tail-adds-context',
-    label: 'Tail its stdout file with <code>filelog</code>: the Collector can tell which trace each line belongs to',
+    label: 'Tail its stdout file with <code>filelog</code>: the Collector can tell which trace a line belongs to',
     why: 'A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but a trace ID is there only if the application wrote it into the line, as a <code>trace_id</code> field in the JSON, and the Collector then parses it out. Matching by time alone is the most basic form of correlation, not the trace context.',
   },
   {
     key: 'otlp-no-logs',
-    label: 'Logs cannot go over OTLP, only traces and metrics can, so orders has to keep writing files',
+    label: 'Logs cannot go over OTLP, which carries traces and metrics, so orders has to keep writing files',
     why: 'OTLP carries logs as well as traces and metrics. The logs specification describes applications sending log records straight to the Collector over OTLP, through a log appender for their logging library.',
   },
 ];
@@ -191,12 +191,12 @@ const DASH0 = [
   },
   {
     key: 'rewrites-all',
-    label: 'Log AI rewrites the severity of each record, JSON logs and severities you set in the Collector included',
+    label: 'Log AI replaces the severity you set in the Collector, and in JSON logs, with its own guess',
     why: 'It does not. A severity that is explicitly set is respected, and structured logs are handled separately, by JSON log processing.',
   },
   {
     key: 'needs-parser',
-    label: 'It cannot help: without a parser in the Collector the records stay plain text with no severity',
+    label: 'Without a parser in the Collector the records stay plain text with no severity',
     why: 'Dash0 does not wait for a parser. Log AI infers a severity and extracts patterns from unstructured messages as they are ingested. A parser in the Collector is still the better fix when you can write one.',
   },
 ];

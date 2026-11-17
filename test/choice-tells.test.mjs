@@ -41,9 +41,9 @@ async function allQuestions() {
 // Code formatting is read off the raw label, before plain() strips the tags.
 const CODE = /<code>|`/;
 const TAIL = /\bso\b|\b(because|since)\b/i;
-const ABSOLUTE = /\b(always|never|only|every|all|any|none|nothing)\b/i;
-const DODGE = /^(it holds|ask first|nothing|nowhere|leave it|it does not matter)\b/i;
-const maxOf =(labels) => Math.max(...labels.map((x) => x.length));
+const ABSOLUTE = /\b(always|never|only|every|each|all|any|none|nothing|just)\b/i;
+const DODGE = /^(it holds|ask first|nowhere|leave it|it does not matter|it cannot|(the answer|it) depends)\b/i;
+const maxOf = (labels) => Math.max(...labels.map((x) => x.length));
 
 // Each strategy (given the plain labels, then the raw ones) marks the options it would pick and picks one of them at random (all, when it marks none).
 const STRATEGIES = {
@@ -57,11 +57,11 @@ const STRATEGIES = {
   // The options whose label has code formatting (<code> or backticks); all of them, when none or all are marked.
   code: (_labels, raw) => raw.map((l) => CODE.test(l)),
   noTail: (labels) => labels.map((l) => !TAIL.test(l)),
-  // Skip the options with an absolute word (always, never, only, every, all, any, none, nothing).
+  // Skip the options with an absolute word (always, never, only, every, each, all, any, none, nothing, just).
   noAbsolute: (labels) => labels.map((l) => !ABSOLUTE.test(l)),
   // Skip the dodges: options that open by refusing to answer or by backing the claim as it stands.
   noDodge: (labels) => labels.map((l) => !DODGE.test(l)),
-  // Skip both the absolutes and the dodges (the rule the audit scored at 36.0 of 87).
+  // Skip both the absolutes and the dodges (the audit's rule).
   noAbsoluteNoDodge: (labels) => labels.map((l) => !ABSOLUTE.test(l) && !DODGE.test(l)),
   longestNoTail: (labels) => {
     const ok = labels.map((l) => !TAIL.test(l));
@@ -115,9 +115,9 @@ async function allIncidentBoards() {
   for (const act of ACTS) {
     for (const level of [...act.levels, ...(act.boss ? [act.boss] : [])]) {
       const mod = await import(`../levels/${level.id}.mjs`);
-      const step = (mod.default.play?.steps ?? []).find((st) => st.incident);
-      const scenario = step?.incident ?? mod.CONTENT?.scenario;
-      if (scenario?.hypotheses) out.push({ level: level.id, hypotheses: scenario.hypotheses });
+      const scenarios = (mod.default.play?.steps ?? []).filter((st) => st.incident).map((st) => st.incident);
+      if (!scenarios.length && mod.CONTENT?.scenario) scenarios.push(mod.CONTENT.scenario);
+      for (const scenario of scenarios) if (scenario?.hypotheses) out.push({ level: level.id, hypotheses: scenario.hypotheses });
     }
   }
   return out;
@@ -139,7 +139,8 @@ test('the right incident cause is not concentrated at one length rank: no rank h
   }
   const chance = boards.reduce((s, b) => s + 1 / b.hypotheses.length, 0);
   if (process.env.TELLS) console.log(`TELLS incident ranks from longest ${JSON.stringify(ranks)} of ${boards.length} (one rank by chance ${chance.toFixed(1)})`);
-  for (const [r, n] of Object.entries(ranks)) assert.ok(n <= chance + BAND, `rank ${r} from the longest holds the right cause in ${n} of ${boards.length} boards (chance ${chance.toFixed(1)}, band ${BAND})`);
+  const limit = Math.ceil(chance) + 1; // the band scales with the board count: one rank may hold a board or two more than chance
+  for (const [r, n] of Object.entries(ranks)) assert.ok(n <= limit, `rank ${r} from the longest holds the right cause in ${n} of ${boards.length} boards (chance ${chance.toFixed(1)}, limit ${limit})`);
 });
 
 test('the scorer has teeth: a question whose right option is the longest and has no tail is caught', () => {

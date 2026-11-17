@@ -127,13 +127,13 @@ const SCENARIO = {
   hypotheses: [
     {
       id: 'name-dropped',
-      label: 'The latest deploy dropped OTEL_SERVICE_NAME so the SDK used its fallback name, unknown_service:node',
+      label: 'The latest deploy dropped OTEL_SERVICE_NAME so the SDK used its fallback name',
       right: true,
       why: 'The resource has no service.name, only the fallback unknown_service:node, built from process.executable.name node. The deploy at 14:09 removed OTEL_SERVICE_NAME, the running pod does not have it, and the first spans under the new name arrived at 14:11. The k8s attributes from the Collector were never the problem: they are what led you to the owner, the notifications deployment.',
     },
     {
       id: 'new-service',
-      label: 'A new service nobody told us about has started running in the cluster under its own name',
+      label: 'A new service nobody told us about has started running under its own name',
       right: false,
       why: 'The pod belongs to the notifications deployment, which has been deployed for a long time (5.1.3 last Tuesday). It is an old service that lost its name, not a new one.',
     },

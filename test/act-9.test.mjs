@@ -209,6 +209,12 @@ test('9.2 fields: scored with no par time, in act-9, lights the collector, award
 
 // ---- step 1: the verdict --------------------------------------------------------------
 
+test('no verdict question in the act has a label that opens with a verdict phrase (#383)', () => {
+  const verdicts = LEVELS9.flatMap((id) => (LIVE.levels[id]?.play?.steps ?? []).filter((s) => /-verdict$/.test(s.choice?.id ?? '')));
+  assert.equal(verdicts.length >= 5, true, `found ${verdicts.length} verdict questions`);
+  for (const s of verdicts) for (const c of s.choice.choices) assert.equal(/^(It holds|It is wrong|Ask first|Right|Wrong)\b/.test(plain(c.label)), false, `${s.choice.id} ${c.key}: ${plain(c.label)}`);
+});
+
 test('step 1 is a Choice: holds, wrong, follow-up; exactly one right answer, "wrong"', () => {
   assert.equal(VERDICT_STEP.qid, 'ser-q-verdict');
   assert.equal(VERDICT_STEP.choice.id, 'ser-verdict');

@@ -57,7 +57,7 @@ const TOTAL = [
 const DASH0 = [
   {
     key: 'translated-only',
-    label: 'The translated names work, and you have to learn how <code>_total</code> and the unit suffixes are added first',
+    label: 'Dash0 renames metrics and drops the original name, so you have to learn how <code>_total</code> and the unit suffixes are added first',
     why: 'Dash0 keeps the original name too. Every metric carries an <code>otel_metric_name</code> label, so you can select it without knowing how it was translated.',
   },
   {
@@ -68,7 +68,7 @@ const DASH0 = [
   },
   {
     key: 'metrics-only',
-    label: 'PromQL reaches metrics: logs and spans need a different query language, learned separately, and <code>otel_metric_name</code> does not apply to them',
+    label: 'PromQL cannot query logs or spans: they need a different query language, learned separately, and <code>otel_metric_name</code> does not apply to them',
     why: 'Dash0 turns logs and spans into synthetic metrics such as <code>dash0.logs</code> and <code>dash0.spans</code>, and you query those with the same PromQL.',
   },
 ];
