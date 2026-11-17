@@ -28,6 +28,8 @@ test('with a content file, the logic text comes first and the decoded leaves fol
   assert.ok(!out.includes('say \\"hi\\"'), 'the raw escaped form is not in the output');
   assert.ok(out.includes('plain leaf'), 'nested leaves are included');
   assert.ok(out.includes('in an array'), 'array leaves are included');
+  const lines = out.split('\n');
+  assert.ok(lines.includes('plain leaf') && lines.includes('in an array'), 'each leaf is a whole line (the line-anchored scans depend on it)');
 });
 
 test('a dash in a content file is visible to a source scan', () => {

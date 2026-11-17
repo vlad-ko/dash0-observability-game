@@ -16,6 +16,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeDom, q, qa, click as domClick } from './helpers/dom.mjs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { definedClasses } from './helpers/css.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry } from '../lib/telemetry.mjs';
@@ -757,7 +760,8 @@ function assertRun(level, run, { calls, steps, first, injected, classes, attrs, 
     assert.ok(!s.includes('\u2014'), `step copy has an em dash: ${s.slice(0, 80)}`);
     assert.deepEqual(alpineAttrs(s), [], `step uses an Alpine attribute: ${s.slice(0, 80)}`);
   }
-  recordFrames(process.env, level.id, label, frames, result.text);
+  // Registered levels only: the harness self-checks below play fixtures that are not the game.
+  if (LIVE.levels[level.id] === level) recordFrames(process.env, level.id, label, frames, result.text);
   return result.stars;
 }
 
@@ -901,6 +905,32 @@ for (const level of PLAY_LEVELS) {
     checkLevel(level, derivedDriver(level));
   });
 }
+
+test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames, and a fixture writes none', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'lvl-snap-'));
+  const was = process.env.LEVEL_SNAPSHOT;
+  process.env.LEVEL_SNAPSHOT = dir;
+  try {
+    const level = LIVE.levels['good-alerts'];
+    checkLevel(level, derivedDriver(level));
+    checkLevel(FIXTURE, FIXTURE_DRIVER);
+    assert.deepEqual(readdirSync(dir).sort(), ['good-alerts.happy.json', 'good-alerts.sloppy.json']);
+    for (const label of ['happy', 'sloppy']) {
+      const { frames, finish } = JSON.parse(readFileSync(join(dir, `good-alerts.${label}.json`), 'utf8'));
+      const ats = frames.map((f) => f.at);
+      const steps = ats.filter((a) => a === 'step').length;
+      assert.ok(steps >= stepsOf(level).length, `${label}: a step frame per step`);
+      assert.deepEqual(ats, [...Array(steps - 1).fill(['step', 'leave']).flat(), 'step', 'end'], `${label}: step, leave, step ... step, end`);
+      assert.ok(frames.every((f) => f.body.length > 0), `${label}: every frame holds the screen`);
+      assert.ok(frames.some((f) => f.actions.includes('data-finish')), `${label}: the Finish button is in some frame`);
+      assert.ok(finish.length > 10, `${label}: the finish text`);
+    }
+  } finally {
+    if (was === undefined) delete process.env.LEVEL_SNAPSHOT;
+    else process.env.LEVEL_SNAPSHOT = was;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 // ---- harness teeth: fixture levels prove the checks above can fail ------------
 

@@ -22,6 +22,18 @@ test('canonical tells two different values apart', () => {
   assert.notEqual(canonical({ a: undefined }), canonical({ a: null }));
 });
 
+test('a level file holds its copy and its default export', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'fp-c-'));
+  try {
+    await writeFingerprints(dir);
+    const text = readFileSync(join(dir, 'good-alerts.json'), 'utf8');
+    assert.ok(text.includes('The counter only grows, so a bigger threshold only delays the page'), 'a wrong-answer why is in the file');
+    assert.match(text, /^ {2}"default": /m);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('writeFingerprints writes one file per level, twice the same', async () => {
   const ids = ACTS.flatMap((a) => [...a.levels, ...(a.boss ? [a.boss] : [])]).map((l) => l.id);
   const a = mkdtempSync(join(tmpdir(), 'fp-a-'));
