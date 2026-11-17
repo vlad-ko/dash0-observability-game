@@ -8,20 +8,20 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "A log is a timestamped record of an event. Logs have the biggest legacy of all signals, and most programming languages have built-in logging or a widely used logging library. This act is about making them useful: giving them fields, tying them to traces and getting them collected."
+      "text": "A log is a timestamped record of an event. Most programming languages have built-in logging or a widely used logging library, so you often start with logs that already exist. This act is about making them useful: giving them fields, tying them to traces and getting them collected."
     },
     {
       "type": "list",
       "items": [
         "A structured log has a stable schema, so tools can rely on its fields.",
-        "OpenTelemetry can add trace and span IDs to your existing logs.",
+        "OpenTelemetry can add the trace and span IDs of the active span to your existing logs, through its SDKs and logging bridges.",
         "The Collector can read, parse and export logs from many sources."
       ]
     },
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Skip the reading and go straight to the levels."
+      "text": "Already know this? Pick \"I am already familiar with the topic\" to skip the reading."
     }
   ],
   "chapters": [
@@ -35,7 +35,22 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A structured log has a defined, consistent schema or typed fields that downstream systems can reliably parse. What makes a log structured is a stable schema of field names, types and meanings, not merely valid JSON. A JSON log may be only semistructured."
+          "text": "A structured log has a defined, consistent schema or typed fields that downstream systems can reliably parse. What makes a log structured is a stable schema of field names, types and meanings, not merely valid JSON. A log written as JSON is not automatically structured."
+        },
+        {
+          "type": "paragraph",
+          "text": "An OpenTelemetry log record has these fields: Timestamp, ObservedTimestamp, TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, Body, Resource, InstrumentationScope, Attributes and EventName."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Body: the body of the log record.",
+            "Attributes: additional information about the event.",
+            "Resource: describes the observed entity that generated the log.",
+            "SeverityText: the original string for the severity, also known as the log level.",
+            "SeverityNumber: a number for the severity, where smaller values are less severe events.",
+            "TraceId and SpanId: the request trace and span the log belongs to, when there is one."
+          ]
         }
       ],
       "sources": [
@@ -43,6 +58,12 @@ export default {
           "kind": "otel",
           "label": "OpenTelemetry: Logs",
           "url": "https://opentelemetry.io/docs/concepts/signals/logs/",
+          "audience": "public"
+        },
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Logs data model",
+          "url": "https://opentelemetry.io/docs/specs/otel/logs/data-model/",
           "audience": "public"
         }
       ]
@@ -53,7 +74,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When you add auto-instrumentation or activate an SDK, OpenTelemetry automatically correlates your existing logs with any active trace and span. The SDK can inject the trace ID and span ID into a log record."
+          "text": "When you add auto-instrumentation or activate an SDK, OpenTelemetry automatically correlates your existing logs with any active trace and span. The SDK can inject the trace ID and span ID into a log record. OpenTelemetry reaches existing logging frameworks through logging bridges."
         },
         {
           "type": "paragraph",
@@ -61,7 +82,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, the Related Logs tab shows log records from the same resource and the same trace, in time order around the log you selected. If a log has no trace context, only the resource view is available."
+          "text": "In Dash0, the Related Logs tab shows log records from the same resource and the same trace, in time order around the log you selected."
         }
       ],
       "sources": [

@@ -21,7 +21,7 @@ export default {
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Skip the reading and go straight to the levels."
+      "text": "Already know this? Pick \"I am already familiar with the topic\" to skip the reading."
     }
   ],
   "chapters": [
@@ -36,10 +36,10 @@ export default {
         {
           "type": "list",
           "items": [
-            "Counter: a value that accumulates over time and only ever goes up.",
-            "UpDownCounter: a value that accumulates but can also go down, such as a queue length.",
-            "Gauge: measures a current value at the time it is read.",
-            "Histogram: a client-side aggregation of values, such as request latencies."
+            "Counter: a value that accumulates over time, like the odometer of a car. It only ever goes up.",
+            "UpDownCounter: a value that accumulates over time but can also go down again.",
+            "Gauge: measures a current value at the time it is read, like the fuel gauge in a vehicle.",
+            "Histogram: a client-side aggregation of values. A good choice if you are interested in value statistics."
           ]
         },
         {
@@ -52,6 +52,104 @@ export default {
           "kind": "otel",
           "label": "OpenTelemetry: Metrics",
           "url": "https://opentelemetry.io/docs/concepts/signals/metrics/",
+          "audience": "public"
+        }
+      ]
+    },
+    {
+      "id": "temporality",
+      "title": "Temporality: total or change",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Sums and histograms in OTLP carry an aggregation temporality, which is either delta or cumulative. It is used to understand the context in which the value was calculated."
+        },
+        {
+          "type": "paragraph",
+          "text": "With delta temporality, the time windows of a metric stream do not overlap. With cumulative temporality, each point reports the full sum since a start time, which is often close to the start of the process or application."
+        },
+        {
+          "type": "paragraph",
+          "text": "There are trade-offs between the two, for example for detecting process restarts, calculating rates, and push or pull based reporting. OTLP supports both models, and lets APIs, SDKs and users choose the best trade-off for their use case."
+        },
+        {
+          "type": "paragraph",
+          "text": "A gauge is different: it represents a sampled value at a given time, and does not provide an aggregation semantic."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Metrics data model",
+          "url": "https://opentelemetry.io/docs/specs/otel/metrics/data-model/",
+          "audience": "public"
+        }
+      ]
+    },
+    {
+      "id": "histograms-and-percentiles",
+      "title": "Histograms and percentiles",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "A histogram data point conveys a population of recorded measurements in a compressed format. It bundles a set of events into divided populations with an overall count and a sum. It can also carry a min and a max, and buckets with explicit boundaries and a count of the observations in each."
+        },
+        {
+          "type": "paragraph",
+          "text": "A φ-quantile, with φ between 0 and 1, is the observation value that ranks at number φ times N among N observations. The 0.5-quantile is known as the median. The 0.95-quantile is also called the 95th percentile."
+        },
+        {
+          "type": "paragraph",
+          "text": "In Prometheus, histograms expose bucketed observation counts, and the quantile is calculated from the buckets on the Prometheus server with the histogram_quantile() function. Summaries instead calculate their quantiles inside the instrumented program, and you cannot aggregate those quantiles."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Metrics data model",
+          "url": "https://opentelemetry.io/docs/specs/otel/metrics/data-model/",
+          "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "Prometheus: Histograms and summaries",
+          "url": "https://prometheus.io/docs/practices/histograms/",
+          "audience": "public"
+        }
+      ]
+    },
+    {
+      "id": "promql-basics",
+      "title": "PromQL basics",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "In Dash0, the Metric Explorer sidebar shows a live data preview with the underlying PromQL query of the selected metric. These are three PromQL functions from the Prometheus documentation."
+        },
+        {
+          "type": "list",
+          "items": [
+            "rate(v range-vector) calculates the per-second average rate of increase of the time series in the range vector.",
+            "increase(v range-vector) calculates the increase in the time series in the range vector.",
+            "histogram_quantile(φ, b) calculates the φ-quantile from a classic or native histogram."
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "Breaks in monotonicity, such as counter resets due to target restarts, are automatically adjusted for by rate() and increase(). Each bucket sample of a classic histogram carries an le label, whose value is the inclusive upper bound of the bucket."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "article",
+          "label": "Prometheus: Query functions",
+          "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+          "audience": "public"
+        },
+        {
+          "kind": "docs",
+          "label": "Dash0 docs: About Metrics",
+          "url": "https://www.dash0.com/docs/dash0/telemetry/metrics/about-metrics",
           "audience": "public"
         }
       ]
@@ -78,6 +176,60 @@ export default {
           "kind": "otel",
           "label": "OpenTelemetry: Metrics",
           "url": "https://opentelemetry.io/docs/concepts/signals/metrics/",
+          "audience": "public"
+        }
+      ]
+    },
+    {
+      "id": "exemplars",
+      "title": "Exemplars",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "An exemplar is a recorded value that associates OpenTelemetry context with a metric event. One use case is to link trace signals with metrics."
+        },
+        {
+          "type": "paragraph",
+          "text": "An exemplar can carry the trace ID and span ID of the trace associated with a recording, the time of the observation, the recorded value, and a set of filtered attributes. A data point can have a set of exemplars, and they are optional."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Metrics data model",
+          "url": "https://opentelemetry.io/docs/specs/otel/metrics/data-model/",
+          "audience": "public"
+        }
+      ]
+    },
+    {
+      "id": "red-and-use",
+      "title": "RED and USE",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "RED stands for three golden signals of service performance. Rate is requests per second, Errors is the error percentage, and Duration is the latency distribution."
+        },
+        {
+          "type": "paragraph",
+          "text": "The USE method is a methodology for analyzing the performance of any system. It directs the construction of a checklist, and begins by posing questions instead of starting from given metrics. The checks are utilization, saturation and errors."
+        },
+        {
+          "type": "paragraph",
+          "text": "Utilization is the average time that a resource was busy servicing work. Saturation is the degree to which a resource has extra work that it cannot service."
+        }
+      ],
+      "sources": [
+        {
+          "kind": "docs",
+          "label": "Dash0 docs: Built-in Service Metrics",
+          "url": "https://www.dash0.com/docs/dash0/monitoring/services/built-in-metrics",
+          "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "Brendan Gregg: The USE Method",
+          "url": "https://www.brendangregg.com/usemethod.html",
           "audience": "public"
         }
       ]

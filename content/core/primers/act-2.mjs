@@ -21,7 +21,7 @@ export default {
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Skip the reading and go straight to the levels."
+      "text": "Already know this? Pick \"I am already familiar with the topic\" to skip the reading."
     }
   ],
   "chapters": [
@@ -63,11 +63,21 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When a span is created, it is one of Client, Server, Internal, Producer or Consumer. The span kind is a hint to the tracing backend about how the trace should be assembled. If it is not provided, the kind is assumed to be internal."
+          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind is a hint to the tracing backend about how the trace should be assembled. If it is not provided, the kind is assumed to be INTERNAL."
+        },
+        {
+          "type": "list",
+          "items": [
+            "CLIENT: a synchronous outgoing remote call, such as an outgoing HTTP request or a database call.",
+            "SERVER: a synchronous incoming remote call, such as an incoming HTTP request.",
+            "INTERNAL: an operation that does not cross a process boundary.",
+            "PRODUCER: the creation of a job that may be processed later.",
+            "CONSUMER: the processing of a job created by a producer."
+          ]
         },
         {
           "type": "paragraph",
-          "text": "Each span also has a status: Unset, Error or Ok. The default is Unset. Error means some error occurred in the operation. Ok means the developer explicitly marked the span as successful."
+          "text": "Each span also has a status: Unset, Error or Ok. The default is Unset, which means the operation completed without an error. Error means some error occurred in the operation. Ok means the developer explicitly marked the span as successful."
         }
       ],
       "sources": [
@@ -93,12 +103,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Baggage is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is not the same as attributes: to turn baggage entries into attributes, you must read them and add them explicitly."
-        },
-        {
-          "type": "callout",
-          "tone": "note",
-          "text": "Baggage travels in HTTP headers and can reach services you do not own. Keep sensitive data out of it."
+          "text": "Baggage is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is a separate store, kept apart from the attributes on spans, metrics and logs."
         }
       ],
       "sources": [

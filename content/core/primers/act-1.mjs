@@ -15,13 +15,13 @@ export default {
       "items": [
         "A resource is a set of attributes that describes the thing producing telemetry.",
         "Some attributes have defaults or come from the SDK, and you can set your own.",
-        "Detectors can fill in details from the environment, such as the host or the Kubernetes pod."
+        "Detectors and the Collector can fill in details from the environment, such as the host or the Kubernetes pod."
       ]
     },
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Skip the reading and go straight to the levels."
+      "text": "Already know this? Pick \"I am already familiar with the topic\" to skip the reading."
     }
   ],
   "chapters": [
@@ -63,7 +63,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The SDK provides some attributes itself. One of them is service.name, the logical name of the service. By default, SDKs assign the value unknown_service, so it is recommended to set it explicitly, in code or with the OTEL_SERVICE_NAME environment variable."
+          "text": "The SDK provides some attributes itself. One of them is service.name, the logical name of the service. If it is not specified, SDKs fall back to unknown_service: followed by the process executable name, for example unknown_service:bash. If the executable name is not available, the value is plain unknown_service. It is recommended to set the name explicitly, in code or with the OTEL_SERVICE_NAME environment variable."
         },
         {
           "type": "paragraph",
@@ -85,6 +85,12 @@ export default {
           "label": "OpenTelemetry: Resources",
           "url": "https://opentelemetry.io/docs/concepts/resources/",
           "audience": "public"
+        },
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Service attributes",
+          "url": "https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/",
+          "audience": "public"
         }
       ]
     },
@@ -98,11 +104,15 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a log agent on the host can each report a different subset, so they look like two resources. Dash0 calls this resource fragmentation."
+          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a log agent on the host can each report a different subset, so they look like two separate resources even though they describe the same pod."
         },
         {
           "type": "paragraph",
-          "text": "Dash0 merges such resources through resource equality, using attributes such as k8s.pod.uid for Kubernetes. It works without configuration."
+          "text": "Dash0 merges such resources into one view, using attributes such as k8s.pod.uid for Kubernetes. It works without configuration."
+        },
+        {
+          "type": "paragraph",
+          "text": "In a Collector, the Kubernetes Attributes Processor adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API to discover the pods in a cluster and records their IP addresses, pod UIDs and metadata."
         }
       ],
       "sources": [
@@ -116,6 +126,12 @@ export default {
           "kind": "docs",
           "label": "Dash0 docs: About Resources",
           "url": "https://www.dash0.com/docs/dash0/monitoring/resources/about-resources",
+          "audience": "public"
+        },
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Important components for Kubernetes",
+          "url": "https://opentelemetry.io/docs/platforms/kubernetes/collector/components/",
           "audience": "public"
         }
       ]
