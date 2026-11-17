@@ -41,8 +41,15 @@ test('every level file has a `// Spec: <https URL>` line on opentelemetry.io, ww
   }
 });
 
-test('no em dash in level files or cards', () => {
-  for (const f of [...LEVEL_FILES.map((x) => `levels/${x}`), 'cards/deck.mjs']) {
+/** Every content file (level text, primers) under content/, repo-relative (#391). */
+const CONTENT_FILES = readdirSync(join(ROOT, 'content'), { recursive: true })
+  .filter((f) => f.endsWith('.mjs'))
+  .map((f) => `content/${f}`)
+  .sort();
+
+test('no em dash in level files, content files or cards', () => {
+  assert.ok(CONTENT_FILES.length >= 3, `the scan found the content files (${CONTENT_FILES.length})`);
+  for (const f of [...LEVEL_FILES.map((x) => `levels/${x}`), ...CONTENT_FILES, 'cards/deck.mjs']) {
     const lines = read(f).split('\n');
     const hits = lines.map((l, i) => (l.includes('—') ? i + 1 : 0)).filter(Boolean);
     assert.deepEqual(hits, [], `${f}: em dash on lines`);
@@ -80,9 +87,10 @@ const codeLines = (src) => src.split('\n').filter((l) => !/^\s*(\/\/|\/\*|\*)/.t
 const COPY_FILES = [
   ...readdirSync(join(ROOT, 'lib/widgets')).filter((f) => f.endsWith('.mjs')).map((f) => `lib/widgets/${f}`),
   ...LEVEL_FILES.map((f) => `levels/${f}`),
+  ...CONTENT_FILES,
 ];
 
-test('no player-facing string in lib/widgets or levels says a penalty "costs a star"', () => {
+test('no player-facing string in lib/widgets, levels or content says a penalty "costs a star"', () => {
   assert.ok(COPY_FILES.length > 20, 'the scan found the files');
   for (const rel of COPY_FILES) {
     const hit = codeLines(read(rel)).find((l) => COST_A_STAR.test(l));

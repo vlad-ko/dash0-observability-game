@@ -24,8 +24,8 @@ parallel** every reviewer whose row matches:
 | Reviewer | Model | Dispatch when the diff touches | Lane (one question) |
 |---|---|---|---|
 | `qa-engineer` | opus | always, except a docs-only or `.claude`-only PR | Is the logic right, and does every test have teeth (one-line mutation goes red)? |
-| `level-design-reviewer` | opus | `levels/`, or widget grading, hint or star code (`lib/widgets/*` outside `*-view.mjs`, `lib/widgets/help-ladder.mjs`, `lib/scoring.mjs`) | Can the level be passed without learning the concept, and do hints and stars play fair? |
-| `content-fact-checker` | sonnet | level content (`levels/`), `cards/`, or a technical claim in `docs/` (docs-only PRs included) | Is every claim true, cited on an allowed host, and every shown Collector config validated? |
+| `level-design-reviewer` | opus | `levels/`, `content/core/levels/` (level text), or widget grading, hint or star code (`lib/widgets/*` outside `*-view.mjs`, `lib/widgets/help-ladder.mjs`, `lib/scoring.mjs`) | Can the level be passed without learning the concept, and do hints and stars play fair? |
+| `content-fact-checker` | sonnet | level content (`levels/`, `content/`: level text and act primers), `cards/`, or a technical claim in `docs/` (docs-only PRs included) | Is every claim true, cited on an allowed host, and every shown Collector config validated? |
 | `browser-verifier` | sonnet | view code (`lib/widgets/*-view.mjs`, `lib/globe-render.mjs`, `lib/swirl-render.mjs`, any module that writes markup), `styles/`, `index.html`, `main.mjs`, `app.mjs` | Does the real browser give the player focus, keyboard, contrast, a clean console and released WebGL? |
 | `ui-copy-lens` | haiku | any player-facing text, `docs/`, `.claude/`, or the PR body | Are the words plain, consistent, free of em dashes and attribution, and true to the code? |
 | `doc-librarian` | sonnet | any diff touching `README.md`, `docs/` or `.claude/` (docs-only and `.claude`-only PRs included) | Is the doc corpus reachable, current and inside its budget? |

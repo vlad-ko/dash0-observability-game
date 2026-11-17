@@ -654,6 +654,16 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
   return focus to the opener. Opening records `seen`, "already familiar" `skipped`, Next the chapter just left `read`, Back nothing;
   `?mode=debug` writes nothing and `?mode=reset` clears the key. It never gates a level.
 
+### 2.13 Level content apart from level logic (#391)
+
+A level's words can live in `content/core/levels/<id>.mjs` (strict JSON, the same wrapper as a primer) while `levels/<id>.mjs`
+keeps its id, answer flags, figures and wiring. The level file exports `withText(text)` and `export default withText(CORE)`;
+`withText` is `bindLevel(text, SKELETON, {vars})` from `lib/content/bind.mjs`, which joins the two by id, fills the `{{name}}`
+fill-ins from the level's figures (`lib/content/placeholders.mjs`) and applies the shared text rules, including `checkHtml`
+(`lib/content/text-rules.mjs`). The built level has the same shape as before, so the registry, `lib/play.mjs` and the widgets
+are unchanged. The file convention, merge rules, key allowlist, editions and the step-by-step conversion are in `docs/CONTENT.md`;
+primers keep their own schema (§2.12) over the same text rules.
+
 ## 3. Invariants
 
 Registry (`validateRegistry` reports all at once): act and level ids unique across all acts
