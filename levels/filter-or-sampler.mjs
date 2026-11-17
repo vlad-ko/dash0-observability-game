@@ -41,12 +41,12 @@ const ROWS = TRACE.map(([span, service, status]) => `<tr><td>${span}</td><td>${s
 const VERDICT = [
   {
     key: 'holds',
-    label: 'It holds: the filter keeps every span with status Error, so every trace with an error is still kept in full',
+    label: 'The error traces are kept in full: the filter keeps the spans with status Error, so the trace stays whole',
     why: `The filter does keep every span with status Error, but only those spans. It judges one span at a time, so it drops the ${DROPPED} healthy spans of the same trace: ${HEALTHY_LIST}, which show what led up to the failure.`,
   },
   {
     key: 'wrong',
-    label: 'It is wrong: the filter judges each span alone, so it keeps the failed spans, not their whole traces',
+    label: 'The error traces are cut: the filter judges each span alone, so it keeps the failed spans, not whole traces',
     right: true,
     why:
       `A filter processor checks each span against its condition on its own and never sees the rest of the trace. Of the ${SPANS} spans in this failed checkout it keeps the ${ERRORS} with status Error and drops the other ${DROPPED}, so the backend gets pieces of the trace, not the trace. ` +
@@ -54,9 +54,9 @@ const VERDICT = [
   },
   {
     key: 'follow-up',
-    label: 'Ask first: do all the spans of one trace reach the same Collector before the filter processor runs',
+    label: 'The filter keeps whole traces when the spans of one trace reach the same Collector before the filter processor runs',
     why:
-      'That matters for a tail sampler, which needs every span of a trace in one Collector to decide. ' +
+      'Where the spans go does not change what a filter keeps. It matters for a tail sampler, which needs every span of a trace in one Collector to decide. ' +
       `A filter judges each span alone, so where the other spans go changes nothing: it still drops the ${DROPPED} healthy spans of the failed trace.`,
   },
 ];

@@ -123,7 +123,7 @@ const SCENARIO = {
     },
     {
       id: 'orders-release',
-      label: 'A bad orders release introduced a bug in the code that reads replies',
+      label: 'A bad orders release has a bug in the code that reads replies',
       right: false,
       why: 'Orders was last deployed on Thursday. Its code failed on a reply that arrived with status 200: what changed is the reply it reads, not orders.',
     },

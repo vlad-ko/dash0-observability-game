@@ -45,12 +45,12 @@ const TRUE_SUM = `${ERRORS} / ${n(REQUESTS)} = ${TRUE_PCT}%`;
 const VERDICT = [
   {
     key: 'holds',
-    label: `It holds: the backend counts every span it receives, so ${STORED_PCT}% of requests fail`,
+    label: `The backend counts the spans it receives, so ${STORED_PCT}% of requests fail`,
     why: `The ${STORED_PCT}% is a share of the spans that were kept, not of the requests. Most healthy spans were dropped on purpose, and the errors were all kept.`,
   },
   {
     key: 'wrong',
-    label: `It is wrong: ${STORED_PCT}% is a share of the kept spans, not a share of the requests`,
+    label: `${STORED_PCT}% is a share of the kept spans, not a share of the requests`,
     right: true,
     why:
       `The policy keeps every error and ${KEEP_PCT}% of the rest, so the numerator is complete and the denominator is small. ` +
@@ -58,7 +58,7 @@ const VERDICT = [
   },
   {
     key: 'follow-up',
-    label: `Ask first: ${ERRORS} errors in ${STORED} spans is a small sample, so get a week of spans`,
+    label: `${ERRORS} errors in ${STORED} spans is a small sample, so get a week of spans`,
     why:
       `A bigger sample does not help, because the bias comes from the policy, not from noise. Keeping every error and ${KEEP_PCT}% of the rest overweights errors at any size. ` +
       'The question to ask is what the ratio is a share of.',

@@ -98,17 +98,17 @@ const PASS_ROWS = [row(['web to cart', header(traceparent(WEB_C))]), row(['cart 
 const VERDICT = [
   {
     key: 'holds',
-    label: 'It holds: cart\'s SDK ignored the header and started over, so its span is an orphan',
+    label: 'Cart\'s SDK ignored the header and left its span an orphan',
     why: `Cart's spans carry trace ${T.slice(0, 8)}, web's trace ID, so its SDK continued the trace and did not start one. The orphan is a parent-ID problem, not a trace-ID problem.`,
   },
   {
     key: 'never-sent',
-    label: 'It is wrong: web never sent a traceparent, so cart had nothing to continue',
+    label: 'Web sent no traceparent, so cart had nothing to continue',
     why: `Web did send one: the "Left the caller" column shows ${header(traceparent(WEB_C))}, and cart's spans share its trace ID. The trace ID arrived. What changed on the way is the parent-ID.`,
   },
   {
     key: 'rewritten',
-    label: 'It is wrong: the sidecar replaced the parent-id with a span it never exports',
+    label: 'The sidecar replaced the parent-id with a span it never exports',
     right: true,
     why:
       `The header left web naming web's client span, ${code(WEB_C)}, and reached cart naming ${code(MESH1)}, which is no received span: the sidecar wrote it. The sidecars show tracing export: none, so no one ever sends that span. ` +
@@ -116,7 +116,7 @@ const VERDICT = [
   },
   {
     key: 'dropped',
-    label: 'It is wrong: the sidecar\'s span was dropped on export, so cart\'s parent is missing',
+    label: 'The sidecar\'s span was dropped on export, so cart\'s parent is missing',
     why: 'The sidecars show tracing export: none, so they never produced an export to drop. A parent-id that no span carries is not a lost span, it is an id nothing ever sent, written into the header by the sidecar.',
   },
 ];

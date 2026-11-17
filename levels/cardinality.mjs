@@ -32,7 +32,7 @@ const COMBOS = [
   {
     key: 'sum',
     keep: true, // the tempting near-miss: the 50/50 never removes it (#371)
-    label: `${VALUES.method} + ${VALUES.route} + ${VALUES.status} = ${n(VALUES.method + VALUES.route + VALUES.status)}: one series for each value`,
+    label: `${VALUES.method} + ${VALUES.route} + ${VALUES.status} = ${n(VALUES.method + VALUES.route + VALUES.status)}: one series per value`,
     why: 'A series is one value of every attribute together, not one value alone. A POST to one route with a 200 and a GET to the same route with a 200 are two series, so adding the counts leaves most of them out.',
   },
   {
@@ -43,7 +43,7 @@ const COMBOS = [
   },
   {
     key: 'attributes',
-    label: '3: one series for each attribute',
+    label: '3: one series per attribute',
     why: 'An attribute is a dimension, not a series. A counter with three attributes has one series for every combination of their values.',
   },
   {
@@ -195,12 +195,12 @@ const DASH0 = [
   },
   {
     key: 'spam-free',
-    label: 'Add a spam filter on the metric: dropped data is free, and the ingest volume stops costing anything at all',
+    label: 'Add a spam filter on the metric: the dropped points never reach ingest and stop counting toward the data you send',
     why: 'Dropped data is not stored, but it still passes through SignalControl and carries the ingest charge. A spam filter reduces what is stored, not what you send.',
   },
   {
     key: 'leave',
-    label: 'Leave it: a high cardinality score is only a number, and storage handles many series',
+    label: 'Leave it: storage handles a large number of series well, so a high cardinality score is a warning to ignore',
     why: 'A high score is not always a problem, but it is a prompt to ask whether all of those dimensions are needed. Here a user id is the reason for it, and nothing needs a series for every user.',
   },
 ];

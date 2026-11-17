@@ -50,12 +50,12 @@ const ROUTE = [
   },
   {
     key: 'tail-adds-context',
-    label: 'Tail its stdout file with <code>filelog</code>: the Collector can tell which trace each line belongs to',
+    label: 'Tail its stdout file with <code>filelog</code>: the Collector can tell which trace a line belongs to',
     why: 'A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but a trace ID is there only if the application wrote it into the line, as a <code>trace_id</code> field in the JSON, and the Collector then parses it out. Matching by time alone is the most basic form of correlation, not the trace context.',
   },
   {
     key: 'otlp-no-logs',
-    label: 'Logs cannot go over OTLP, only traces and metrics can, so orders has to keep writing files',
+    label: 'Logs cannot go over OTLP, which carries traces and metrics, so orders has to keep writing files',
     why: 'OTLP carries logs as well as traces and metrics. The logs specification describes applications sending log records straight to the Collector over OTLP, through a log appender for their logging library.',
   },
 ];
@@ -185,18 +185,18 @@ const PARSE = [
 const DASH0 = [
   {
     key: 'log-ai',
-    label: 'Log AI infers a severity for them and groups similar messages into patterns, keeping the variable parts as named attributes',
+    label: 'Log AI infers a severity for them and groups similar messages into patterns, with the variable parts as named attributes',
     right: true,
     why: 'Log AI works on unstructured messages as they are ingested. It infers a severity where none is set, and it extracts patterns: the variable parts, such as order numbers, become placeholders in the pattern and named attributes you can filter and group by (the Patterns view, and the <code>dash0.log.pattern</code> attribute). It never overrides a severity that is already set, and it leaves structured logs such as JSON to JSON log processing. It relies on resource attributes, so on Kubernetes the <code>k8sattributes</code> processor still matters. A parser in the Collector stays the precise fix; Log AI is for text nobody parsed.',
   },
   {
     key: 'rewrites-all',
-    label: 'Log AI rewrites the severity of every record, JSON logs and severities you set in the Collector included',
+    label: 'Log AI replaces the severity you set in the Collector, and in JSON logs, with its own guess',
     why: 'It does not. A severity that is explicitly set is respected, and structured logs are handled separately, by JSON log processing.',
   },
   {
     key: 'needs-parser',
-    label: 'Nothing: without a parser in the Collector the records stay plain text with no severity',
+    label: 'Without a parser in the Collector, the records stay plain text with no severity',
     why: 'Dash0 does not wait for a parser. Log AI infers a severity and extracts patterns from unstructured messages as they are ingested. A parser in the Collector is still the better fix when you can write one.',
   },
 ];

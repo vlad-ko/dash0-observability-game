@@ -26,7 +26,7 @@
 const PATTERN = [
   {
     key: 'agent',
-    label: 'A Collector next to the workload: a sidecar in the pod, or a <code>DaemonSet</code> pod on each node that the apps on that node send to',
+    label: 'A Collector next to the workload: a sidecar in the pod, or a <code>DaemonSet</code> pod per node that the apps on that node send to',
     why: 'That is the agent pattern. An agent runs close to the application or on the same host, takes its telemetry and forwards it to a backend or to a gateway.',
   },
   {
@@ -37,7 +37,7 @@ const PATTERN = [
   },
   {
     key: 'embedded',
-    label: 'A Collector built into each application\'s process as a library, with no separate Collector process to run, upgrade or scale',
+    label: 'A Collector built into the application\'s process as a library, with no separate Collector process to run, upgrade or scale',
     why: 'Neither deployment pattern is a Collector inside the application. The application\'s SDK sends OTLP to a Collector that runs beside it (an agent) or to a central one (a gateway).',
   },
 ];

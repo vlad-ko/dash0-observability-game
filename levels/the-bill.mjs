@@ -151,7 +151,7 @@ const SCENARIO = {
     },
     {
       id: 'traffic-growth',
-      label: 'Real checkout traffic grew and the number of series grew with it',
+      label: 'Real checkout traffic grew, and the number of series grew at the same pace as the traffic',
       right: false,
       why: 'Checkout traffic is the same as last Thursday at this hour, and every other metric kept its series count. Only one metric changed, and it stepped at the deploy instead of following the traffic.',
     },

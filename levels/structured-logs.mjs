@@ -198,7 +198,7 @@ const ATTRS = [
   },
   {
     key: 'on-resource',
-    label: 'As resource attributes, set once on the Resource, so every record of the service has them',
+    label: 'As resource attributes, set once on the Resource, so the records of the service carry them',
     why: 'A Resource is fixed for a source: every record from it has the same Resource. An order and a payment method differ from record to record, so they cannot be set once on the source.',
   },
 ];

@@ -46,7 +46,7 @@ Anonymisation check (G1 done by):
 A declarative level (DECLARATIVE-LEVELS.md §2) with two steps.
 - `intro` holds the presenter's confident answer. The presenter is "the presenter", with no affiliation stated: they are shown confidently wrong, so they must not read as Dash0.
 - `show` holds the evidence: a small table or list.
-- Step 1 is a `choice` with keys `holds`, `wrong`, `follow-up`. Labels open with "It holds:", "It is wrong:", "Ask first:". Exactly one is right.
+- Step 1 is a `choice` with keys `holds`, `wrong`, `follow-up`. No label opens with a verdict phrase (#383). Exactly one is right.
 - Step 2 is one existing mechanic step (Trade-off, Sort it, Spot it, Query it, Configure it, Build it) that proves the verdict with numbers.
 - All numbers come from one constants table at the top of the level file. Copy, tests and widget data read from it.
 - No Collector YAML unless a test validates it. No pricing copy without G3.

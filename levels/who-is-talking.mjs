@@ -133,7 +133,7 @@ const SCENARIO = {
     },
     {
       id: 'new-service',
-      label: 'A new service nobody told us about has started running in the cluster under its own name',
+      label: 'A new service nobody told us about has started running under its own name',
       right: false,
       why: 'The pod belongs to the notifications deployment, which has been deployed for a long time (5.1.3 last Tuesday). It is an old service that lost its name, not a new one.',
     },
