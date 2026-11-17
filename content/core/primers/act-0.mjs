@@ -21,7 +21,7 @@ export default {
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Skip the reading and go straight to the levels."
+      "text": "Already know this? Pick \"I am already familiar with the topic\" to skip the reading."
     }
   ],
   "chapters": [

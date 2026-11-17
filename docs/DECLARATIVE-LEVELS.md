@@ -2,7 +2,7 @@
 
 Design for M2's first item (OUTLINE §8). It builds on FOUNDATION §2 and §3 and on M1-DESIGN §1 and §4. Where they differ, this file governs only the new `play` key and `lib/play.mjs`. Goal: once M2 ships, a new level is copy plus an answer table.
 
-**Decisions (2026-10-31, defaults taken while the user was away; the user may override):** migrate 2.7 only in M2 (P4 if it stays mechanical); for new acts the level file is the source of truth plus a one-line-per-step `ANSWERS` key, and the design doc keeps concept, nuance, cards and spec URLs; 1.2's env checker stays hand-written until #3 decides. See §9.
+**Decisions (2026-10-31, defaults taken while the user was away; the user may override):** migrate 2.7 only in M2 (P4 if it stays mechanical); for new acts the level file is the source of truth plus a one-line-per-step `ANSWERS` key, and the design doc keeps concept, nuance, cards and spec URLs; 1.2's env checker stays hand-written until #3 decides. See §9. Since #391 a play level's words may live in `content/core/levels/<id>.mjs` and the level file keeps the answers and wiring: see [CONTENT.md](CONTENT.md); the step format below is unchanged.
 
 ## 1. What the levels share, and where they are bespoke
 
@@ -371,5 +371,5 @@ In each migration PR (#71 AC4: existing tests unchanged and green):
 ## 9. Open questions (default in brackets; defaults taken 2026-10-31, the user may override)
 
 1. How much existing content to migrate in M2? [P3 (2.7) only. P4 if it stays mechanical. Build levels and bosses later or never.]
-2. For new acts, should the design doc keep full answer tables plus a per-act `PIN` test, or should the level file be the source of truth plus the 1-line-per-step `ANSWERS` key? [Level file plus `ANSWERS`. The design doc keeps concept, nuance, cards and spec URLs, and card fronts stay pinned.]
+2. For new acts, should the design doc keep full answer tables plus a per-act `PIN` test, or should the level file be the source of truth plus the 1-line-per-step `ANSWERS` key? [Level file plus `ANSWERS` (the words of a converted level are in its content file, CONTENT.md). The design doc keeps concept, nuance, cards and spec URLs, and card fronts stay pinned.]
 3. 1.2's env checker: make it a step type now, or let #3 Configure it decide? [Decided on #3: 1.2 stays hand-written. The `configure` step exists, but 1.2 is an env editor, not YAML.]

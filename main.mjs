@@ -8,6 +8,7 @@ import { takeReset } from './lib/reset-mode.mjs';
 import { takeSignin } from './lib/signin-param.mjs';
 import { createTelemetry } from './lib/telemetry.mjs';
 import { createPlayTelemetry } from './lib/play-telemetry.mjs';
+import { PRIMERS } from './content/core/primers/index.mjs';
 
 // ?mode=reset runs first: the saved state is gone before anything reads it.
 takeReset(window);
@@ -17,6 +18,7 @@ function browserDeps() {
   const debug = isDebugMode(window.location.search);
   return {
     registry: liveRegistry(),
+    primers: PRIMERS,
     storage: () => window.localStorage,
     document,
     window,

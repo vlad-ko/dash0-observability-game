@@ -6,18 +6,15 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readJsonModule } from './content-files.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-/**
- * Minimal local decoder for a content module (`// comment lines`, then `export default <JSON>;`).
- * TODO: swap for readJsonModule in test/helpers/content-files.mjs when PR #392 lands.
- */
-function decodeContentModule(text) {
-  const body = text.replace(/^(?:\s*\/\/[^\n]*\n)+/, '').trim();
-  const prefix = 'export default ';
-  if (!body.startsWith(prefix) || !body.endsWith(';')) throw new Error('content file is not `export default <JSON>;`');
-  return JSON.parse(body.slice(prefix.length, -1));
+/** The parsed content file at `path`; throws naming every problem when it is not strict JSON. */
+function decodeContentModule(path) {
+  const { value, errors } = readJsonModule(path);
+  if (errors.length) throw new Error(`${path}: ${errors.join('; ')}`);
+  return value;
 }
 
 /** Every string value (not key) in `value`, depth first, in document order. */
@@ -33,5 +30,5 @@ export function levelSource(id, { root = ROOT } = {}) {
   const logic = readFileSync(join(root, 'levels', `${id}.mjs`), 'utf8');
   const contentFile = join(root, 'content', 'core', 'levels', `${id}.mjs`);
   if (!existsSync(contentFile)) return logic;
-  return `${logic}\n${stringLeaves(decodeContentModule(readFileSync(contentFile, 'utf8'))).join('\n')}`;
+  return `${logic}\n${stringLeaves(decodeContentModule(contentFile)).join('\n')}`;
 }

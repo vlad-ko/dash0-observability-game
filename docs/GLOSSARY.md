@@ -23,6 +23,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **MTTD / MTTR**: mean time to detect / to resolve an incident.
 - **Par time**: the time a level sets as its target. Finishing slower costs one penalty.
 - **Act primer**: a short reading you can open before an act: an overview, then a few chapters, each with links to the pages it came from. (docs/PRIMERS.md)
+- **Dash0 team only**: the mark on an act primer link that only Dash0 staff can open (a Claap recording). The link is still shown, so outside players know it exists and that it is not for them.
 - **Chapter**: one short section of an act primer. The game remembers which chapters you have read.
 - **Save code**: a short text code for your progress. Copy it from the hub and paste it into the game in another browser to import it; the import merges, so nothing you already have is lowered.
 

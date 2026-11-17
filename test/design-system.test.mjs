@@ -43,9 +43,10 @@ test('T1 no colour literal in styles/*.css outside tokens.css', () => {
   }
 });
 
-test('T1 no colour literal in lib/ and levels/ markup (one allowed reader)', () => {
-  const files = walk('lib', ['.mjs']).concat(walk('levels', ['.mjs']));
+test('T1 no colour literal in lib/, levels/ and content/ markup (one allowed reader)', () => {
+  const files = walk('lib', ['.mjs']).concat(walk('levels', ['.mjs']), walk('content', ['.mjs']));
   assert.ok(files.includes('lib/play.mjs') && files.includes('levels/index.mjs'));
+  assert.ok(files.includes('content/core/levels/cardinality.mjs'), 'content/ is scanned');
   const hitFiles = new Set();
   for (const f of files) {
     read(f).split('\n').forEach((line, i) => {
