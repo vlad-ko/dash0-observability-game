@@ -4,7 +4,7 @@
 // fixes. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { describeError } from '../lib/configure/check.mjs';
 import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs';
@@ -15,7 +15,7 @@ const level = LIVE.levels[ID];
 const [VERDICT_STEP, CONFIG_STEP] = level.play.steps;
 const spec = CONFIG_STEP.configure;
 const choices = VERDICT_STEP.choice.choices;
-const SRC = readFileSync(new URL(`../levels/${ID}.mjs`, import.meta.url), 'utf8');
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const run = (text) => runConfigure(spec, newConfigureState(), text);
 const verdict = (text) => {

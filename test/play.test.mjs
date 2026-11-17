@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { STEP_DRIVERS, stepsOf } from './helpers/step-drivers.mjs';
@@ -636,7 +637,7 @@ test('#156 a sort step may declare its helps and a hint; a typo is named with a 
 
 test('#339 a hand-written Build it step with instant feedback does not promise a Check button', () => {
   for (const id of ['spans-and-traces']) {
-    const src = readFileSync(new URL(`../levels/${id}.mjs`, import.meta.url), 'utf8');
+    const src = levelSource(id);
     assert.equal(/press Check/.test(src), false, `${id} names no Check`);
     assert.match(src, /buildReason\(/);
   }

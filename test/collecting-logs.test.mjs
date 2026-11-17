@@ -6,7 +6,7 @@
 // booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { emptyProgress } from '../lib/progress.mjs';
@@ -18,7 +18,6 @@ import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs
 
 const LIVE = liveRegistry();
 const ID = 'collecting-logs';
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const steps = () => LIVE.levels[ID].play.steps;
 const stepOf = (key, widgetId) => steps().find((s) => s[key] && s[key].id === widgetId);
@@ -290,7 +289,7 @@ const specUrls = (src) =>
   src.split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
 
 test('the level file cites the pages its facts come from: Spec lines on opentelemetry.io, other hosts on their own labelled lines', () => {
-  const src = read(`levels/${ID}.mjs`);
+  const src = levelSource(ID);
   const spec = specUrls(src);
   for (const u of [
     'https://opentelemetry.io/docs/specs/otel/logs/',

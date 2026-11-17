@@ -10,7 +10,7 @@
 // (test/play.test.mjs). Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -27,7 +27,6 @@ const MAX_STARS = expectedStarMax(LIVE);
 const ID = 'silence';
 const BOSS = LIVE.levels[ID];
 const S = BOSS.play.steps[0].incident;
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const view = (id) => S.views.find((v) => v.id === id);
 const plain = (html) => html.replace(/<[^>]+>/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 const cost = (kind) => S.views.filter((v) => v.kind === kind).reduce((n, v) => n + v.costMin, 0);
@@ -108,7 +107,7 @@ test('silence: star totals count the boss (the derived scored-level max), and a 
 });
 
 test('silence: no em dash in the level file', () => {
-  assert.equal(read(`levels/${ID}.mjs`).includes('\u2014'), false);
+  assert.equal(levelSource(ID).includes('\u2014'), false);
 });
 
 // ---- the clues agree with each other -------------------------------------------------
@@ -177,7 +176,7 @@ test('each wrong hypothesis is refuted by a view the player can open, and the ri
 // ---- sources -------------------------------------------------------------------------
 
 test('sources: Spec lines are opentelemetry.io, Docs lines are GitHub, the invented log is marked, and the Dash0 tie-in is n/a with a reason', () => {
-  const src = read(`levels/${ID}.mjs`);
+  const src = levelSource(ID);
   const lines = src.split('\n');
   const spec = lines.filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.equal(spec.length > 0 && spec.every((u) => new URL(u).host === 'opentelemetry.io'), true);

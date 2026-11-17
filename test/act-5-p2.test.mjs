@@ -6,7 +6,7 @@
 // Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { expectedStarMax } from './helpers/stars.mjs';
@@ -19,7 +19,6 @@ import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs
 
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {
@@ -380,7 +379,7 @@ test('agent config: the routing key is a setting the schema does not model, so t
 // ---- both levels --------------------------------------------------------------------
 
 const urls = (f, prefix) =>
-  read(`levels/${f}.mjs`).split('\n').filter((l) => l.startsWith(prefix)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+  levelSource(f).split('\n').filter((l) => l.startsWith(prefix)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
 
 test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec lines for opentelemetry.io and Docs lines for the rest', () => {
   const ep = urls('otlp-endpoints', '// Spec: ');
@@ -395,7 +394,7 @@ test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec 
   ]) assert.equal(ag.includes(u), true, u);
   for (const f of ['otlp-endpoints', 'agent-vs-gateway']) {
     for (const u of urls(f, '// Spec: ')) assert.equal(new URL(u).host, 'opentelemetry.io', `${f} Spec line ${u}`);
-    const src = read(`levels/${f}.mjs`);
+    const src = levelSource(f);
     assert.equal(/\bthe spec says\b/i.test(src), false, f);
   }
   const docs = [...urls('otlp-endpoints', '// Docs'), ...urls('otlp-endpoints', '// Dash0 docs'), ...urls('agent-vs-gateway', '// Docs')].join(' ');
@@ -408,7 +407,7 @@ test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec 
 });
 
 test('the fake-token rule: the only token-shaped text in the level files and cards is auth_token_example', () => {
-  const text = [read('levels/otlp-endpoints.mjs'), read('levels/agent-vs-gateway.mjs'), JSON.stringify(DECK.filter((c) => Object.keys(CARDS).includes(c.id)))].join('\n');
+  const text = [levelSource('otlp-endpoints'), levelSource('agent-vs-gateway'), JSON.stringify(DECK.filter((c) => Object.keys(CARDS).includes(c.id)))].join('\n');
   const tokens = [...text.matchAll(/\bauth_[A-Za-z0-9_]+/g)].map((m) => m[0]);
   assert.equal(tokens.length > 0, true, 'the fake token is shown');
   assert.deepEqual([...new Set(tokens)], ['auth_token_example']);

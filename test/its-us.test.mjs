@@ -6,7 +6,7 @@
 // play-through (stars) is DRIVERS['its-us'] in test/levels-play.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa } from './helpers/dom.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry, MODE } from '../lib/telemetry.mjs';
@@ -901,7 +901,7 @@ test('the token reaches no error report, no status and no result', async () => {
 });
 
 test('the boss never touches storage, the URL, the console, a token or a connection', () => {
-  const src = readFileSync(new URL('../levels/its-us.mjs', import.meta.url), 'utf8');
+  const src = levelSource('its-us');
   const code = src.split('\n').filter((l) => !l.trimStart().startsWith('//')).join('\n');
   for (const banned of [/localStorage/, /sessionStorage/, /document\.cookie/, /\blocation\b/, /\bhistory\b/, /console\./, /indexedDB/, /reportError/, /fetch\(/, /practiceCredential/, /\.connect\(/, /sendTest/, /status\(\)\.token/]) {
     assert.doesNotMatch(code, banned);

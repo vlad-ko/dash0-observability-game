@@ -6,7 +6,7 @@
 // and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { expectedStarMax } from './helpers/stars.mjs';
@@ -19,7 +19,6 @@ import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs
 
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {
@@ -341,7 +340,7 @@ test('order-matters: batch goes late, and exporter-side batching is an option th
 
 test('the Act 5 level files cite the pages their facts come from', () => {
   const urls = (f) =>
-    read(`levels/${f}.mjs`).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+    levelSource(f).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   const pipes = urls('pipelines');
   for (const u of [
     'https://opentelemetry.io/docs/collector/configuration/#service',
@@ -355,7 +354,7 @@ test('the Act 5 level files cite the pages their facts come from', () => {
     'https://opentelemetry.io/docs/collector/components/processor/',
   ]) assert.equal(order.includes(u), true, u);
   for (const f of ['pipelines', 'order-matters']) {
-    const src = read(`levels/${f}.mjs`);
+    const src = levelSource(f);
     assert.equal(/\bthe spec says\b/i.test(src), false, f);
     assert.equal(/^\/\/ Docs \(GitHub/m.test(src), true, `${f} cites the component READMEs on a Docs line`);
   }

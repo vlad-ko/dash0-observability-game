@@ -5,7 +5,7 @@
 // strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { COMING_SOON } from '../hub/coming-soon.mjs';
 import { ACT_REGIONS, COUNTRY_NAMES, LEVEL_COUNTRY } from '../hub/globe-map.mjs';
@@ -17,8 +17,7 @@ import { validateSpotHelps } from '../lib/widgets/spot-it-help.mjs';
 
 const ID = 'semantic-convention-versions';
 const LIVE = liveRegistry();
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
-const SRC = read(`levels/${ID}.mjs`);
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 
 const progressOf = (ids) => {

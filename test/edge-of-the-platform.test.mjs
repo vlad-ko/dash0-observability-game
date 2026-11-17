@@ -4,7 +4,7 @@
 // board needs; the sources and what the copy does not claim. Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { liveRegistry } from '../app.mjs';
 import { checkBuild, newBuildState, toggleLink, validateBuildSpec } from '../lib/widgets/build-it.mjs';
 import { validateBuildHelps } from '../lib/widgets/build-it-help.mjs';
@@ -14,7 +14,7 @@ import { CONTENT } from '../levels/edge-of-the-platform.mjs';
 
 const ID = 'edge-of-the-platform';
 const LIVE = liveRegistry();
-const SRC = readFileSync(new URL(`../levels/${ID}.mjs`, import.meta.url), 'utf8');
+const SRC = levelSource(ID);
 const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
 const level = LIVE.levels[ID];
 const [FIX_STEP, BATCH_STEP] = level.play.steps;

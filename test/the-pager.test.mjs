@@ -8,6 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
@@ -255,7 +256,7 @@ test('the-pager: no ctx.mistake() or ctx.hint() is reachable (I1)', () => {
   for (const [key] of ASKS) click(`[data-ask="${key}"]`);
   click('#pager-finish');
   assert.deepEqual(slips, { mistakes: 0, hints: 0 });
-  const src = readFileSync(new URL('../levels/the-pager.mjs', import.meta.url), 'utf8');
+  const src = levelSource('the-pager');
   assert.equal(/\bmistake\s*\(/.test(src), false, 'the level never calls ctx.mistake()');
 });
 

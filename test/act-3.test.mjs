@@ -6,6 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { getDataset } from '../lib/promql/datasets.mjs';
 import { evaluate } from '../lib/promql/eval.mjs';
@@ -535,7 +536,7 @@ test('promql-basics: the Dash0 tie-in is graded: both names, otel_metric_name, a
 // ---- both levels --------------------------------------------------------------------
 
 test('the Act 3 level files cite the metrics spec pages their facts come from', () => {
-  const urls = (f) => read(`levels/${f}.mjs`).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+  const urls = (f) => levelSource(f).split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.equal(urls('instruments').some((u) => u.startsWith('https://opentelemetry.io/docs/specs/otel/metrics/api/')), true);
   assert.equal(urls('temporality').some((u) => u.startsWith('https://opentelemetry.io/docs/specs/otel/metrics/data-model/')), true);
   const prom = (f) => urls(f).filter((u) => u.startsWith('https://prometheus.io/'));
@@ -544,7 +545,7 @@ test('the Act 3 level files cite the metrics spec pages their facts come from', 
   assert.equal(urls('promql-basics').some((u) => u.startsWith('https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/')), true);
   assert.deepEqual(prom('promql-basics').map((u) => u.split('#')[1]).filter(Boolean).sort(), ['aggregation-operators', 'increase', 'rate']);
   for (const f of ['instruments', 'temporality', 'histograms', 'promql-basics']) {
-    const src = read(`levels/${f}.mjs`);
+    const src = levelSource(f);
     assert.equal(/\bthe spec says\b/i.test(src), false, f);
   }
 });
@@ -804,7 +805,7 @@ test('red-and-use: the Dash0 tie-in is graded: RED derived from spans, not bille
 });
 
 test('3.5 and 3.7 cite the pages their facts come from, and the sources that are not on the spec hosts are named as sources', () => {
-  const lines = (f) => read(`levels/${f}.mjs`).split('\n');
+  const lines = (f) => levelSource(f).split('\n');
   const urls = (f) => lines(f).filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   const has = (f, prefix) => urls(f).some((u) => u.startsWith(prefix));
   for (const prefix of [
@@ -925,7 +926,7 @@ test('exemplars: every Spot it and Choice intro states the setting: head samplin
 });
 
 test('exemplars: cites the OpenTelemetry pages its facts come from, says the Dash0 tie-in is n/a, and has no em dash', () => {
-  const src = read('levels/exemplars.mjs');
+  const src = levelSource('exemplars');
   const urls = src.split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   for (const prefix of [
     'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exemplars',

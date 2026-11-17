@@ -6,7 +6,7 @@
 // Asserts strings, numbers and booleans only.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { levelSource } from './helpers/level-source.mjs';
 import { DECK } from '../cards/deck.mjs';
 import { liveRegistry } from '../app.mjs';
 import { expectedStarMax } from './helpers/stars.mjs';
@@ -19,7 +19,6 @@ import { newConfigureState, runConfigure } from '../lib/widgets/configure-it.mjs
 
 const LIVE = liveRegistry();
 const MAX_STARS = expectedStarMax(LIVE);
-const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 const plain = (html) => html.replace(/<[^>]+>/g, '');
 const progressOf = (ids) => {
   const p = emptyProgress();
@@ -33,7 +32,7 @@ const rightOf = (levelId, widgetId) => choiceOf(levelId, widgetId).find((c) => c
 const keysOf = (levelId, widgetId) => choiceOf(levelId, widgetId).map((c) => c.key).sort();
 
 const OTTL = 'ottl-and-transforms';
-const OTTL_SRC = readFileSync(new URL('../levels/ottl-and-transforms.mjs', import.meta.url), 'utf8');
+const OTTL_SRC = levelSource('ottl-and-transforms');
 const DIST = 'distributions';
 
 // ---- levels, lights, totals ---------------------------------------------------------
@@ -296,7 +295,7 @@ test('ottl backend: redact in the pipeline; a spam filter drops whole points at 
 
 test('ottl: the spam-filter wording agrees with level 3.5 (whole points, ingestion, irreversible, ingest still charged)', () => {
   const card = CARDS['redact-in-the-pipeline'].back;
-  const cardinality = read('levels/cardinality.mjs');
+  const cardinality = levelSource('cardinality');
   for (const w of ['whole', 'cannot be recovered', 'ingest charge']) {
     assert.equal(card.includes(w), true, `5.5 card says "${w}"`);
     assert.equal(cardinality.includes(w), true, `3.5 says "${w}"`);
@@ -384,7 +383,7 @@ test('distributions: a component nobody ships is built in with OCB, from a manif
 
 test('the 5.5 and 5.6 level files cite the pages their facts come from, and never say "the spec says"', () => {
   const urls = (f) =>
-    read(`levels/${f}.mjs`).split('\n').filter((l) => /^\/\/ (Spec|Docs|Dash0 docs)[^:]*: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
+    levelSource(f).split('\n').filter((l) => /^\/\/ (Spec|Docs|Dash0 docs)[^:]*: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   const ottl = urls(OTTL);
   for (const u of [
     'https://opentelemetry.io/docs/collector/transforming-telemetry/',
@@ -405,7 +404,7 @@ test('the 5.5 and 5.6 level files cite the pages their facts come from, and neve
     'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-k8s/manifest.yaml',
   ]) assert.equal(dist.includes(u), true, u);
   for (const f of [OTTL, DIST]) {
-    const src = read(`levels/${f}.mjs`);
+    const src = levelSource(f);
     assert.equal(/\bthe spec says\b/i.test(src), false, f);
     assert.equal(/^\/\/ Spec: https:\/\/opentelemetry\.io\//m.test(src), true, `${f} has a Spec line on opentelemetry.io`);
     assert.equal(src.includes('—'), false, `${f} has no em dash`);
