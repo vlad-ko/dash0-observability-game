@@ -603,8 +603,8 @@ never reaches the browser (the CSP `connect-src` is unchanged). The wire contrac
 
 ### 2.12 Act primers (#389)
 
-Each act can have a primer: a short overview and a few chapters of reading, written by people, kept apart from code. Phase 1a
-ships the data, the validator and the saved state; the view and hub wiring come after. Authoring guide: `docs/PRIMERS.md`.
+Each act can have a primer: a short overview and a few chapters of reading, written by people, kept apart from code. The
+data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b) are built. Authoring guide: `docs/PRIMERS.md`.
 
 - Content: `content/core/primers/<act-id>.mjs` is `export default ` followed by one strict-JSON object and `;`, named after
   the registry act id. Above `export default` goes a header of at least one `//` comment line, none starting `// Spec:`, and
@@ -623,7 +623,7 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   Text is plain and escaped, never HTML. A link is `{kind, label, url, audience}` (a link block adds `type`); `url` is https,
   at most 500 characters, no username or password. A `docs`, `otel` or `claap` link must be on the host its kind names
   (`KIND_HOSTS`, the host or a subdomain); `video` and `article` links may use any https host.
-  A `claap` link must be `internal`; the view (phase 1b) will mark an internal link "Dash0 team only".
+  A `claap` link must be `internal`; `lib/primer-view.mjs` marks an internal link "Dash0 team only".
 - `lib/primer.mjs` (pure): `validatePrimer(p, {actIds})` and `validatePrimers(list, {actIds})` return `{ok, errors}` with every
   error naming its path and never throw; `buildPrimers(list, registry)` keeps the valid ones in a frozen `byAct` and returns the
   rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile({status, read, total})` the tile
@@ -643,6 +643,16 @@ ships the data, the validator and the saved state; the view and hub wiring come 
 - Invariants: the merge (`mergePrimerEntry`) only moves up (seen OR, skipped OR, sorted read union), so it is commutative,
   associative and idempotent and two tabs cannot undo each other. Unknown acts and chapter ids already stored are kept. A corrupt
   value is overwritten with no backup (it is a preference, not progress); an unreadable store means the primer shows.
+- The pop-up (`lib/primer-view.mjs`, `app.mjs`, the `#primer-modal` kit modal in `MODALS`): `primerBodyHtml(view, {draft})` draws one
+  `primerView` screen with kit helpers only (escaped text, classless `<a target="_blank" rel="noopener noreferrer">` plus a kind
+  chip and, for an internal link, an attention chip "Dash0 team only"; a "Sources" eyebrow ends each chapter; a "Draft" chip marks a
+  placeholder). `createGame` takes `primers` (default `[]`; `main.mjs` passes `PRIMERS`), builds them once with `buildPrimers`, shows
+  no tile for an invalid one and reports the errors once. The hub tile (`.act-primer`, before an act's level list) opens it at any
+  time. It opens by itself once per visit (`seenPrimers`) when the stored state is new: on expanding the act, or in place of the
+  first level opened in that act, which then waits (`primerThen`) and starts when the player leaves the primer forward ("I am
+  already familiar with the topic", or the last chapter's button). The close button and Escape close it, drop the waiting level and
+  return focus to the opener. Opening records `seen`, "already familiar" `skipped`, Next the chapter just left `read`, Back nothing;
+  `?mode=debug` writes nothing and `?mode=reset` clears the key. It never gates a level.
 
 ### 2.13 Level content apart from level logic (#391)
 

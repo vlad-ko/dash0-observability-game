@@ -90,6 +90,10 @@
    so the lesson, the table and the text under it had three different right edges (#332). */
 .ui-prose p, .ui-prose li { max-inline-size: var(--layout-narrow); }
 .ui-prose ul, .ui-prose ol { padding-left: 1.4em; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; /* a long token (a traceparent) wraps at 320px instead of widening the list */ }
+/* A link in authored content (an act primer's sources): text colour with an underline in the accent, so it is not told by hue alone. */
+.ui-prose a { color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 3px; }
+.ui-prose a:hover { text-decoration-thickness: 2px; }
+.ui-prose a:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; border-radius: var(--radius-xs); }
 /* A deletion keeps text colour; the strike carries the error tone. */
 .ui-prose del { text-decoration-color: var(--color-error); text-decoration-thickness: 2px; }
 .ui-prose pre, .ui-code { font-size: 12px; line-height: 1.6; overflow-x: auto; max-inline-size: 100%; }

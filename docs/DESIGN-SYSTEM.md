@@ -70,7 +70,7 @@ each function's JSDoc for the exact markup.
 | `step({wide, bodyHtml})`, `split({mainHtml, sideHtml})`, `actions({wide, buttonsHtml})` | layout | Step frame (narrow or wide), board plus side column (inside a wide step), actions bar. |
 | `lesson(bodyHtml)` | text | The glow lesson card ("Lesson" eyebrow, glow top left). |
 | `question({id, html})`, `stepHead({step, titleHtml, noteHtml})`, `eyebrow(text)`, `hintHead(label, subject?)` | text | The step's question; "Step N" heading; mono label; the head of every hint (the eyebrow "Hint 1 of 3", and the thing it is about on its own line in its own case: the eyebrow upper-cases, so an identifier never goes in it, #332). |
-| `note(bodyHtml)`, `prose(bodyHtml)`, `codeBlock(text)` | text | Muted small print; classless authored content (a `<pre data-wrap>` inside prose wraps, for log and command output; any other `pre` scrolls sideways); escaped code; `codeBlock(text, {wrap})` soft-wraps (`data-wrap`) for env lines and output, a block that scrolls shows a fade at each edge with more behind it (#332). |
+| `note(bodyHtml)`, `prose(bodyHtml)`, `codeBlock(text)` | text | Muted small print; classless authored content (a `<pre data-wrap>` inside prose wraps, for log and command output; any other `pre` scrolls sideways; for links see "Links in prose" under Modal); escaped code; `codeBlock(text, {wrap})` soft-wraps (`data-wrap`) for env lines and output, a block that scrolls shows a fade at each edge with more behind it (#332). |
 | `panel({id, variant, headHtml, sections})` | panel | Card with sections; `inset`, `alert`, `drop` (dashed means drop zone only; Sort it no longer uses it, #261: it categorises with choice options and plain groups, no boxes). |
 | `chip({text, tone, dot, swatch, dashed})` | chip | Mono pill; `data-tone` neutral, success, error, hint, attention. |
 | `button({id, label, variant, disabled, finish, type, icon, describedBy})`, `nextButton(id, why?)`, `finishButton(id, why?)`, `linkButton({id, label, href, variant})`, `reason({id, text})`, `buttonRow(buttonsHtml)` | button | Pill; `linkButton` is the same pill as an `<a>` for a navigation (the sign-in link; `primary`, `ghost`, `hint`; `href` a local path only); `primary` (red, D2), `ghost`, `hint`, `icon`; `describedBy` (an id) points a disabled button at its reason; Finish has `data-finish`. A disabled button of any variant is a muted label on the surface with a dashed border (no fade, no red). `reason` is one muted line under a disabled button that says why (it is plain text read in order, so give the button no `describedBy` for it); once the button before it is enabled CSS hides it with `visibility: hidden`, so it keeps its space and the button does not move; `nextButton` and `finishButton` carry one. `buttonRow` keeps buttons pills in a grid parent (every Check, Run and Reset). |
@@ -96,6 +96,8 @@ States are attributes, never extra classes: `aria-pressed` (selected; `data-pick
 `wrong`, `locked`, `opened`), `data-hinted`, `data-tone`, `disabled`, `hidden`. Hover, focus and
 disabled each have one rule in `kit.css`; besides it, a disabled toggle option, and a disabled choice option with no `data-state`, fades (its only cue), except a `drop` target, which goes muted and transparent instead, while an answered choice card (it has a `data-state`) stays legible. A `hidden` option is removed from the layout (`.ui-option[hidden]` is `display: none`): a multiple-choice 50/50 (#371) hides and disables two wrong answers.
 
+**Links in prose (#389).** `prose()` content may hold a classless `<a href target="_blank" rel="noopener noreferrer">`; `.ui-prose a` draws it in text colour with an accent underline (no hue-only cue). The act primer's links sit in a `<p>` or `<li>` with a `chip` for the kind and, for a Dash0-internal one, an attention chip "Dash0 team only". The hub's act primer tile (`.act-primer`, `styles/hub.css`) is hub chrome, not a kit component: a 44px button above an act's levels carrying a kit chip with the status.
+
 ## Layout
 
 `.ui-step` caps a step at `--layout-narrow` (760px, start-aligned, so it shares the wide step's left edge); `.ui-step--wide` at `--layout-wide`
@@ -107,7 +109,7 @@ conditions. Kit text inside a clipping container (`overflow: hidden`) must be ab
 
 ## Modal
 
-One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`) and Feedback (`#feedback-modal`; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws)
+One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`), Feedback (`#feedback-modal`) and the act primer (`#primer-modal`, #389; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws, the primer one `lib/primer-view.mjs` draws)
 (#282, owner direction 2026-11-08; D5 sign-off from the PR screenshots). Its markup is static in
 `index.html` (the one place that writes `ui-` classes by hand, like the buttons), because Alpine opens
 it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:
@@ -117,8 +119,8 @@ it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:
 | Backdrop | `ui-modal` | Fixed, dimmed and blurred; `role="dialog"`, `aria-modal="true"`, named by its h2. |
 | Card | `ui-modal-card` | Surface with a hairline top accent (red to orange); body scrolls inside it (`max-block-size: 100%`), so it fits 320px. |
 | Head | `ui-modal-head`, `ui-modal-heading` | Mono `ui-eyebrow`, the h2 (`tabindex="-1"`, focus lands here), and a `ui-btn--icon` close with a name. The lesson glow sits behind it. |
-| Body | `ui-modal-body` | The scrolling content: `ui-modal-topic` sections (a heading and muted text) and `ui-modal-note`; a `ui-panel` placed directly in it loses its box (Save code). |
-| Foot | `ui-modal-foot` | Optional buttons, right-aligned; one primary at most (About's Close; How to play's are ghost, the level behind owns the primary). |
+| Body | `ui-modal-body` | The scrolling content: `ui-modal-topic` sections (a heading and muted text) and `ui-modal-note`; a `ui-panel` placed directly in it loses its box (Save code); the act primer's body is kit helpers only (`prose`, `codeBlock`, `note`, `chip`, `eyebrow`) in an `x-ignore` node. |
+| Foot | `ui-modal-foot` | Optional buttons, right-aligned; one primary at most (About's Close; How to play's are ghost, the level behind owns the primary). The act primer's is static Alpine: "I am already familiar with the topic" (ghost) and "Proceed with learning" (primary) on the overview; Back (ghost) and Next (primary) on a chapter, the last chapter's reading "Done", or "Start: <level name>" when a level is waiting. |
 
 Behaviour: focus moves to the title on open and back to the opener on close (`app.mjs` `focusSoon`);
 Escape closes the top modal (`onEscape`); the page behind is inert (`#hub` via `hubInert()`, `.overlay`
