@@ -70,7 +70,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "There are trade-offs between the two, for example for detecting process restarts, calculating rates, and push or pull based reporting. OTLP supports both models, and lets APIs, SDKs and users choose the best trade-off for their use case."
+          "text": "There are trade-offs between the two, for example for detecting process restarts, calculating rates, and push or pull based reporting. OTLP supports both models, and lets APIs, SDKs and users choose the trade-off that fits their use case."
         },
         {
           "type": "paragraph",
@@ -200,7 +200,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "An exemplar is a recorded value that associates OpenTelemetry context with a metric event. One use case is to link trace signals with metrics."
+          "text": "An exemplar is a recorded value that associates OpenTelemetry context with a metric event. One use case is to link traces with metrics."
         },
         {
           "type": "paragraph",

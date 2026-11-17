@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans), start and end timestamps, a trace ID and a span ID with a few more trace details, attributes, events, links and a status."
+          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans), start and end timestamps, a span context (the trace ID, the span ID, trace flags and trace state), attributes, events, links and a status."
         },
         {
           "type": "paragraph",
