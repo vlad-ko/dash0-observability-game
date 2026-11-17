@@ -924,7 +924,7 @@ export function createGame(deps) {
       // The first level of an act with a primer the player has not met shows the primer instead; leaving it forward starts this level.
       const actId = registry.levels[id]?.actId;
       if (actId !== undefined && this.primerNew(actId)) {
-        this.openPrimer(actId, { then: id, from, opener: this.levelFocusTarget(id, from) });
+        this.openPrimer(actId, { then: id, from });
         return false;
       }
       this.endSession();
@@ -1151,11 +1151,22 @@ export function createGame(deps) {
     leavePrimer() {
       const then = this.primerThen;
       const from = this.primerFrom;
-      const opener = this.primerOpener;
       this.primerOpen = false;
       this.primerThen = null;
       if (then !== null && this.openLevel(then, from)) return;
-      if (opener) this.focusSoon(opener);
+      this.exitPrimer(then, from);
+    },
+    // The primer closed with no level starting: play a map reveal that was waiting (Continue from the reward can land here),
+    // else focus goes to where the player came from, worked out now (another tab may have folded the act meanwhile).
+    exitPrimer(then, from) {
+      if (pendingLit) {
+        this.revealLit();
+        return;
+      }
+      const target = then !== null
+        ? this.levelFocusTarget(then, from)
+        : this.actExpanded(this.primerActId) ? this.primerOpener : `#act-toggle-${this.primerActId}`;
+      if (target) this.focusSoon(target);
     },
     // "I am already familiar with the topic": noted as skipped, then the level.
     primerFamiliar() {
@@ -1183,9 +1194,10 @@ export function createGame(deps) {
     // The close button and Escape: the pending level is dropped, focus returns to the opener.
     closePrimer() {
       if (!this.primerOpen) return;
+      const then = this.primerThen;
       this.primerOpen = false;
       this.primerThen = null;
-      if (this.primerOpener) this.focusSoon(this.primerOpener);
+      this.exitPrimer(then, this.primerFrom);
     },
 
     // Abort the open level (its timers stop, a stale finish is a no-op) and clear its DOM.

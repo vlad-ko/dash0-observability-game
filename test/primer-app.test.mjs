@@ -38,7 +38,16 @@ const P0 = {
   chapters: [chapter('c-one'), chapter('c-two'), chapter('c-three')],
 };
 
-function setup({ primers = [P0], debug = false, initial, storage } = {}) {
+// A map where every level lights a country, so a completion leaves a reveal waiting for the map.
+const LIT_MAP = {
+  ACT_REGIONS: { a0: { region: 'R0' }, a1: { region: 'R1' } },
+  LEVEL_COUNTRY: { x: 'XXX', y: 'YYY', z: 'ZZZ' },
+  COUNTRY_NAMES: { XXX: 'Xland', YYY: 'Yland', ZZZ: 'Zland' },
+  actOf: () => null,
+};
+const DONE = { stars: 3, text: 'ok', cards: [] };
+
+function setup({ primers = [P0], debug = false, initial, storage, globeMap = GLOBE_MAP } = {}) {
   const dom = makeDom(html);
   const focus = recordFocus(dom.window);
   const store = fakeStorage({ initial });
@@ -46,7 +55,7 @@ function setup({ primers = [P0], debug = false, initial, storage } = {}) {
   const game = createGame({
     registry: REG, deck: [], storage: storage ?? (() => store), document: dom.document, window: { addEventListener() {} },
     now: () => 0, rand: () => 0, reduceMotion: () => true, setTimeout: () => {}, clearTimeout: () => {},
-    reportError: (e) => errors.push(e), globeMap: GLOBE_MAP, dots: [], primers, debug,
+    reportError: (e) => errors.push(e), globeMap, dots: [], primers, debug,
   });
   // The elements a focus goes back to (the level card, the tile) are Alpine-rendered, so linkedom has none: note the selectors asked for.
   const asked = [];
@@ -314,4 +323,74 @@ test('an invalid primer shows no tile, never gates a level and is reported once'
   game.toggleAct('a0');
   assert.equal(game.primerOpen, false);
   assert.equal(errors.length, 1);
+});
+
+test('Continue from the reward into an act whose primer pops: closing it plays the map reveal that was waiting', () => {
+  const { game } = setup({ primers: [{ ...P0, act: 'a1' }], globeMap: LIT_MAP });
+  game.openLevel('x');
+  game.completeLevel('x', DONE);
+  game.closeReward();
+  assert.match(game.litNote, /Xland/, 'control: closing the reward reveals');
+  game.openLevel('y');
+  game.completeLevel('y', DONE);
+  assert.equal(game.continueFromReward(), false);
+  assert.equal(game.primerOpen, true, 'the primer of the next act stands in for its first level');
+  game.closePrimer();
+  assert.equal(game.overlayOpen, false);
+  assert.match(game.litNote, /Yland/);
+});
+
+test('hub Continue into a primer: the level it waits for keeps its Continue origin, and focus goes back to Continue', () => {
+  const { game, asked } = setup();
+  assert.equal(game.continueNext(), false);
+  assert.equal(game.primerOpen, true);
+  assert.equal(game.primerFrom, 'continue');
+  game.closePrimer();
+  assert.equal(asked.at(-1), '#hub-continue');
+  game.continueNext();
+  game.primerFamiliar();
+  assert.equal(game.openedFrom, 'continue');
+  game.closeOverlay();
+  assert.equal(asked.at(-1), '#hub-continue');
+});
+
+test('focus after closing is worked out then: an act another tab folded meanwhile sends it to the act toggle', () => {
+  const shared = fakeStorage();
+  const { game, asked } = setup({ storage: () => shared });
+  const other = setup({ primers: [], storage: () => shared }).game; // a second tab on the same storage
+  assert.equal(game.openLevel('y'), false);
+  assert.equal(game.primerOpen, true);
+  other.openLevel('x');
+  other.completeLevel('x', DONE);
+  other.closeReward();
+  other.openLevel('y');
+  other.completeLevel('y', DONE);
+  other.closeReward();
+  game.onStorage({ key: 'oncall.progress' });
+  assert.equal(game.actExpanded('a0'), false, 'the act is finished, so it folds and its cards are hidden');
+  game.closePrimer();
+  assert.equal(asked.at(-1), '#act-toggle-a0');
+});
+
+test('the tile opener falls back to the act toggle when the act is folded at close time', () => {
+  const { game, asked } = setup();
+  game.openPrimer('a0');
+  game.actOverrides = { a0: false };
+  game.closePrimer();
+  assert.equal(asked.at(-1), '#act-toggle-a0');
+});
+
+test('a stray "already familiar" or Proceed on a chapter screen does nothing', () => {
+  const { game, store } = setup();
+  game.openPrimer('a0');
+  game.primerProceed();
+  game.primerNext();
+  assert.equal(game.primerScreen, 1);
+  const before = writes(store);
+  game.primerProceed();
+  assert.equal(game.primerScreen, 1, 'Proceed only leaves the overview');
+  game.primerFamiliar();
+  assert.equal(game.primerOpen, true, 'familiar only works on the overview');
+  assert.equal(stored(store).acts.a0.skipped, false);
+  assert.equal(writes(store), before);
 });
