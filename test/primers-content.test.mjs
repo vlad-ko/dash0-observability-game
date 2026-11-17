@@ -2,7 +2,7 @@
 // ids, one strict-JSON file per primer, and every placeholder says so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { ACTS } from '../levels/index.mjs';
 import { PRIMERS } from '../content/core/primers/index.mjs';
 import { validatePrimer, validatePrimers } from '../lib/primer.mjs';
@@ -37,6 +37,10 @@ test('every placeholder primer carries a PLACEHOLDER note, and act-0 is a placeh
   assert.equal(PRIMERS.find((p) => p.act === 'act-0')?.placeholder, true);
 });
 
-test('no content file starts with a // Spec: line (that marks level files)', () => {
-  for (const p of PRIMERS) assert.ok(!readFileSync(new URL(`${p.act}.mjs`, DIR), 'utf8').startsWith('// Spec:'), p.act);
+test('no content file has a // Spec: line anywhere in its header (that marks level files)', () => {
+  for (const p of PRIMERS) {
+    const { comments } = readJsonModule(new URL(`${p.act}.mjs`, DIR));
+    assert.ok(comments.length > 0, `${p.act}: a content file explains itself in a header comment`);
+    assert.deepEqual(comments.filter((c) => /^\/\/\s*Spec:/.test(c)), [], p.act);
+  }
 });

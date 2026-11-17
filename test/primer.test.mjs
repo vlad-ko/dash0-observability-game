@@ -171,6 +171,10 @@ test('tile: words, tones and the label', () => {
   assert.deepEqual(tile({ seen: true, skipped: false, read: ['c-one', 'c-two', 'c-three'] }), { text: 'Read', tone: 'success', isNew: false, label: 'Act primer: Read' });
 });
 
+test('tile: a one-chapter primer says "chapter", not "chapters"', () => {
+  assert.equal(primerTile({ status: 'reading', read: 0, total: 1 }).text, '0 of 1 chapter read');
+});
+
 test('view: the overview is screen -1 with the two buttons', () => {
   const v = primerView(P0(), -1, {});
   assert.equal(v.screen, -1);

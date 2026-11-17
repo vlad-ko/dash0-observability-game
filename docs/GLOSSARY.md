@@ -22,6 +22,8 @@ links level text to these anchors. "(Act N)" is where it's taught.
   Opening one costs a star.
 - **MTTD / MTTR**: mean time to detect / to resolve an incident.
 - **Par time**: the time a level sets as its target. Finishing slower costs one penalty.
+- **Act primer**: a short reading you can open before an act: an overview, then a few chapters, each with links to the pages it came from. (docs/PRIMERS.md)
+- **Chapter**: one short section of an act primer. The game remembers which chapters you have read.
 - **Save code**: a short text code for your progress. Copy it from the hub and paste it into the game in another browser to import it; the import merges, so nothing you already have is lowered.
 
 ## OpenTelemetry

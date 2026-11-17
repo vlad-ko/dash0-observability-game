@@ -15,7 +15,18 @@ const read = (name, text) => {
 
 test('a clean file parses, ignoring leading // lines', () => {
   const r = read('ok.mjs', '// note\n// another\nexport default {"a":1,"b":[{"c":2}]};\n');
-  assert.deepEqual(r, { value: { a: 1, b: [{ c: 2 }] }, errors: [] });
+  assert.deepEqual(r, { value: { a: 1, b: [{ c: 2 }] }, comments: ['// note', '// another'], errors: [] });
+});
+
+test('a // line inside the object is not allowed', () => {
+  const r = read('c1.mjs', '// head\nexport default {\n// inside\n"a":1};\n');
+  assert.equal(r.value, undefined);
+  assert.ok(r.errors.length > 0);
+});
+
+test('a // line after the wrapper starts, or a blank line between comments and export, is not allowed', () => {
+  assert.ok(read('c2.mjs', 'export default {"a":1};\n// after\n').errors.length > 0);
+  assert.ok(read('c3.mjs', '// head\n\nexport default {"a":1};\n').errors.length > 0);
 });
 
 test('a duplicate key is caught, at any depth', () => {

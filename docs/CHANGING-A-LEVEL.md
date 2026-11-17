@@ -1,6 +1,6 @@
 # Changing a level
 
-For Dash0 engineers who know OpenTelemetry but not this codebase. It covers changing the content of a level (a fact, a question, a choice, a step, a card) and getting the change merged. The full step format is in [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md); this guide does not repeat it. The worked example is `levels/good-alerts.mjs` (level 7.1), a short declarative level.
+For Dash0 engineers who know OpenTelemetry but not this codebase. It covers changing the content of a level (a fact, a question, a choice, a step, a card) and getting the change merged. The full step format is in [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md); this guide does not repeat it. The worked example is `levels/good-alerts.mjs` (level 7.1), a short declarative level. To change an act primer (the reading before an act) instead, see [PRIMERS.md](PRIMERS.md).
 
 ## 1. Find the file
 

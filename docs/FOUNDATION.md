@@ -610,7 +610,8 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   comment lines allowed, none starting `// Spec:`), named after the registry act id. `content/core/primers/index.mjs` imports
   each file into `PRIMERS`. The content test reads each file with `readJsonModule` (`test/helpers/content-files.mjs`: strips the
   wrapper, `JSON.parse`s, and reports duplicate keys, which `JSON.parse` drops silently) and deep-compares it with the import,
-  so a trailing comma, a comment inside the object or a repeated key fails. Text rules shared by every kind of authored
+  so a trailing comma, a comment inside the object (`//` lines are allowed only before `export default`) or a repeated key
+  fails, and so does a `// Spec:` line anywhere in the header. Text rules shared by every kind of authored
   content live in `lib/content/text-rules.mjs` (`isId`, `checkPlain`, `checkCode`: trimmed, no control characters, no em
   dash; code may hold newlines and tabs).
 - Shape (exact key sets, an unknown key is an error, every string trimmed and free of control characters; the limits are the
@@ -619,15 +620,16 @@ ships the data, the validator and the saved state; the view and hub wiring come 
   `act` is a registry act id, one primer per act. A chapter `id` is kebab-case, unique in its primer, and is the saved read key:
   never rename one. `placeholderNote` is required and starts `PLACEHOLDER` when `placeholder` is true, and forbidden when false.
   Text is plain and escaped, never HTML. A link is `{kind, label, url, audience}` (a link block adds `type`); `url` is https,
-  at most 500 characters, no username or password, and on the host its kind names (`KIND_HOSTS`, the host or a subdomain).
-  A `claap` link must be `internal`; the view marks an internal link "Dash0 team only".
+  at most 500 characters, no username or password. A `docs`, `otel` or `claap` link must be on the host its kind names
+  (`KIND_HOSTS`, the host or a subdomain); `video` and `article` links may use any https host.
+  A `claap` link must be `internal`; the view (phase 1b) will mark an internal link "Dash0 team only".
 - `lib/primer.mjs` (pure): `validatePrimer(p, {actIds})` and `validatePrimers(list, {actIds})` return `{ok, errors}` with every
   error naming its path and never throw; `buildPrimers(list, registry)` keeps the valid ones in a frozen `byAct` and returns the
-  rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile(status)` the tile words and tone;
+  rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile({status, read, total})` the tile words and tone;
   `primerView(primer, screen, {then, thenName})` the screen (-1 is the overview, 0..N-1 the chapters).
 - Status: with k the number of stored read ids that are still chapter ids of the primer and N the chapter count: no stored entry
-  is `new`; k equal to N is `read`; k of at least 1, or seen with nothing read, is `reading`; skipped with k equal to 0 is
-  `skipped`. Only current chapter ids count, so a removed chapter is ignored and a renamed one is unread.
+  is `new`; k equal to N is `read`; k of at least 1 is `reading`; skipped with k equal to 0 is
+  `skipped`; any other stored entry (such as seen with nothing read) is `reading`. Only current chapter ids count, so a removed chapter is ignored and a renamed one is unread.
 - Saved state: `lib/primer-prefs.mjs`, key `oncall.primers`, never `oncall.progress`. Value
   `{"v":1,"acts":{"act-0":{"seen":true,"skipped":false,"read":["chapter-id"]}}}`, at most 50 acts and 50 read ids per act, all
   kebab ids, keys sorted. `readPrimers(getStorage)` gives `{status: 'fresh'|'ok'|'corrupt'|'future'|'unavailable', acts: Map}`

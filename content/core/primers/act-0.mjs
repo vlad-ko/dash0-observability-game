@@ -8,20 +8,20 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "You are the new on-call engineer. Before the first page, this act gives you the words the rest of the game uses: what observability is, what the four signals are, and why OpenTelemetry exists."
+      "text": "You are the new on-call engineer. Before the first page, this act gives you the words the rest of the game uses: what observability is, what the main signals are, and why OpenTelemetry exists."
     },
     {
       "type": "list",
       "items": [
-        "Monitoring watches for problems you already know about. Observability lets you ask new questions about a system you did not plan for.",
-        "The signals are metrics, logs, traces and profiles. Each answers a different kind of question.",
-        "OpenTelemetry is the shared, vendor neutral way to produce and send that telemetry."
+        "Observability is the ability to understand what is going on inside a system from its outputs, so you can ask questions about problems nobody predicted.",
+        "The main signals are traces, metrics and logs, with profiles emerging as a fourth. Each answers a different kind of question.",
+        "OpenTelemetry is the shared, vendor-neutral way to generate, collect and export that telemetry."
       ]
     },
     {
       "type": "callout",
       "tone": "tip",
-      "text": "Already know this? Choose the familiar option and go straight to the levels. You can reopen this primer from the act at any time."
+      "text": "Already know this? Skip the reading and go straight to the levels."
     }
   ],
   "chapters": [
@@ -31,19 +31,25 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Monitoring means collecting data and checking it against questions you thought of in advance, such as whether the CPU is busy or the error rate is above a line."
+          "text": "Observability is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analyzing telemetry data such as traces, metrics and logs."
         },
         {
           "type": "paragraph",
-          "text": "Observability is about how well you can understand what is happening inside a system from the data it gives out. With good telemetry you can ask a question nobody planned for, and still get an answer."
+          "text": "It lets you ask questions about a system without knowing its inner workings. It also helps you handle new problems, the \"unknown unknowns\", and answer the question \"Why is this happening?\""
         },
         {
           "type": "callout",
           "tone": "note",
-          "text": "The first level asks you to sort questions into the ones a dashboard was built for and the ones that need to be asked fresh."
+          "text": "The first level asks you to sort questions into known ones and new ones."
         }
       ],
       "sources": [
+        {
+          "kind": "otel",
+          "label": "OpenTelemetry: Observability primer",
+          "url": "https://opentelemetry.io/docs/concepts/observability-primer/",
+          "audience": "public"
+        },
         {
           "kind": "otel",
           "label": "OpenTelemetry: What is OpenTelemetry?",
@@ -58,20 +64,24 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A signal is a kind of telemetry. OpenTelemetry describes metrics, logs, traces and profiles, and each one answers a different question."
+          "text": "A signal is a kind of telemetry: a system output that describes what the operating system and applications are doing. Traces, metrics and logs are the main ones. Profiles are emerging as a fourth, and are still in Alpha in OpenTelemetry."
         },
         {
           "type": "list",
           "items": [
-            "Metrics: numbers over time, such as requests per second.",
-            "Logs: timestamped records of something that happened.",
-            "Traces: the path of one request through the services it touched.",
-            "Profiles: where a program spends its CPU time and memory."
+            "Traces: the path of a request through your application.",
+            "Metrics: a measurement captured at runtime.",
+            "Logs: a recording of an event.",
+            "Profiles: a recording of resource usage at the code level."
           ]
         },
         {
           "type": "paragraph",
-          "text": "The signals are most useful together. A metric tells you something is wrong, a trace shows where, and a log tells you why."
+          "text": "Each signal answers a different question. Traces: how does a request travel through a distributed system? Metrics: what is happening at the system level? Logs: what discrete events occurred? Profiles: which code is consuming resources?"
+        },
+        {
+          "type": "paragraph",
+          "text": "In Dash0, the Trace View shows a single trace with all its spans and their relationships."
         }
       ],
       "sources": [
@@ -82,8 +92,14 @@ export default {
           "audience": "public"
         },
         {
+          "kind": "otel",
+          "label": "OpenTelemetry: Profiles",
+          "url": "https://opentelemetry.io/docs/concepts/signals/profiles/",
+          "audience": "public"
+        },
+        {
           "kind": "docs",
-          "label": "Dash0 docs: Viewing traces",
+          "label": "Dash0 docs: Visualize the Full Trace",
           "url": "https://www.dash0.com/docs/dash0/telemetry/tracing/view",
           "audience": "public"
         }
@@ -95,11 +111,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "OpenTelemetry is an open source project with one set of APIs, SDKs, tools and conventions for generating, collecting and exporting telemetry. It is not a place to store or look at the data."
+          "text": "OpenTelemetry is an open source observability framework and toolkit for generating, collecting and exporting telemetry data such as traces, metrics and logs. Storing and visualizing that data is intentionally left to other tools."
         },
         {
           "type": "paragraph",
-          "text": "Because it is vendor neutral, you instrument your code once and can send the data to any backend that understands it, including Dash0."
+          "text": "It is vendor- and tool-agnostic, so it can be used with a broad variety of observability backends. It follows two principles: you own the data that you generate, and there is no vendor lock-in. You only have to learn a single set of APIs and conventions."
         }
       ],
       "sources": [

@@ -29,21 +29,19 @@ function duplicateKeys(json) {
 }
 
 /**
- * Parse a content file. `path` is a file path or URL. → `{value, errors}`: `value` is the parsed
- * object (undefined when the wrapper or the JSON is bad), `errors` lists every problem found.
+ * Parse a content file. `path` is a file path or URL. → `{value, comments, errors}`: `value` is the parsed
+ * object (undefined when the wrapper or the JSON is bad), `comments` the leading `//` lines, `errors` every problem found.
  */
 export function readJsonModule(path) {
-  const body = readFileSync(path, 'utf8')
-    .split('\n')
-    .filter((line) => !line.startsWith('//'))
-    .join('\n');
-  const m = /^\s*export default (\{[\s\S]*\});\s*$/.exec(body);
-  if (!m) return { value: undefined, errors: ['must be `export default {...};` after leading // lines'] };
+  // `//` lines are allowed only before `export default`; one anywhere else is inside the JSON and fails the parse.
+  const m = /^((?:\/\/[^\n]*\n)*)export default (\{[\s\S]*\});\s*$/.exec(readFileSync(path, 'utf8'));
+  if (!m) return { value: undefined, comments: [], errors: ['must be `// comment` lines, then `export default {...};`'] };
+  const comments = m[1].split('\n').filter(Boolean);
   let value;
   try {
-    value = JSON.parse(m[1]);
+    value = JSON.parse(m[2]);
   } catch (e) {
-    return { value: undefined, errors: [`not strict JSON: ${e.message}`] };
+    return { value: undefined, comments, errors: [`not strict JSON: ${e.message}`] };
   }
-  return { value, errors: duplicateKeys(m[1]) };
+  return { value, comments, errors: duplicateKeys(m[2]) };
 }
