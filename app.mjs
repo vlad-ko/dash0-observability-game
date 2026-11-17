@@ -22,6 +22,9 @@ import { freshlyLit, igniteView, litText } from './lib/globe-ignite.mjs';
 import { dotStates, globeCaption, globeLabel, globeLegend, globeLines, globeTarget } from './lib/globe-view.mjs';
 import { HELP_KEY, hideHelp, readHiddenHelp } from './lib/help-prefs.mjs';
 import { howToView } from './lib/how-to-play.mjs';
+import { buildPrimers, primerStatus, primerTile as tileOf, primerView as viewOf } from './lib/primer.mjs';
+import { PRIMER_KEY, readPrimers, recordPrimer } from './lib/primer-prefs.mjs';
+import { primerBodyHtml } from './lib/primer-view.mjs';
 import { createGuideClient } from './lib/guide/client.mjs';
 import { createAccountClient } from './lib/account/client.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
@@ -128,6 +131,7 @@ export const MODALS = Object.freeze([
   { id: 'board-modal', flag: 'boardOpen', close: 'closeBoard', overLevel: false, escape: 4, needsLevel: false },
   { id: 'account-modal', flag: 'accountOpen', close: 'closeAccount', overLevel: false, escape: 5, needsLevel: false },
   { id: 'about-modal', flag: 'aboutOpen', close: 'closeAbout', overLevel: false, escape: 2, needsLevel: false },
+  { id: 'primer-modal', flag: 'primerOpen', close: 'closePrimer', overLevel: false, escape: 7, needsLevel: false },
 ].map((m) => Object.freeze(m)));
 const ESCAPE_ORDER = Object.freeze([...MODALS].sort((a, b) => a.escape - b.escape));
 
@@ -152,6 +156,7 @@ const FOCUS_FRAMES = 10; // focusSoon waits at most this many frames for its tar
  * Storage), document, window?, deck?, globe? ((host, view) → Promise of a globe handle or
  * null; lib/globe-render.mjs mountGlobe in the browser), globeMap? ({ACT_REGIONS,
  * LEVEL_COUNTRY, COUNTRY_NAMES, actOf}), dots?, comingSoon? (acts shown but not playable, hub/coming-soon.mjs), now?, rand?, reduceMotion? (() → boolean), reportError?,
+ * primers? (the act primers, content/core/primers; none by default, main.mjs passes PRIMERS; an invalid one has no tile and is reported once),
  * fetch? (the page's fetch: asks GET /api/guide once at init whether the guide is on; without it there is no guide), telemetry? (lib/telemetry.mjs facade; completions emit a level.complete span), setTimeout?, clearTimeout?, debug? (boolean, ?mode=debug: every level opens, nothing is saved) }. Without `globe` the hub shows the globe's text fallback.
  */
 export function createGame(deps) {
@@ -176,6 +181,7 @@ export function createGame(deps) {
     // Is the element laid out (not display:none)? An environment with no layout API counts as rendered.
     rendered = (el) => typeof el.getClientRects !== 'function' || el.getClientRects().length > 0,
     debug = false,
+    primers = [],
     telemetry = null,
     play = null, // lib/play-telemetry.mjs (docs/GAME-EVENTS.md): the owner's play events, never the player's lab
     fetch: request = null,
@@ -228,6 +234,11 @@ export function createGame(deps) {
   // (or debug, which writes nothing) still hides the card for this visit.
   const seenHelp = new Set();
   const NO_HOW_TO = Object.freeze({ topics: Object.freeze([]) });
+  // Act primers (#389): built once, the valid ones by act; a broken one has no tile and is reported once. seenPrimers is the
+  // acts whose primer opened this visit (it pops by itself at most once), also when storage is blocked or in debug.
+  const primerBuild = buildPrimers(primers, registry);
+  if (primerBuild.errors.length > 0) report(new Error(`act primers: ${primerBuild.errors.join('; ')}`));
+  const seenPrimers = new Set();
 
   return {
     debug: debug === true,
@@ -279,6 +290,13 @@ export function createGame(deps) {
     helpRev: 0, // bumped when another tab changes the stored help choices (onStorage)
     howToNote: '', // the polite announcement of that flag
     howToKey: null, // the widget of the step on screen: the one guide the modal shows (#316)
+    primerOpen: false,
+    primerActId: null,
+    primerScreen: -1, // -1 the overview, 0..N-1 the chapters
+    primerThen: null, // the level to start when the player leaves the primer forward (set when a level opened it)
+    primerFrom: 'card', // who asked for that level: 'card' or 'continue'
+    primerOpener: null, // the selector focus goes back to on close
+    primerRev: 0, // bumped on every primer write and when another tab changes the stored primers (onStorage)
     rewardTitle: '',
     rewardText: '',
     rewardStars: null,
@@ -803,6 +821,8 @@ export function createGame(deps) {
       if (!this.acts.some((a) => a.id === id)) return false;
       const next = !this.actExpanded(id);
       this.actOverrides = { ...this.actOverrides, [id]: next };
+      // Opening an act the player has never opened a primer for shows its overview, once (never on a fold).
+      if (next && this.primerNew(id)) this.openPrimer(id, { opener: `#act-toggle-${id}` });
       return next;
     },
     // The About dialog: the game summary and one entry per act (live and coming soon), from act data.
@@ -899,6 +919,12 @@ export function createGame(deps) {
       if (this.dialogOpen()) return false;
       if (this.levelState(id) === 'locked') {
         if (Object.hasOwn(registry.levels, id)) this.nudge(id);
+        return false;
+      }
+      // The first level of an act with a primer the player has not met shows the primer instead; leaving it forward starts this level.
+      const actId = registry.levels[id]?.actId;
+      if (actId !== undefined && this.primerNew(actId)) {
+        this.openPrimer(actId, { then: id, from, opener: this.levelFocusTarget(id, from) });
         return false;
       }
       this.endSession();
@@ -1051,6 +1077,115 @@ export function createGame(deps) {
       this.howToNote = '';
       this.howToOpen = false;
       this.leaveHowTo();
+    },
+
+    // ---------- Act primer modal ----------
+    // A kit modal like How to play (outside .overlay, Tab trapped, hub inert, Escape closes, focus to the title and back to the
+    // opener) over the hub; it never gates a level. The body is drawn into #primer-body (x-ignore) by lib/primer-view.mjs.
+    primerFor(actId) {
+      return primerBuild.byAct[actId] ?? null;
+    },
+    // The act's saved entry; reads primerRev so Alpine re-renders the tile after a write here or in another tab.
+    primerStored(actId) {
+      void this.primerRev;
+      return readPrimers(storage).acts.get(actId);
+    },
+    // The hub tile for an act: {text, tone, isNew, label}, or null when the act has no (valid) primer.
+    primerTile(actId) {
+      const primer = this.primerFor(actId);
+      return primer === null ? null : tileOf(primerStatus(primer, this.primerStored(actId)));
+    },
+    // True when the primer should pop by itself: it exists, did not open this visit and nothing is stored for it, and no dialog is open.
+    primerNew(actId) {
+      const primer = this.primerFor(actId);
+      if (primer === null || seenPrimers.has(actId) || this.dialogOpen()) return false;
+      return primerStatus(primer, this.primerStored(actId)).status === 'new';
+    },
+    // Remember something about the primer: stored (never in debug), and the tile re-reads it.
+    markPrimer(actId, change) {
+      if (!this.debug) recordPrimer(storage, actId, change);
+      this.primerRev++;
+    },
+    // The screen on show (lib/primer.mjs primerView), or null when closed.
+    primerCurrent() {
+      const primer = this.primerFor(this.primerActId);
+      if (primer === null) return null;
+      const then = this.primerThen;
+      const thenName = then !== null ? registry.levels[then]?.name : undefined;
+      return viewOf(primer, this.primerScreen, { then: then ?? undefined, thenName });
+    },
+    primerTitle() {
+      return this.primerCurrent()?.title ?? 'Act primer';
+    },
+    primerNextLabel() {
+      return this.primerCurrent()?.next ?? 'Next';
+    },
+    // Draw the current screen into the modal body, scrolled to the top.
+    drawPrimer() {
+      const view = this.primerCurrent();
+      const body = doc.getElementById('primer-body');
+      if (view === null || !body) return;
+      body.innerHTML = primerBodyHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true });
+      body.scrollTop = 0;
+    },
+    showPrimerScreen(screen) {
+      this.primerScreen = screen;
+      this.drawPrimer();
+      this.focusSoon('#primer-title');
+    },
+    // Open an act's primer: from the tile, from toggling the act open, or in place of a level (`then`: the level to start after it).
+    // Refused when a dialog is open or the act has none.
+    openPrimer(actId, { then = null, from = 'card', opener = `#primer-open-${actId}` } = {}) {
+      if (this.dialogOpen() || this.primerFor(actId) === null) return false;
+      seenPrimers.add(actId);
+      this.markPrimer(actId, { seen: true });
+      this.primerActId = actId;
+      this.primerThen = then;
+      this.primerFrom = from;
+      this.primerOpener = opener;
+      this.primerOpen = true;
+      this.showPrimerScreen(-1);
+      return true;
+    },
+    // Close, and start the pending level (if any); otherwise focus goes back to the opener.
+    leavePrimer() {
+      const then = this.primerThen;
+      const from = this.primerFrom;
+      const opener = this.primerOpener;
+      this.primerOpen = false;
+      this.primerThen = null;
+      if (then !== null && this.openLevel(then, from)) return;
+      if (opener) this.focusSoon(opener);
+    },
+    // "I am already familiar with the topic": noted as skipped, then the level.
+    primerFamiliar() {
+      if (!this.primerOpen || this.primerScreen !== -1) return;
+      this.markPrimer(this.primerActId, { skipped: true });
+      this.leavePrimer();
+    },
+    primerProceed() {
+      if (!this.primerOpen || this.primerScreen !== -1) return;
+      this.showPrimerScreen(0);
+    },
+    // Next marks the chapter on screen read (leaving it, not entering it); the last one leaves the primer.
+    primerNext() {
+      const view = this.primerCurrent();
+      if (!this.primerOpen || view === null || view.screen < 0) return;
+      this.markPrimer(this.primerActId, { read: [view.id] });
+      if (this.primerScreen >= this.primerFor(this.primerActId).chapters.length - 1) this.leavePrimer();
+      else this.showPrimerScreen(this.primerScreen + 1);
+    },
+    // Back records nothing; from the first chapter it returns to the overview.
+    primerBack() {
+      if (!this.primerOpen || this.primerScreen < 0) return;
+      this.showPrimerScreen(this.primerScreen - 1);
+    },
+    // The close button and Escape: the pending level is dropped, focus returns to the opener.
+    closePrimer() {
+      if (!this.primerOpen) return;
+      this.primerOpen = false;
+      this.primerThen = null;
+      if (this.primerOpener) this.focusSoon(this.primerOpener);
     },
 
     // Abort the open level (its timers stop, a stale finish is a no-op) and clear its DOM.
@@ -1211,6 +1346,7 @@ export function createGame(deps) {
         this.helpRev++;
         if (!this.howToFlagged()) this.howToNote = '';
       }
+      if (e && (e.key === PRIMER_KEY || e.key === null)) this.primerRev++;
       if (e && e.key !== STORAGE_KEY && e.key !== null) return;
       const { status, progress: other } = loadProgress(storage, registry);
       if (status === 'future') this.notice = 'future';
@@ -1274,9 +1410,12 @@ export function createGame(deps) {
     // Where focus goes when the level closes: Continue if it opened the level and is still shown, else the card
     // (its act's toggle when the act is folded and the card hidden).
     returnTarget() {
-      const id = this.currentLevelId;
+      return this.levelFocusTarget(this.currentLevelId, this.openedFrom);
+    },
+    // The hub control that opened level `id` (`from` is 'card' or 'continue'): where focus goes back to.
+    levelFocusTarget(id, from) {
       if (!id) return null;
-      if (this.openedFrom === 'continue' && this.continueLabel() !== '') return '#hub-continue';
+      if (from === 'continue' && this.continueLabel() !== '') return '#hub-continue';
       const actId = registry.levels[id]?.actId;
       if (actId !== undefined && !this.actExpanded(actId)) return `#act-toggle-${actId}`; // the card is hidden in a folded act
       return `[data-level-id="${id}"]`;

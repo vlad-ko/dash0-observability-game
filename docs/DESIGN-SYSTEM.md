@@ -96,6 +96,8 @@ States are attributes, never extra classes: `aria-pressed` (selected; `data-pick
 `wrong`, `locked`, `opened`), `data-hinted`, `data-tone`, `disabled`, `hidden`. Hover, focus and
 disabled each have one rule in `kit.css`; besides it, a disabled toggle option, and a disabled choice option with no `data-state`, fades (its only cue), except a `drop` target, which goes muted and transparent instead, while an answered choice card (it has a `data-state`) stays legible. A `hidden` option is removed from the layout (`.ui-option[hidden]` is `display: none`): a multiple-choice 50/50 (#371) hides and disables two wrong answers.
 
+**Links in prose (#389).** `prose()` content may hold a classless `<a href target="_blank" rel="noopener noreferrer">`; `.ui-prose a` draws it in text colour with an accent underline (no hue-only cue). The act primer's links sit in a `<p>` or `<li>` with a `chip` for the kind and, for a Dash0-internal one, an attention chip "Dash0 team only". The hub's act primer tile (`.act-primer`, `styles/hub.css`) is hub chrome, not a kit component: a 44px button above an act's levels carrying a kit chip with the status.
+
 ## Layout
 
 `.ui-step` caps a step at `--layout-narrow` (760px, start-aligned, so it shares the wide step's left edge); `.ui-step--wide` at `--layout-wide`
@@ -107,7 +109,7 @@ conditions. Kit text inside a clipping container (`overflow: hidden`) must be ab
 
 ## Modal
 
-One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`) and Feedback (`#feedback-modal`; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws)
+One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`), Feedback (`#feedback-modal`) and the act primer (`#primer-modal`, #389; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws, the primer one `lib/primer-view.mjs` draws from kit helpers only, its foot is static Alpine: "I am already familiar with the topic" (ghost) and "Proceed with learning" (primary) on the overview, Back and Next on a chapter)
 (#282, owner direction 2026-11-08; D5 sign-off from the PR screenshots). Its markup is static in
 `index.html` (the one place that writes `ui-` classes by hand, like the buttons), because Alpine opens
 it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:

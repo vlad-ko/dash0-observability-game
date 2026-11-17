@@ -14,7 +14,7 @@ import { buildRegistry } from '../lib/registry.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
 
-const FLAGS = ['feedbackOpen', 'howToOpen', 'saveOpen', 'boardOpen', 'accountOpen', 'aboutOpen', 'overlayOpen', 'rewardOpen'];
+const FLAGS = ['feedbackOpen', 'howToOpen', 'saveOpen', 'boardOpen', 'accountOpen', 'aboutOpen', 'primerOpen', 'overlayOpen', 'rewardOpen'];
 
 function build() {
   const dom = makeDom(html);
@@ -30,9 +30,9 @@ function build() {
 // The oracle: the rules as they were written site by site before the table.
 const oracle = {
   selector: (f) => (f.feedbackOpen ? '#feedback-modal' : f.howToOpen ? '#howto-modal' : f.saveOpen ? '#save-modal'
-    : f.boardOpen ? '#board-modal' : f.accountOpen ? '#account-modal' : f.aboutOpen ? '#about-modal' : null),
-  scrollLocked: (f) => f.howToOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.feedbackOpen,
-  dialogOpen: (f) => f.overlayOpen || f.rewardOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen,
+    : f.boardOpen ? '#board-modal' : f.accountOpen ? '#account-modal' : f.aboutOpen ? '#about-modal' : f.primerOpen ? '#primer-modal' : null),
+  scrollLocked: (f) => f.howToOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.feedbackOpen || f.primerOpen,
+  dialogOpen: (f) => f.overlayOpen || f.rewardOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.primerOpen,
   overlayInert: (f) => f.howToOpen || f.feedbackOpen,
   escape: (f, typing) => {
     if (f.rewardOpen) return 'closeReward';
@@ -41,6 +41,8 @@ const oracle = {
     if (f.saveOpen) return 'closeSave';
     if (f.boardOpen) return 'closeBoard';
     if (f.accountOpen) return 'closeAccount';
+    if (f.howToOpen && f.overlayOpen) return 'closeHowTo';
+    if (f.primerOpen) return 'closePrimer';
     if (!f.overlayOpen) return null;
     if (f.howToOpen) return 'closeHowTo';
     return typing ? null : 'closeOverlay';
@@ -49,7 +51,7 @@ const oracle = {
 
 test('over every combination of the modal flags the table answers what the hand-written rules did', () => {
   const { game, dom } = build();
-  const CLOSERS = ['closeReward', 'closeFeedback', 'closeAbout', 'closeSave', 'closeBoard', 'closeAccount', 'closeHowTo', 'closeOverlay'];
+  const CLOSERS = ['closeReward', 'closeFeedback', 'closeAbout', 'closeSave', 'closeBoard', 'closeAccount', 'closeHowTo', 'closePrimer', 'closeOverlay'];
   const input = dom.document.createElement('textarea');
   for (let bits = 0; bits < 1 << FLAGS.length; bits++) {
     const f = Object.fromEntries(FLAGS.map((k, i) => [k, Boolean(bits & (1 << i))]));
