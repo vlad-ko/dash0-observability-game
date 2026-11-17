@@ -1,5 +1,5 @@
 // Level 5.5: OTTL and transforms. The player says how a rename is written in OTTL (a set then a
-// delete_key), spots the statements that would still let a customer email leave on a span, wires a
+// delete_key; the transform README's "Rename attribute" section lists a second way, replace_all_patterns(..., "key", ...)), spots the statements that would still let a customer email leave on a span, wires a
 // transform processor that redacts it into the traces and the logs pipeline so the Collector starts,
 // and says why a Dash0 spam filter is not the way to redact: it drops whole points at ingestion.
 // Spec: docs/OUTLINE.md §4 Act 5.
@@ -31,7 +31,7 @@ const RENAME = [
     key: 'set-then-delete',
     label: 'Two statements, in this order: <code>set</code> the new key from the old one, then <code>delete_key</code> the old key',
     right: true,
-    why: 'The OTTL function list has no rename function, so a rename is a copy followed by a delete. The statements run in the order they are listed, so the copy has to come first.',
+    why: 'The OTTL function list has no rename function, so this way of renaming is a copy followed by a delete. The statements run in the order they are listed, so the copy has to come first. The transform processor README shows a second way, one <code>replace_all_patterns</code> statement on the <code>"key"</code>, but only the set and delete pair is on offer here.',
   },
   {
     key: 'delete-then-set',

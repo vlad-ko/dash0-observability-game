@@ -6,6 +6,7 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram , https://opentelemetry.io/docs/specs/otel/metrics/sdk/#explicit-bucket-histogram-aggregation
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#histograms , https://prometheus.io/docs/practices/histograms/ , https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile
 // Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/metrics/about-metrics , https://www.dash0.com/docs/dash0/telemetry/metrics/query-metrics
+// Docs (Step 4 copy: OTel attribute names written with underscores in PromQL, `service.name` as `service_name`; the practice labels `service` and `route` are the game's own): https://www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation
 
 // Step 1. `why` follows "Right." or "Not quite.".
 const KIND = [
@@ -121,7 +122,8 @@ export default {
       {
         intro:
           'In Dash0 you write the same PromQL in the Metric Explorer, and a dashboard panel keeps the query. ' +
-          'The team wants one p95 line per service on a panel.',
+          'The team wants one p95 line per service on a panel. The label names in this data, such as <code>service</code> and <code>route</code>, are Kettle &amp; Co\'s own; ' +
+          'in Dash0 the OpenTelemetry attributes arrive as <code>service_name</code> and <code>http_route</code>.',
         question: 'Write the p95 duration per service for the last 5 minutes.',
         qid: 'hist-q-p95',
         query: {

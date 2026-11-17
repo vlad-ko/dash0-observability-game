@@ -12,7 +12,7 @@
 // Spec: https://www.dash0.com/docs/dash0/telemetry/tracing/about-tracing , https://www.dash0.com/docs/dash0/telemetry/tracing/view , https://www.dash0.com/docs/dash0/telemetry/tracing/span-sidebar
 // Spec: https://www.dash0.com/docs/dash0/telemetry/tracing/span-events , https://www.dash0.com/docs/dash0/miscellaneous/glossary/filtering
 // Dash0 docs: the Trace Explorer has a Filter (pick a key, an operator and a value), a Time Picker and a
-// Span Table; the Trace View shows one trace as a Waterfall ("Visualize the full trace"); selecting a span
+// Span Table; the Trace View shows one trace as a Waterfall (the Span Sidebar's "View full trace" button opens it); selecting a span
 // opens the Span Sidebar with its Attributes and its span events (telemetry/tracing/*, glossary/filtering).
 // Not on a Dash0 page, so marked VERIFY (#195) below: that a session.id attribute set by the sender is
 // filterable as a key.
@@ -439,7 +439,7 @@ export default {
             // VERIFY (#195): that a session.id span attribute set by the sender is offered as a filter key.
             `<li>Add a filter: the key <code>${e(SESSION_ATTR)}</code>, the operator <b>is</b>, and your session id <code id="its-session">${e(tele.sessionId)}</code> as the value. ` +
             'If nothing matches, widen the Time Picker.</li>' +
-            '<li>Open the trace and choose Visualize the full trace. The Waterfall lists its spans; one is in error.</li>' +
+            '<li>Open the trace and choose View full trace. The Waterfall lists its spans; one is in error.</li>' +
             '<li>Choose that span. The Span Sidebar shows its attributes, and its span events.</li>' +
             '</ol>',
         );

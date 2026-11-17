@@ -5,6 +5,7 @@
 // Spec: docs/OUTLINE.md §4 Act 3.
 // Spec: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality , https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums-delta-to-cumulative
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#sums , https://opentelemetry.io/docs/collector/components/processor/
+// Docs (Dash0 step: delta histograms are queried as native histograms, not through _bucket/_sum/_count): https://www.dash0.com/docs/dash0/telemetry/metrics/common-metric-query-issues
 
 // Step 1. Lines read `name{labels}`; the debug view adds the temporality of Sum and Histogram
 // series. A Gauge has none. `whyNot` is shown for a picked line that needs no conversion.
@@ -91,7 +92,7 @@ const DASH0 = [
     key: 'both',
     label: 'No: Dash0 accepts both temporalities, and you query with PromQL',
     right: true,
-    why: 'Dash0 takes delta and cumulative series, and you query metrics with PromQL. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL.',
+    why: 'Dash0 takes delta and cumulative series, and you query metrics with PromQL. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram.',
   },
   {
     key: 'processor',

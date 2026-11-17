@@ -704,7 +704,7 @@ test('live: Dash0 instructions name the filter and where to read the span, witho
   const t = h.text();
   assert.ok(t.includes('session.id'));
   assert.ok(t.includes('Trace Explorer'));
-  assert.ok(t.includes('Time Picker') && t.includes('Visualize the full trace'), 'the names Dash0 uses');
+  assert.ok(t.includes('Time Picker') && t.includes('View full trace'), 'the names Dash0 uses');
   assert.doesNotMatch(t, /Related Logs|time picker/, 'a tab the docs do not name, and the old spelling');
 });
 
