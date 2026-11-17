@@ -30,6 +30,10 @@
 // error and 30% of the rest), the times, the services, the deploy and the provider incident. The table is arranged so the title is
 // true: 40 of 1,000 is 4.0%, 40 of 328 is 12.2%, about 3x. With errors all kept and only 10% of the rest, the same arithmetic gives
 // about 7x for a 4% error rate; 30% is what makes it 3x. Counting one request as one span of the entry service is a simplification.
+//
+// The words are in content/core/levels/errors-tripled.mjs (docs/CONTENT.md); this file keeps the figures, the answers and the wiring.
+import CORE from '../content/core/levels/errors-tripled.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 
 const REQUESTS = 1000; // a second, at the load balancer, before and after
 const ERRORS = 40; // a second, before and after
@@ -44,177 +48,47 @@ const pct = (x) => `${((x * 100)).toFixed(1)}%`;
 const BEFORE = pct(ERRORS / REQUESTS);
 const AFTER = pct(ERRORS / KEPT);
 
-const SCENARIO = {
-  id: 'errors-tripled',
-  alert: {
-    title: 'Error ratio tripled overnight',
-    html:
-      `<p>PAGE 07:30: the checkout error ratio is ${AFTER}, up from ${BEFORE} yesterday: it tripled overnight, since 02:05. ` +
-      'The alert names no cause. Find it before the error budget runs out.</p>',
-  },
-  budget: { startPct: 100, burnPctPerMin: 6 },
-  views: [
-    {
-      id: 'rate-vs-lb',
-      label: 'Request rate: load balancer and span metrics',
-      costMin: 3,
-      kind: 'clue',
-      html:
-        '<p>Requests a second, at 01:00 and at 06:00:</p>' +
-        '<table><caption>Requests a second</caption>' +
-        '<thead><tr><th scope="col">Source</th><th scope="col">01:00</th><th scope="col">06:00</th></tr></thead>' +
-        '<tbody>' +
-        `<tr><td>Load balancer</td><td>${n(REQUESTS)}</td><td>${n(REQUESTS)}</td></tr>` +
-        `<tr><td>Span metrics (<code>traces.span.metrics.calls</code>)</td><td>${n(REQUESTS)}</td><td>${n(KEPT)}</td></tr>` +
-        '</tbody></table>' +
-        `<p>The load balancer is flat, and the span-metric rate fell ${DROP}% at 02:05.</p>`,
-    },
-    {
-      id: 'error-count',
-      label: 'Error count and error ratio',
-      costMin: 3,
-      kind: 'clue',
-      html:
-        '<p>Failed requests a second (span metrics, <code>status.code</code> Error), and the ratio, at 01:00 and at 06:00:</p>' +
-        '<table><caption>Errors</caption>' +
-        '<thead><tr><th scope="col">Measure</th><th scope="col">01:00</th><th scope="col">06:00</th></tr></thead>' +
-        '<tbody>' +
-        `<tr><td>Failed requests a second</td><td>${ERRORS}</td><td>${ERRORS}</td></tr>` +
-        `<tr><td>Error ratio</td><td>${BEFORE}</td><td>${AFTER}</td></tr>` +
-        '</tbody></table>' +
-        '<p>The error count did not move; only the ratio did.</p>',
-    },
-    {
-      id: 'collector-diff',
-      label: 'Collector config change',
-      costMin: 3,
-      kind: 'clue',
-      html:
-        '<p>Gateway Collector config, applied at 02:04:</p>' +
-        '<pre><code>   receivers:\n' +
-        '     otlp:\n' +
-        '       protocols:\n' +
-        '         grpc:\n' +
-        '   processors:\n' +
-        '     memory_limiter: {check_interval: 1s, limit_mib: 400, spike_limit_mib: 100}\n' +
-        '     batch:\n' +
-        '+    tail_sampling:\n' +
-        '+      policies:\n' +
-        '+        - {name: errors, type: status_code, status_code: {status_codes: [ERROR]}}\n' +
-        `+        - {name: rest, type: probabilistic, probabilistic: {sampling_percentage: ${KEEP_PCT}}}\n` +
-        '   exporters:\n' +
-        '     otlp_grpc/dash0:\n' +
-        '       endpoint: ${env:DASH0_ENDPOINT}\n' +
-        '   connectors:\n' +
-        '     span_metrics:\n' +
-        '   service:\n' +
-        '     pipelines:\n' +
-        '       traces:\n' +
-        '         receivers: [otlp]\n' +
-        '-        processors: [memory_limiter, batch]\n' +
-        '+        processors: [memory_limiter, tail_sampling, batch]\n' +
-        '         exporters: [otlp_grpc/dash0, span_metrics]\n' +
-        '       metrics/spans:\n' +
-        '         receivers: [span_metrics]\n' +
-        '         processors: [batch]\n' +
-        '         exporters: [otlp_grpc/dash0]</code></pre>',
-    },
-    {
-      id: 'collector-health',
-      label: 'Gateway Collector health',
-      costMin: 3,
-      kind: 'neutral',
-      html: '<p>The one gateway pod is Ready, with no restarts in 24 hours and memory at 38% of the limit. The Collector is healthy.</p>',
-    },
-    {
-      id: 'backend-ingest',
-      label: 'Ingestion at the backend',
-      costMin: 3,
-      kind: 'neutral',
-      html: '<p>The backend shows no rejected requests and no errors. It accepts everything the gateway sends.</p>',
-    },
-    {
-      id: 'payments-deploy',
-      label: 'Payments deploys',
-      costMin: 3,
-      kind: 'herring',
-      html: '<p><code>payments</code> v2.14 was deployed at 02:20. The error ratio had already jumped at 02:05.</p>',
-    },
-    {
-      id: 'provider-blip',
-      label: 'Payment provider status',
-      costMin: 4,
-      kind: 'herring',
-      html:
-        `<p>The provider reported an incident from 03:30 to 03:40: failed requests rose to ${BLIP} a second and were back to ${ERRORS} by 03:45. ` +
-        `The ratio at 03:00 was already ${AFTER}.</p>`,
-    },
-  ],
-  hypotheses: [
-    {
-      id: 'metrics-after-sampling',
-      label: 'The <code>span_metrics</code> connector counts after sampling and skews the checkout ratio',
-      right: true,
-      why:
-        `The change at 02:04 put <code>tail_sampling</code> in the pipeline that feeds <code>span_metrics</code>. Its policies keep all ${ERRORS} errors a second and ${KEEP_PCT}% of the other ${n(HEALTHY)}, ` +
-        `so the connector counts ${KEPT} of ${n(REQUESTS)} requests: the rate falls ${DROP}%, the ratio is ${ERRORS} / ${KEPT} = ${AFTER}, and the load balancer, which sees all ${n(REQUESTS)}, has not moved. ` +
-        `The sampler drops ${100 - KEEP_PCT}% of the healthy traces.`,
-    },
-    {
-      id: 'payments-regression',
-      label: 'The payments deploy added errors to checkout requests overnight',
-      right: false,
-      why: `The error count is ${ERRORS} a second before and after, and the deploy was at 02:20, fifteen minutes after the ratio moved.`,
-    },
-    {
-      id: 'traffic-fell',
-      label: 'Real traffic fell by two thirds overnight and the dashboard shows it',
-      right: false,
-      why: `The load balancer shows ${n(REQUESTS)} requests a second, flat. Only the span-metric rate fell.`,
-    },
-    {
-      id: 'provider-failing',
-      label: 'The payment provider is failing more checkout calls, raising the <code>status.code</code> Error count',
-      right: false,
-      why: `Its incident ended at 03:40 and the ratio did not come down. The error count is ${ERRORS} a second before and after.`,
-    },
-  ],
-  answerAfterViews: 3,
-  hint:
-    '<p>A ratio has two parts. Check which of them moved, and compare the one that moved against a number measured somewhere else.</p>',
+// The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
+const VARS = {
+  after: AFTER,
+  before: BEFORE,
+  requests: n(REQUESTS),
+  kept: KEPT,
+  drop: DROP,
+  errors: ERRORS,
+  'keep-pct': KEEP_PCT,
+  blip: BLIP,
+  healthy: n(HEALTHY),
+  'drop-pct': 100 - KEEP_PCT,
 };
 
-// Step 2: why the ratio moved when the count did not. `why` follows "Right." or "Not quite.".
-const RULE = [
-  {
-    key: 'counted-after-sampling',
-    label:
-      `The <code>span_metrics</code> connector counts what <code>tail_sampling</code> keeps: all ${ERRORS} errors but ${KEPT} of ${n(REQUESTS)} requests, ` +
-      `so the ratio is ${ERRORS} / ${KEPT} = ${AFTER}, not ${ERRORS} / ${n(REQUESTS)} = ${BEFORE}`,
-    right: true,
-    why: 'The numerator is complete and the denominator is not, so the ratio is biased up. Compute span metrics before sampling, in a pipeline with no sampling processor.',
-  },
-  {
-    key: 'uniform-sampling',
-    label: `Sampling ${KEEP_PCT}% of traces thins errors and requests alike, so the <code>span_metrics</code> ratio is unchanged and ${AFTER} is a dashboard fault, not a real change`,
-    why:
-      `That is true of a sampler that keeps the same share of both, like the head sampler in 6.1: ${KEEP_PCT}% of ${ERRORS} over ${KEEP_PCT}% of ${n(REQUESTS)} is still ${BEFORE}. ` +
-      `This policy keeps every error and ${KEEP_PCT}% of the rest, so the shares differ, and the dashboard shows what the connector counted.`,
-  },
-  {
-    key: 'errors-undercounted',
-    label: `The error count is flat because <code>tail_sampling</code> keeps only ${KEEP_PCT}% of errors, so the real count is higher and the ratio on the dashboard is wrong too`,
-    why: `The <code>status_code</code> policy keeps every error, so the ${ERRORS} a second is the full count. It is the requests that are missing from the count.`,
-  },
-];
+// Step 1's scenario without its words. The kind of each view and what it costs are logic; the alert, the views' pages and the
+// hypotheses' text are in the content file.
+const SCENARIO = {
+  id: 'errors-tripled',
+  budget: { startPct: 100, burnPctPerMin: 6 },
+  views: [
+    { id: 'rate-vs-lb', costMin: 3, kind: 'clue' },
+    { id: 'error-count', costMin: 3, kind: 'clue' },
+    { id: 'collector-diff', costMin: 3, kind: 'clue' },
+    { id: 'collector-health', costMin: 3, kind: 'neutral' },
+    { id: 'backend-ingest', costMin: 3, kind: 'neutral' },
+    { id: 'payments-deploy', costMin: 3, kind: 'herring' },
+    { id: 'provider-blip', costMin: 4, kind: 'herring' },
+  ],
+  hypotheses: [
+    { id: 'metrics-after-sampling', right: true },
+    { id: 'payments-regression', right: false },
+    { id: 'traffic-fell', right: false },
+    { id: 'provider-failing', right: false },
+  ],
+  answerAfterViews: 3,
+};
 
-export default {
+const SKELETON = {
   id: 'errors-tripled',
   no: null,
-  name: 'Errors tripled overnight',
-  sub: 'The ratio moved, the errors did not',
   icon: '\u{1F4C8}',
-  rewardTitle: 'Honest denominator',
   cards: [],
   lights: ['collector'],
   scored: true,
@@ -222,19 +96,19 @@ export default {
   play: {
     prefix: 'eto',
     steps: [
+      { incident: SCENARIO },
       {
-        intro: `The checkout dashboard shows the error ratio at ${AFTER}, three times yesterday's ${BEFORE}, and the load balancer's request rate is flat. Start with the numbers, then find what changed.`,
-        incident: SCENARIO,
-      },
-      {
-        intro: 'The incident is explained. In the review, someone asks how the ratio can triple when the error count did not move.',
-        question: 'Why did the ratio move?',
         qid: 'eto-q-ratio',
-        choice: { id: 'eto-ratio', choices: RULE },
+        // Step 2: why the ratio moved when the count did not. Only the answer is marked; every choice's text is in the content file.
+        choice: { id: 'eto-ratio', choices: [{ key: 'counted-after-sampling', right: true }] },
       },
     ],
-    finish:
-      'The ratio tripled while the error count and the load balancer did not move: a tail_sampling processor sat ahead of the span_metrics connector. ' +
-      'A sampler that keeps every error and a share of the rest leaves the numerator complete and the denominator small, so compute span metrics before sampling.',
   },
 };
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+export default withText(CORE);
