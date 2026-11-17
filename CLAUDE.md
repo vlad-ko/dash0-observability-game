@@ -33,6 +33,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
 - `docs/FOUNDATION.md`: authoritative for M0 (data contracts, invariants, files per
   phase, the RED test spec, CSP). Read it before changing any foundation file.
 - `docs/OUTLINE.md` (game and curriculum), `docs/GLOSSARY.md`, `README.md`.
+- docs/CHANGING-A-LEVEL.md: changing a level's content and getting it merged.
 - docs/DESIGN-SYSTEM.md: the UI kit. Build markup with lib/ui/*.mjs helpers (only they emit ui- classes); colours only from styles/tokens.css (the game is dark only, no light theme); never restyle a kit class from a widget stylesheet (test/design-system.test.mjs enforces).
 
 ## Conventions
