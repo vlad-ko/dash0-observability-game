@@ -152,7 +152,7 @@ test('the swirl gets ctx.reduceMotion, and a swirl that throws leaves the card s
   });
   side.succeed({ line: 'y', closing: '' });
   assert.equal(q('#s2-win').hidden, false);
-  assert.equal(q('#s2-hint-tier').textContent, 'No hints on this level.');
+  assert.equal(q('#s2-hint-tier').textContent, 'No hints on this step.');
   assert.equal(qa('#s2-hint').length, 0);
 });
 

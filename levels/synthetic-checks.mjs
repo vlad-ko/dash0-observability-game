@@ -155,6 +155,7 @@ const ALERT = [
   },
   {
     key: 'health-check',
+    keep: true, // the tempting near-miss: the 50/50 never removes it (#371)
     label: 'A load balancer health check to the pods every 10 seconds',
     why: 'The check goes from the load balancer to each pod inside the network, so it never meets the certificate on the public hostname, and every pod answers healthy. It measures whether pods respond, not whether visitors can connect.',
   },

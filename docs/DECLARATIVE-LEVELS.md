@@ -23,7 +23,7 @@ Evidence:
 - **Cards:** listed on the level and again in `finish`, always the same list. Examples: `auto-vs-manual.mjs:114` and `:191`; `status-and-errors.mjs` (`cards` and `finish`); `span-kinds.mjs:147` and `:339`; `the-pager.mjs:53` and `:96`; `checkout-is-slow.mjs:153` and `:172`.
 - **`mechanics`:** written by hand, and always equal to the non-choice widgets the level uses. No UI reads it; the only reader is `lib/registry.mjs`.
 - **`widgets`** (#199, for the how-to-play help): the widgets a level plays, `choice` included, in play order. Run levels declare it by hand (absent means none, so no help card), and every non-choice entry must be in `mechanics`. It is not the same list as `mechanics`: `the-pager` lists `incident` in `mechanics` but declares no `widgets` (no help card), and `naming-your-service` declares `configure` but uses the env checker.
-- **`hintless`** (#199): the widgets of the level with no Hint button on any step. A play level derives it from its steps (`hints(spec)` of each step type, which mirrors its mount; choice and tradeoff never have hints and are never listed). A run level declares it by hand, as a unique subset of its `widgets` (absent means none); `test/live-registry.test.mjs` pins it for every live level.
+- **`hintless`** (#199): the widgets of the level with no Hint button on any step. A play level derives it from its steps (`hints(spec)` of each step type, which mirrors its mount; choice has no Hint button and tradeoff has none, so neither is listed; a choice's 50/50 is not a Hint button). A run level declares it by hand, as a unique subset of its `widgets` (absent means none); `test/live-registry.test.mjs` pins it for every live level.
 
 **Bespoke:**
 
@@ -61,7 +61,7 @@ A level file keeps today's metadata (FOUNDATION §2.1) and declares `play` inste
 
 | Key | Spec | Mechanic | Status |
 |---|---|---|---|
-| `choice` | `{id, choices: [{key, label, why, right?}]}`, at least 2 choices | none | live (`choiceHtml`/`mountChoice`) |
+| `choice` | `{id, choices: [{key, label, why, right?, keep?}]}`, at least 2 choices; `keep` is an optional boolean, never on the right answer: the 50/50 never removes that answer (use it on the one tempting near-miss), and a question with fewer than two other wrong answers to remove has its 50/50 disabled | none; with 4 or more choices a 50/50 joker (#371) removes two wrong answers and costs one penalty (it counts as a hint) | live (`choiceHtml`/`mountChoice`) |
 | `sort` | SortSpec (M1-DESIGN §4.1) | sort | live |
 | `build` | BuildSpec (§4.2); `edit` is a list of span fields (`parent`, `kind`, `status`, `links`) or exactly `['logs']` (logs mode: attach each record of `logs` to a span or to none; spans are read-only) | build | live |
 | `incident` | Scenario (§4.3) | incident | live |

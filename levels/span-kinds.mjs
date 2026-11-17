@@ -100,6 +100,7 @@ const FIX = [
   },
   {
     key: 'provider',
+    keep: true, // the tempting near-miss: the 50/50 never removes it (#371)
     label: `Set <code>POST provider/charges</code> to SERVER${preview(FIX_CHANGES.provider)}`,
     why: 'That clears the alert but fixes the wrong span. It is payments\' own call out to the card provider, a CLIENT call, and its parent is a payments span, so it pairs with nothing and the checkout → payments edge stays missing.' + mapAfter(FIX_CHANGES.provider),
   },

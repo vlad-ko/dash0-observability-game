@@ -132,7 +132,7 @@ test('renderSpot: hints off (and no helps key) has no Hint button, the tier line
   for (const spec of [fixture(), { ...fixture(), helps: { hints: false } }]) {
     setup(spec);
     assert.equal(qa('[id="bomb-hint"]').length, 0, JSON.stringify(spec.helps));
-    assert.equal(text('#bomb-hint-tier'), 'No hints on this level.');
+    assert.equal(text('#bomb-hint-tier'), 'No hints on this step.');
     assert.equal(text('#bomb-helps'), 'Helps: Hints off');
   }
   setup(withHints());

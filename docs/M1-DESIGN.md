@@ -76,6 +76,7 @@ mount helpers touch only `ctx.ovBody`/`ctx.ovActions`.
 - `mountChoice(ctx, choices, {id, onRight})`: `TypeError` unless exactly one `right`. Wrong pick
   → `mistake()`, class `wrong`, disable, text `Not quite. <why>`, focus next enabled (wrapping)
   or feedback. Right → class `correct`, disable all, `Right. <why>`, focus `onRight()`'s return.
+- The 50/50 joker (#371) and the per-choice `keep` flag are not described here: see docs/DECLARATIVE-LEVELS.md (Choice row) and docs/DESIGN-SYSTEM.md.
 - 1.2 uses `id: 'nys'` so `#nys-feedback` is unchanged.
 
 ### 4.1 Sort it (P2)

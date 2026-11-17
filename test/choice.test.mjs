@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { recordFocus } from './helpers/focus.mjs';
 import { escapeHtml } from '../lib/lesson-kit.mjs';
-import { choiceHtml, mountChoice, validateChoiceSpec } from '../lib/widgets/choice.mjs';
+import { choiceHtml, mountChoice, PENALTY, validateChoiceSpec } from '../lib/widgets/choice.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import nys from '../levels/naming-your-service.mjs';
 
@@ -359,4 +359,181 @@ test('#331 a new step opens at its top: mount focuses the first choice without s
   }
   mountChoice(ctx, CHOICES, { id: 'q1', onRight });
   assert.deepEqual(calls, [['d', { preventScroll: true }]]);
+});
+
+// ---- the 50/50 joker (#371) ----------------------------------------------------------------
+
+/** setup() with a ctx that also counts hint() (the cost of a 50/50) and a status line to read. */
+function setupFifty(choices = CHOICES) {
+  const s = setup(choices);
+  s.counts.hints = 0;
+  s.ctx.hint = () => {
+    s.counts.hints += 1;
+  };
+  return s;
+}
+const hidden = () => qa('[data-pick]').filter((b) => b.hidden).map((b) => b.dataset.pick);
+const visible = () => qa('[data-pick]').filter((b) => !b.hidden).map((b) => b.dataset.pick);
+const fifty = () => q('#q1-fifty');
+const FIVE = [...CHOICES, { key: 'e', label: 'Echo', why: 'e is not it.' }];
+const SIX = [...FIVE, { key: 'f', label: 'Foxtrot', why: 'f is not it.' }];
+
+test('B1 #371 a question with four or more answers offers one 50/50 button; fewer offer none', () => {
+  setupFifty();
+  assert.equal(qa('#q1-fifty').length, 1);
+  assert.equal(fifty().disabled, false);
+  assert.equal(fifty().classList.contains('ui-btn--hint'), true);
+  assert.equal(fifty().textContent, 'Use 50/50 (costs 1 penalty)');
+  setupFifty(CHOICES.filter((c) => c.key !== 'd'));
+  assert.equal(qa('#q1-fifty').length, 0, 'three answers: no button');
+});
+
+test('B2 #371 the 50/50 removes two wrong answers picked by ctx.shuffle, costs one hint and no mistake, and says so', () => {
+  const { ctx, focus, counts, onRight } = setupFifty();
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight });
+  click('#q1-fifty');
+  // The reversed shuffle turns the wrong answers [a, c, d] into [d, c, a]: d and c go.
+  assert.deepEqual(hidden(), ['d', 'c']);
+  assert.deepEqual(qa('[data-pick]').filter((b) => b.hidden).map((b) => b.disabled), [true, true]);
+  assert.deepEqual(visible(), ['b', 'a']);
+  assert.deepEqual(enabled(), ['b', 'a']);
+  assert.deepEqual(counts, { mistakes: 0, onRight: 0, hints: 1 });
+  assert.equal(fifty().textContent, '50/50 used');
+  assert.equal(fifty().disabled, true);
+  assert.equal(feedback(), '50/50: two wrong answers are gone. 2 answers left.');
+  assert.equal(q('#q1-feedback').getAttribute('data-tone'), 'neutral');
+  assert.equal(focus.last(), 'pick:b', 'focus goes to the first visible answer in display order');
+  assert.deepEqual(focus.unfocusable(), []);
+  const again = setupFifty();
+  again.ctx.shuffle = (arr) => [...arr];
+  mountChoice(again.ctx, CHOICES, { id: 'q1', onRight: again.onRight });
+  click('#q1-fifty');
+  assert.deepEqual(hidden(), ['c', 'a'], 'an identity shuffle removes the first two wrong answers, a and c (listed in display order)');
+});
+
+test('B3 #371 the right answer is never removed, wherever the shuffle puts it', () => {
+  const { ctx, onRight } = setupFifty();
+  ctx.shuffle = (arr) => [...arr].sort((x, y) => (y.right ? 1 : 0) - (x.right ? 1 : 0));
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight });
+  click('#q1-fifty');
+  assert.equal(visible().includes('b'), true);
+  assert.equal(hidden().length, 2);
+});
+
+test('B4 #371 a second 50/50 click that gets through costs nothing and removes nothing more, even with six answers', () => {
+  const { ctx, counts, onRight } = setupFifty(SIX);
+  mountChoice(ctx, SIX, { id: 'q1', onRight });
+  fifty().onclick();
+  fifty().onclick();
+  assert.equal(counts.hints, 1);
+  assert.equal(hidden().length, 2);
+});
+
+test('B5 #371 after the right pick the 50/50 is spent: disabled, and a click that gets through is free', () => {
+  const { ctx, counts, onRight } = setupFifty();
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight });
+  click('[data-pick="b"]');
+  assert.equal(fifty().disabled, true);
+  fifty().onclick();
+  assert.equal(counts.hints, 0);
+  assert.deepEqual(hidden(), []);
+});
+
+test('B6 #371 the 50/50 needs three wrong answers still open: four answers after one wrong pick is too few, five is enough', () => {
+  const four = setupFifty();
+  mountChoice(four.ctx, CHOICES, { id: 'q1', onRight: four.onRight });
+  click('[data-pick="a"]');
+  assert.equal(fifty().disabled, true);
+  assert.equal(fifty().textContent, '50/50 (too few answers left)');
+  const five = setupFifty(FIVE);
+  mountChoice(five.ctx, FIVE, { id: 'q1', onRight: five.onRight });
+  click('[data-pick="a"]');
+  assert.equal(fifty().disabled, false);
+  assert.equal(fifty().textContent, 'Use 50/50 (costs 1 penalty)');
+  click('#q1-fifty');
+  assert.equal(hidden().length, 2);
+  assert.equal(enabled().length, 2, 'one wrong answer and the right one remain');
+});
+
+test('B7 #371 a removed answer cannot be picked, so focus after a wrong pick skips it', () => {
+  const { ctx, focus, counts, onRight } = setupFifty();
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight });
+  click('#q1-fifty');
+  click('[data-pick="a"]');
+  assert.equal(focus.last(), 'pick:b', 'never d or c');
+  assert.equal(counts.mistakes, 1);
+  q('[data-pick="d"]').onclick({});
+  assert.equal(counts.mistakes, 1, 'a removed answer is not a mistake');
+  assert.equal(fifty().textContent, '50/50 used', 'a wrong pick after the 50/50 does not relabel it too few');
+});
+
+test('B7b #371 a wrong pick then a 50/50 keeps the why and adds the 50/50 line', () => {
+  const { ctx, onRight } = setupFifty(FIVE);
+  mountChoice(ctx, FIVE, { id: 'q1', onRight });
+  click('[data-pick="a"]');
+  assert.equal(feedback(), 'Not quite. a is not it.');
+  click('#q1-fifty');
+  assert.equal(q('#q1-feedback').textContent.includes('Not quite. a is not it.'), true);
+  assert.equal(q('#q1-feedback').textContent.includes('50/50: two wrong answers are gone. 2 answers left.'), true);
+  assert.equal(q('#q1-feedback').getAttribute('data-tone'), 'neutral');
+});
+
+test('B5b #371 after the right pick the spent 50/50 reads "not needed"', () => {
+  const { ctx, onRight } = setupFifty();
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight });
+  click('[data-pick="b"]');
+  assert.equal(fifty().textContent, '50/50 (not needed)');
+});
+
+test('B10 #371 keep: the 50/50 never removes a keep answer, and needs two removable wrong answers', () => {
+  const KEEP = SIX.map((c) => (c.key === 'a' || c.key === 'c' ? { ...c, keep: true } : c));
+  // The identity shuffle would remove a and c first; keep skips them: b stays, d and e go.
+  const k = setupFifty(KEEP);
+  k.ctx.shuffle = (arr) => [...arr];
+  mountChoice(k.ctx, KEEP, { id: 'q1', onRight: k.onRight });
+  click('#q1-fifty');
+  assert.deepEqual(hidden(), ['e', 'd'], 'listed in display order');
+  // Four answers, two of the three wrong ones kept: one removable answer is too few.
+  const FOUR = CHOICES.map((c) => (c.key === 'a' || c.key === 'c' ? { ...c, keep: true } : c));
+  const f = setupFifty(FOUR);
+  mountChoice(f.ctx, FOUR, { id: 'q1', onRight: f.onRight });
+  assert.equal(fifty().disabled, true);
+  assert.equal(fifty().textContent, '50/50 (too few answers left)');
+  fifty().onclick();
+  assert.deepEqual(hidden(), []);
+  assert.equal(f.counts.hints, 0);
+});
+
+test('B11 #371 keep is validated: a boolean, and never on the right answer', () => {
+  const bad = (patch) => validateChoiceSpec(CHOICES.map((c) => (c.key === patch.key ? { ...c, ...patch } : c)));
+  assert.deepEqual(bad({ key: 'a', keep: true }), []);
+  assert.deepEqual(bad({ key: 'a', keep: false }), []);
+  assert.equal(bad({ key: 'a', keep: 'yes' }).length, 1);
+  assert.equal(bad({ key: 'b', keep: true }).length, 1);
+});
+
+test('B8 #371 the penalty and the how-to-play hint line name the 50/50', () => {
+  assert.equal(PENALTY.costs, 'a wrong pick, a 50/50');
+});
+
+test('B9 #371 with the real level context a 50/50 then the right pick finishes with no mistake and one hint', () => {
+  const dom = makeDom();
+  recordFocus(dom.window);
+  const finished = [];
+  const ctx = createLevelContext({
+    level: { id: 'fifty-fixture', scored: true, scoring: { parMs: null } },
+    ovBody: dom.body,
+    ovActions: dom.actions,
+    now: () => 0,
+    shuffle: (a) => [...a].reverse(),
+    onFinish: (id, result) => finished.push(result),
+    signal: new AbortController().signal,
+  });
+  dom.body.innerHTML = choiceHtml(ctx, CHOICES, { id: 'q1' });
+  mountChoice(ctx, CHOICES, { id: 'q1', onRight: () => undefined });
+  click('#q1-fifty');
+  click('[data-pick="b"]');
+  ctx.finish({ text: 'done' });
+  assert.equal(finished.length, 1);
+  assert.deepEqual({ mistakes: finished[0].mistakes, hintsUsed: finished[0].hintsUsed, stars: finished[0].stars }, { mistakes: 0, hintsUsed: 1, stars: 4 });
 });

@@ -395,7 +395,7 @@ test('renderConfigure: a wide split with the board and the side column; the help
   assert.equal(q('#cf-win').hasAttribute('hidden'), true, 'the success card waits for success');
   assert.equal(qa('#cf-stars [data-star="possible"]').length, 5);
   assert.equal(q('.ui-score-rule').textContent, RULE);
-  assert.equal(q('#cf-hint-tier').textContent, 'No hints on this level.');
+  assert.equal(q('#cf-hint-tier').textContent, 'No hints on this step.');
   assert.equal(q('[data-help="hints"]').getAttribute('data-on'), 'false');
   setup(fixture(HELPS));
   assert.equal(q('[data-help="hints"]').getAttribute('data-on'), 'true');

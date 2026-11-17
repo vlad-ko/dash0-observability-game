@@ -842,7 +842,7 @@ test('hints off (and no helps key): no Hint button, the tier line says so, the c
     const { counts, mount } = setup(spec);
     mount();
     assert.equal(qa('[id="signals-hint"]').length, 0, JSON.stringify(spec.helps));
-    assert.equal(text('#signals-hint-tier'), 'No hints on this level.');
+    assert.equal(text('#signals-hint-tier'), 'No hints on this step.');
     assert.equal(chips(), 'Helps: Instant feedback on Hints off');
     sortTo('i1', 'metric');
     assert.deepEqual(counts, { mistakes: 0, hints: 0, done: 0 });

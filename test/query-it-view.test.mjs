@@ -80,7 +80,7 @@ test('renderQuery: a labelled code textarea with no autocorrect, a Run button, a
 test('renderQuery: no helps means no hint button and a tier line that says so; helps.hints adds the Hint button', () => {
   setup();
   assert.equal(qa('#qa-hint').length, 0);
-  assert.equal(q('#qa-hint-tier').textContent, 'No hints on this level.');
+  assert.equal(q('#qa-hint-tier').textContent, 'No hints on this step.');
   setup({ ...fixture(), ...HELPS });
   assert.equal(qa('#qa-hint').length, 1);
   assert.equal(q('[data-help="hints"]').getAttribute('data-on'), 'true');

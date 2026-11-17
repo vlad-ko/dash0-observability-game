@@ -148,7 +148,7 @@ test('renderTradeoff: the side column and the helps chips; hints off (and no hel
   for (const spec of [fixture(), { ...fixture(), helps: { hints: false } }]) {
     setup(spec);
     assert.equal(qa('[id="bill-hint"]').length, 0, JSON.stringify(spec.helps));
-    assert.equal(text('#bill-hint-tier'), 'No hints on this level.');
+    assert.equal(text('#bill-hint-tier'), 'No hints on this step.');
     assert.equal(q('[data-help="hints"]').getAttribute('data-on'), 'false');
   }
   setup(withHints());
