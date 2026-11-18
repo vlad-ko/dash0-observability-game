@@ -54,8 +54,7 @@ export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: 
 
 function screens(ctx, say) {
   const bar = ctx.ovActions;
-  const SORT = say.sort;
-  const ON_SPANS = say.onSpans;
+  const [{ sort: SORT }, { choices: ON_SPANS }] = contentOf(say).steps; // the same tables CONTENT holds
 
   const stepSort = () => {
     ctx.renderStep(

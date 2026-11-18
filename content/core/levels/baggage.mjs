@@ -1,5 +1,5 @@
 // Text of levels/baggage.mjs (docs/CONTENT.md).
-// A run(ctx) level: levels/baggage.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). Sort labels must not give the bucket away (test/sort-tells.test.mjs).
+// A run(ctx) level: levels/baggage.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). Sort labels must not give the bucket away: the rule is in levels/baggage.mjs (Step 1) and test/sort-tells.test.mjs.
 export default {
   "id": "baggage",
   "name": "Baggage",

@@ -17,7 +17,7 @@ Play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLAR
 
 A header of `//` lines, then `export default`, one JSON object and `;`. JSON is strict: double quotes everywhere, no trailing commas, no repeated key in one object, no `//` comment inside the object. The first header line should read `// Text of levels/<id>.mjs (docs/CONTENT.md).` and no header line may start `// Spec:` (that marks logic files). In JSON an apostrophe is plain (`team's`), a double quote is `\"`.
 
-At the top: `id` (the level id), `name`, `sub`, `rewardTitle`, and `play` with `finish` and `steps`. A step holds `intro`, `question` and optionally `show` and `code`, plus one widget key (`choice`, `spot`, `tradeoff`, ...) holding that widget's text. The shape mirrors the widget spec in DECLARATIVE-LEVELS.md section 2: copy an existing file such as `content/core/levels/cardinality.mjs` and edit the words.
+At the top: `id` (the level id), `name`, `sub`, `rewardTitle`, and `play` with `finish` and `steps`. A run(ctx) level has `run` in place of `play` (section 11). A step holds `intro`, `question` and optionally `show` and `code`, plus one widget key (`choice`, `spot`, `tradeoff`, ...) holding that widget's text. The shape mirrors the widget spec in DECLARATIVE-LEVELS.md section 2: copy an existing file such as `content/core/levels/cardinality.mjs` and edit the words.
 
 Things to know:
 - Order is yours. Choices, options, lines and needs appear in the game in the order the content file lists them.
@@ -67,7 +67,7 @@ Then `"{{times-mrs}} = {{product-mrs}}"` in the content shows `5 × 14 × 9 = 63
 
 ## 6. Check your work
 
-`npm test` runs everything. The tests that matter for content: `test/level-text-content.test.mjs` (the files, the wrapper, the wiring, and that the text of every live play level would pass), `test/content-bind.test.mjs` and `test/content-placeholders.test.mjs` (the engine), `test/content.test.mjs` (em dash, "costs a star") and `test/levels-play.test.mjs` (plays every level). A broken level fails to load with one error that names the level and lists every problem, for example:
+`npm test` runs everything. The tests that matter for content: `test/level-text-content.test.mjs` (the files, the wrapper, the wiring, that the text of every live play level would pass, and that every converted run level is checked too: no prose left in its code, every `say.<name>` it reads defined), `test/content-bind.test.mjs` and `test/content-placeholders.test.mjs` (the engine), `test/content.test.mjs` (em dash, "costs a star") and `test/levels-play.test.mjs` (plays every level). A broken level fails to load with one error that names the level and lists every problem, for example:
 
 ```
 content of level cardinality has 2 problems:
@@ -134,7 +134,7 @@ A level that draws its screens in `run(ctx)` stays a run level. Its words move t
 Move every string literal in `levels/<id>.mjs` that a player can see, whatever its length: lesson text, questions, answer labels and `why` text, hints, notes, button labels, the reason under a disabled button, chip text, table captions and headings, feedback lines, the finish text.
 
 Keep in the level file:
-- ids, `key` values, element ids, data attribute names and values, CSS classes, tones, variants, modes, and any value the code compares;
+- DOM element ids, data attribute names and values, CSS classes, tones, variants, modes, and any value the code compares (these are in the level file only). The ids and keys the binder joins on (11.4) are in both files: the content carries each with its text;
 - fixture data: fields of spans, logs, events and attributes that a widget or the level computes over, even when shown (a span name such as `charge with retry`);
 - words that come from another module (`lib/`, the UI kit);
 - header comments, `VERIFY` notes and rules about text (keep them beside the code that uses the entry, and add a one-line pointer in the content header).
@@ -160,7 +160,7 @@ Slots work only under `run`, and never inside a tag. `fillSlots` throws when a s
 
 ### 11.4 The level file
 
-`SKELETON` is the level without its words. Under `run` it holds, for each entry, only what the logic needs: ids with answer flags (and `right: false` where it was written), numbers, fixtures and `helps`. An entry with no such parts is not in the skeleton. Keep every id an answer or the binder joins on, as in section 9 step 4: a sort's bucket ids, and the ids or keys of the elements that carry an answer flag.
+`SKELETON` is the level without its words. Under `run` it holds, for each entry, only what the logic needs: ids with answer flags (and `right: false` where it was written), numbers, fixtures and `helps`. An entry with no such parts is not in the skeleton. The skeleton also carries the ids the binder joins on, as in section 9 step 4: the ids of entries that have logic (such as the sort's own id), a sort's bucket ids, and the ids or keys of the elements that carry an answer flag.
 
 ```js
 import CORE from '../content/core/levels/<id>.mjs';
@@ -183,17 +183,17 @@ export default withText(CORE);
 Rules:
 - Read words only as `say.<name>`. Do not destructure `say` and do not compute a top-level name.
 - A module-level helper with words takes `say` as an argument.
-- A named export that held words (`CONTENT` and the like) stays, built by one function of `say`, for example `export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);`, and `screens` uses the same function. A table whose text has a slot is filled in that function.
+- A named export that held words (`CONTENT` and the like) stays, built by one function of `say`, for example `export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);`, and `screens` takes its tables from the same function (`const [{ sort: SORT }, { choices: ON_SPANS }] = contentOf(say).steps;`), so the tables the tests pin are the ones the screens play. A table whose text has a slot is filled in that function.
 
 ### 11.5 Step by step
 
 1. **Baseline, on a clean checkout of main.** As section 9 step 1 (fingerprint and LEVEL_SNAPSHOT into `$S/before`), and copy each level file of the act: `cp levels/<id>.mjs $S/old-<id>.mjs`.
-2. **Write the content file by hand.** `tools/extract-level-text.mjs` reads only play levels. Copy `name`, `sub` and `rewardTitle`, then add the `run` entries by 11.2.
+2. **Write the content file by hand.** `tools/extract-level-text.mjs` run on a run level prints only `id`, `name`, `sub` and `rewardTitle`: copy those, then write the `run` entries by hand by 11.2.
 3. **Put in the fill-ins** by 11.3.
 4. **Strip and wire** by 11.4.
 5. **Fixtures.** If `test/level-text-content.test.mjs` lists a kept literal that is fixture data (11.1), add it to `RUN_FIXTURES` under the level id. Any other literal it lists moves to the content.
 6. **Prove nothing changed.** Run step 1 into `$S/after`. `diff -r $S/before $S/after` must show only the new `withText` key in each fingerprint, and no change to any snapshot (frames and clicks). `node tools/level-words.mjs $S/old-<id>.mjs <id>` must report no word lost and none added.
-7. **Run the tests.** The level's own tests, `test/levels-play.test.mjs`, `test/level-text-content.test.mjs`, `test/content.test.mjs` and the act's test. No existing test line should need a change; if one does, stop and ask.
-8. **Mutation check.** Put one old literal back in the code: the "holds no copy" test goes red. Misspell one `say.<name>`: the "every name it reads" test goes red. Change one word in the content: `tools/level-words.mjs` reports it lost and added. Put all three back.
+7. **Run the tests.** The level's own tests, `test/levels-play.test.mjs`, `test/level-text-content.test.mjs`, `test/content.test.mjs` and the act's test. No existing test line should need a change (the first run level's pull request generalised the four tests that covered play levels only); if one does, stop and ask.
+8. **Mutation check.** Put one old literal back in the code: the "a run level's code holds no prose literal" test in `test/level-text-content.test.mjs` goes red. Misspell one `say.<name>`: "a run level reads exactly the names its content defines" goes red. Make a screen read the module's built-in words instead of the ones it was given (for example `CONTENT.steps[1].choices`): "a converted run level plays every screen ... with the words it was given and no others" in `test/levels-play.test.mjs` goes red. Change one word in the content: `tools/level-words.mjs` reports it lost and added. Put all four back.
 
 One act per pull request, as in section 9.

@@ -18,8 +18,11 @@ import assert from 'node:assert/strict';
 import { makeDom, q, qa, click as domClick } from './helpers/dom.mjs';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { definedClasses } from './helpers/css.mjs';
+import { readJsonModule } from './helpers/content-files.mjs';
+import { editRun, unprefixedWords } from './helpers/run-edit.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry } from '../lib/telemetry.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
@@ -817,6 +820,32 @@ for (const id of LIVE.order) {
     else checkLevel(LIVE.levels[id], DRIVERS[id]);
   });
 }
+
+// A run level converted to a content file (docs/CONTENT.md section 11) plays only the words it is given: play it
+// through every screen with its own drivers, over content where every word starts with `EDITED `, and no screen or
+// finish text may hold a word of the real content without that prefix (a step reading the module's built-in text
+// instead of the text handed to withText would).
+const CONTENT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'content', 'core', 'levels');
+const RUN_CONTENT_IDS = readdirSync(CONTENT_DIR)
+  .filter((f) => f.endsWith('.mjs'))
+  .map((f) => f.replace(/\.mjs$/, ''))
+  .filter((id) => readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value.run !== undefined);
+
+test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
+  assert.ok(RUN_CONTENT_IDS.includes('baggage'), 'baggage is a converted run level');
+  for (const id of RUN_CONTENT_IDS) {
+    const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
+    const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
+    const level = mod.withText({ ...core, run: editRun(core.run) });
+    for (const [label, run] of [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy]]) {
+      const { calls, frames, clicks } = playLevel(level, run.play);
+      assert.equal(calls.length, 1, `${id} ${label}: finished once`);
+      const shown = [...frames, ...clicks].flatMap((f) => [f.body, f.actions]);
+      assert.ok(calls[0].result.text.startsWith('EDITED '), `${id} ${label}: the finish text is the one it was given`);
+      assert.deepEqual(unprefixedWords(core.run, [...shown, calls[0].result.text]), [], `${id} ${label}: words of the real content shown without the edit`);
+    }
+  }
+});
 
 /**
  * A driver for a play level, derived from its steps (test/helpers/step-drivers.mjs): the happy

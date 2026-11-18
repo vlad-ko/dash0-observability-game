@@ -10,9 +10,10 @@ import { bindText } from '../lib/content/bind.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { validatePlay } from '../lib/play.mjs';
 import { contentFileText, extractLevelText } from '../tools/extract-level-text.mjs';
-import { literalSites } from '../tools/js-strings.mjs';
+import { codeOnly, literalSites } from '../tools/js-strings.mjs';
 import { readJsonModule } from './helpers/content-files.mjs';
 import { makeDom } from './helpers/dom.mjs';
+import { editRun } from './helpers/run-edit.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'content', 'core', 'levels');
@@ -76,7 +77,7 @@ test('each converted level imports exactly its own content file and exports with
   }
 });
 
-test('each converted level is withText of its content file, and its play validates', async () => {
+test('each converted play level is withText of its content file, and its play validates', async () => {
   for (const id of PLAY_IDS) {
     const mod = await load(id);
     const core = (await import(pathToFileURL(join(DIR, `${id}.mjs`)).href)).default;
@@ -100,12 +101,6 @@ test('each converted run level is withText of its content file: the same level, 
   }
 });
 
-/** `value` with `EDITED ` in front of every string that is not an id or a key. */
-const editRun = (value, key) => {
-  if (Array.isArray(value)) return value.map((x) => editRun(x, key));
-  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, editRun(v, k)]));
-  return typeof value === 'string' && key !== 'id' && key !== 'key' ? `EDITED ${value}` : value;
-};
 const firstPage = (level) => {
   const dom = makeDom();
   const ctx = createLevelContext({
@@ -140,21 +135,35 @@ test('editing a run level\'s words shows on its first screen, and withText leave
   }
 });
 
+// A literal that may be a word a player sees: prose (letter, space, letter), one capitalised word, or anything with a
+// letter in it that is not id-like (`bag-next`, `#bag-next`, `only-if-copied`). Tags are taken out first.
+const PROSE = [/[A-Za-z]\s+[A-Za-z]/, /^[A-Z][a-z]+[.:?!]?$/];
+const ID_LIKE = /^[#.]?[a-z0-9-]+$/;
+const looksVisible = (t) => PROSE.some((re) => re.test(t)) || (/[A-Za-z]/.test(t) && !ID_LIKE.test(t));
+/** The literals of `src` that look like visible words and are not in `kept`, as text. */
+const proseLiterals = (src, kept = []) =>
+  literalSites(src)
+    .map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim())
+    .filter((t) => looksVisible(t) && !kept.includes(t));
+
 test('a run level\'s code holds no prose literal: its words are say.<name> reads (docs/CONTENT.md 11.1)', () => {
-  const PROSE = [/[A-Za-z]\s+[A-Za-z]/, /^[A-Z][a-z]+[.:?!]?$/];
   for (const id of RUN_IDS) {
-    const kept = new Set(RUN_FIXTURES[id] ?? []);
-    const sites = literalSites(readLogic(id)).map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim());
-    const prose = sites.filter((t) => PROSE.some((re) => re.test(t)) && !kept.has(t));
-    assert.deepEqual(prose, [], `${id}: these literals move to content/core/levels/${id}.mjs, or are fixture data (RUN_FIXTURES)`);
-    for (const t of kept) assert.ok(sites.includes(t), `${id}: RUN_FIXTURES entry "${t}" is no longer in the file`);
+    const kept = RUN_FIXTURES[id] ?? [];
+    assert.deepEqual(proseLiterals(readLogic(id), kept), [], `${id}: these literals move to content/core/levels/${id}.mjs, or are fixture data (RUN_FIXTURES)`);
+    const texts = literalSites(readLogic(id)).map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim());
+    for (const t of kept) assert.ok(texts.includes(t), `${id}: RUN_FIXTURES entry "${t}" is no longer in the file`);
   }
 });
 
-test('a run level reads exactly the names its content defines, as say.<name>', () => {
+test('the prose check flags a visible literal that has no letter-space-letter: markup-only words, numbers with a unit, an arrow', () => {
+  const src = "const a = ['<code>tenant.tier</code>', 'Sort 5 items.', 'Next \\u2192', 'Baggage', 'bag-next', '#bag-next', 'ok', '2.5'];";
+  assert.deepEqual(proseLiterals(src), ['tenant.tier', 'Sort 5 items.', 'Next →', 'Baggage']);
+  assert.deepEqual(proseLiterals(src, ['tenant.tier']), ['Sort 5 items.', 'Next →', 'Baggage'], 'a kept fixture is not flagged');
+});
+
+test('a run level reads exactly the names its content defines, as say.<name>, in code only', () => {
   for (const id of RUN_IDS) {
-    const code = readLogic(id).split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
-    const read = new Set([...code.matchAll(/\bsay\.([a-z][a-zA-Z0-9]*)\b/g)].map((m) => m[1]));
+    const read = new Set([...codeOnly(readLogic(id)).matchAll(/\bsay\.([a-z][a-zA-Z0-9]*)\b/g)].map((m) => m[1]));
     assert.deepEqual([...read].sort(), Object.keys(CORE_OF(id).run).sort(), id);
   }
 });
