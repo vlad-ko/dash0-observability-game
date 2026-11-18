@@ -221,6 +221,9 @@ test('checkWords: a fill-in value that holds an inline tag is matched too, marke
   assert.deepEqual(checkWords(run, [shown('EDITED0 ')]), CLEAN, 'shown edited, the tag in the value');
   assert.deepEqual(checkWords(run, [shown('EDITED0 '), shown('')]).leaked, [run.set], 'a second copy without its edit leaks');
   assert.deepEqual(checkWords(run, [shown('')]).leaked, [run.set], 'shown only without its edit');
+  const withAttr = (mark) => `<p>${mark}Set <code data-token="x">x</code> on the root span.</p>`;
+  assert.deepEqual(checkWords(run, [withAttr('EDITED0 ')]), CLEAN, 'shown edited, a tag with an attribute in the value');
+  assert.deepEqual(checkWords(run, [withAttr('EDITED0 '), withAttr('')]).leaked, [run.set], 'a second copy without its edit leaks, the tag having an attribute');
   assert.equal(e.set, 'EDITED0 Set {{attr}} on the root span.');
 });
 
