@@ -7,15 +7,25 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { liveRegistry } from '../app.mjs';
 import { bindText } from '../lib/content/bind.mjs';
+import { createLevelContext } from '../lib/level-context.mjs';
 import { validatePlay } from '../lib/play.mjs';
 import { contentFileText, extractLevelText } from '../tools/extract-level-text.mjs';
+import { codeOnly, literalSites } from '../tools/js-strings.mjs';
 import { readJsonModule } from './helpers/content-files.mjs';
+import { makeDom } from './helpers/dom.mjs';
+import { checkWords, editRun, RUN_FIXTURES } from './helpers/run-edit.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'content', 'core', 'levels');
 const FILES = readdirSync(DIR).filter((f) => f.endsWith('.mjs')).sort();
 const IDS = FILES.map((f) => f.replace(/\.mjs$/, ''));
 const load = (id) => import(pathToFileURL(join(ROOT, 'levels', `${id}.mjs`)).href);
+/** A content file's object (parsed as strict JSON, so no import is needed). */
+const CORE_OF = (id) => readJsonModule(join(DIR, `${id}.mjs`)).value;
+// A content file has `play` (a play level) or `run` (a run(ctx) level, docs/CONTENT.md section 11), never both.
+const RUN_IDS = IDS.filter((id) => CORE_OF(id).run !== undefined);
+const PLAY_IDS = IDS.filter((id) => CORE_OF(id).play !== undefined);
+const readLogic = (id) => readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8');
 
 test('there are converted levels to check (the pilot has at least two)', () => {
   assert.ok(FILES.length >= 2, FILES.join(', '));
@@ -31,12 +41,26 @@ test('each content file is a header, then one strict JSON object, with no repeat
   }
 });
 
-test('each content file is named after its level id, a registered play level, and its own id says so', () => {
+test('every content file is for a play level or a run level, never both, and baggage is a run level', () => {
+  assert.ok(RUN_IDS.includes('baggage'), `run levels: ${RUN_IDS.join(', ')}`);
+  assert.deepEqual([...PLAY_IDS, ...RUN_IDS].sort(), IDS, 'every content file has play or run');
+  assert.deepEqual(PLAY_IDS.filter((id) => RUN_IDS.includes(id)), [], 'no content file has both');
+  const reg = liveRegistry();
+  for (const id of IDS) {
+    const isPlay = Boolean(reg.levels[id]?.play);
+    assert.equal(CORE_OF(id).play !== undefined, isPlay, `${id}: a content file has play exactly when the level is a play level`);
+    assert.equal(CORE_OF(id).run !== undefined, !isPlay, `${id}: a content file has run exactly when the level is a run level`);
+  }
+});
+
+test('each content file is named after its level id, a registered level, and its own id says so', () => {
   const reg = liveRegistry();
   for (const id of IDS) {
     assert.ok(reg.levels[id], `${id} is a registered level`);
-    assert.ok(reg.levels[id].play, `${id} is a play level`);
-    assert.equal(readJsonModule(join(DIR, `${id}.mjs`)).value.id, id);
+    // A play level exactly when its content has `play`; a run level has a run function.
+    assert.equal(Boolean(reg.levels[id].play), CORE_OF(id).play !== undefined, `${id}: play level exactly when its content has play`);
+    if (RUN_IDS.includes(id)) assert.equal(typeof reg.levels[id].run, 'function', `${id} is a run level`);
+    assert.equal(CORE_OF(id).id, id);
   }
 });
 
@@ -51,12 +75,149 @@ test('each converted level imports exactly its own content file and exports with
   }
 });
 
-test('each converted level is withText of its content file, and its play validates', async () => {
-  for (const id of IDS) {
+test('each converted play level is withText of its content file, and its play validates', async () => {
+  for (const id of PLAY_IDS) {
     const mod = await load(id);
     const core = (await import(pathToFileURL(join(DIR, `${id}.mjs`)).href)).default;
     assert.deepEqual(mod.default, mod.withText(core), id);
     assert.deepEqual(validatePlay(mod.default.play).errors, [], id);
+  }
+});
+
+test('each converted run level is withText of its content file: the same level, with a run function and no play', async () => {
+  for (const id of RUN_IDS) {
+    const mod = await load(id);
+    const core = (await import(pathToFileURL(join(DIR, `${id}.mjs`)).href)).default;
+    const { run: defaultRun, ...defaultRest } = mod.default;
+    const built = mod.withText(core);
+    const { run: builtRun, ...builtRest } = built;
+    assert.deepEqual(defaultRest, builtRest, id);
+    assert.equal(typeof defaultRun, 'function', id);
+    assert.equal(typeof builtRun, 'function', id);
+    assert.equal(mod.default.play, undefined, id);
+    assert.equal(built.play, undefined, id);
+  }
+});
+
+const firstPage = (level) => {
+  const dom = makeDom();
+  const ctx = createLevelContext({
+    level,
+    ovBody: dom.body,
+    ovActions: dom.actions,
+    now: () => Date.UTC(2026, 0, 1),
+    shuffle: (a) => a,
+    reduceMotion: true,
+    onFinish: () => {},
+    signal: new AbortController().signal,
+    reportError: (e) => {
+      throw e;
+    },
+    telemetry: null,
+  });
+  level.run(ctx);
+  return `${dom.body.innerHTML}${dom.actions.innerHTML}`;
+};
+
+test('editing a run level\'s words shows on its first screen, and withText leaves its input as it was given', async () => {
+  for (const id of RUN_IDS) {
+    const mod = await load(id);
+    const core = CORE_OF(id);
+    assert.ok(!firstPage(mod.withText(core)).includes('EDITED'), `${id}: the content file itself has no EDITED`);
+    const edited = { ...core, name: `EDITED ${core.name}`, run: editRun(core.run) };
+    const given = structuredClone(edited);
+    const level = mod.withText(edited);
+    assert.ok(firstPage(level).includes('EDITED'), `${id}: an edited word shows on the first screen`);
+    assert.equal(level.name, `EDITED ${core.name}`, `${id}: the edited name shows`);
+    assert.deepEqual(edited, given, `${id}: withText left its input as it was given`);
+  }
+});
+
+// A literal that may be a word a player sees: prose (letter, space, letter), one capitalised word, or anything with a
+// letter in it that is not id-like (`bag-next`, `#bag-next`, `only-if-copied`). Tags are taken out first.
+const PROSE = [/[A-Za-z]\s+[A-Za-z]/, /^[A-Z][a-z]+[.:?!]?$/];
+// Id-like also covers a CSS selector made of those and attribute selectors (`[data-ask]`, `input[name=" "]`).
+const ID_LIKE = /^(?:[#.]?[a-z0-9-]+)?(?:\[[a-z-]+(?:=(?:"[^"]*"|'[^']*'|[^\]]*))?\])*$/;
+const textOf = (pieces, glue) => pieces.join(glue).replace(/<[^>]*>/g, ' ').trim();
+// Prose is read with a space where a template had a `${}`; the id test with nothing there (`its-q-${n}-feedback`).
+const looksVisible = (s) => PROSE.some((re) => re.test(textOf(s.pieces, ' '))) || (/[A-Za-z]/.test(textOf(s.pieces, '')) && !ID_LIKE.test(textOf(s.pieces, '')));
+/** The literals of `src` that look like visible words and are not in `kept`, as text. */
+const proseLiterals = (src, kept = []) =>
+  literalSites(src)
+    .filter((s) => looksVisible(s) && !kept.includes(textOf(s.pieces, ' ')))
+    .map((s) => textOf(s.pieces, ' '));
+
+test('a run level\'s code holds no prose literal: its words are say.<name> reads (docs/CONTENT.md 11.1)', () => {
+  for (const id of RUN_IDS) {
+    const kept = RUN_FIXTURES[id] ?? [];
+    assert.deepEqual(proseLiterals(readLogic(id), kept), [], `${id}: these literals move to content/core/levels/${id}.mjs, or are fixture data (RUN_FIXTURES)`);
+    const texts = literalSites(readLogic(id)).map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim());
+    for (const t of kept) assert.ok(texts.includes(t), `${id}: RUN_FIXTURES entry "${t}" is no longer in the file`);
+  }
+});
+
+test('the prose check flags a visible literal that has no letter-space-letter: markup-only words, numbers with a unit, an arrow', () => {
+  const src = "const a = ['<code>tenant.tier</code>', 'Sort 5 items.', 'Next \\u2192', 'Baggage', 'bag-next', '#bag-next', 'ok', '2.5'];";
+  assert.deepEqual(proseLiterals(src), ['tenant.tier', 'Sort 5 items.', 'Next →', 'Baggage']);
+  assert.deepEqual(proseLiterals(src, ['tenant.tier']), ['Sort 5 items.', 'Next →', 'Baggage'], 'a kept fixture is not flagged');
+});
+
+test('the prose check lets CSS attribute selectors and template ids through', () => {
+  const src = "const a = ['[data-ask]', 'input[name=\" \"]', `its-q-${n}-feedback`, 'button[data-pick]'];";
+  assert.deepEqual(proseLiterals(src), []);
+});
+
+// The screens below are built from `editRun(run)`, whatever mark it puts on an entry, so these tests hold for it.
+const CLEAN = { leaked: [], unseen: [], stale: [] };
+
+test('checkWords: a word shown without its edit, a word never shown edited, and a stale unreached entry are each reported', () => {
+  const run = { a: 'A long enough sentence.', b: 'Dash0', c: { id: 'x', label: 'Another long sentence.' }, d: 'Never reached here.' };
+  const e = editRun(run);
+  const shown = [e.a, `${e.b} and ${e.c.label}`];
+  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d'] }), CLEAN);
+  assert.deepEqual(checkWords(run, [...shown, 'A long enough sentence.'], { unreached: ['run.d'] }).leaked, ['A long enough sentence.'], 'a long word without the edit');
+  assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'] }).leaked, ['Dash0'], 'a short word without the edit');
+  assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'], kept: ['Dash0'] }).leaked, [], 'a fixture is skipped');
+  assert.deepEqual(checkWords(run, [...shown, 'Dash01'], { unreached: ['run.d'] }).leaked, [], 'a short word is matched as a whole word');
+  assert.deepEqual(checkWords(run, shown.slice(0, 1), { unreached: ['run.d'] }).unseen, ['run.b', 'run.c.label'], 'words never shown edited, by path');
+  assert.deepEqual(checkWords(run, [...shown, e.d], { unreached: ['run.d'] }).stale, ['run.d'], 'an entry listed as unreached that is shown');
+  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d', 'run.zzz'] }).stale, ['run.zzz'], 'an unreached path that is no entry');
+});
+
+test('checkWords: a <wbr> inside a word is ignored', () => {
+  const run = { l: '<code>experiment.variant=redesign-B</code>' };
+  assert.deepEqual(checkWords(run, [editRun(run).l.replace('experiment.', 'experiment.<wbr>')]), CLEAN);
+});
+
+test('checkWords: an entry that is the start of another is not seen because the other is', () => {
+  const run = { a: 'Check', b: 'Check the span.' };
+  const e = editRun(run);
+  assert.deepEqual(checkWords(run, [e.b]).unseen, ['run.a'], 'only the longer one is shown');
+  assert.deepEqual(checkWords(run, [e.b, e.a]), CLEAN, 'both are shown');
+});
+
+test('checkWords: two entries with the same words are told apart, each must show edited', () => {
+  const run = { a: 'Same sentence here.', b: 'Same sentence here.' };
+  const e = editRun(run);
+  assert.deepEqual(checkWords(run, [e.a]).unseen, ['run.b'], 'only one of the two is shown');
+  assert.deepEqual(checkWords(run, [e.a, e.b]), CLEAN, 'both are shown');
+});
+
+test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
+  const long = 'Set tenant.tier on the root span';
+  const e = editRun({ a: long });
+  assert.deepEqual(checkWords({ a: long }, [long], { kept: ['tenant.tier'] }).leaked, [long], 'the long word shown without its edit');
+  assert.deepEqual(checkWords({ a: long }, [e.a, 'tenant.tier'], { kept: ['tenant.tier'] }).leaked, [], 'the fixture shown on its own is fine');
+});
+
+test('editRun marks every entry of run with its own number, in the order checkWords reads them, and leaves ids and keys', () => {
+  assert.deepEqual(editRun({ a: 'x', b: { id: 'i', l: 'y' }, c: [{ key: 'k', t: 'z' }, 'w'] }), { a: 'EDITED0 x', b: { id: 'i', l: 'EDITED1 y' }, c: [{ key: 'k', t: 'EDITED2 z' }, 'EDITED3 w'] });
+});
+
+test('a run level reads exactly the names its content defines, as say.<name>, in code only', () => {
+  for (const id of RUN_IDS) {
+    const read = new Set([...codeOnly(readLogic(id)).matchAll(/\bsay\.([a-z][a-zA-Z0-9]*)\b/g)].map((m) => m[1]));
+    assert.deepEqual([...read].sort(), Object.keys(CORE_OF(id).run).sort(), id);
   }
 });
 
@@ -71,7 +232,7 @@ const assertEdited = (built, text, original, at) => {
 };
 
 test('changing the content changes the level, and withText does not touch what it is given', async () => {
-  for (const id of IDS) {
+  for (const id of PLAY_IDS) {
     const mod = await load(id);
     const core = (await import(pathToFileURL(join(DIR, `${id}.mjs`)).href)).default;
     const edited = structuredClone(core);
@@ -108,7 +269,7 @@ test('the extracted text of every live play level binds with no errors (any live
 const COPY_KEY = /^\s*'?(intro|question|show|label|why|whyNot|explain|hint|finish|name|sub|rewardTitle|text|html|title|unit|closing)'?\s*:/;
 
 test('the logic file holds no copy: no text key on any code line', () => {
-  for (const id of IDS) {
+  for (const id of PLAY_IDS) {
     const lines = readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8').split('\n').filter((l) => !/^\s*\/\//.test(l));
     const hit = lines.find((l) => COPY_KEY.test(l));
     assert.equal(hit, undefined, `${id}: copy belongs in content/core/levels/${id}.mjs: ${hit?.trim()}`);

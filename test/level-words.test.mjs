@@ -2,7 +2,7 @@
 // tools/js-strings.mjs (the string literals of a source file) and tools/level-words.mjs (wordDiff).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { literalSites } from '../tools/js-strings.mjs';
+import { codeOnly, literalSites } from '../tools/js-strings.mjs';
 import { wordDiff } from '../tools/level-words.mjs';
 
 // One line per entry, so the expected line numbers below are the 1-based index.
@@ -112,6 +112,28 @@ test('wordDiff: a new content id the code does not hold is reported as added whe
   const newSrc = 'export const run = {};';
   const c = { run: { a: 'Restart the now', steps2: [{ id: 'pod' }] } };
   assert.deepEqual(wordDiff(oldSrc, newSrc, c), { lost: [], added: ['pod'] });
+});
+
+test('codeOnly: comments, strings, regexes and template text are blanked, template expressions and line breaks stay', () => {
+  const src = [
+    'const a = say.one; // say.two',
+    '/* say.three',
+    '   say.four */ const b = "say.five";',
+    'const c = `say.six ${say.seven} say.eight`;',
+    'const d = /say.nine/g; const e = x / 2 + say.ten;',
+  ].join('\n');
+  const code = codeOnly(src);
+  assert.equal(code.length, src.length, 'same length');
+  assert.equal(code.split('\n').length, 5, 'same lines');
+  assert.deepEqual([...code.matchAll(/\bsay\.([a-z]+)\b/g)].map((m) => m[1]), ['one', 'seven', 'ten']);
+});
+
+test('codeOnly: masks stay in step after a character outside the Basic Multilingual Plane (an emoji)', () => {
+  const src = 'const e = "\u{1F600}"; const f = say.after; // say.no';
+  const code = codeOnly(src);
+  assert.equal(code.length, src.length, 'same length');
+  assert.ok(!code.includes('/'), `the comment is blanked, slashes included: ${code}`);
+  assert.deepEqual([...code.matchAll(/\bsay\.([a-z]+)\b/g)].map((m) => m[1]), ['after']);
 });
 
 test('wordDiff: an id equal to a fill-in name is still the old file\'s id, not an added or lost word', () => {

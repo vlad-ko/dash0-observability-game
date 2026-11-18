@@ -18,8 +18,11 @@ import assert from 'node:assert/strict';
 import { makeDom, q, qa, click as domClick } from './helpers/dom.mjs';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { definedClasses } from './helpers/css.mjs';
+import { readJsonModule } from './helpers/content-files.mjs';
+import { checkWords, editRun, RUN_FIXTURES } from './helpers/run-edit.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { createTelemetry } from '../lib/telemetry.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
@@ -817,6 +820,51 @@ for (const id of LIVE.order) {
     else checkLevel(LIVE.levels[id], DRIVERS[id]);
   });
 }
+
+// A run level converted to a content file (docs/CONTENT.md section 11) plays only the words it is given: play it
+// through every screen with its own drivers, over content where each word carries its own `EDITED<n> ` mark (n is
+// the entry's number), and the test fails on a word shown without its mark, on an entry no run shows with its mark,
+// and on a stale UNREACHED entry (a step reading the module's built-in text instead of the text handed to withText
+// would show a word without its mark).
+const CONTENT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'content', 'core', 'levels');
+const RUN_CONTENT_IDS = readdirSync(CONTENT_DIR)
+  .filter((f) => f.endsWith('.mjs'))
+  .map((f) => f.replace(/\.mjs$/, ''))
+  .filter((id) => readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value.run !== undefined);
+
+// The entries of `run` (by path) that the drivers of a level do not reach: the feedback of a wrong sort placement, and
+// the explanation of a wrong pick the sloppy run does not make. A run that does show one fails the test, so the list
+// cannot go stale; an entry not listed that no run shows edited fails it too.
+const UNREACHED = {
+  baggage: [
+    'run.sort.items[0].whyNot.never',
+    'run.sort.items[1].whyNot.ok',
+    'run.sort.items[2].whyNot.never',
+    'run.sort.items[3].whyNot.ok',
+    'run.sort.items[4].whyNot.ok',
+    'run.onSpans[1].why',
+  ],
+};
+
+test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
+  assert.ok(RUN_CONTENT_IDS.includes('baggage'), 'baggage is a converted run level');
+  for (const id of RUN_CONTENT_IDS) {
+    const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
+    const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
+    const level = mod.withText({ ...core, run: editRun(core.run) });
+    const shown = [];
+    for (const [label, run] of [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy]]) {
+      const { calls, frames, clicks } = playLevel(level, run.play);
+      assert.equal(calls.length, 1, `${id} ${label}: finished once`);
+      assert.match(calls[0].result.text, /^EDITED\d+ /, `${id} ${label}: the finish text is the one it was given`);
+      shown.push(...[...frames, ...clicks].flatMap((f) => [f.body, f.actions]), calls[0].result.text);
+    }
+    const { leaked, unseen, stale } = checkWords(core.run, shown, { unreached: UNREACHED[id], kept: RUN_FIXTURES[id] });
+    assert.deepEqual(leaked, [], `${id}: words of the real content shown without the edit`);
+    assert.deepEqual(unseen, [], `${id}: entries no run shows edited (add them to UNREACHED if the drivers cannot reach them)`);
+    assert.deepEqual(stale, [], `${id}: UNREACHED entries that a run does show, or that are no entry`);
+  }
+});
 
 /**
  * A driver for a play level, derived from its steps (test/helpers/step-drivers.mjs): the happy

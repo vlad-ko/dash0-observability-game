@@ -17,7 +17,25 @@ const WORD_PART = /[A-Za-z0-9_$\u0080-￿]/;
  * are not words and are skipped.
  */
 export function literalSites(src) {
+  return scan(src).sites;
+}
+
+/**
+ * `src` with every comment, string, regular expression literal and the text of every template literal replaced by
+ * spaces (line breaks kept): what is left is code, so a test can look for a name in code only. The expressions inside
+ * a template's `${}` are code and stay.
+ */
+export function codeOnly(src) {
+  const chars = src.split(''); // UTF-16 units, like the mask indices (an emoji is two)
+  for (const [from, to] of scan(src).masks) {
+    for (let i = from; i < Math.min(to, chars.length); i++) if (chars[i] !== '\n' && chars[i] !== '\r') chars[i] = ' ';
+  }
+  return chars.join('');
+}
+
+function scan(src) {
   const sites = [];
+  const masks = [];
   const newlines = [];
   for (let i = src.indexOf('\n'); i !== -1; i = src.indexOf('\n', i + 1)) newlines.push(i);
   const lineAt = (i) => newlines.filter((n) => n < i).length + 1;
@@ -27,10 +45,14 @@ export function literalSites(src) {
       while (i < src.length && /\s/.test(src[i])) i++;
       if (src.startsWith('//', i)) {
         const eol = src.indexOf('\n', i);
-        i = eol === -1 ? src.length : eol;
+        const end = eol === -1 ? src.length : eol;
+        masks.push([i, end]);
+        i = end;
       } else if (src.startsWith('/*', i)) {
-        const end = src.indexOf('*/', i + 2);
-        i = end === -1 ? src.length : end + 2;
+        const close = src.indexOf('*/', i + 2);
+        const end = close === -1 ? src.length : close + 2;
+        masks.push([i, end]);
+        i = end;
       } else return i;
     }
   };
@@ -63,12 +85,14 @@ export function literalSites(src) {
         j = e.end;
       } else value += src[j++];
     }
+    masks.push([i, j + 1]);
     return { value, end: j + 1 };
   };
 
   /** A template starting at `src[i]`, appended to `site`; each `${}` starts a new piece. -> the index after it. */
   const readTemplate = (i, site) => {
     let j = i + 1;
+    let textFrom = i; // the start of the template text not yet masked
     const last = () => site.pieces.length - 1;
     while (j < src.length && src[j] !== '`') {
       if (src[j] === '\\') {
@@ -76,10 +100,13 @@ export function literalSites(src) {
         site.pieces[last()] += e.text;
         j = e.end;
       } else if (src[j] === '$' && src[j + 1] === '{') {
+        masks.push([textFrom, j + 2]);
         site.pieces.push('');
         j = scanCode(j + 2, true);
+        textFrom = j - 1; // the `}` that closed the expression starts the next text
       } else site.pieces[last()] += src[j++];
     }
+    masks.push([textFrom, j + 1]);
     return j + 1;
   };
 
@@ -128,6 +155,7 @@ export function literalSites(src) {
     }
     j++;
     while (j < src.length && WORD_PART.test(src[j])) j++;
+    masks.push([i, j]);
     return j;
   };
 
@@ -189,5 +217,5 @@ export function literalSites(src) {
   }
 
   scanCode(0, false);
-  return sites;
+  return { sites, masks };
 }
