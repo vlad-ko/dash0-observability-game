@@ -147,6 +147,8 @@ Header and strict JSON as in section 2. At the top: `id`, `name`, `sub`, `reward
 - Every other literal becomes one entry named `<screen><Role>`. The screen is the step function's name without `step` (`stepSort` gives `sort`), or `start` for the top of `run`. The role is `Intro` (passed to `ctx.speech`), `Question`, `Reason` (a disabled button's reason), `Button`, `Chip`, `Note`, `Label`, `Says` (a feedback line), or what the code calls it. A level with one finish text names it `finish`. Add a number if two names would clash.
 - One entry per literal in the old code. Literals joined by `+` count as one, and so does a template literal. Two literals with the same words in two places stay two entries.
 - Inside `run` any key is allowed except answer and grader keys (`right`, `keep`, `bucket`, `kind`, `cost`, `keeps`, `cap`, `qid`, `prefix`, `steps`, `play` and the fixture keys of section 3). Every value is text, an object or a list. Every string may hold HTML (section 5) and is checked after its fill-ins.
+- A text field whose name is one of those keys (the-pager's `answer`) gets another name in the content (`reply`), and `contentOf` maps it back.
+- A list of words that two steps share (the-signals' buckets) is one entry, and `contentOf` uses it in both places.
 - A literal that starts or ends with a space loses that space in the content; the code adds it back where it uses the entry.
 - Markup that section 5 does not allow (`<h4>`, `<div>`, `<span>`, `id=`, `tabindex=`) stays in the code as a slot (11.3); the code builds the tag and puts the words, read from `say`, inside it.
 

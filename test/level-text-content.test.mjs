@@ -41,8 +41,8 @@ test('each content file is a header, then one strict JSON object, with no repeat
   }
 });
 
-test('every content file is for a play level or a run level, never both, and baggage is a run level', () => {
-  assert.ok(RUN_IDS.includes('baggage'), `run levels: ${RUN_IDS.join(', ')}`);
+test('every content file is for a play level or a run level, never both, and baggage and Act 0 are run levels', () => {
+  for (const id of ['baggage', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_IDS.includes(id), `${id} is a run level; run levels: ${RUN_IDS.join(', ')}`);
   assert.deepEqual([...PLAY_IDS, ...RUN_IDS].sort(), IDS, 'every content file has play or run');
   assert.deepEqual(PLAY_IDS.filter((id) => RUN_IDS.includes(id)), [], 'no content file has both');
   const reg = liveRegistry();
@@ -201,6 +201,38 @@ test('checkWords: two entries with the same words are told apart, each must show
   const e = editRun(run);
   assert.deepEqual(checkWords(run, [e.a]).unseen, ['run.b'], 'only one of the two is shown');
   assert.deepEqual(checkWords(run, [e.a, e.b]), CLEAN, 'both are shown');
+});
+
+test('checkWords: an entry with fill-ins is seen when shown edited with its values in, and leaks when shown unedited', () => {
+  const run = { chip: '{{label}} {{step-pct}} percent', other: 'Another long sentence.' };
+  const e = editRun(run);
+  const chip = (mark) => `<span>${mark}Which service? 25 percent</span>`;
+  assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other]), CLEAN, 'shown edited, values filled in');
+  assert.deepEqual(checkWords(run, [e.other]).unseen, ['run.chip'], 'never shown');
+  assert.deepEqual(checkWords(run, [chip(''), e.other]).leaked, [run.chip], 'shown without its edit');
+  assert.deepEqual(checkWords(run, [chip(''), e.other], { unreached: ['run.chip'] }).stale, [], 'an unreached entry that is not shown edited is not stale');
+  assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other], { unreached: ['run.chip'] }).stale, ['run.chip'], 'an unreached entry that is shown edited is stale');
+});
+
+test('checkWords: the values of a fill-in entry are leak-checked as entries of their own', () => {
+  const run = { looks: [{ key: 'service', label: 'Which service?' }], chip: '{{label}} {{pct}} percent' };
+  const e = editRun(run);
+  const chip = (label) => `<span>EDITED1 ${label} 25 percent</span>`;
+  assert.deepEqual(checkWords(run, [chip(e.looks[0].label)]), CLEAN, 'the value is the marked label');
+  assert.deepEqual(checkWords(run, [chip(run.looks[0].label)]).leaked, [run.looks[0].label], 'the value is the label without its edit');
+});
+
+test('checkWords: a fill-in value that holds an inline tag is matched too, marked and unmarked', () => {
+  const run = { set: 'Set {{attr}} on the root span.' };
+  const e = editRun(run);
+  const shown = (mark) => `<p>${mark}Set <code>x</code> on the root span.</p>`;
+  assert.deepEqual(checkWords(run, [shown('EDITED0 ')]), CLEAN, 'shown edited, the tag in the value');
+  assert.deepEqual(checkWords(run, [shown('EDITED0 '), shown('')]).leaked, [run.set], 'a second copy without its edit leaks');
+  assert.deepEqual(checkWords(run, [shown('')]).leaked, [run.set], 'shown only without its edit');
+  const withAttr = (mark) => `<p>${mark}Set <code data-token="x">x</code> on the root span.</p>`;
+  assert.deepEqual(checkWords(run, [withAttr('EDITED0 ')]), CLEAN, 'shown edited, a tag with an attribute in the value');
+  assert.deepEqual(checkWords(run, [withAttr('EDITED0 '), withAttr('')]).leaked, [run.set], 'a second copy without its edit leaks, the tag having an attribute');
+  assert.equal(e.set, 'EDITED0 Set {{attr}} on the root span.');
 });
 
 test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
