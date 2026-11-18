@@ -140,13 +140,20 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **Dash0**: an OpenTelemetry-native observability platform for traces, metrics, logs
   and more.
 - **Trace View**: the Dash0 view of one trace with all its spans and their relationships.
+- **Trace Explorer**: the Dash0 page for finding traces: you filter the spans by attribute, then open a trace. (Act 9)
+- **Span Sidebar**: the Dash0 detail panel that opens when you select a span. (Act 9)
 - **Metric Explorer**: the Dash0 place to browse, filter and investigate metrics; the start of deeper analysis in the Query Builder.
 - **Related Logs**: the Dash0 tab that shows logs from the same resource and the same trace around a selected log.
 - **Dash0 operator**: Kubernetes operator that auto-instruments workloads and ships
   telemetry to Dash0. (Act 1)
+- **Auth token**: the key a user or a service shows Dash0's APIs, for example to send telemetry to Dash0. (Acts 5, 9)
+- **Dataset**: a part of a Dash0 organization that keeps its own observability data apart, for example one for production and one for test. (Acts 8, 9)
 - **Check rule**: a Prometheus-compatible alerting rule in Dash0. (Act 7)
+- **Notification channel**: where Dash0 delivers alerts from check rules and synthetic checks, such as Slack, PagerDuty or email. (Act 7)
 - **Dashboards (Perses)**: Dash0 dashboards follow the open Perses format and can be
   managed as code. (Act 8)
+- **Websites Explorer**: the Dash0 view of your frontend health: traffic, sessions and the events in each session. (Act 8)
+- **Web Vitals**: performance metrics defined by Google for what real users experience on a web page: LCP, INP and CLS. (Act 8)
 - **Spam filter**: a rule that drops unwanted telemetry at ingest. (Acts 3, 6)
 - **Triage**: comparing attribute distributions between a selection and a baseline to
   find what's different. (Act 2)

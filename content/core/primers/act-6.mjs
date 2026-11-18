@@ -8,7 +8,7 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "Sampling is one of the most effective ways to reduce the costs of observability without losing visibility. This act is about deciding what to keep, and about what drives the cost."
+      "text": "Sampling decides which traces and spans are processed and exported, and relies on a smaller group representing a larger one. This act is about deciding what to keep, and about what drives the cost."
     },
     {
       "type": "list",
@@ -130,7 +130,7 @@ export default {
         {
           "kind": "docs",
           "label": "Dash0 docs: Cost control",
-          "url": "https://www.dash0.com/docs/dash0/cost-control",
+          "url": "https://www.dash0.com/docs/dash0/cost-control/overview",
           "audience": "public"
         }
       ]

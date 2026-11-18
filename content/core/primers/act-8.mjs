@@ -1,9 +1,9 @@
-// Act 8 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry semantic conventions pages, the
-// Perses dashboard page and Dash0 docs pages, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
+// Act 8 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry semantic conventions pages and
+// Dash0 docs pages, pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-8",
   "placeholder": true,
-  "placeholderNote": "PLACEHOLDER: drafted from public OpenTelemetry, Perses and Dash0 docs pages; the Dash0 team replaces it with its own words, then sets placeholder to false and removes this note.",
+  "placeholderNote": "PLACEHOLDER: drafted from public OpenTelemetry and Dash0 docs pages; the Dash0 team replaces it with its own words, then sets placeholder to false and removes this note.",
   "title": "Operating at scale: as code",
   "overview": [
     {
@@ -35,14 +35,13 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Dash0 dashboards use the Perses dashboard format. Perses dashboards are an open, standardized specification that fosters interoperability across observability tools."
+          "text": "Dash0 dashboards use the Perses dashboard format."
         },
         {
           "type": "list",
           "items": [
-            "Panels: a dashboard's visual elements consist of a set of panels.",
-            "Variables: let users interactively change the query scopes.",
-            "Datasources: a dashboard relies on one or more datasources to fetch its data."
+            "Panels: each panel on a dashboard is an independent visualization, with its own queries, chart type and styling.",
+            "Variables: you define a variable once and reuse it across every panel. When you change its selection, every panel that uses it updates."
           ]
         }
       ],
@@ -54,9 +53,15 @@ export default {
           "audience": "public"
         },
         {
-          "kind": "article",
-          "label": "Perses: Dashboard",
-          "url": "https://perses.dev/perses/docs/concepts/dashboard/",
+          "kind": "docs",
+          "label": "Dash0 docs: Add panels",
+          "url": "https://www.dash0.com/docs/dash0/dashboards/add-panels",
+          "audience": "public"
+        },
+        {
+          "kind": "docs",
+          "label": "Dash0 docs: Add variables",
+          "url": "https://www.dash0.com/docs/dash0/dashboards/add-variables",
           "audience": "public"
         }
       ]
@@ -71,11 +76,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Moving to the stable HTTP semantic conventions brought a significant number of changes to an extensive user base. So existing HTTP instrumentations published by OpenTelemetry are required to implement a migration plan."
+          "text": "The stable HTTP semantic conventions changed many attribute names. So existing HTTP instrumentations published by OpenTelemetry are required to implement a migration plan."
         },
         {
           "type": "paragraph",
-          "text": "Under that plan, an instrumentation updated to the stable conventions adds an opt-in setting in its current major version. By default, it keeps its existing behaviour."
+          "text": "Under that plan, an instrumentation updated to the stable conventions should add an opt-in setting in its current major version. By default, it keeps its existing behaviour."
         }
       ],
       "sources": [
@@ -121,7 +126,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Dash0, the Websites Explorer is a curated, opinionated view of your frontend health. It shows traffic volume: sessions, page views, users, bounce rate, backend requests and JavaScript errors. A session's events include page views, HTTP requests, web vitals, errors, rage clicks and custom events."
+          "text": "In Dash0, the Websites Explorer is a built-in view of your frontend health. It shows traffic volume: sessions, page views, users, bounce rate, backend requests and JavaScript errors. A session's events include page views, HTTP requests, Web Vitals, errors, rage clicks and custom events."
         },
         {
           "type": "paragraph",
@@ -161,7 +166,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The Dash0 MCP Server lets AI assistants such as Claude, Claude Code and Cursor query your Dash0 observability data. The assistant calls Dash0 tools to read services, metrics, logs, traces, synthetic checks, SLOs and dashboards. These tools only read data: they never create, change or delete anything in Dash0."
+          "text": "The Dash0 MCP Server lets AI assistants such as Claude, Claude Code and Cursor query your Dash0 observability data. The assistant calls Dash0 tools to read services, metrics, logs, traces, synthetic checks, SLOs and dashboards. These tools only read data: they never create, change or delete anything in Dash0. The one exception is the runTask tool, which hands an open-ended question to Agent0: each task creates an Agent0 thread in your organization, the only thing the server creates."
         },
         {
           "type": "paragraph",

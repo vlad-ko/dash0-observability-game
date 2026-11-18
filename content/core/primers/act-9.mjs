@@ -8,14 +8,14 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "In this act you hear confident answers from customer calls and check each one against the telemetry. Then you connect the game to Dash0 and find its incident in a trace view."
+      "text": "In this act you hear confident answers from customer calls and check each one against the telemetry. Then you connect the game to Dash0 and find its incident in the Trace View."
     },
     {
       "type": "list",
       "items": [
         "Observability lets you ask questions about a system from the outside, once the application is instrumented.",
         "To send to Dash0 you need an auth token, and datasets keep data apart within one organization.",
-        "In Dash0 you find telemetry with attribute filters and read a single trace in the trace view."
+        "In Dash0 you find telemetry with attribute filters and read a single trace in the Trace View."
       ]
     },
     {
@@ -94,7 +94,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The trace view gives a detailed look at a single trace in three visualizations. Selecting a span opens the Span Sidebar, a detail panel for that span."
+          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The Trace View gives a detailed look at a single trace in three visualizations. Selecting a span opens the Span Sidebar, a detail panel for that span."
         }
       ],
       "sources": [

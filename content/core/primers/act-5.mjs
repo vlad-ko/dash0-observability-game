@@ -1,4 +1,4 @@
-// Act 5 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry Collector, OTLP and OTTL pages,
+// Act 5 primer (#389). PLACEHOLDER: drafted from the official OpenTelemetry Collector and OTLP pages,
 // pending the Dash0 team's own words. Format and rules: docs/PRIMERS.md.
 export default {
   "act": "act-5",
@@ -39,6 +39,7 @@ export default {
             "Receivers collect telemetry from one or more sources.",
             "Processors take the data collected by receivers and modify or transform it before sending it to the exporters.",
             "Exporters send data to one or more backends or destinations.",
+            "Connectors join two pipelines.",
             "Extensions are optional components that expand the capabilities of the Collector. They do not need direct access to telemetry data."
           ]
         },
@@ -66,7 +67,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The order of the processors in a pipeline determines the order of the processing operations. Processors are optional, although some are recommended."
+          "text": "Processors run in the order they are listed in a pipeline. Processors are optional, although some are recommended."
         }
       ],
       "sources": [
@@ -149,7 +150,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The OpenTelemetry Transformation Language (OTTL) is a small, domain-specific programming language for processing data with OpenTelemetry-native concepts. A statement is a function that transforms telemetry and, optionally, a condition that decides whether the function runs. Within a statement, OTTL paths give you access to the telemetry."
+          "text": "The OpenTelemetry Transformation Language (OTTL) is the language the transform processor uses for its transformations."
         },
         {
           "type": "list",
@@ -169,12 +170,6 @@ export default {
           "kind": "otel",
           "label": "OpenTelemetry: Transforming telemetry",
           "url": "https://opentelemetry.io/docs/collector/transforming-telemetry/",
-          "audience": "public"
-        },
-        {
-          "kind": "article",
-          "label": "OpenTelemetry Collector contrib: OTTL",
-          "url": "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md",
           "audience": "public"
         }
       ]
