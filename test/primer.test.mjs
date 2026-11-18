@@ -3,7 +3,7 @@
 // primers are checked in test/primers-content.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrimers, firstUnread, primerChapters, primerStatus, primerTile, primerView, primerZoneView, validatePrimer, validatePrimers, LIMITS } from '../lib/primer.mjs';
+import { buildPrimers, firstUnread, primerChapters, primerEyebrow, primerStatus, primerTile, primerView, primerZoneView, validatePrimer, validatePrimers, LIMITS } from '../lib/primer.mjs';
 
 const ACT_IDS = ['a0', 'a1'];
 const otel = (label = 'OpenTelemetry docs') => ({ kind: 'otel', label, url: 'https://opentelemetry.io/docs/', audience: 'public' });
@@ -290,6 +290,12 @@ test('primerChapters: index, id, title in order; read is membership in stored.re
     { index: 2, id: 'c-three', title: 'Chapter c-three', read: true },
   ]);
   assert.deepEqual(primerChapters(P0(), undefined).map((c) => c.read), [false, false, false]);
+});
+
+test('primerEyebrow: a whole act number names the act, anything else gives the plain eyebrow', () => {
+  assert.equal(primerEyebrow(2), 'Act 2 primer');
+  assert.equal(primerEyebrow(0), 'Act 0 primer');
+  for (const bad of [1.5, '2', null, undefined]) assert.equal(primerEyebrow(bad), 'Act primer', String(bad));
 });
 
 test('firstUnread: the first chapter not read, else 0', () => {

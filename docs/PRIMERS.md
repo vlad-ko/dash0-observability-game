@@ -7,7 +7,7 @@ problem, not as a broken page. The contract behind it is docs/FOUNDATION.md §2.
 
 A player meets a primer in two steps: a short pop-up with the overview, then a full-screen zone of chapters, entered with
 "Proceed with learning". Once the player has seen the pop-up, the act's tile on the map goes straight into the zone, at the
-first chapter not yet read (closing the pop-up without Proceed counts as seen too, so that click then starts at chapter 1). So write the overview to stand on its own: a returning reader skips it.
+first chapter not yet read (closing the pop-up without Proceed counts too, so the next tile click starts the zone at chapter 1). So write the overview to stand on its own: a returning reader skips it.
 
 ## Start from Act 0
 

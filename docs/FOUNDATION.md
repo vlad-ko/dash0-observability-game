@@ -654,7 +654,7 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
   chapter. The zone counts as a dialog: the hub is inert, Tab is trapped in `#primer-zone`, Escape and the back arrow close it
   and the globe is freed while it is open. Writes per action: opening records `seen`, "already familiar" `skipped`, Next the
   chapter left `read`; Proceed, Back, a chapter jump and close write nothing. `?mode=debug` writes nothing, so the tile always
-  opens the pop-up there. Closing the pop-up without Proceed also records `seen`, so the next tile click goes straight into the
+  opens the pop-up there. Opening the pop-up already records `seen`, so after closing it without Proceed the next tile click goes straight into the
   zone at chapter 1. The waiting level and the focus rules are as for the pop-up below.
 - Pop-up body: `primerBodyHtml(view, {draft})` draws one
   `primerView` screen with kit helpers only (escaped text, classless `<a target="_blank" rel="noopener noreferrer">` plus a kind

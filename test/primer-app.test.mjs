@@ -667,6 +667,7 @@ test('Z16 index.html: the pop-up foot has two buttons and the zone is a level-ov
   const shell = parseHTML(html).document;
   const labels = [...shell.querySelectorAll('#primer-modal .ui-modal-foot button')].map((b) => b.textContent.trim());
   assert.deepEqual(labels, ['I am already familiar with the topic', 'Proceed with learning']);
+  assert.equal(shell.querySelector('#primer-modal .ui-eyebrow').getAttribute('x-text'), 'primerEyebrow()');
   const zone = shell.getElementById('primer-zone');
   assert.equal(zone.classList.contains('overlay'), true);
   assert.equal(zone.getAttribute('role'), 'dialog');
