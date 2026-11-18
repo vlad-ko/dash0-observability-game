@@ -86,6 +86,19 @@ test('wordDiff: a code literal equal to a fill-in name is never compared, howeve
   assert.deepEqual(wordDiff(oldSrc, unquotedKey, { done: 'Sent to {{host}}.' }), { lost: [], added: ['x'] });
 });
 
+test('wordDiff: a code literal equal to a fill-in name cannot cancel a dropped word of the same spelling', () => {
+  const oldSrc = "export default { done: (host) => `Sent to ${host}, the host is down.` };";
+  const newSrc = "const SLOTS = ['host'];\nexport default { SLOTS };";
+  assert.deepEqual(wordDiff(oldSrc, newSrc, { done: 'Sent to {{host}}, the is down.' }), { lost: ['host'], added: [] });
+});
+
+test('wordDiff: a whyNot entry keyed id or key is text, not an id', () => {
+  const oldSrc = "export default { a: 'Old words' };";
+  const newSrc = 'export default {};';
+  const c = { a: 'Old words', item: { whyNot: { id: 'Brand new reason', key: 'Another one' } } };
+  assert.deepEqual(wordDiff(oldSrc, newSrc, c), { lost: [], added: ['Another', 'Brand', 'new', 'one', 'reason'].sort() });
+});
+
 test('wordDiff: tags do not count, and a content id is not an added word', () => {
   const c = content();
   c.rows[1].label = '<b>Never</b>';
