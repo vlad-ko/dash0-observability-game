@@ -4,7 +4,13 @@
 // from a small instrumented view. It cannot be won and is not scored: it is the reason to instrument.
 // The budget is a percent of the error budget, not minutes, in fixed 25% steps. The screen shows a kit meter of 4 cells, its text line (percent spent) as the one statement of the budget, and a Spent on chip per look. It is not the incident engine (§4.3). Spec: docs/M1-DESIGN.md §6 Boss the-pager.
 // Spec: https://opentelemetry.io/docs/concepts/observability-primer/#what-is-observability
-
+//
+// A run(ctx) level: its words are in content/core/levels/the-pager.mjs (docs/CONTENT.md section 11), read here as
+// say.<name>; this file keeps the budget and the screens. The content calls a part 2 answer a `reply` ("answer" is a
+// logic-only key under run); contentOf maps it back to `answer`.
+import CORE from '../content/core/levels/the-pager.mjs';
+import { bindLevel, bindRunLevel } from '../lib/content/bind.mjs';
+import { fillSlots } from '../lib/content/placeholders.mjs';
 import {
   actions,
   button,
@@ -21,39 +27,26 @@ import {
   step,
 } from '../lib/ui/index.mjs';
 
-/** Said at the top of part 2 when the fourth look spent the last of the budget: the player never presses Escalate, and the meter and the look's row are gone with part 1. */
-const BUDGET_SPENT = 'Budget spent: 100 of 100 percent. The last look found no data either, so the pager escalated for you.';
-const ALERT = 'PAGE: checkout p95 > 2 s (firing)';
 const BUDGET = { startPct: 100, stepPct: 25 };
-const REWARD = 'Blind, you could not answer one question. With telemetry, all four took seconds. Time to instrument.';
-const INTRO =
-  'Your pager goes off. Try the four questions below: you will find you cannot answer them, because nothing sends telemetry yet. Each try burns error budget. Press Escalate when you give up. If the budget runs out first, the pager escalates for you.';
-const LIT_INTRO =
-  'Same alert, now with telemetry. Ask the same four questions. The data is made up, for illustration. Ask all four to finish.';
 
-// The four looks in play order. `reason` is what the look reveals.
-const LOOKS = [
-  {
-    key: 'service',
-    label: 'Which service?',
-    reason: 'No data. No service sends telemetry yet, so nothing says which one is slow.',
-  },
-  {
-    key: 'since',
-    label: 'Since when?',
-    reason: 'No data. The alert only says it is firing now; nothing was recorded before it.',
-  },
-  {
-    key: 'customers',
-    label: 'Which customers?',
-    reason: 'No data. Requests carry no customer details, so there is nothing to slice by.',
-  },
-  {
-    key: 'trace',
-    label: 'Show me a trace',
-    reason: 'No data. No service records traces, so there is no request to follow.',
-  },
-];
+// The Spent on chips quote the step of the budget (a figure); the label of a look is known only to the code (a slot).
+const VARS = { 'step-pct': BUDGET.stepPct };
+const SLOTS = ['label'];
+
+const SKELETON = {
+  id: 'the-pager',
+  no: null,
+  icon: '\u{1F4DF}',
+  mechanics: ['incident'],
+  // No help card: its intro explains the board (it is not scored).
+  widgets: [],
+  cards: [],
+  lights: [],
+  scored: false,
+  scoring: { parMs: null },
+  // Nothing in it carries an answer flag or a figure: all its words are in the content.
+  run: {},
+};
 
 // Part 2's answers. All figures, names and the trace ID are MADE UP for illustration.
 // Each answer leans on one OpenTelemetry idea:
@@ -65,165 +58,140 @@ const LOOKS = [
 //   Spec: https://opentelemetry.io/docs/concepts/signals/traces/#attributes
 // trace: a trace is the spans of one request; a span records its operation and duration.
 //   Spec: https://opentelemetry.io/docs/concepts/signals/traces/
-const ASKS = [
-  {
-    key: 'service',
-    label: 'Which service?',
-    answer: 'payment-api. Its p95 is 4.1 s; cart and storefront stay under 0.3 s.',
-  },
-  {
-    key: 'since',
-    label: 'Since when?',
-    answer: 'Since 14:02, when p95 jumped from 0.2 s to 4.1 s. payment-api v2.31 started at 14:02.',
-  },
-  {
-    key: 'customers',
-    label: 'Which customers?',
-    answer: 'Orders paid with payment.provider=acme-pay. Other providers stay fast.',
-  },
-  {
-    key: 'trace',
-    label: 'Show me a trace',
-    answer:
-      'Trace 4bf92f3577b34da6a3ce929d0e0e4736: checkout took 4.2 s, 3.9 s of it in payment-api POST /charge.',
-  },
-];
 
-/** The boss's copy (pinned by test/the-pager.test.mjs). */
-export const CONTENT = {
-  alert: ALERT,
-  looks: LOOKS,
+/**
+ * The boss's copy (pinned by test/the-pager.test.mjs), from the bound words `say`. The four looks are in play order,
+ * and `reason` is what a look reveals. A part 2 answer is the content's `reply`.
+ */
+const contentOf = (say) => ({
+  alert: say.alert,
+  looks: say.looks,
   budget: BUDGET,
-  reward: REWARD,
-  intro: INTRO,
-  telemetry: { intro: LIT_INTRO, asks: ASKS },
-};
+  reward: say.reward,
+  intro: say.intro,
+  telemetry: { intro: say.litIntro, asks: say.asks.map(({ reply, ...ask }) => ({ ...ask, answer: reply })) },
+});
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
 
 const CELLS = BUDGET.startPct / BUDGET.stepPct;
 
 /** The kit meter, the one place the budget is stated: spent cells fill as looks are taken, and its text line says "75 of 100 percent spent". */
-const meterHtml = (left) =>
+const meterHtml = (say, left) =>
   meter({
     id: 'pager-meter',
-    label: 'Error budget',
+    label: say.meterLabel,
     value: BUDGET.startPct - left,
     max: BUDGET.startPct,
     cells: CELLS,
-    unit: 'percent spent',
+    unit: say.meterUnit,
   });
 
 /** One Spent on chip per look taken, in the order taken. */
-const spentHtml = (taken) =>
+const spentHtml = (say, taken) =>
   taken.length
-    ? `Spent on: ${taken.map((l) => chip({ text: `${l.label} ${BUDGET.stepPct} percent` })).join(' ')}`
+    ? `${say.spentLabel} ${taken.map((l) => chip({ text: fillSlots(say.spentChip, { label: l.label }) })).join(' ')}`
     : '';
 
-export default {
-  id: 'the-pager',
-  no: null,
-  name: 'The pager',
-  sub: 'An alert with no context',
-  icon: '\u{1F4DF}',
-  rewardTitle: 'First page',
-  mechanics: ['incident'],
-  // No help card: its intro explains the board (it is not scored).
-  widgets: [],
-  cards: [],
-  lights: [],
-  scored: false,
-  scoring: { parMs: null },
-  run(ctx) {
-    const e = ctx.escapeHtml;
-    // The rows so far: full-width kit cards (copies of the feedback region), not live. Only the newest row is announced, in the feedback region.
-    const rowsList = (id) => `<div class="pager-rows" id="${id}"></div>`;
-    const alert = question({ id: 'pager-alert', html: e(ALERT) });
-    const choices = (list, attr) =>
-      options({
-        labelledBy: 'pager-alert',
-        itemsHtml: list.map((x) => option({ attr, value: x.key, labelHtml: e(x.label) })).join(''),
-      });
-    /** The newest row is announced in the kit feedback region (neutral: information only); the row it replaces moves into the plain (not live) list, so each row is on screen once. */
-    const addRow = (list, region, key, attr, label, body) => {
-      if (region.newestHtml) {
-        // The row it replaces becomes a card of its own, a copy of the kit region (not live, no id), so every row has one style (#332).
-        const old = region.cloneNode(true);
-        for (const attr of ['id', 'role', 'aria-live', 'tabindex']) old.removeAttribute(attr);
-        list.appendChild(old);
-      }
-      // A label that is a question reads on as it is; any other label gets a colon.
-      const mark = label.endsWith('?') ? '' : ':';
-      region.newestHtml = `<p data-${attr}="${key}"><strong>${label}${mark}</strong> ${body}</p>`;
-      setFeedback(region, 'neutral', region.newestHtml, { scroll: true }); // each row answers a click: in view, above the footer (#346)
-    };
-    const askAnswers = (escalatedByBudget = false) => {
-      ctx.renderStep(
-        step({
-          wide: false,
-          bodyHtml: `${ctx.speech(LIT_INTRO)}${escalatedByBudget ? note(BUDGET_SPENT) : ''}${alert}${choices(ASKS, 'ask')}${rowsList('pager-answer-rows')}${feedbackRegion({ id: 'pager-answers' })}`,
-        }),
-        actions({ wide: false, buttonsHtml: finishButton('pager-finish', 'Ask every question to finish.') }),
-      );
-      const finish = ctx.ovActions.querySelector('#pager-finish');
-      const answers = ctx.ovBody.querySelector('#pager-answers');
-      const answerRows = ctx.ovBody.querySelector('#pager-answer-rows');
-      const buttons = [...ctx.ovBody.querySelectorAll('[data-ask]')];
-      buttons.forEach((b, i) => {
-        const ask = ASKS[i];
-        b.onclick = () => {
-          if (b.disabled) return;
-          b.disabled = true;
-          addRow(answerRows, answers, ask.key, 'answer', ask.label, ask.answer);
-          finish.disabled = buttons.some((x) => !x.disabled);
-          const rest = [...buttons.slice(i + 1), ...buttons.slice(0, i)];
-          (rest.find((x) => !x.disabled) ?? finish).focus();
-        };
-      });
-      finish.onclick = () => ctx.finish({ text: REWARD, cards: [] });
-      buttons[0].focus({ preventScroll: true }); // a new step opens at its top (#331)
-    };
-
+function screens(ctx, say) {
+  const { looks: LOOKS, telemetry: { asks: ASKS } } = contentOf(say); // the same tables CONTENT holds
+  const e = ctx.escapeHtml;
+  // The rows so far: full-width kit cards (copies of the feedback region), not live. Only the newest row is announced, in the feedback region.
+  const rowsList = (id) => `<div class="pager-rows" id="${id}"></div>`;
+  const alert = question({ id: 'pager-alert', html: e(say.alert) });
+  const choices = (list, attr) =>
+    options({
+      labelledBy: 'pager-alert',
+      itemsHtml: list.map((x) => option({ attr, value: x.key, labelHtml: e(x.label) })).join(''),
+    });
+  /** The newest row is announced in the kit feedback region (neutral: information only); the row it replaces moves into the plain (not live) list, so each row is on screen once. */
+  const addRow = (list, region, key, attr, label, body) => {
+    if (region.newestHtml) {
+      // The row it replaces becomes a card of its own, a copy of the kit region (not live, no id), so every row has one style (#332).
+      const old = region.cloneNode(true);
+      for (const attr of ['id', 'role', 'aria-live', 'tabindex']) old.removeAttribute(attr);
+      list.appendChild(old);
+    }
+    // A label that is a question reads on as it is; any other label gets a colon.
+    const mark = label.endsWith('?') ? '' : ':';
+    region.newestHtml = `<p data-${attr}="${key}"><strong>${label}${mark}</strong> ${body}</p>`;
+    setFeedback(region, 'neutral', region.newestHtml, { scroll: true }); // each row answers a click: in view, above the footer (#346)
+  };
+  const askAnswers = (escalatedByBudget = false) => {
+    // The note is said at the top of part 2 when the fourth look spent the last of the budget: the player never presses Escalate, and the meter and the look's row are gone with part 1.
     ctx.renderStep(
       step({
         wide: false,
-        bodyHtml: `${ctx.speech(INTRO)}${alert}
-        <div id="pager-budget" role="status" aria-live="polite">${meterHtml(BUDGET.startPct)}</div>
-        <p id="pager-spent"></p>
-        ${choices(LOOKS, 'look')}${rowsList('pager-said-rows')}${feedbackRegion({ id: 'pager-feedback' })}`,
+        bodyHtml: `${ctx.speech(say.litIntro)}${escalatedByBudget ? note(say.budgetSpent) : ''}${alert}${choices(ASKS, 'ask')}${rowsList('pager-answer-rows')}${feedbackRegion({ id: 'pager-answers' })}`,
       }),
-      actions({
-        wide: false,
-        buttonsHtml: button({ id: 'pager-escalate', label: 'Escalate', variant: 'primary', disabled: true }) +
-          reason({ id: 'pager-escalate-why', text: 'Try one question first.' }),
-      }),
+      actions({ wide: false, buttonsHtml: finishButton('pager-finish', say.askReason) }),
     );
-    const body = ctx.ovBody;
-    const escalate = ctx.ovActions.querySelector('#pager-escalate');
-    const budgetEl = body.querySelector('#pager-budget');
-    const spentEl = body.querySelector('#pager-spent');
-    const feedback = body.querySelector('#pager-feedback');
-    const saidRows = body.querySelector('#pager-said-rows');
-    const taken = [];
-    const buttons = [...body.querySelectorAll('[data-look]')];
-    let left = BUDGET.startPct;
-
+    const finish = ctx.ovActions.querySelector('#pager-finish');
+    const answers = ctx.ovBody.querySelector('#pager-answers');
+    const answerRows = ctx.ovBody.querySelector('#pager-answer-rows');
+    const buttons = [...ctx.ovBody.querySelectorAll('[data-ask]')];
     buttons.forEach((b, i) => {
-      const look = LOOKS[i];
+      const ask = ASKS[i];
       b.onclick = () => {
         if (b.disabled) return;
         b.disabled = true;
-        left = Math.max(0, left - BUDGET.stepPct);
-        taken.push(look);
-        budgetEl.innerHTML = meterHtml(left);
-        spentEl.innerHTML = spentHtml(taken);
-        addRow(saidRows, feedback, look.key, 'said', look.label, look.reason);
-        escalate.disabled = false;
-        if (left === 0) return askAnswers(true);
+        addRow(answerRows, answers, ask.key, 'answer', ask.label, ask.answer);
+        finish.disabled = buttons.some((x) => !x.disabled);
         const rest = [...buttons.slice(i + 1), ...buttons.slice(0, i)];
-        (rest.find((x) => !x.disabled) ?? escalate).focus();
+        (rest.find((x) => !x.disabled) ?? finish).focus();
       };
     });
-    escalate.onclick = () => askAnswers();
-    // The app moves focus to Back after run() (docs/DESIGN-SYSTEM.md, Focus); this keeps the step's own focus order.
+    finish.onclick = () => ctx.finish({ text: say.reward, cards: [] });
     buttons[0].focus({ preventScroll: true }); // a new step opens at its top (#331)
-  },
-};
+  };
+
+  ctx.renderStep(
+    step({
+      wide: false,
+      bodyHtml: `${ctx.speech(say.intro)}${alert}
+        <div id="pager-budget" role="status" aria-live="polite">${meterHtml(say, BUDGET.startPct)}</div>
+        <p id="pager-spent"></p>
+        ${choices(LOOKS, 'look')}${rowsList('pager-said-rows')}${feedbackRegion({ id: 'pager-feedback' })}`,
+    }),
+    actions({
+      wide: false,
+      buttonsHtml: button({ id: 'pager-escalate', label: say.startEscalateButton, variant: 'primary', disabled: true }) +
+        reason({ id: 'pager-escalate-why', text: say.startEscalateReason }),
+    }),
+  );
+  const body = ctx.ovBody;
+  const escalate = ctx.ovActions.querySelector('#pager-escalate');
+  const budgetEl = body.querySelector('#pager-budget');
+  const spentEl = body.querySelector('#pager-spent');
+  const feedback = body.querySelector('#pager-feedback');
+  const saidRows = body.querySelector('#pager-said-rows');
+  const taken = [];
+  const buttons = [...body.querySelectorAll('[data-look]')];
+  let left = BUDGET.startPct;
+
+  buttons.forEach((b, i) => {
+    const look = LOOKS[i];
+    b.onclick = () => {
+      if (b.disabled) return;
+      b.disabled = true;
+      left = Math.max(0, left - BUDGET.stepPct);
+      taken.push(look);
+      budgetEl.innerHTML = meterHtml(say, left);
+      spentEl.innerHTML = spentHtml(say, taken);
+      addRow(saidRows, feedback, look.key, 'said', look.label, look.reason);
+      escalate.disabled = false;
+      if (left === 0) return askAnswers(true);
+      const rest = [...buttons.slice(i + 1), ...buttons.slice(0, i)];
+      (rest.find((x) => !x.disabled) ?? escalate).focus();
+    };
+  });
+  escalate.onclick = () => askAnswers();
+  // The app moves focus to Back after run() (docs/DESIGN-SYSTEM.md, Focus); this keeps the step's own focus order.
+  buttons[0].focus({ preventScroll: true }); // a new step opens at its top (#331)
+}
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+}
+
+export default withText(CORE);

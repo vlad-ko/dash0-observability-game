@@ -890,6 +890,8 @@ const UNREACHED = {
     'run.newest[0].why',
     'run.newest[2].why',
   ],
+  // Both runs show the chip, but its entry holds {{label}} and {{step-pct}}, so checkWords cannot find its text on a screen.
+  'the-pager': ['run.spentChip'],
   'why-opentelemetry': [
     'run.parts.hint',
     'run.parts.items[0].whyNot.api',
@@ -918,7 +920,7 @@ const UNREACHED = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'monitoring-vs-observability', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
