@@ -24,64 +24,18 @@
 //
 // Invented for the game: the company, the checkout service, the values on the span (/checkout, /checkout?step=pay, POST, 500, 8443, gw.kettle.example) and the
 // scenario of the week-ahead switch. Each attribute is shown as `key=value`.
+//
+// The words are in content/core/levels/semantic-convention-versions.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
+import CORE from '../content/core/levels/semantic-convention-versions.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 
-const SPOT = {
-  id: 'scv-spot',
-  target: 'span',
-  helps: { hints: false },
-  lines: [
-    { id: 'http-target', text: 'http.target=/checkout?step=pay' },
-    { id: 'server-port', text: 'server.port=8443' },
-    { id: 'request-method', text: 'http.request.method=POST' },
-    { id: 'client-address', text: 'client.address=gw.kettle.example' },
-    { id: 'net-host-port', text: 'net.host.port=8443' },
-    { id: 'route', text: 'http.route=/checkout' },
-    { id: 'request-header', text: 'http.request.header.content-type=["application/json"]' },
-    { id: 'http-status-code', text: 'http.status_code=500' },
-  ],
-  faults: ['http-target', 'net-host-port', 'http-status-code'],
-  whyNot: {
-    'server-port': 'The stable name for the port the request was addressed to, usually from the Host header.',
-    'request-method': 'The stable name for the request method. Stable names can start with <code>http.</code> too.',
-    'client-address': 'Not an old name: the address of the client that sent the request, a stable name.',
-    route: 'Unchanged: <code>http.route</code> keeps its name with either opt-in, so it stays. Not every name that looks old has changed.',
-    'request-header': 'A stable name: a request header, recorded as a list of values under <code>http.request.header.</code> plus the header name.',
-  },
-  explain:
-    'Those three are the old names: <code>http.target</code> (now split into <code>url.path</code> and <code>url.query</code>), <code>net.host.port</code> (now <code>server.port</code>) and <code>http.status_code</code> (now <code>http.response.status_code</code>). ' +
-    'With <code>OTEL_SEMCONV_STABILITY_OPT_IN</code> set to <code>http/dup</code> the instrumentation sends the old and the stable names side by side; ' +
-    'with <code>http</code> it sends only the stable ones, and the old names stop arriving. <code>http.route</code> did not change.',
-};
+// The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
+const VARS = {};
 
-const SWITCH = [
-  {
-    key: 'switch-now',
-    label: 'Switch now: the stable names are the same data, so everything keeps working',
-    why: 'The data is the same, the names are not. A query, a dashboard panel or an alert rule that filters on <code>http.status_code</code> matches nothing once that name stops arriving, and an alert that matches nothing stays quiet.',
-  },
-  {
-    key: 'move-queries',
-    label: 'Move every query, alert and dashboard to the stable names, then switch',
-    right: true,
-    why:
-      'While <code>http/dup</code> is on, both names arrive, so you can move each query, dashboard and alert rule to <code>http.response.status_code</code>, <code>server.port</code> and <code>url.path</code> plus <code>url.query</code> and see it still returns data. ' +
-      'Then set <code>OTEL_SEMCONV_STABILITY_OPT_IN</code> to <code>http</code> and the old names stop. ' +
-      'In Dash0, a chart\'s PromQL filters name OpenTelemetry attributes, with the dots written as underscores (<code>service.name</code> is <code>service_name</code>), so check your charts for the old names too.',
-  },
-  {
-    key: 'keep-dup',
-    label: 'Keep <code>http/dup</code> on for good, so no query, dashboard or alert has to change',
-    why: 'Every span then carries two copies of each attribute that changed, and the old names are the ones being replaced. <code>http/dup</code> is for the move, not the end state: the opt-in is meant for migrating.',
-  },
-];
-
-export default {
+const SKELETON = {
   id: 'semantic-convention-versions',
   no: '8.2',
-  name: 'Semantic convention versions',
-  sub: 'Names change',
   icon: '\u{1F4D6}',
-  rewardTitle: 'Convention keeper',
   cards: [],
   lights: ['storefront'],
   scoring: { parMs: null },
@@ -89,22 +43,26 @@ export default {
     prefix: 'scv',
     steps: [
       {
-        intro:
-          'OpenTelemetry\'s HTTP semantic conventions went stable with new names: <code>http.user_agent</code> became <code>user_agent.original</code>. ' +
-          'Kettle &amp; Co\'s checkout upgraded its instrumentation and set <code>OTEL_SEMCONV_STABILITY_OPT_IN</code> to <code>http/dup</code>, so its HTTP spans carry the old and the stable names side by side. ' +
-          'Next week the team sets it to <code>http</code>, which sends the stable names only. Here are eight attributes from one checkout server span. Each line is one attribute, as key=value.',
-        question: 'Spot the attributes that stop arriving once the opt-in is set to http.',
         qid: 'scv-q-spot',
-        spot: SPOT,
+        spot: {
+          id: 'scv-spot',
+          target: 'span',
+          helps: { hints: false },
+          faults: ['http-target', 'net-host-port', 'http-status-code'],
+        },
       },
       {
-        intro: 'The team is ready to set the opt-in to <code>http</code>. Of the eight attributes you just read, 3 are old names that <code>http/dup</code> sends alongside the stable ones.',
-        question: 'What has to happen first?',
         qid: 'scv-q-switch',
-        choice: { id: 'scv-switch', choices: SWITCH },
+        // Only the answer is marked; every choice's text is in the content file.
+        choice: { id: 'scv-switch', choices: [{ key: 'move-queries', right: true }] },
       },
     ],
-    finish:
-      'Semantic convention names change as they go stable. Send both names with http/dup, move every query, dashboard and alert to the stable names, then set the opt-in to http.',
   },
 };
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+export default withText(CORE);
