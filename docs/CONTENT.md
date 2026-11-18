@@ -40,6 +40,7 @@ Anything else is an error ("is not a content key").
 - Identity: `id`, `key`.
 - Containers: `play`, `steps`, `choice`, `sort`, `spot`, `tradeoff`, `incident`, `build`, `query`, `configure`, `choices`, `buckets`, `items`, `lines`, `knobs`, `options`, `needs`, `views`, `hypotheses`, `alert`.
 - Text: `intro`, `question`, `show`, `code`, `finish`, `label`, `why`, `whyNot` (an object from a key to text), `explain`, `hint`, `text`, `html`, `title`, `unit`, `unitOne`, `closing`, `name`, `sub`, `rewardTitle`.
+- Top level only: `run` (the words of a run(ctx) level; see lib/content/bind.mjs).
 
 The logic file must not hold any text key ("text in the logic file: <path>"), except inside data a grader computes over. The code calls these the **fixture keys** (`FIXTURE_KEYS` in `lib/content/keys.mjs`, and the tests use the same word): `spans`, `logs`, `answer`, `faults`, `given`, `reference`, `dataset`, `withhold`, `uses`, `target`, `extensions`, `forbids`, `helps`, `budget`. Rule of thumb: if the game computes over a piece of data (a log line a checker reads, a YAML the grader parses), it stays in the logic even if the player sees it. If it is only shown, it goes in the content.
 
@@ -54,7 +55,7 @@ const VARS = { route: VALUES.route, 'product-mrs': n(product('method', 'route', 
 Then `"{{times-mrs}} = {{product-mrs}}"` in the content shows `5 × 14 × 9 = 630`, and a change to `VALUES` changes the copy and the answer together. Rules:
 - A name is lower case: `[a-z][a-z0-9-]*`. Any other `{{` is an error ("malformed fill-in"). A lone `}}` (YAML copy has them) is plain text.
 - A value is a string or a finite number. Format it in the level file (`n(x)` adds the thousands comma); the content never formats.
-- Every fill-in needs a value (a missing one is an error, never an empty string), and every value in `VARS` must be used.
+- Every fill-in needs a value (a missing one is an error, never an empty string), except a slot under `run`, declared in `slots` and filled at run time by `fillSlots`. Every value in `VARS` must be used.
 - Inserted values are not searched again for fill-ins, and are not escaped: a value in an HTML field is checked after it is filled in.
 - Ids (`id`, `key`) never hold a fill-in.
 
