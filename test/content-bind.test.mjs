@@ -1,7 +1,7 @@
 // Joining a content file to a level's logic (lib/content/bind.mjs, #391, docs/CONTENT.md).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bindLevel, bindText, ContentError } from '../lib/content/bind.mjs';
+import { bindLevel, bindRunLevel, bindText, ContentError } from '../lib/content/bind.mjs';
 
 const DASH = String.fromCharCode(0x2014);
 
@@ -262,4 +262,117 @@ test('bind: every string in the result is from the content or from the logic, no
   assert.ok(markers.length > 10);
   for (const x of markers) assert.ok(built.includes(x), `${x} was dropped`);
   for (const x of built) assert.ok(logic.has(x) || /^M\d+$/.test(x) || leaves(m).includes(x), `${x} appeared from nowhere`);
+});
+
+// ---- run(ctx) levels: the free-mode `run` entry, slots and bindRunLevel (#391) ----------------------------
+
+const runSkeleton = () => ({
+  id: 'rl',
+  no: '1.1',
+  cards: [],
+  run: { sort: { id: 's', helps: { hints: false }, items: [{ id: 'a', bucket: 'x' }, { id: 'b', bucket: 'y' }] }, picks: [{ key: 'p2', right: true }] },
+});
+const runText = () => ({
+  id: 'rl',
+  name: 'Run level',
+  sub: 'Sub',
+  rewardTitle: 'Runner',
+  run: {
+    sortIntro: 'Sort {{n}} things.',
+    sort: {
+      id: 's',
+      buckets: [{ id: 'x', label: 'Ex' }, { id: 'y', label: 'Why' }],
+      items: [{ id: 'b', label: 'Bee', whyNot: { x: 'Not <b>x</b>.' } }, { id: 'a', label: 'Ay' }],
+    },
+    picks: [{ key: 'p1', label: 'One', says: 'No.' }, { key: 'p2', label: 'Two', says: 'Yes.' }],
+    sentTo: '{{where}} accepted the test span.',
+    stories: [['charge', 'payments', 'It failed.']],
+  },
+});
+const bindRun = (t = runText(), s = runSkeleton(), o = { vars: { n: 2 }, slots: ['where'] }) => bindText(t, s, o);
+
+test('run: entries join by id and key, content order wins, stories are taken whole (R1)', () => {
+  const v = only(bindRun());
+  assert.deepEqual(v.run.sort.items, [
+    { id: 'b', bucket: 'y', label: 'Bee', whyNot: { x: 'Not <b>x</b>.' } },
+    { id: 'a', bucket: 'x', label: 'Ay' },
+  ]);
+  assert.deepEqual(v.run.sort.helps, { hints: false });
+  assert.deepEqual(v.run.picks.map((p) => [p.key, p.right, p.says]), [['p1', undefined, 'No.'], ['p2', true, 'Yes.']]);
+  assert.equal(v.run.sortIntro, 'Sort 2 things.');
+  assert.deepEqual(v.run.stories, [['charge', 'payments', 'It failed.']]);
+});
+
+test('run: a slot stays in the output as {{name}} (R2)', () => {
+  assert.equal(only(bindRun()).run.sentTo, '{{where}} accepted the test span.');
+});
+
+test('run: slot rules (R3)', () => {
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2 } }).errors.includes('run.sentTo: fill-in {{where}} has no value'));
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where', 'host'] }).errors.includes('slot "host" is never used'));
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2, where: 'x' }, slots: ['where'] }).errors.includes('"where" is both a var and a slot'));
+  const t = runText();
+  t.name = 'Run {{where}}';
+  assert.ok(bindRun(t).errors.some((e) => e.startsWith('name: slot {{where}} may only be used under run')));
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: '{{where}}' }, slots: ['where'] }).errors.some((e) => /var "n"/.test(e) && /\{\{/.test(e)));
+});
+
+test('run: logic-only keys and non-strings are refused (R4)', () => {
+  for (const k of ['right', 'bucket', 'answer', 'kind', 'steps']) {
+    const t = runText();
+    t.run.picks[0][k] = true;
+    const { errors } = bindRun(t);
+    assert.ok(errors.some((e) => e.startsWith(`run.picks[0].${k}:`) && /belongs in the logic/.test(e)), `${k}: ${errors.join('\n')}`);
+  }
+  const t = runText();
+  t.run.picks[0].label = 3;
+  assert.ok(bindRun(t).errors.some((e) => e.startsWith('run.picks[0].label:') && /must be a string/.test(e)));
+});
+
+test('run: an entry name is lowerCamelCase (R5)', () => {
+  const t = runText();
+  t.run['sort-intro'] = 'x';
+  assert.ok(bindRun(t).errors.some((e) => /run\.sort-intro: a run entry name is lowerCamelCase/.test(e)));
+});
+
+test('run: the HTML check runs after the fill-ins (R6)', () => {
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: '<img src=x>' }, slots: ['where'] }).errors.some((e) => e.startsWith('run.sortIntro ') && /must not contain the tag <img>/.test(e)));
+  const t = runText();
+  t.run.picks[0].says = 'See <a href="x">this</a>.';
+  assert.ok(bindRun(t).errors.some((e) => /run\.picks\[0\]\.says must not contain the tag <a>/.test(e)));
+  const u = runText();
+  u.run.sentTo = '<b class="{{where}}">x</b>';
+  assert.ok(bindRun(u).errors.some((e) => /run\.sentTo must not give <b> the attribute class/.test(e)));
+});
+
+test('run: only the top-level run entry is free; deeper it is not a content key (R7)', () => {
+  const t = { id: 'lv', name: 'L', sub: 'S', rewardTitle: 'R', play: { steps: [{ run: { a: 'b' }, choice: { id: 'c1', choices: [] } }] } };
+  const { errors } = bindText(t, { id: 'lv', play: { steps: [{ choice: { id: 'c1', choices: [] } }] } });
+  assert.ok(errors.some((e) => /play\.steps\[0\]\.run: "run" is not a content key/.test(e)), errors.join('\n'));
+});
+
+test('bindRunLevel: returns the meta and a run(ctx) that hands the bound words to screens (R8)', () => {
+  const calls = [];
+  const screens = (ctx, say) => calls.push([ctx, say]);
+  const opts = { vars: { n: 2 }, slots: ['where'], screens };
+  const text = runText();
+  const level = bindRunLevel(text, runSkeleton(), opts);
+  assert.equal(typeof level.run, 'function');
+  assert.deepEqual(Object.keys(level).sort(), ['cards', 'id', 'name', 'no', 'rewardTitle', 'run', 'sub']);
+  const ctx = {};
+  level.run(ctx);
+  assert.equal(calls[0][0], ctx);
+  assert.equal(calls[0][1].sortIntro, 'Sort 2 things.');
+  calls[0][1].sortIntro = 'changed';
+  calls[0][1].sort.items.pop();
+  assert.equal(text.run.sortIntro, 'Sort {{n}} things.');
+  assert.equal(text.run.sort.items.length, 2);
+  const again = bindRunLevel(runText(), runSkeleton(), opts);
+  again.run(ctx);
+  assert.equal(calls[1][1].sortIntro, 'Sort 2 things.');
+  assert.equal(calls[1][1].sort.items.length, 2);
+  const none = runText();
+  delete none.run;
+  assert.throws(() => bindRunLevel(none, runSkeleton(), opts), (e) => e instanceof ContentError && /rl/.test(e.message) && /needs a run object/.test(e.message));
+  assert.throws(() => bindRunLevel(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where'] }), TypeError);
 });

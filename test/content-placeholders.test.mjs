@@ -1,7 +1,7 @@
 // Fill-ins: `{{name}}` in content (lib/content/placeholders.mjs, #391, docs/CONTENT.md).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fill } from '../lib/content/placeholders.mjs';
+import { fill, fillSlots } from '../lib/content/placeholders.mjs';
 
 test('fill: replaces each fill-in and reports the names used', () => {
   const r = fill('{{a}} + {{b-2}} = {{a}}{{b-2}}', { a: 'x', 'b-2': 'y' });
@@ -69,4 +69,14 @@ test('fill: an empty string is a value', () => {
 test('fill: never throws, and finds every error in one string', () => {
   const r = fill('{{a}} {{ b }} {{c}}', {});
   assert.equal(r.errors.length, 3);
+});
+
+test('fillSlots: fills each slot in one pass, a number prints with String (#391)', () => {
+  assert.equal(fillSlots('{{a}} and {{b}}', { a: 'x{{b}}', b: 2 }), 'x{{b}} and 2');
+});
+
+test('fillSlots: a slot with no value, a value with no slot and a bad value all throw', () => {
+  assert.throws(() => fillSlots('{{a}} and {{b}}', { a: 'x' }), /slot \{\{b\}\} has no value/);
+  assert.throws(() => fillSlots('{{a}}', { a: 'x', c: 'y' }), /"c" is not a slot of this text/);
+  assert.throws(() => fillSlots('{{a}}', { a: NaN }), /must be a string or a finite number/);
 });

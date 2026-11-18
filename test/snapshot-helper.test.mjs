@@ -18,9 +18,10 @@ function tmp() {
 test('writeFrames writes exactly one file holding the frames and the finish text', () => {
   const dir = tmp();
   try {
-    writeFrames(dir, 'fx', 'happy', FRAMES, 'Well done.');
+    const clicks = [{ sel: '#next', body: '<p>one</p>', actions: '<button>next</button>' }];
+    writeFrames(dir, 'fx', 'happy', FRAMES, 'Well done.', clicks);
     assert.deepEqual(readdirSync(dir), ['fx.happy.json']);
-    assert.deepEqual(JSON.parse(readFileSync(join(dir, 'fx.happy.json'), 'utf8')), { frames: FRAMES, finish: 'Well done.' });
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, 'fx.happy.json'), 'utf8')), { frames: FRAMES, clicks, finish: 'Well done.' });
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

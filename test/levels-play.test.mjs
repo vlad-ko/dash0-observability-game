@@ -27,7 +27,7 @@ import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { liveRegistry } from '../app.mjs';
 import { stepsOf } from './helpers/step-drivers.mjs';
-import { frameOf, recordFrames } from './helpers/snapshot.mjs';
+import { clickFrameOf, frameOf, recordFrames } from './helpers/snapshot.mjs';
 import fixtureLevel, { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
 import { playFixture } from './fixtures/play-level.mjs';
 import * as V from './fixtures/variant-levels.mjs';
@@ -514,6 +514,8 @@ let current = null;
 let seenClasses = null;
 // Likewise the attributes the CSP and Alpine rules forbid (style=, on*=, x-, @, :), by element.
 let seenAttrs = null;
+// Likewise the level's overlay and the list collecting the screen before each click (LEVEL_SNAPSHOT `clicks`).
+let recording = null;
 const FORBIDDEN_ATTR = /^(x-|@|:|on|style$)/;
 
 /** Add the class names of every element in the document to `into`; and the forbidden attributes to the run's set. */
@@ -559,6 +561,7 @@ function useFifty(answer) {
 /** dom.mjs click, recording for its duration whether it hit the Finish button. */
 function click(elOrSel) {
   const el = typeof elOrSel === 'string' ? q(elOrSel) : elOrSel;
+  if (recording) recording.clicks.push(clickFrameOf(String(elOrSel), recording.dom.body, recording.dom.actions));
   if (fifty && el?.matches?.('[data-pick]')) useFifty(el);
   current = { sel: String(elOrSel), finish: !!el?.matches?.('[data-finish]') };
   try {
@@ -615,6 +618,8 @@ function openLevel(level, { telemetry = null } = {}) {
   seenClasses = classes;
   const attrs = new Set();
   seenAttrs = attrs;
+  const clicks = [];
+  recording = { dom, clicks };
   let first;
   const injected = [];
   try {
@@ -631,6 +636,7 @@ function openLevel(level, { telemetry = null } = {}) {
   } catch (e) {
     seenClasses = null;
     seenAttrs = null;
+    recording = null;
     throw e;
   }
   return {
@@ -640,7 +646,7 @@ function openLevel(level, { telemetry = null } = {}) {
       injected.push(...liveAlpineAttrs(dom.body, dom.actions));
       pageClasses(classes);
       frames.push(frameOf('end', dom.body, dom.actions));
-      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames };
+      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames, clicks };
     },
   };
 }
@@ -654,6 +660,7 @@ function playLevel(level, play, opts) {
   } finally {
     seenClasses = null;
     seenAttrs = null;
+    recording = null;
   }
 }
 
@@ -666,6 +673,7 @@ async function playLevelAsync(level, play, opts) {
   } finally {
     seenClasses = null;
     seenAttrs = null;
+    recording = null;
   }
 }
 
@@ -731,7 +739,7 @@ async function checkRunAsync(level, run, label = 'happy') {
   return assertRun(level, run, await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() }), label);
 }
 
-function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames }, label) {
+function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames, clicks }, label) {
   // The How to play modal follows the step the player is on: every widget a level declares is
   // reported as its step mounts, and nothing it does not declare (#316).
   if (level.widgets) assert.deepEqual([...new Set(widgets)].sort(), [...new Set(level.widgets)].sort(), 'ctx.widget reports the level\'s declared widgets');
@@ -761,7 +769,7 @@ function assertRun(level, run, { calls, steps, first, injected, classes, attrs, 
     assert.deepEqual(alpineAttrs(s), [], `step uses an Alpine attribute: ${s.slice(0, 80)}`);
   }
   // Registered levels only: the harness self-checks below play fixtures that are not the game.
-  if (LIVE.levels[level.id] === level) recordFrames(process.env, level.id, label, frames, result.text);
+  if (LIVE.levels[level.id] === level) recordFrames(process.env, level.id, label, frames, result.text, clicks);
   return result.stars;
 }
 
@@ -915,8 +923,16 @@ test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames, and a fix
     checkLevel(level, derivedDriver(level));
     checkLevel(FIXTURE, FIXTURE_DRIVER);
     assert.deepEqual(readdirSync(dir).sort(), ['good-alerts.happy.json', 'good-alerts.sloppy.json']);
+    const clickCounts = {};
     for (const label of ['happy', 'sloppy']) {
-      const { frames, finish } = JSON.parse(readFileSync(join(dir, `good-alerts.${label}.json`), 'utf8'));
+      const { frames, clicks, finish } = JSON.parse(readFileSync(join(dir, `good-alerts.${label}.json`), 'utf8'));
+      // clicks: the screen as it stood just BEFORE each driver click, so a content move shows which click led where.
+      clickCounts[label] = clicks.length;
+      assert.ok(clicks.length >= 1, `${label}: a frame per click`);
+      assert.ok(clicks.every((c) => typeof c.sel === 'string' && c.body.length > 0), `${label}: every click frame names its target and holds the screen`);
+      // Not equal to frames[0]: that frame is taken as the step renders, before its widget has mounted.
+      assert.ok(clicks[0].body.includes('alert: OrdersWaiting'), `${label}: the first click is made on the first screen`);
+      assert.ok(!clicks[0].body.includes('aria-pressed="true"'), `${label}: the frame is taken before the click, nothing is picked yet`);
       const ats = frames.map((f) => f.at);
       const steps = ats.filter((a) => a === 'step').length;
       assert.ok(steps >= stepsOf(level).length, `${label}: a step frame per step`);
@@ -927,6 +943,7 @@ test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames, and a fix
       assert.ok(frames.some((f) => f.actions.includes('data-finish')), `${label}: the Finish button is in some frame`);
       assert.ok(finish.length > 10, `${label}: the finish text`);
     }
+    assert.ok(clickCounts.sloppy > clickCounts.happy, 'the sloppy run clicks more than the happy run');
   } finally {
     if (was === undefined) delete process.env.LEVEL_SNAPSHOT;
     else process.env.LEVEL_SNAPSHOT = was;
