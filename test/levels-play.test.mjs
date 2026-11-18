@@ -855,11 +855,10 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     for (const [label, run] of [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy]]) {
       const { calls, frames, clicks } = playLevel(level, run.play);
       assert.equal(calls.length, 1, `${id} ${label}: finished once`);
-      assert.ok(calls[0].result.text.startsWith('EDITED '), `${id} ${label}: the finish text is the one it was given`);
+      assert.match(calls[0].result.text, /^EDITED\d* /, `${id} ${label}: the finish text is the one it was given`);
       shown.push(...[...frames, ...clicks].flatMap((f) => [f.body, f.actions]), calls[0].result.text);
     }
-    const { leaked, unseen, stale, duplicates } = checkWords(core.run, shown, { unreached: UNREACHED[id], kept: RUN_FIXTURES[id] });
-    assert.deepEqual(duplicates, [], `${id}: two entries of run share a text; this check cannot tell them apart, so give them different words`);
+    const { leaked, unseen, stale } = checkWords(core.run, shown, { unreached: UNREACHED[id], kept: RUN_FIXTURES[id] });
     assert.deepEqual(leaked, [], `${id}: words of the real content shown without the edit`);
     assert.deepEqual(unseen, [], `${id}: entries no run shows edited (add them to UNREACHED if the drivers cannot reach them)`);
     assert.deepEqual(stale, [], `${id}: UNREACHED entries that a run does show, or that are no entry`);

@@ -167,28 +167,51 @@ test('the prose check lets CSS attribute selectors and template ids through', ()
   assert.deepEqual(proseLiterals(src), []);
 });
 
+// The screens below are built from `editRun(run)`, whatever mark it puts on an entry, so these tests hold for it.
+const CLEAN = { leaked: [], unseen: [], stale: [] };
+
 test('checkWords: a word shown without its edit, a word never shown edited, and a stale unreached entry are each reported', () => {
   const run = { a: 'A long enough sentence.', b: 'Dash0', c: { id: 'x', label: 'Another long sentence.' }, d: 'Never reached here.' };
-  const shown = ['EDITED A long enough sentence.', 'EDITED Dash0 and EDITED Another long sentence.'];
-  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d'] }), { leaked: [], unseen: [], stale: [], duplicates: [] });
+  const e = editRun(run);
+  const shown = [e.a, `${e.b} and ${e.c.label}`];
+  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d'] }), CLEAN);
   assert.deepEqual(checkWords(run, [...shown, 'A long enough sentence.'], { unreached: ['run.d'] }).leaked, ['A long enough sentence.'], 'a long word without the edit');
   assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'] }).leaked, ['Dash0'], 'a short word without the edit');
   assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'], kept: ['Dash0'] }).leaked, [], 'a fixture is skipped');
   assert.deepEqual(checkWords(run, [...shown, 'Dash01'], { unreached: ['run.d'] }).leaked, [], 'a short word is matched as a whole word');
   assert.deepEqual(checkWords(run, shown.slice(0, 1), { unreached: ['run.d'] }).unseen, ['run.b', 'run.c.label'], 'words never shown edited, by path');
-  assert.deepEqual(checkWords(run, [...shown, 'EDITED Never reached here.'], { unreached: ['run.d'] }).stale, ['run.d'], 'an entry listed as unreached that is shown');
+  assert.deepEqual(checkWords(run, [...shown, e.d], { unreached: ['run.d'] }).stale, ['run.d'], 'an entry listed as unreached that is shown');
   assert.deepEqual(checkWords(run, shown, { unreached: ['run.d', 'run.zzz'] }).stale, ['run.zzz'], 'an unreached path that is no entry');
-  const wbr = ['EDITED <code>experiment.<wbr>variant=redesign-B</code>'];
-  assert.deepEqual(checkWords({ l: '<code>experiment.variant=redesign-B</code>' }, wbr), { leaked: [], unseen: [], stale: [], duplicates: [] }, 'a <wbr> inside a word is ignored');
-  // An entry that is the start of another is not seen because the other is: each is checked against what is left.
-  assert.deepEqual(checkWords({ a: 'Check', b: 'Check the span.' }, ['EDITED Check the span.']).unseen, ['run.a'], 'a prefix of a shown entry');
-  assert.deepEqual(checkWords({ a: 'Check', b: 'Check the span.' }, ['EDITED Check the span.', 'EDITED Check']).unseen, [], 'both shown');
-  // Two entries with the same words cannot be told apart: reported, to be given different words.
-  assert.deepEqual(checkWords({ a: 'Same sentence here.', b: 'Same sentence here.' }, ['EDITED Same sentence here.']).duplicates, ['Same sentence here.'], 'two entries share a text');
-  // A fixture inside a longer word does not hide that word leaking.
+});
+
+test('checkWords: a <wbr> inside a word is ignored', () => {
+  const run = { l: '<code>experiment.variant=redesign-B</code>' };
+  assert.deepEqual(checkWords(run, [editRun(run).l.replace('experiment.', 'experiment.<wbr>')]), CLEAN);
+});
+
+test('checkWords: an entry that is the start of another is not seen because the other is', () => {
+  const run = { a: 'Check', b: 'Check the span.' };
+  const e = editRun(run);
+  assert.deepEqual(checkWords(run, [e.b]).unseen, ['run.a'], 'only the longer one is shown');
+  assert.deepEqual(checkWords(run, [e.b, e.a]), CLEAN, 'both are shown');
+});
+
+test('checkWords: two entries with the same words are told apart, each must show edited', () => {
+  const run = { a: 'Same sentence here.', b: 'Same sentence here.' };
+  const e = editRun(run);
+  assert.deepEqual(checkWords(run, [e.a]).unseen, ['run.b'], 'only one of the two is shown');
+  assert.deepEqual(checkWords(run, [e.a, e.b]), CLEAN, 'both are shown');
+});
+
+test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
   const long = 'Set tenant.tier on the root span';
-  assert.deepEqual(checkWords({ a: long }, [long], { kept: ['tenant.tier'] }).leaked, [long], 'a fixture inside a leaking long word');
-  assert.deepEqual(checkWords({ a: long }, [`EDITED ${long}`, 'tenant.tier'], { kept: ['tenant.tier'] }).leaked, [], 'the fixture shown on its own is fine');
+  const e = editRun({ a: long });
+  assert.deepEqual(checkWords({ a: long }, [long], { kept: ['tenant.tier'] }).leaked, [long], 'the long word shown without its edit');
+  assert.deepEqual(checkWords({ a: long }, [e.a, 'tenant.tier'], { kept: ['tenant.tier'] }).leaked, [], 'the fixture shown on its own is fine');
+});
+
+test('editRun marks every entry of run with its own number, in the order checkWords reads them, and leaves ids and keys', () => {
+  assert.deepEqual(editRun({ a: 'x', b: { id: 'i', l: 'y' }, c: [{ key: 'k', t: 'z' }, 'w'] }), { a: 'EDITED0 x', b: { id: 'i', l: 'EDITED1 y' }, c: [{ key: 'k', t: 'EDITED2 z' }, 'EDITED3 w'] });
 });
 
 test('a run level reads exactly the names its content defines, as say.<name>, in code only', () => {
