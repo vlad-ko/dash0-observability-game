@@ -4,7 +4,7 @@ For Dash0 engineers who know OpenTelemetry but not this codebase. It covers chan
 
 ## 1. Find the file
 
-Every level has a file in `levels/`, named by its id: its answers, figures and wiring. A level whose words have been moved out (`good-alerts` and `cardinality` so far, see [CONTENT.md](CONTENT.md)) keeps those words in `content/core/levels/<id>.mjs`. Search both places for text the player sees, or for the level name:
+Every level has a file in `levels/`, named by its id: its answers, figures and wiring. A level whose words have been moved out (the ones with a file in `content/core/levels/`, see [CONTENT.md](CONTENT.md)) keeps those words in `content/core/levels/<id>.mjs`. Search both places for text the player sees, or for the level name:
 
 ```
 grep -rn "How do you fix CheckoutErrors" levels/ content/

@@ -1,4 +1,4 @@
-// Text of levels/everything-is-green.mjs (docs/CONTENT.md).
+// Text of levels/everything-is-green.mjs (docs/CONTENT.md). {{name}} is a figure from the level's VARS table.
 export default {
   "id": "everything-is-green",
   "name": "Everything is green",
