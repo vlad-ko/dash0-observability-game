@@ -13,6 +13,7 @@ Design for M2's first item (OUTLINE §8). It builds on FOUNDATION §2 and §3 an
 - Next renders the following step. Finish calls `ctx.finish({text, cards})`.
 
 Evidence:
+- Since #408 (2026-11-18) the level's text is in content/core/levels/auto-vs-manual.mjs (docs/CONTENT.md section 9); the auto-vs-manual line references in this section are from before that move.
 - In 2.7 the whole `run()` is this pattern three times: `levels/auto-vs-manual.mjs:117-196`, which is 80 of the file's 197 lines.
 - Same pattern in the `run()` of `status-and-errors.mjs:88-143`, `monitoring-vs-observability.mjs:97-150` and `spans-and-traces.mjs:93-173`.
 - Authors already began factoring it out: `the-signals.mjs:135-146` (`sortStep`), and the `next(onclick)` helper in `spans-and-traces.mjs:95-99`, `context-propagation.mjs:118-122` and `events-and-links.mjs:103-107`.
