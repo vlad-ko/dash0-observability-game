@@ -164,9 +164,7 @@ export function literalSites(src) {
         i = j;
       } else if (/[0-9]/.test(c)) {
         let j = i + 1;
-        // An exponent sign belongs to the number (`1e-5`), except in a hex literal (`0xE+1`).
-        const exponentSign = () => (src[j] === '+' || src[j] === '-') && /[eE]$/.test(src.slice(i, j)) && !/^0[xX]/.test(src.slice(i, j));
-        while (j < src.length && (/[\w.]/.test(src[j]) || exponentSign())) j++;
+        while (j < src.length && /[\w.]/.test(src[j])) j++;
         see('num');
         i = j;
       } else if (c === '{') {

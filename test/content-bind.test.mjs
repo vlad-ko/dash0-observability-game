@@ -350,18 +350,30 @@ test('run: a slot inside a tag is an error, even in an allowed attribute', () =>
   t.run.sentTo = '<code data-token="{{where}}">x</code>';
   const { errors } = bindRun(t);
   assert.ok(errors.some((e) => e.startsWith('run.sentTo ') && /slot/.test(e) && /inside a tag/.test(e)), errors.join('\n'));
+  const gt = runText();
+  gt.run.sentTo = '<code data-token="a>b {{where}}">x</code>';
+  assert.ok(bindRun(gt).errors.some((e) => /inside a tag/.test(e)), 'a > inside a quoted value does not end the tag');
   const ok = runText();
   ok.run.sentTo = 'p99 < {{where}} and <b>bold</b>';
   assert.deepEqual(bindRun(ok).errors, []);
 });
 
+test('run: the logic holds plain data only under run', () => {
+  for (const odd of [/x/, new Date(0), new Set(), new Map()]) {
+    const s = runSkeleton();
+    s.run.picks[0].extra = odd;
+    const { errors } = bindRun(runText(), s);
+    assert.ok(errors.some((e) => e.startsWith('run.picks[0].extra:') && /plain data/.test(e)), `${odd.constructor.name}: ${errors.join('\n')}`);
+  }
+});
+
 test('run: the content has a run entry exactly when the logic has one', () => {
   const noLogicRun = runSkeleton();
   delete noLogicRun.run;
-  assert.ok(bindText(runText(), noLogicRun, { vars: { n: 2 }, slots: ['where'] }).errors.some((e) => /^run: .*content has a run entry.*logic has none/.test(e)));
+  assert.ok(bindText(runText(), noLogicRun, { vars: { n: 2 }, slots: ['where'] }).errors.includes('run: the content has a run entry and the logic has none: add run to the logic, or remove it from the content'));
   const noContentRun = runText();
   delete noContentRun.run;
-  assert.ok(bindText(noContentRun, runSkeleton(), { vars: {} }).errors.some((e) => /^run: .*logic has a run entry.*content has none/.test(e)));
+  assert.ok(bindText(noContentRun, runSkeleton(), { vars: {} }).errors.includes('run: the logic has a run entry and the content has none: add run to the content, or remove it from the logic'));
 });
 
 test('run: only the top-level run entry is free; deeper it is not a content key', () => {

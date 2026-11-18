@@ -5,7 +5,8 @@
 // Compares the words in the OLD level file (its string literals) with the words in the level's code now
 // (levels/<id>.mjs) plus its content (content/core/levels/<id>.mjs). Words are whitespace-separated tokens
 // with tags stripped and fill-ins removed. Words inside a tag (attribute values) are not compared: the level
-// snapshots (test/levels-play.test.mjs with LEVEL_SNAPSHOT) cover the markup. `lost` is a word the old file had
+// snapshots (test/levels-play.test.mjs with LEVEL_SNAPSHOT) cover the markup. A word in the code that equals a
+// fill-in name used by the content is not compared either (it is a VARS key or a slot). `lost` is a word the old file had
 // that nothing now has; `added` is a word now there that the old file did not have. Exit 1 unless both are
 // empty, 2 on a usage error. A developer tool, kept out of the deployed site by .vercelignore.
 import { readFileSync } from 'node:fs';
@@ -51,15 +52,16 @@ function minus(a, b) {
 /**
  * Compare the words of `oldSrc` with those of `newSrc` plus `content` (the parsed content file).
  * `lost`: old literal words not in (new literals + content text + the content ids the new literals do not already
- * hold). `added`: (new literals, minus one copy of each fill-in name the content uses, + content text without its
- * ids) not in the old literals. Sorted multisets.
+ * hold). `added`: (new literals, minus every literal equal to a fill-in name the content uses, + content text
+ * without its ids) not in the old literals. A code word equal to a fill-in name is therefore not compared. Sorted
+ * multisets.
  */
 export function wordDiff(oldSrc, newSrc, content) {
   const { text, ids, names } = contentStrings(content);
   const oldWords = literalTokens(oldSrc);
   const newLiterals = literalTokens(newSrc);
-  // Each fill-in name is held once by the code (a VARS key or a SLOTS entry): only that one copy is not a word.
-  const newWords = minus(newLiterals, [...names]);
+  // A code literal equal to a fill-in name is a VARS key or a SLOT, however many times the code writes it: not compared.
+  const newWords = newLiterals.filter((t) => !names.has(t));
   const textWords = text.flatMap(tokensOf);
   // An id the new code already holds is in `newLiterals`; counting it again as a content id would cancel a dropped word.
   const idsNotInCode = minus(ids.flatMap(tokensOf), newLiterals);
