@@ -2,7 +2,7 @@
 
 For anyone who writes or edits what a level says. A level has two parts: the **words** (questions, choices, explanations) and the **logic** (which answer is right, the figures the copy quotes, how the pieces are wired). The words live in a content file; the logic stays in `levels/<id>.mjs`. Each part is checked on its own, and a tool joins them when the game loads. Design background: docs/FOUNDATION.md §2.13. Act primers use the same text rules and have their own guide: [PRIMERS.md](PRIMERS.md), which this page does not repeat.
 
-Only play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) can be converted so far. Today `good-alerts` and `cardinality` are converted; the other levels still hold their words in the level file, and both kinds work side by side.
+Only play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) can be converted so far. The converted levels are the ones with a file in `content/core/levels/`; the other levels still hold their words in the level file, and both kinds work side by side.
 
 **A new level** is written in the level file, as before. It is converted in its act's conversion pull request (section 9), not at birth.
 
@@ -93,8 +93,8 @@ Do one act at a time and change only that act's level files and their content fi
 
 1. **Baseline, on a clean checkout of main.** Pick a scratch folder `S` outside the repo. Run `node tools/level-fingerprint.mjs $S/before` (the exact data of every level) and `LEVEL_SNAPSHOT=$S/before node --test test/levels-play.test.mjs` (the page of every step, happy and sloppy run).
 2. **Extract.** `node tools/extract-level-text.mjs <id>` prints every text field of the level as a content file, in the order the game shows it. Save it as `content/core/levels/<id>.mjs`.
-3. **Put back the figures.** Every `${...}` in the old copy is now its computed result in the content file. For each, add an entry to `VARS` in the level file with the same expression (including any `n()` formatting), and write `{{name}}` in the content instead.
-4. **Strip the logic.** In `levels/<id>.mjs` delete every text field (`name`, `sub`, `rewardTitle`, `intro`, `question`, `label`, `why`, `whyNot`, `explain`, `hint`, `finish`, `lines`, `needs`, `unit`, ...). Keep the ids, the answer flags (and `right: false` where it was written), the figures, `faults`, `answer`, `cost`, `keeps`, `helps`, `qid` and the wiring. Leave the header comments.
+3. **Put back the figures.** Every `${...}` in the old copy is now its computed result in the content file. For each, add an entry to `VARS` in the level file with the same expression (including any `n()` formatting), and write `{{name}}` in the content instead. A figure that the old copy wrote as literal text (not as `${...}`) stays literal text: turning it into a fill-in is a separate change, not part of the move. A `${...}` that only prints a literal written at its call site (for example a helper's argument) may also stay plain text. A content file that ends up with fill-ins gets a longer first header line: `// Text of levels/<id>.mjs (docs/CONTENT.md). {{name}} is a figure from the level's VARS table.` (as in `content/core/levels/cardinality.mjs`).
+4. **Strip the logic.** In `levels/<id>.mjs` delete every text field (`name`, `sub`, `rewardTitle`, `intro`, `question`, `label`, `why`, `whyNot`, `explain`, `hint`, `finish`, `lines`, `needs`, `unit`, ...). Keep the ids, the answer flags (and `right: false` where it was written), the figures, `faults`, `answer`, `cost`, `keeps`, `helps`, `qid` and the wiring. Leave the header comments. When a comment in the level file sets a rule for text that moves (for example how spot lines or sort labels are placed, enforced by a test such as `test/sort-tells.test.mjs`), keep that comment in the level file and add a one-line pointer to it in the content file's header.
 5. **Wire it.** Gather what is left into one object, `SKELETON`: the level as it was, minus the words. Then:
 
 ```js
@@ -107,6 +107,8 @@ export function withText(text) {
 
 export default withText(CORE);
 ```
+
+A level with no fill-ins declares `const VARS = {};` and passes `{ vars: VARS }` as above (every converted level on main does this); a literal `{ vars: {} }` binds the same, but use `VARS = {}` so every level reads alike.
 
 6. **Prove nothing changed.** Run step 1 again into `$S/after`, then `diff -r $S/before $S/after`. It must show only the new `withText` export key in each converted level's fingerprint. Any other difference means the copy changed: fix it.
 7. **Run the tests.** The level's own tests, `test/answers.test.mjs`, `test/level-text-content.test.mjs`, `test/content.test.mjs`. No existing test line should need a change; if one does, stop and ask.
