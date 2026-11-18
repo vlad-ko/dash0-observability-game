@@ -105,7 +105,7 @@ const CARDS = {
       'routing_key: traceID, so every span of a trace goes to the same second-tier replica, where tail_sampling runs. ' +
       'routing_key: service would keep a service together but split its traces. The exporter was renamed from loadbalancing, ' +
       'and the old name still works as a deprecated alias.',
-    specUrl: 'https://opentelemetry.io/docs/collector/deployment/gateway/#load-balancing-exporter',
+    specUrl: 'https://opentelemetry.io/docs/collector/deploy/gateway/#load-balancing-exporter',
     dash0Angle: null,
   },
 };
@@ -389,8 +389,8 @@ test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec 
   ]) assert.equal(ep.includes(u), true, u);
   const ag = urls('agent-vs-gateway', '// Spec: ');
   for (const u of [
-    'https://opentelemetry.io/docs/collector/deployment/agent/',
-    'https://opentelemetry.io/docs/collector/deployment/gateway/',
+    'https://opentelemetry.io/docs/collector/deploy/agent/',
+    'https://opentelemetry.io/docs/collector/deploy/gateway/',
   ]) assert.equal(ag.includes(u), true, u);
   for (const f of ['otlp-endpoints', 'agent-vs-gateway']) {
     for (const u of urls(f, '// Spec: ')) assert.equal(new URL(u).host, 'opentelemetry.io', `${f} Spec line ${u}`);
