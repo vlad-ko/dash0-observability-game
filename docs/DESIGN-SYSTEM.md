@@ -109,7 +109,7 @@ conditions. Kit text inside a clipping container (`overflow: hidden`) must be ab
 
 ## Modal
 
-One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`), Feedback (`#feedback-modal`) and the act primer (`#primer-modal`, #389; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws, the primer one `lib/primer-view.mjs` draws)
+One dialog shell for How to play (`#howto-modal`), About (`#about-modal`), Save code (`#save-modal`), Leaderboard (`#board-modal`), Account (`#account-modal`), Feedback (`#feedback-modal`) and the act primer's entry pop-up (`#primer-modal`, #389; the chapters are in the primer zone, below; Save code, Leaderboard and Account have a body `app.mjs` draws, Feedback one `lib/feedback-dialog.mjs` draws, the primer one `lib/primer-view.mjs` draws)
 (#282, owner direction 2026-11-08; D5 sign-off from the PR screenshots). Its markup is static in
 `index.html` (the one place that writes `ui-` classes by hand, like the buttons), because Alpine opens
 it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:
@@ -119,8 +119,10 @@ it with `x-show`; `test/modal.test.mjs` pins every shell to the same parts:
 | Backdrop | `ui-modal` | Fixed, dimmed and blurred; `role="dialog"`, `aria-modal="true"`, named by its h2. |
 | Card | `ui-modal-card` | Surface with a hairline top accent (red to orange); body scrolls inside it (`max-block-size: 100%`), so it fits 320px. |
 | Head | `ui-modal-head`, `ui-modal-heading` | Mono `ui-eyebrow`, the h2 (`tabindex="-1"`, focus lands here), and a `ui-btn--icon` close with a name. The lesson glow sits behind it. |
-| Body | `ui-modal-body` | The scrolling content: `ui-modal-topic` sections (a heading and muted text) and `ui-modal-note`; a `ui-panel` placed directly in it loses its box (Save code); the act primer's body is kit helpers only (`prose`, `codeBlock`, `note`, `chip`, `eyebrow`) in an `x-ignore` node. |
-| Foot | `ui-modal-foot` | Optional buttons, right-aligned; one primary at most (About's Close; How to play's are ghost, the level behind owns the primary). The act primer's is static Alpine: "I am already familiar with the topic" (ghost) and "Proceed with learning" (primary) on the overview; Back (ghost) and Next (primary) on a chapter, the last chapter's reading "Done", or "Start: <level name>" when a level is waiting. |
+| Body | `ui-modal-body` | The scrolling content: `ui-modal-topic` sections (a heading and muted text) and `ui-modal-note`; a `ui-panel` placed directly in it loses its box (Save code); the act primer's body is kit helpers only (`prose`, `codeBlock`, `note`, `chip`, `eyebrow`, `button`, `split`, `step`) in an `x-ignore` node. |
+| Foot | `ui-modal-foot` | Optional buttons, right-aligned; one primary at most (About's Close; How to play's are ghost, the level behind owns the primary). The act primer's is static Alpine and holds only the two entry buttons: "I am already familiar with the topic" (ghost) and "Proceed with learning" (primary). |
+
+The primer zone (`#primer-zone`, #410) is not a modal: it reuses the level frame (`.overlay`, `.lesson-top`, `.level-host`, `.lesson-scroll`, `.lesson-actions`) with a kit wide `step` and `split` (the chapter beside a chapter list) and adds no classes. Its Back (ghost) and Next (primary) sit in `.lesson-actions`; the last chapter's Next reads "Done", or "Start: <level name>" when a level is waiting.
 
 Behaviour: focus moves to the title on open and back to the opener on close (`app.mjs` `focusSoon`);
 Escape closes the top modal (`onEscape`); the page behind is inert (`#hub` via `hubInert()`, `.overlay`

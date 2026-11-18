@@ -22,9 +22,9 @@ import { freshlyLit, igniteView, litText } from './lib/globe-ignite.mjs';
 import { dotStates, globeCaption, globeLabel, globeLegend, globeLines, globeTarget } from './lib/globe-view.mjs';
 import { HELP_KEY, hideHelp, readHiddenHelp } from './lib/help-prefs.mjs';
 import { howToView } from './lib/how-to-play.mjs';
-import { buildPrimers, primerStatus, primerTile as tileOf, primerView as viewOf } from './lib/primer.mjs';
+import { buildPrimers, firstUnread, primerEyebrow as eyebrowOf, primerStatus, primerTile as tileOf, primerView as viewOf, primerZoneView as zoneViewOf } from './lib/primer.mjs';
 import { PRIMER_KEY, readPrimers, recordPrimer } from './lib/primer-prefs.mjs';
-import { primerBodyHtml } from './lib/primer-view.mjs';
+import { primerBodyHtml, primerZoneHtml } from './lib/primer-view.mjs';
 import { createGuideClient } from './lib/guide/client.mjs';
 import { createAccountClient } from './lib/account/client.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
@@ -290,9 +290,10 @@ export function createGame(deps) {
     helpRev: 0, // bumped when another tab changes the stored help choices (onStorage)
     howToNote: '', // the polite announcement of that flag
     howToKey: null, // the widget of the step on screen: the one guide the modal shows (#316)
-    primerOpen: false,
+    primerOpen: false, // the entry pop-up (the overview, always screen -1)
+    primerZoneOpen: false, // the full-screen zone of chapters; never open together with the pop-up
     primerActId: null,
-    primerScreen: -1, // -1 the overview, 0..N-1 the chapters
+    primerScreen: -1, // -1 the pop-up's overview, 0..N-1 the zone's chapters
     primerThen: null, // the level to start when the player leaves the primer forward (set when a level opened it)
     primerFrom: 'card', // who asked for that level: 'card' or 'continue'
     primerOpener: null, // the selector focus goes back to on close
@@ -722,7 +723,7 @@ export function createGame(deps) {
     // Draw the globe into .globe-stage (once; the fallback stays once shown). Never while a
     // level covers the hub (a back/forward cache restore can ask then); closing it mounts.
     showGlobe() {
-      if (globe || this.globeFallback || this.overlayOpen) return;
+      if (globe || this.globeFallback || this.hubCovered()) return;
       const host = doc.querySelector('.globe-stage');
       if (!mountGlobe || !host) {
         this.globeFallback = true;
@@ -749,7 +750,11 @@ export function createGame(deps) {
           (e) => (token === mounts ? failed(e) : report(e)),
         );
     },
-    // Stop the loop and free the WebGL context (a level covers the hub, or the page goes).
+    // A level or the primer zone covers the hub (the globe is not drawn behind either).
+    hubCovered() {
+      return this.overlayOpen || this.primerZoneOpen;
+    },
+    // Stop the loop and free the WebGL context (a level or the primer zone covers the hub, or the page goes).
     hideGlobe() {
       mounts++;
       queuedIgnite = null;
@@ -767,7 +772,7 @@ export function createGame(deps) {
     // refuse while it is true. The over-a-level modals (How to play, feedback) are left out on purpose: they only
     // open over a level, which already counts.
     dialogOpen() {
-      return this.overlayOpen || this.rewardOpen || MODALS.some((m) => !m.overLevel && this[m.flag]);
+      return this.overlayOpen || this.rewardOpen || this.primerZoneOpen || MODALS.some((m) => !m.overLevel && this[m.flag]);
     },
     // The level overlay is inert while a modal over it is open (the :inert binding in index.html).
     overlayInert() {
@@ -1095,11 +1100,20 @@ export function createGame(deps) {
       const primer = this.primerFor(actId);
       return primer === null ? null : tileOf(primerStatus(primer, this.primerStored(actId)));
     },
+    // The one routing rule: a new primer opens the short pop-up, any other the zone; null when the act has no primer.
+    primerEntry(actId) {
+      const primer = this.primerFor(actId);
+      if (primer === null) return null;
+      return primerStatus(primer, this.primerStored(actId)).status === 'new' ? 'popup' : 'zone';
+    },
+    // The id of what the hub tile opens (its aria-controls).
+    primerTileControls(actId) {
+      const entry = this.primerEntry(actId);
+      return entry === null ? null : entry === 'popup' ? 'primer-modal' : 'primer-zone';
+    },
     // True when the primer should pop by itself: it exists, did not open this visit and nothing is stored for it, and no dialog is open.
     primerNew(actId) {
-      const primer = this.primerFor(actId);
-      if (primer === null || seenPrimers.has(actId) || this.dialogOpen()) return false;
-      return primerStatus(primer, this.primerStored(actId)).status === 'new';
+      return this.primerEntry(actId) === 'popup' && !seenPrimers.has(actId) && !this.dialogOpen();
     },
     // Remember something about the primer: stored (never in debug), and the tile re-reads it.
     markPrimer(actId, change) {
@@ -1117,8 +1131,36 @@ export function createGame(deps) {
     primerTitle() {
       return this.primerCurrent()?.title ?? 'Act primer';
     },
+    // The zone's current chapter (lib/primer.mjs primerZoneView), or null when there is none; every zone helper reads this.
+    primerZoneCurrent() {
+      const primer = this.primerFor(this.primerActId);
+      if (primer === null) return null;
+      const then = this.primerThen;
+      const thenName = then !== null ? registry.levels[then]?.name : undefined;
+      return zoneViewOf(primer, this.primerScreen, this.primerStored(this.primerActId), { then: then ?? undefined, thenName, actNo: this.primerActNo() });
+    },
+    // The registry number of the act whose primer is open (undefined when none).
+    primerActNo() {
+      return registry.acts.find((a) => a.id === this.primerActId)?.no;
+    },
+    // The pop-up's eyebrow, from the same rule as the zone's (lib/primer.mjs primerEyebrow).
+    primerEyebrow() {
+      return eyebrowOf(this.primerActNo());
+    },
+    primerZoneTitle() {
+      return this.primerZoneCurrent()?.title ?? '';
+    },
+    primerZoneEyebrow() {
+      return this.primerZoneCurrent()?.eyebrow ?? 'Act primer';
+    },
+    primerZoneLabel() {
+      return this.primerZoneCurrent()?.primerTitle ?? 'Act primer';
+    },
+    primerBackShown() {
+      return this.primerZoneCurrent()?.back === true;
+    },
     primerNextLabel() {
-      return this.primerCurrent()?.next ?? 'Next';
+      return this.primerZoneCurrent()?.next ?? 'Next';
     },
     // Draw the current screen into the modal body, scrolled to the top.
     drawPrimer() {
@@ -1133,27 +1175,61 @@ export function createGame(deps) {
       this.drawPrimer();
       this.focusSoon('#primer-title');
     },
+    // Draw the zone's chapter and its list; each jump button is wired with onclick (the body is x-ignore, no Alpine in it).
+    drawPrimerZone() {
+      const view = this.primerZoneCurrent();
+      const body = doc.getElementById('primer-zone-body');
+      if (view === null || !body) return;
+      body.innerHTML = primerZoneHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true });
+      for (const c of view.chapters) {
+        const el = doc.getElementById(`primer-go-${c.index}`);
+        if (el) el.onclick = () => this.primerGo(c.index);
+      }
+    },
+    // Show a chapter: draw, scroll to the top, focus the title.
+    showPrimerZoneScreen(screen) {
+      this.primerScreen = screen;
+      this.drawPrimerZone();
+      const body = doc.getElementById('primer-zone-body');
+      if (body) body.scrollTop = 0;
+      this.focusSoon('#primer-zone-title');
+    },
+    // Into the zone at chapter `screen`: the pop-up (if open) closes, the hub is covered so the globe is freed.
+    enterPrimerZone(screen) {
+      this.primerOpen = false;
+      this.primerZoneOpen = true;
+      this.hideGlobe();
+      this.primerScreen = screen;
+      this.drawPrimerZone();
+      this.focusSoon('#primer-zone-title');
+    },
     // Open an act's primer: from the tile, from toggling the act open, or in place of a level (`then`: the level to start after it).
-    // Refused when a dialog is open or the act has none.
+    // A new primer opens the short pop-up, any other the zone at its first unread chapter. Refused when a dialog is open or the act has none.
     openPrimer(actId, { then = null, from = 'card', opener = `#primer-open-${actId}` } = {}) {
       if (this.dialogOpen() || this.primerFor(actId) === null) return false;
+      const entry = this.primerEntry(actId); // before markPrimer: marking it seen ends "new"
       seenPrimers.add(actId);
       this.markPrimer(actId, { seen: true });
       this.primerActId = actId;
       this.primerThen = then;
       this.primerFrom = from;
       this.primerOpener = opener;
-      this.primerOpen = true;
-      this.showPrimerScreen(-1);
+      if (entry === 'popup') {
+        this.primerOpen = true;
+        this.showPrimerScreen(-1);
+      } else this.enterPrimerZone(firstUnread(this.primerFor(actId), this.primerStored(actId)));
       return true;
     },
-    // Close, and start the pending level (if any); otherwise focus goes back to the opener.
+    // Leave forward: start the pending level (if any); otherwise the map shows again and focus goes back to the opener.
     leavePrimer() {
       const then = this.primerThen;
       const from = this.primerFrom;
+      const wasZone = this.primerZoneOpen;
       this.primerOpen = false;
+      this.primerZoneOpen = false;
       this.primerThen = null;
       if (then !== null && this.openLevel(then, from)) return;
+      if (wasZone) this.showGlobe();
       this.exitPrimer(then, from);
     },
     // The primer closed with no level starting: play a map reveal that was waiting (Continue from the reward can land here),
@@ -1174,29 +1250,39 @@ export function createGame(deps) {
       this.markPrimer(this.primerActId, { skipped: true });
       this.leavePrimer();
     },
+    // "Proceed with learning": into the zone at the first unread chapter (the first for a new primer). Writes nothing.
     primerProceed() {
       if (!this.primerOpen || this.primerScreen !== -1) return;
-      this.showPrimerScreen(0);
+      this.enterPrimerZone(firstUnread(this.primerFor(this.primerActId), this.primerStored(this.primerActId)));
     },
     // Next marks the chapter on screen read (leaving it, not entering it); the last one leaves the primer.
     primerNext() {
-      const view = this.primerCurrent();
-      if (!this.primerOpen || view === null || view.screen < 0) return;
+      const view = this.primerZoneCurrent();
+      if (!this.primerZoneOpen || view === null) return;
       this.markPrimer(this.primerActId, { read: [view.id] });
       if (this.primerScreen >= this.primerFor(this.primerActId).chapters.length - 1) this.leavePrimer();
-      else this.showPrimerScreen(this.primerScreen + 1);
+      else this.showPrimerZoneScreen(this.primerScreen + 1);
     },
-    // Back records nothing; from the first chapter it returns to the overview.
+    // Back records nothing; there is nothing before chapter 1 (the overview is in the pop-up).
     primerBack() {
-      if (!this.primerOpen || this.primerScreen < 0) return;
-      this.showPrimerScreen(this.primerScreen - 1);
+      if (!this.primerZoneOpen || this.primerScreen <= 0) return;
+      this.showPrimerZoneScreen(this.primerScreen - 1);
     },
-    // The close button and Escape: the pending level is dropped, focus returns to the opener.
+    // A jump from the chapter list: records nothing.
+    primerGo(i) {
+      const total = this.primerFor(this.primerActId)?.chapters.length ?? 0;
+      if (!this.primerZoneOpen || !Number.isInteger(i) || i < 0 || i >= total || i === this.primerScreen) return;
+      this.showPrimerZoneScreen(i);
+    },
+    // The close button, the zone's back arrow and Escape: the pending level is dropped, focus returns to the opener.
     closePrimer() {
-      if (!this.primerOpen) return;
+      if (!this.primerOpen && !this.primerZoneOpen) return;
       const then = this.primerThen;
+      const wasZone = this.primerZoneOpen;
       this.primerOpen = false;
+      this.primerZoneOpen = false;
       this.primerThen = null;
+      if (wasZone) this.showGlobe();
       this.exitPrimer(then, this.primerFrom);
     },
 
@@ -1386,6 +1472,7 @@ export function createGame(deps) {
       const modal = this.openModalSelector();
       if (modal !== null) return modal;
       if (this.rewardOpen) return '.reward-card';
+      if (this.primerZoneOpen) return '#primer-zone';
       return this.overlayOpen ? '.overlay' : null;
     },
     trapTab(e) {
@@ -1407,6 +1494,10 @@ export function createGame(deps) {
       for (const m of ESCAPE_ORDER) {
         if (!this[m.flag] || (m.needsLevel && !this.overlayOpen)) continue;
         this[m.close]();
+        return;
+      }
+      if (this.primerZoneOpen) {
+        this.closePrimer();
         return;
       }
       if (!this.overlayOpen) return;

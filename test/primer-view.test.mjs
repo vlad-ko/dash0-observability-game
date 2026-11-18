@@ -1,9 +1,9 @@
-// The act primer pop-up body (#389, lib/primer-view.mjs): one primerView screen drawn with the kit helpers.
+// The act primer pop-up and zone bodies (#389, #410, lib/primer-view.mjs): one primerView or primerZoneView screen drawn with the kit helpers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseHTML } from 'linkedom';
-import { primerView } from '../lib/primer.mjs';
-import { INTERNAL_LABEL, primerBodyHtml } from '../lib/primer-view.mjs';
+import { primerView, primerZoneView } from '../lib/primer.mjs';
+import { INTERNAL_LABEL, primerBodyHtml, primerZoneHtml } from '../lib/primer-view.mjs';
 
 const link = (over = {}) => ({ type: 'link', kind: 'docs', label: 'Dash0 docs', url: 'https://www.dash0.com/docs', audience: 'public', ...over });
 const source = (over = {}) => {
@@ -133,4 +133,52 @@ test('the overview has no position or Sources, and a placeholder primer is marke
   const draft = draw(primerView(PRIMER, -1), { draft: true });
   assert.equal(draft.querySelector('.ui-chip').textContent, 'Draft');
   assert.equal(draft.querySelector('.ui-chip').getAttribute('data-tone'), 'neutral');
+});
+
+// ---- the zone (#410) ----
+const chap = (id, title) => ({ id, title, blocks: [{ type: 'paragraph', text: `About ${id}.` }], sources: [source()] });
+const THREE = { ...PRIMER, chapters: [chap('c-one', 'One'), chap('c-two', 'Two'), chap('c-three', 'Three')] };
+const drawZone = (primer, screen, stored, opts) =>
+  parseHTML(`<!doctype html><body><div id="r">${primerZoneHtml(primerZoneView(primer, screen, stored, {}), opts)}</div></body>`).document.getElementById('r');
+
+test('the zone is a wide step with a split: the chapter in the main column, the chapter list beside it', () => {
+  const root = drawZone(THREE, 1, { read: ['c-one'] });
+  assert.equal(root.firstElementChild.matches('.ui-step.ui-step--wide'), true);
+  assert.equal(root.querySelectorAll('.ui-step.ui-step--wide > .ui-split').length, 1);
+  const main = root.querySelector('.ui-split-main');
+  assert.deepEqual([...main.querySelectorAll('.ui-eyebrow')].map((e) => e.textContent), ['Chapter 2 of 3', 'Sources']);
+  const items = [...root.querySelectorAll('nav[aria-label="Chapters"] ol > li')];
+  assert.equal(items.length, 3);
+  const current = root.querySelectorAll('li[aria-current="step"]');
+  assert.equal(current.length, 1);
+  assert.equal(current[0].querySelector('button') === null, true);
+  assert.equal(current[0].textContent.includes('Two'), true);
+  assert.equal(root.querySelector('#primer-go-1') === null, true);
+  for (const i of [0, 2]) {
+    const b = root.querySelector(`#primer-go-${i}`);
+    assert.equal(b.matches('button.ui-btn.ui-btn--ghost'), true);
+  }
+  const chips = root.querySelectorAll('.ui-chip[data-tone="success"]');
+  assert.equal(chips.length, 1);
+  assert.equal(chips[0].textContent, 'Read');
+  assert.equal(items[0].contains(chips[0]), true);
+});
+
+test('the zone escapes a chapter title', () => {
+  const evil = '<img src=x onerror=alert(1)>';
+  const primer = { ...THREE, chapters: [chap('c-one', evil), chap('c-two', evil), chap('c-three', 'Three')] };
+  const root = drawZone(primer, 0, undefined);
+  assert.equal(root.querySelectorAll('img').length, 0);
+  assert.ok(root.textContent.includes(evil));
+});
+
+test('nothing the zone draws carries a style, an event handler or an Alpine attribute', () => {
+  for (const screen of [0, 2]) {
+    const root = drawZone(THREE, screen, { read: ['c-one'] }, { draft: true });
+    for (const el of root.querySelectorAll('*')) {
+      for (const name of el.getAttributeNames()) {
+        assert.equal(/^(style$|on|x-|@|:)/.test(name), false, `${el.localName} has ${name}`);
+      }
+    }
+  }
 });

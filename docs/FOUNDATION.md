@@ -629,7 +629,10 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
   rest as `errors`; `primerStatus(primer, stored)` is the one status rule; `primerTile({status, read, total})` the tile
   words and tone; `primerView(primer, screen, {then, thenName})` the screen (-1 is the overview, 0..N-1 the chapters). The
   last chapter's button reads `Start: <thenName>` only when both `then` and `thenName` are given, else `Done`; the others
-  read `Next`.
+  read `Next`. `primerChapters(primer, stored)` is the one read rule (`[{index, id, title, read}]`, and `primerStatus` counts
+  through it), `firstUnread(primer, stored)` the first chapter not read (0 when all are), and
+  `primerZoneView(primer, screen, stored, {then, thenName, actNo})` a `primerView` chapter plus `eyebrow`, `primerTitle`, `back`
+  and the `chapters` list with `current`; it is null for the overview (-1) and any screen out of range.
 - Status: with k the number of distinct stored read ids that are still chapter ids of the primer and N the chapter count: no
   stored entry is `new`; k equal to N is `read`; k of at least 1 is `reading`; skipped with k equal to 0 is `skipped`; any
   other stored entry (such as seen with nothing read) is `reading`. Only current chapter ids count, so a removed chapter is
@@ -643,12 +646,22 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
 - Invariants: the merge (`mergePrimerEntry`) only moves up (seen OR, skipped OR, sorted read union), so it is commutative,
   associative and idempotent and two tabs cannot undo each other. Unknown acts and chapter ids already stored are kept. A corrupt
   value is overwritten with no backup (it is a preference, not progress); an unreadable store means the primer shows.
-- The pop-up (`lib/primer-view.mjs`, `app.mjs`, the `#primer-modal` kit modal in `MODALS`): `primerBodyHtml(view, {draft})` draws one
+- Pop-up and zone (`lib/primer-view.mjs`, `app.mjs`, the `#primer-modal` kit modal in `MODALS`, the `#primer-zone` overlay): the
+  pop-up shows only the overview, with "I am already familiar with the topic" and "Proceed with learning". Proceed opens the
+  zone (`#primer-zone`, a sibling of the level overlay with the same frame, flag `primerZoneOpen`, drawn by `primerZoneHtml`) at
+  the first unread chapter: a chapter list with Read marks and jumps, Back (none on chapter 1), and Next, `Done` or
+  `Start: <level>`. The hub tile opens the pop-up only when the status is `new` (`primerEntry`), else the zone at the first unread
+  chapter. The zone counts as a dialog: the hub is inert, Tab is trapped in `#primer-zone`, Escape and the back arrow close it
+  and the globe is freed while it is open. Writes per action: opening records `seen`, "already familiar" `skipped`, Next the
+  chapter left `read`; Proceed, Back, a chapter jump and close write nothing. `?mode=debug` writes nothing, so the tile always
+  opens the pop-up there. Opening the pop-up already records `seen`, so after closing it without Proceed the next tile click goes straight into the
+  zone at chapter 1. The waiting level and the focus rules are as for the pop-up below.
+- Pop-up body: `primerBodyHtml(view, {draft})` draws one
   `primerView` screen with kit helpers only (escaped text, classless `<a target="_blank" rel="noopener noreferrer">` plus a kind
   chip and, for an internal link, an attention chip "Dash0 team only"; a "Sources" eyebrow ends each chapter; a "Draft" chip marks a
   placeholder). `createGame` takes `primers` (default `[]`; `main.mjs` passes `PRIMERS`), builds them once with `buildPrimers`, shows
-  no tile for an invalid one and reports the errors once. The hub tile (`.act-primer`, before an act's level list) opens it at any
-  time. It opens by itself once per visit (`seenPrimers`) when the stored state is new: on expanding the act, or in place of the
+  no tile for an invalid one and reports the errors once. The hub tile (`.act-primer`, before an act's level list) opens the pop-up
+  while the primer is new and the zone otherwise. It opens by itself once per visit (`seenPrimers`) when the stored state is new: on expanding the act, or in place of the
   first level opened in that act, which then waits (`primerThen`) and starts when the player leaves the primer forward ("I am
   already familiar with the topic", or the last chapter's button). The close button and Escape close it, drop the waiting level and
   return focus to the opener. Opening records `seen`, "already familiar" `skipped`, Next the chapter just left `read`, Back nothing;

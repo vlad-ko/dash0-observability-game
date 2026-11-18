@@ -3,7 +3,7 @@
 // primers are checked in test/primers-content.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildPrimers, primerStatus, primerTile, primerView, validatePrimer, validatePrimers, LIMITS } from '../lib/primer.mjs';
+import { buildPrimers, firstUnread, primerChapters, primerEyebrow, primerStatus, primerTile, primerView, primerZoneView, validatePrimer, validatePrimers, LIMITS } from '../lib/primer.mjs';
 
 const ACT_IDS = ['a0', 'a1'];
 const otel = (label = 'OpenTelemetry docs') => ({ kind: 'otel', label, url: 'https://opentelemetry.io/docs/', audience: 'public' });
@@ -279,4 +279,47 @@ test('view: a link is internal exactly when its audience is internal', () => {
   assert.equal(v.sources[0].internal, false);
   const claap = mutate((p) => (p.chapters[0].sources[0] = { kind: 'claap', label: 'Call', url: 'https://app.claap.io/x', audience: 'internal' }));
   assert.equal(primerView(claap, 0, {}).sources[0].internal, true);
+});
+
+// ---- the zone (#410): chapters with read marks, the first unread chapter, the zone view ----
+test('primerChapters: index, id, title in order; read is membership in stored.read (repeats and gone ids ignored)', () => {
+  const read = primerChapters(P0(), { seen: true, skipped: false, read: ['c-three', 'c-gone', 'c-one', 'c-one'] });
+  assert.deepEqual(read, [
+    { index: 0, id: 'c-one', title: 'Chapter c-one', read: true },
+    { index: 1, id: 'c-two', title: 'Chapter c-two', read: false },
+    { index: 2, id: 'c-three', title: 'Chapter c-three', read: true },
+  ]);
+  assert.deepEqual(primerChapters(P0(), undefined).map((c) => c.read), [false, false, false]);
+});
+
+test('primerEyebrow: a whole act number names the act, anything else gives the plain eyebrow', () => {
+  assert.equal(primerEyebrow(2), 'Act 2 primer');
+  assert.equal(primerEyebrow(0), 'Act 0 primer');
+  for (const bad of [1.5, '2', null, undefined]) assert.equal(primerEyebrow(bad), 'Act primer', String(bad));
+});
+
+test('firstUnread: the first chapter not read, else 0', () => {
+  const at = (read) => firstUnread(P0(), read === undefined ? undefined : { seen: true, skipped: false, read });
+  assert.equal(at(undefined), 0);
+  assert.equal(at(['c-one']), 1);
+  assert.equal(at(['c-one', 'c-three']), 1);
+  assert.equal(at(['c-one', 'c-two', 'c-three']), 0);
+  assert.equal(at(['c-two']), 0);
+});
+
+test('primerZoneView: eyebrow, primer title, back, the chapter list with current and read marks', () => {
+  const opts = { then: 'x', thenName: 'Lx', actNo: 2 };
+  const v = primerZoneView(P0(), 1, { seen: true, skipped: false, read: ['c-one'] }, opts);
+  assert.equal(v.eyebrow, 'Act 2 primer');
+  assert.equal(v.primerTitle, 'Act zero');
+  assert.equal(v.back, true);
+  assert.equal(v.position, 'Chapter 2 of 3');
+  assert.equal(v.next, 'Next');
+  assert.deepEqual(v.chapters.map((c) => c.current), [false, true, false]);
+  assert.deepEqual(v.chapters.map((c) => c.read), [true, false, false]);
+  assert.equal(primerZoneView(P0(), 0, undefined, opts).back, false);
+  assert.equal(primerZoneView(P0(), 2, undefined, opts).next, 'Start: Lx');
+  for (const bad of [-1, 3, 1.5]) assert.equal(primerZoneView(P0(), bad, undefined, opts), null, `screen ${bad}`);
+  assert.equal(primerZoneView(P0(), 0, undefined, { actNo: 0 }).eyebrow, 'Act 0 primer');
+  assert.equal(primerZoneView(P0(), 0, undefined, {}).eyebrow, 'Act primer');
 });
