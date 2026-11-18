@@ -66,6 +66,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **Span link**: a reference to another span that is related but not a parent, used
   for batches and fan-in.
 - **Context**: the active trace/span (and baggage) carried through a process.
+- **Span context**: the part of a span that travels with the context: its trace ID, its span ID, trace flags and trace state.
 - **Context propagation**: passing context between processes, usually via W3C
   `traceparent` and `tracestate` headers. (Act 2)
 - **Symptom hunt**: a level shape where an alert and a view show the symptom and the player
@@ -87,6 +88,8 @@ links level text to these anchors. "(Act N)" is where it's taught.
   report).
 - **Histogram**: counts of values in buckets; *exponential* histograms pick buckets
   automatically.
+- **Quantile / percentile**: a value picked by rank from sorted observations, named by a number between 0 and 1; the 0.95-quantile is the 95th percentile.
+- **Monotonic**: a sum that only goes up, as a Counter produces; an UpDownCounter gives a non-monotonic sum.
 - **Exemplar**: a sample point on a metric linked to a trace/span ID.
 - **View**: SDK configuration that renames, filters or re-buckets a metric.
 - **PromQL**: the Prometheus query language. (Act 3)
@@ -101,6 +104,7 @@ links level text to these anchors. "(Act N)" is where it's taught.
 - **Severity number / text**: OTel's 1 to 24 severity scale and its label.
 - **Structured logging**: logs as key/value data instead of free text.
 - **Logs Bridge API**: the API logging-library appenders use to emit OTel logs.
+- **Logging bridge**: the piece that connects an existing logging framework to OpenTelemetry.
 - **Correlation**: linking logs, metrics and traces through shared IDs and resources.
 
 ## Collector
@@ -135,6 +139,9 @@ links level text to these anchors. "(Act N)" is where it's taught.
 
 - **Dash0**: an OpenTelemetry-native observability platform for traces, metrics, logs
   and more.
+- **Trace View**: the Dash0 view of one trace with all its spans and their relationships.
+- **Metric Explorer**: the Dash0 place to browse, filter and investigate metrics; the start of deeper analysis in the Query Builder.
+- **Related Logs**: the Dash0 tab that shows logs from the same resource and the same trace around a selected log.
 - **Dash0 operator**: Kubernetes operator that auto-instruments workloads and ships
   telemetry to Dash0. (Act 1)
 - **Check rule**: a Prometheus-compatible alerting rule in Dash0. (Act 7)

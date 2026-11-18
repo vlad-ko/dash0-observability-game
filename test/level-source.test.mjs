@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { liveRegistry } from '../app.mjs';
 import { levelSource } from './helpers/level-source.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -17,7 +18,11 @@ test('with no content file, levelSource is the level file exactly (every level n
     .filter((f) => f.endsWith('.mjs') && f !== 'index.mjs')
     .map((f) => f.slice(0, -4))
     .filter((id) => !existsSync(join(ROOT, 'content', 'core', 'levels', `${id}.mjs`)));
-  assert.ok(ids.length >= 50);
+  const converted = readdirSync(join(ROOT, 'content', 'core', 'levels'))
+    .filter((f) => f.endsWith('.mjs'))
+    .map((f) => f.slice(0, -4));
+  assert.ok(ids.length > 0, 'some levels are not converted yet');
+  assert.deepEqual([...ids, ...converted].sort(), Object.keys(liveRegistry().levels).sort(), 'the unconverted and converted levels are every registered level');
   for (const id of ids) {
     assert.equal(levelSource(id), readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8'), id);
   }
