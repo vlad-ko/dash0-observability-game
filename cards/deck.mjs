@@ -392,7 +392,7 @@ export const DECK = [
       'routing_key: traceID, so every span of a trace goes to the same second-tier replica, where tail_sampling runs. ' +
       'routing_key: service would keep a service together but split its traces. The exporter was renamed from loadbalancing, ' +
       'and the old name still works as a deprecated alias.',
-    specUrl: 'https://opentelemetry.io/docs/collector/deployment/gateway/#load-balancing-exporter',
+    specUrl: 'https://opentelemetry.io/docs/collector/deploy/gateway/#load-balancing-exporter',
     dash0Angle: null,
   },
   {
