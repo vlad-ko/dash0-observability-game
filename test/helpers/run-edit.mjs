@@ -35,8 +35,9 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const LONG = 12;
 const FILL_IN = /\{\{[a-z][a-z0-9-]*\}\}/;
 /**
- * A regex for `s` where each `{{name}}` (a fill-in or slot, filled on the screen) is a short run of text without a tag
- * (a value is plain words; the bound keeps a search of a whole page fast): the fixed parts are matched as written.
+ * A regex for `s` where each `{{name}}` (a fill-in or slot, filled on the screen) is a short run of text that may hold
+ * inline tags such as `<code>x</code>` (a value is words, maybe marked up; the bound of 80 keeps a search of a whole
+ * page fast): the fixed parts are matched as written.
  * With `trim`, a fill-in at the start or end of `s` is left out (it adds nothing to a search that has no mark to anchor
  * on); a `s` that is only fill-ins then matches nothing.
  */
@@ -47,7 +48,7 @@ function pattern(s, flags = '', trim = false) {
     if (parts.length && parts[parts.length - 1] === '') parts.pop();
     if (parts.length === 0) return /(?!)/;
   }
-  return new RegExp(parts.map(escapeRe).join('[^<>]{1,80}?'), flags);
+  return new RegExp(parts.map(escapeRe).join('(?:[^<>]|<\\/?[a-z]+>){1,80}?'), flags);
 }
 
 /**

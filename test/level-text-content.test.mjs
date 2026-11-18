@@ -214,6 +214,16 @@ test('checkWords: an entry with fill-ins is seen when shown edited with its valu
   assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other], { unreached: ['run.chip'] }).stale, ['run.chip'], 'an unreached entry that is shown edited is stale');
 });
 
+test('checkWords: a fill-in value that holds an inline tag is matched too, marked and unmarked', () => {
+  const run = { set: 'Set {{attr}} on the root span.' };
+  const e = editRun(run);
+  const shown = (mark) => `<p>${mark}Set <code>x</code> on the root span.</p>`;
+  assert.deepEqual(checkWords(run, [shown('EDITED0 ')]), CLEAN, 'shown edited, the tag in the value');
+  assert.deepEqual(checkWords(run, [shown('EDITED0 '), shown('')]).leaked, [run.set], 'a second copy without its edit leaks');
+  assert.deepEqual(checkWords(run, [shown('')]).leaked, [run.set], 'shown only without its edit');
+  assert.equal(e.set, 'EDITED0 Set {{attr}} on the root span.');
+});
+
 test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
   const long = 'Set tenant.tier on the root span';
   const e = editRun({ a: long });
