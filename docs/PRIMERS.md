@@ -5,6 +5,10 @@ act, in `content/core/primers/`, inside a fixed frame of quotes, braces and comm
 words and keep the frame. The rules are checked by `npm test`, so a mistake shows up as a failing test with the path of the
 problem, not as a broken page. The contract behind it is docs/FOUNDATION.md §2.12.
 
+A player meets a primer in two steps: a short pop-up with the overview, then a full-screen zone of chapters, entered with
+"Proceed with learning". Once the player has seen the pop-up, the act's tile on the map goes straight into the zone, at the
+first chapter not yet read. So write the overview to stand on its own: a returning reader skips it.
+
 ## Start from Act 0
 
 1. Copy `content/core/primers/act-0.mjs` to `content/core/primers/<act-id>.mjs`. The name is the act's `id` in `levels/index.mjs` (for example `act-2`).

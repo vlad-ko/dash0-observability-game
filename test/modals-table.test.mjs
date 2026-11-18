@@ -14,7 +14,7 @@ import { buildRegistry } from '../lib/registry.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
 
-const FLAGS = ['feedbackOpen', 'howToOpen', 'saveOpen', 'boardOpen', 'accountOpen', 'aboutOpen', 'primerOpen', 'overlayOpen', 'rewardOpen'];
+const FLAGS = ['feedbackOpen', 'howToOpen', 'saveOpen', 'boardOpen', 'accountOpen', 'aboutOpen', 'primerOpen', 'primerZoneOpen', 'overlayOpen', 'rewardOpen'];
 
 function build() {
   const dom = makeDom(html);
@@ -32,7 +32,8 @@ const oracle = {
   selector: (f) => (f.feedbackOpen ? '#feedback-modal' : f.howToOpen ? '#howto-modal' : f.saveOpen ? '#save-modal'
     : f.boardOpen ? '#board-modal' : f.accountOpen ? '#account-modal' : f.aboutOpen ? '#about-modal' : f.primerOpen ? '#primer-modal' : null),
   scrollLocked: (f) => f.howToOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.feedbackOpen || f.primerOpen,
-  dialogOpen: (f) => f.overlayOpen || f.rewardOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.primerOpen,
+  dialogOpen: (f) => f.overlayOpen || f.rewardOpen || f.aboutOpen || f.saveOpen || f.boardOpen || f.accountOpen || f.primerOpen || f.primerZoneOpen,
+  trap: (f, modal) => modal ?? (f.rewardOpen ? '.reward-card' : f.primerZoneOpen ? '#primer-zone' : f.overlayOpen ? '.overlay' : null),
   overlayInert: (f) => f.howToOpen || f.feedbackOpen,
   escape: (f, typing) => {
     if (f.rewardOpen) return 'closeReward';
@@ -43,6 +44,7 @@ const oracle = {
     if (f.accountOpen) return 'closeAccount';
     if (f.howToOpen && f.overlayOpen) return 'closeHowTo';
     if (f.primerOpen) return 'closePrimer';
+    if (f.primerZoneOpen) return 'closePrimer';
     if (!f.overlayOpen) return null;
     if (f.howToOpen) return 'closeHowTo';
     return typing ? null : 'closeOverlay';
@@ -58,6 +60,7 @@ test('over every combination of the modal flags the table answers what the hand-
     Object.assign(game, f);
     const at = JSON.stringify(f);
     assert.equal(game.openModalSelector(), oracle.selector(f), `selector ${at}`);
+    assert.equal(game.trapSelector(), oracle.trap(f, oracle.selector(f)), `trapSelector ${at}`);
     assert.equal(game.scrollLocked(), oracle.scrollLocked(f), `scrollLocked ${at}`);
     assert.equal(game.dialogOpen(), oracle.dialogOpen(f), `dialogOpen ${at}`);
     assert.equal(game.hubInert(), oracle.dialogOpen(f), `hubInert ${at}`);

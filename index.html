@@ -117,7 +117,7 @@
             <p class="act-badges" x-show="act.badges.length > 0"><span class="act-badges-label">Tags:</span> <template x-for="b in act.badges" :key="b.id"><span class="ui-chip" :data-tone="b.tone" x-text="b.label"></span></template></p>
             <div class="act-soon" x-show="act.soon"><p class="act-soon-chip"><span class="ui-chip" data-tone="neutral">Coming soon</span></p><p class="act-soon-teaser" x-text="act.teaser"></p></div>
             <template x-if="primerTile(act.id) !== null">
-              <button type="button" class="act-primer" :id="'primer-open-' + act.id" aria-haspopup="dialog" aria-controls="primer-modal" :aria-label="primerTile(act.id).label" @click="openPrimer(act.id)"><span>Act primer</span><span class="ui-chip" :data-tone="primerTile(act.id).tone" x-text="primerTile(act.id).text"></span><span aria-hidden="true">&#9656;</span></button>
+              <button type="button" class="act-primer" :id="'primer-open-' + act.id" aria-haspopup="dialog" :aria-controls="primerTileControls(act.id)" :aria-label="primerTile(act.id).label" @click="openPrimer(act.id)"><span>Act primer</span><span class="ui-chip" :data-tone="primerTile(act.id).tone" x-text="primerTile(act.id).text"></span><span aria-hidden="true">&#9656;</span></button>
             </template>
             <div class="level-list">
               <template x-for="id in act.ids" :key="id">
@@ -263,12 +263,31 @@
       </header>
       <div class="ui-modal-body" id="primer-body" x-ignore></div>
       <footer class="ui-modal-foot">
-        <button type="button" class="ui-btn ui-btn--ghost" id="primer-familiar" x-show="primerScreen === -1" @click="primerFamiliar()">I am already familiar with the topic</button>
-        <button type="button" class="ui-btn ui-btn--primary" id="primer-proceed" x-show="primerScreen === -1" @click="primerProceed()">Proceed with learning</button>
-        <button type="button" class="ui-btn ui-btn--ghost" id="primer-back" x-show="primerScreen >= 0" @click="primerBack()">Back</button>
-        <button type="button" class="ui-btn ui-btn--primary" id="primer-next" x-show="primerScreen >= 0" x-text="primerNextLabel()" @click="primerNext()">Next</button>
+        <button type="button" class="ui-btn ui-btn--ghost" id="primer-familiar" @click="primerFamiliar()">I am already familiar with the topic</button>
+        <button type="button" class="ui-btn ui-btn--primary" id="primer-proceed" @click="primerProceed()">Proceed with learning</button>
       </footer>
     </section>
+  </div>
+
+  <!-- ACT PRIMER ZONE: the chapters, full screen, in the level overlay's frame (app.mjs "Act primer modal"). A sibling of the level overlay
+       and after it. The heading and the buttons are Alpine; the chapter and its list are drawn into #primer-zone-body by
+       lib/primer-view.mjs, so that node is x-ignore and carries no Alpine attributes. -->
+  <div class="overlay" id="primer-zone" :class="primerZoneOpen ? 'show' : ''" x-cloak
+       role="dialog" aria-modal="true" :aria-label="primerZoneLabel()">
+    <div class="lesson-top">
+      <button type="button" class="ui-btn ui-btn--icon" id="primer-zone-back" aria-label="Back to the map" @click="closePrimer()"><span aria-hidden="true">&larr;</span></button>
+      <div class="lesson-heading">
+        <p class="ui-eyebrow" x-text="primerZoneEyebrow()"></p>
+        <h2 id="primer-zone-title" tabindex="-1" x-text="primerZoneTitle()"></h2>
+      </div>
+    </div>
+    <div class="level-host">
+      <div class="lesson-scroll" id="primer-zone-body" x-ignore></div>
+      <div class="lesson-actions"><div class="ui-actions">
+        <button type="button" class="ui-btn ui-btn--ghost" id="primer-back" x-show="primerBackShown()" @click="primerBack()">Back</button>
+        <button type="button" class="ui-btn ui-btn--primary" id="primer-next" x-text="primerNextLabel()" @click="primerNext()">Next</button>
+      </div></div>
+    </div>
   </div>
 
   <!-- ABOUT: the game summary and each act, from act data (hub/about.mjs, createGame.aboutActs). -->
