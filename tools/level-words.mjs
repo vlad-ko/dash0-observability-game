@@ -6,8 +6,9 @@
 // (levels/<id>.mjs) plus its content (content/core/levels/<id>.mjs). Words are whitespace-separated tokens
 // with tags stripped and fill-ins removed. Words inside a tag (attribute values) are not compared: the level
 // snapshots (test/levels-play.test.mjs with LEVEL_SNAPSHOT) cover the markup. A word in the code that equals a
-// fill-in name used by the content is not compared either (it is a VARS key or a slot). `lost` is a word the old file had
-// that nothing now has; `added` is a word now there that the old file did not have. Exit 1 unless both are
+// fill-in name used by the content is not compared either (it is a VARS key or a slot). It cannot tell a dropped
+// word from one now held elsewhere under the same spelling, as a new code literal or as a content id; the
+// snapshots and the fingerprint cover those. `lost` is a word the old file had that nothing now has; `added` is a word now there that the old file did not have. Exit 1 unless both are
 // empty, 2 on a usage error. A developer tool, kept out of the deployed site by .vercelignore.
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
