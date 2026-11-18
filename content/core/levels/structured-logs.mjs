@@ -1,4 +1,5 @@
 // Text of levels/structured-logs.mjs (docs/CONTENT.md).
+// Sort labels must not give the bucket away: the rule is in levels/structured-logs.mjs and test/sort-tells.test.mjs.
 export default {
   "id": "structured-logs",
   "name": "Structured logs",
