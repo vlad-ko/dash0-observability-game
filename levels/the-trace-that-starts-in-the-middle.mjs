@@ -27,6 +27,10 @@
 // Build it has two identical twin calls, one orphan, one hop). Here the header arrives but its parent-id is a pointer to nothing and
 // the trace ID is intact; the player diagnoses that from the data and rebuilds two hops, where every client span that could be the parent
 // overlaps the server span in time, and no name, verb or position tells them apart, only the IDs.
+//
+// The words are in content/core/levels/the-trace-that-starts-in-the-middle.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
+import CORE from '../content/core/levels/the-trace-that-starts-in-the-middle.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 
 const T = '5d2b8f0e7c41a396b0d4e8f21a7c3b95';
 const WEB_S = '1e7a3c9d5b2f8046';
@@ -94,40 +98,26 @@ const CLIENT_ROWS = TREE.spans
   .join('');
 const PASS_ROWS = [row(['web to cart', header(traceparent(WEB_C))]), row(['cart to payments', header(traceparent(CART_C))])].join('');
 
-// Step 1: does the presenter's answer hold? `why` follows "Right." or "Not quite.".
-const VERDICT = [
-  {
-    key: 'holds',
-    label: 'Cart\'s SDK ignored the header and left its span an orphan',
-    why: `Cart's spans carry trace ${T.slice(0, 8)}, web's trace ID, so its SDK continued the trace and did not start one. The orphan is a parent-ID problem, not a trace-ID problem.`,
-  },
-  {
-    key: 'never-sent',
-    label: 'Web sent no traceparent, so cart had nothing to continue',
-    why: `Web did send one: the "Left the caller" column shows ${header(traceparent(WEB_C))}, and cart's spans share its trace ID. The trace ID arrived. What changed on the way is the parent-ID.`,
-  },
-  {
-    key: 'rewritten',
-    label: 'The sidecar replaced the parent-id with a span it never exports',
-    right: true,
-    why:
-      `The header left web naming web's client span, ${code(WEB_C)}, and reached cart naming ${code(MESH1)}, which is no received span: the sidecar wrote it. The sidecars show tracing export: none, so no one ever sends that span. ` +
-      `Cart's SDK did what the header said (same trace, parent ${code(MESH1)}), and the hole is the parent that does not exist. The same happens between cart and payments.`,
-  },
-  {
-    key: 'dropped',
-    label: 'The sidecar\'s span was dropped on export, so cart\'s parent is missing',
-    why: 'The sidecars show tracing export: none, so they never produced an export to drop. A parent-id that no span carries is not a lost span, it is an id nothing ever sent, written into the header by the sidecar.',
-  },
-];
+// The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
+const VARS = {
+  'trace-short': T.slice(0, 8),
+  'received-rows': RECEIVED_ROWS,
+  'hop-rows': HOP_ROWS,
+  'web-c-header': header(traceparent(WEB_C)),
+  'web-c': code(WEB_C),
+  mesh1: code(MESH1),
+  'pass-rows': PASS_ROWS,
+  'client-rows': CLIENT_ROWS,
+};
 
-export default {
+// Step 1: does the presenter's answer hold? `why` follows "Right." or "Not quite."; only the right choice is listed here.
+const VERDICT = [{ key: 'rewritten', right: true }];
+
+// The level as it was, minus the words.
+const SKELETON = {
   id: 'the-trace-that-starts-in-the-middle',
   no: '9.4',
-  name: 'The trace that starts in the middle',
-  sub: 'Does that answer hold?',
   icon: '\u{1F9ED}',
-  rewardTitle: 'Parent finder',
   cards: [],
   lights: ['storefront', 'cart', 'payments'],
   scored: true,
@@ -135,34 +125,15 @@ export default {
   play: {
     prefix: 'ttsm',
     steps: [
-      {
-        intro:
-          'On a call, a customer shows a checkout trace in which cart and payments float loose, each with a parent no one can open. The presenter answers without a pause: ' +
-          '"Cart\'s SDK ignores the header web sends, so it starts over. That is why its span has no parent."',
-        show:
-          '<p>The three services run behind a mesh: a sidecar sits between each caller and callee, forwards the call and writes a <code>traceparent</code> header on it. Sidecar settings: <code>tracing export: none</code>. ' +
-          'Here is the trace as received, and the header on each hop before and after its sidecar:</p>' +
-          `<table><caption>Spans received, one trace (${T.slice(0, 8)})</caption><thead><tr><th scope="col">Service</th><th scope="col">Name</th><th scope="col">Kind</th><th scope="col">Span ID</th><th scope="col">Parent ID</th></tr></thead><tbody>${RECEIVED_ROWS}</tbody></table>` +
-          `<table><caption>The traceparent on each hop</caption><thead><tr><th scope="col">Hop</th><th scope="col">Left the caller</th><th scope="col">Reached the callee</th></tr></thead><tbody>${HOP_ROWS}</tbody></table>`,
-        question: 'Does the presenter\'s answer hold?',
-        qid: 'ttsm-q-verdict',
-        choice: { id: 'ttsm-verdict', choices: VERDICT },
-      },
-      {
-        intro:
-          'You change the sidecars to pass <code>traceparent</code> through unchanged. The W3C text allows it. A vendor must send the header on and may change it first, so sending it on unchanged is allowed too. ' +
-          'The board shows the old trace. Cart\'s and payments\' server spans still point at the IDs the sidecars wrote, which no received span carries; with the fix, each takes the parent the header it receives names. ' +
-          'Web and cart also made parallel calls while the call ran, some of them POSTs; their server spans are not in this capture. Calls with the same name are told apart by the end of their span ID.',
-        show:
-          `<table><caption>The traceparent on each hop after the fix</caption><thead><tr><th scope="col">Hop</th><th scope="col">Header</th></tr></thead><tbody>${PASS_ROWS}</tbody></table>` +
-          `<table><caption>CLIENT spans of web and cart, by ID</caption><thead><tr><th scope="col">Service</th><th scope="col">Name</th><th scope="col">Span ID</th></tr></thead><tbody>${CLIENT_ROWS}</tbody></table>`,
-        question: 'Rebuild the tree the fix gives: join cart\'s and payments\' server spans to their parents.',
-        qid: 'ttsm-q-tree',
-        build: TREE,
-      },
+      { qid: 'ttsm-q-verdict', choice: { id: 'ttsm-verdict', choices: VERDICT } },
+      { qid: 'ttsm-q-tree', build: TREE },
     ],
-    finish:
-      'A parent ID is a pointer to a span. Here the sidecars wrote an ID for a span they never export, so the child pointed at nothing; passing the header through unchanged keeps the pointer to the caller\'s own span. ' +
-      'The parent a header names is the CLIENT span of the call that carried it, not the SERVER span around it and not a parallel call.',
   },
 };
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+export default withText(CORE);
