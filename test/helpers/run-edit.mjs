@@ -19,7 +19,17 @@ export function editRun(run) {
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
-export const RUN_FIXTURES = {};
+export const RUN_FIXTURES = {
+  'naming-your-service': [
+    // Keys the code reads the checked config with (effectiveResource's attributes and its source): looked up and compared, never shown.
+    'service.name',
+    'service.version',
+    'deployment.environment.name',
+    'OTEL_RESOURCE_ATTRIBUTES',
+    // The chip label is the same word as the kit's own "Hints" heading in the score card (lib/ui/side.mjs), so a play-through cannot tell the two apart.
+    'Hints',
+  ],
+};
 
 /** Every string of a content `run` that is not an id or a key: `[{path, text}]`, the path like `run.sort.items[0].why`. */
 function entriesOf(value, path, key = '') {

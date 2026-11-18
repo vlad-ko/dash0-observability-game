@@ -844,6 +844,19 @@ const UNREACHED = {
     'run.sort.items[4].whyNot.ok',
     'run.onSpans[1].why',
   ],
+  // The drivers make one wrong pick in step 1 and none in step 3, check the given config once (two problems) and never
+  // check a repeat, a blank, a one-problem config or one that names the service in the attribute list.
+  'naming-your-service': [
+    'run.showsUpAs[2].why',
+    'run.showsUpAs[3].why',
+    'run.fixBlankSays',
+    'run.fixRepeatSays',
+    'run.fixMissOneSays',
+    'run.fixAttrNote',
+    'run.whoWins[1].why',
+    'run.whoWins[2].why',
+    'run.whoWins[3].why',
+  ],
   // The sloppy run places one item wrong; the other wrong-placement explanations and the explanations of the wrong
   // picks it does not make are never on a screen. The hints are: HINT_PLAYS presses each Hint button.
   'monitoring-vs-observability': [
@@ -924,6 +937,17 @@ const HINT_PLAYS = {
     click('[data-pick="rich"]');
     click('#mvo-finish');
   },
+  // Three Hint presses: the third fills in the reference config and checks it ("Filled in for you.").
+  'naming-your-service'() {
+    click('[data-pick="fallback"]');
+    click('#nys-next');
+    click('#nys-hint');
+    click('#nys-hint');
+    click('#nys-hint');
+    click('#nys-next');
+    click('[data-pick="env-var"]');
+    click('#nys-finish');
+  },
   'the-signals'() {
     click('#sig-data-hint');
     sortAll(SIG_DATA);
@@ -944,7 +968,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'monitoring-vs-observability', 'naming-your-service', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
