@@ -822,9 +822,10 @@ for (const id of LIVE.order) {
 }
 
 // A run level converted to a content file (docs/CONTENT.md section 11) plays only the words it is given: play it
-// through every screen with its own drivers, over content where every word starts with `EDITED `, and no screen or
-// finish text may hold a word of the real content without that prefix (a step reading the module's built-in text
-// instead of the text handed to withText would).
+// through every screen with its own drivers, over content where each word carries its own `EDITED<n> ` mark (n is
+// the entry's number), and the test fails on a word shown without its mark, on an entry no run shows with its mark,
+// and on a stale UNREACHED entry (a step reading the module's built-in text instead of the text handed to withText
+// would show a word without its mark).
 const CONTENT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'content', 'core', 'levels');
 const RUN_CONTENT_IDS = readdirSync(CONTENT_DIR)
   .filter((f) => f.endsWith('.mjs'))
@@ -855,7 +856,7 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     for (const [label, run] of [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy]]) {
       const { calls, frames, clicks } = playLevel(level, run.play);
       assert.equal(calls.length, 1, `${id} ${label}: finished once`);
-      assert.match(calls[0].result.text, /^EDITED\d* /, `${id} ${label}: the finish text is the one it was given`);
+      assert.match(calls[0].result.text, /^EDITED\d+ /, `${id} ${label}: the finish text is the one it was given`);
       shown.push(...[...frames, ...clicks].flatMap((f) => [f.body, f.actions]), calls[0].result.text);
     }
     const { leaked, unseen, stale } = checkWords(core.run, shown, { unreached: UNREACHED[id], kept: RUN_FIXTURES[id] });
