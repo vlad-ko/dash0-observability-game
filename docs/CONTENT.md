@@ -2,7 +2,7 @@
 
 For anyone who writes or edits what a level says. A level has two parts: the **words** (questions, choices, explanations) and the **logic** (which answer is right, the figures the copy quotes, how the pieces are wired). The words live in a content file; the logic stays in `levels/<id>.mjs`. Each part is checked on its own, and a tool joins them when the game loads. Design background: docs/FOUNDATION.md §2.13. Act primers use the same text rules and have their own guide: [PRIMERS.md](PRIMERS.md), which this page does not repeat.
 
-Only play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) can be converted so far. The converted levels are the ones with a file in `content/core/levels/`; the other levels still hold their words in the level file, and both kinds work side by side.
+Play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) and levels that draw their screens in `run(ctx)` can be converted; run(ctx) levels convert by section 11 and stay run levels. The converted levels are the ones with a file in `content/core/levels/`; the other levels still hold their words in the level file, and both kinds work side by side.
 
 **A new level** is written in the level file, as before. It is converted in its act's conversion pull request (section 9), not at birth.
 
@@ -90,7 +90,7 @@ The folder name `core` is the edition: the one version of the words the game shi
 
 ## 9. Converting a level, step by step
 
-Do one act at a time and change only that act's level files and their content files. Only play levels convert (a level with `run(ctx)` has to become a play level first). A level written new is converted the same way, in its act's pull request.
+Do one act at a time and change only that act's level files and their content files. Play levels convert by the steps below; a level with `run(ctx)` converts by section 11 and stays a run level. A level written new is converted the same way, in its act's pull request.
 
 1. **Baseline, on a clean checkout of main.** Pick a scratch folder `S` outside the repo. Run `node tools/level-fingerprint.mjs $S/before` (the exact data of every level) and `LEVEL_SNAPSHOT=$S/before node --test test/levels-play.test.mjs` (the page of every step, happy and sloppy run).
 2. **Extract.** `node tools/extract-level-text.mjs <id>` prints every text field of the level as a content file, in the order the game shows it. Save it as `content/core/levels/<id>.mjs`.
@@ -124,3 +124,76 @@ A test that reads a level's source text uses `levelSource(id)` (`test/helpers/le
 ## 10. Later: answer pools (#390)
 
 A level could carry more wrong answers in its content than one play shows, and the logic would say how many to draw (`draw: {count, always: [...]}`). The content format would not change. This is not built; do not write `draw` yet.
+
+## 11. Converting a run(ctx) level
+
+A level that draws its screens in `run(ctx)` stays a run level. Its words move to `content/core/levels/<id>.mjs` under one key, `run`, and its code reads them from an object called `say`. Screens, buttons, scoring and help stay as they are. Turning a run level into a play level is a separate change (it adds the Ask the guide panel) and is not part of this move.
+
+### 11.1 What moves, what stays
+
+Move every string literal in `levels/<id>.mjs` that a player can see, whatever its length: lesson text, questions, answer labels and `why` text, hints, notes, button labels, the reason under a disabled button, chip text, table captions and headings, feedback lines, the finish text.
+
+Keep in the level file:
+- ids, `key` values, element ids, data attribute names and values, CSS classes, tones, variants, modes, and any value the code compares;
+- fixture data: fields of spans, logs, events and attributes that a widget or the level computes over, even when shown (a span name such as `charge with retry`);
+- words that come from another module (`lib/`, the UI kit);
+- header comments, `VERIFY` notes and rules about text (keep them beside the code that uses the entry, and add a one-line pointer in the content header).
+
+### 11.2 The content file
+
+Header and strict JSON as in section 2. At the top: `id`, `name`, `sub`, `rewardTitle` and `run`. `run` holds named entries, in the order the game shows them:
+- Names are lowerCamelCase.
+- A module constant that holds words becomes one entry named after the constant (`ON_SPANS` becomes `onSpans`), with the same structure, minus answer flags, numbers, fixtures and `helps`. List elements keep their `id` or `key`.
+- Every other literal becomes one entry named `<screen><Role>`. The screen is the step function's name without `step` (`stepSort` gives `sort`), or `start` for the top of `run`. The role is `Intro` (passed to `ctx.speech`), `Question`, `Reason` (a disabled button's reason), `Button`, `Chip`, `Note`, `Label`, `Says` (a feedback line), or what the code calls it. A level with one finish text names it `finish`. Add a number if two names would clash.
+- One entry per literal in the old code. Literals joined by `+` count as one, and so does a template literal. Two literals with the same words in two places stay two entries.
+- Inside `run` any key is allowed except answer and grader keys (`right`, `keep`, `bucket`, `kind`, `cost`, `keeps`, `cap`, `qid`, `prefix`, `steps`, `play` and the fixture keys of section 3). Every value is text, an object or a list. Every string may hold HTML (section 5) and is checked after its fill-ins.
+- A literal that starts or ends with a space loses that space in the content; the code adds it back where it uses the entry.
+- Markup that section 5 does not allow (`<h4>`, `<div>`, `<span>`, `id=`, `tabindex=`) stays in the code as a slot (11.3); the code builds the tag and puts the words, read from `say`, inside it.
+
+### 11.3 Fill-ins
+
+Each `${...}` in an old literal becomes `{{name}}`:
+- a **VAR** (section 4) when the expression uses only module-level values that do not come from the content, for example `${TIMEOUT_MS / 1000}`;
+- a **slot** otherwise: the expression reads `ctx`, the session, the page, a variable of the running level, or words from the content. Add the name to `const SLOTS = [...]` and fill it in the code with `fillSlots(say.<name>, { <slot>: <the exact old expression, escaping included> })` from `lib/content/placeholders.mjs`.
+
+Slots work only under `run`, and never inside a tag. `fillSlots` throws when a slot has no value or a value has no slot; it never prints an empty string. A conditional that picks words (`x ? 'a' : 'b'`, a plural) becomes one entry per branch, and the condition stays in the code.
+
+### 11.4 The level file
+
+`SKELETON` is the level without its words. Under `run` it holds, for each entry, only what the logic needs: ids with answer flags (and `right: false` where it was written), numbers, fixtures and `helps`. An entry with no such parts is not in the skeleton. Keep every id an answer or the binder joins on, as in section 9 step 4: a sort's bucket ids, and the ids or keys of the elements that carry an answer flag.
+
+```js
+import CORE from '../content/core/levels/<id>.mjs';
+import { bindLevel, bindRunLevel } from '../lib/content/bind.mjs';
+
+const VARS = {};
+const SLOTS = [];
+
+function screens(ctx, say) {
+  // the old run(ctx) body; every word is say.<name>
+}
+
+export function withText(text) {
+  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+}
+
+export default withText(CORE);
+```
+
+Rules:
+- Read words only as `say.<name>`. Do not destructure `say` and do not compute a top-level name.
+- A module-level helper with words takes `say` as an argument.
+- A named export that held words (`CONTENT` and the like) stays, built by one function of `say`, for example `export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);`, and `screens` uses the same function. A table whose text has a slot is filled in that function.
+
+### 11.5 Step by step
+
+1. **Baseline, on a clean checkout of main.** As section 9 step 1 (fingerprint and LEVEL_SNAPSHOT into `$S/before`), and copy each level file of the act: `cp levels/<id>.mjs $S/old-<id>.mjs`.
+2. **Write the content file by hand.** `tools/extract-level-text.mjs` reads only play levels. Copy `name`, `sub` and `rewardTitle`, then add the `run` entries by 11.2.
+3. **Put in the fill-ins** by 11.3.
+4. **Strip and wire** by 11.4.
+5. **Fixtures.** If `test/level-text-content.test.mjs` lists a kept literal that is fixture data (11.1), add it to `RUN_FIXTURES` under the level id. Any other literal it lists moves to the content.
+6. **Prove nothing changed.** Run step 1 into `$S/after`. `diff -r $S/before $S/after` must show only the new `withText` key in each fingerprint, and no change to any snapshot (frames and clicks). `node tools/level-words.mjs $S/old-<id>.mjs <id>` must report no word lost and none added.
+7. **Run the tests.** The level's own tests, `test/levels-play.test.mjs`, `test/level-text-content.test.mjs`, `test/content.test.mjs` and the act's test. No existing test line should need a change; if one does, stop and ask.
+8. **Mutation check.** Put one old literal back in the code: the "holds no copy" test goes red. Misspell one `say.<name>`: the "every name it reads" test goes red. Change one word in the content: `tools/level-words.mjs` reports it lost and added. Put all three back.
+
+One act per pull request, as in section 9.
