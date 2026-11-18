@@ -1,4 +1,4 @@
-// The act primer pop-up body (#389, lib/primer-view.mjs): one primerView screen drawn with the kit helpers.
+// The act primer pop-up and zone bodies (#389, #410, lib/primer-view.mjs): one primerView or primerZoneView screen drawn with the kit helpers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseHTML } from 'linkedom';

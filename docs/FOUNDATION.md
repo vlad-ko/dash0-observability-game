@@ -654,13 +654,14 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
   chapter. The zone counts as a dialog: the hub is inert, Tab is trapped in `#primer-zone`, Escape and the back arrow close it
   and the globe is freed while it is open. Writes per action: opening records `seen`, "already familiar" `skipped`, Next the
   chapter left `read`; Proceed, Back, a chapter jump and close write nothing. `?mode=debug` writes nothing, so the tile always
-  opens the pop-up there. The waiting level and the focus rules are as for the pop-up below.
+  opens the pop-up there. Closing the pop-up without Proceed also records `seen`, so the next tile click goes straight into the
+  zone at chapter 1. The waiting level and the focus rules are as for the pop-up below.
 - Pop-up body: `primerBodyHtml(view, {draft})` draws one
   `primerView` screen with kit helpers only (escaped text, classless `<a target="_blank" rel="noopener noreferrer">` plus a kind
   chip and, for an internal link, an attention chip "Dash0 team only"; a "Sources" eyebrow ends each chapter; a "Draft" chip marks a
   placeholder). `createGame` takes `primers` (default `[]`; `main.mjs` passes `PRIMERS`), builds them once with `buildPrimers`, shows
-  no tile for an invalid one and reports the errors once. The hub tile (`.act-primer`, before an act's level list) opens it at any
-  time. It opens by itself once per visit (`seenPrimers`) when the stored state is new: on expanding the act, or in place of the
+  no tile for an invalid one and reports the errors once. The hub tile (`.act-primer`, before an act's level list) opens the pop-up
+  while the primer is new and the zone otherwise. It opens by itself once per visit (`seenPrimers`) when the stored state is new: on expanding the act, or in place of the
   first level opened in that act, which then waits (`primerThen`) and starts when the player leaves the primer forward ("I am
   already familiar with the topic", or the last chapter's button). The close button and Escape close it, drop the waiting level and
   return focus to the opener. Opening records `seen`, "already familiar" `skipped`, Next the chapter just left `read`, Back nothing;

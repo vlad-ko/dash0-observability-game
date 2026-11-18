@@ -1,4 +1,4 @@
-// The act primer tile and pop-up in the game component (#389): when it opens, what it records, where focus goes.
+// The act primer tile, pop-up and zone in the game component (#389, #410): when each opens, what it records, where focus goes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -438,6 +438,9 @@ test('Z2 a seen primer with chapters left opens the zone at the first unread one
   assert.deepEqual(stored(store).acts.a0.read, ['c-one', 'c-three']);
   assert.equal(stored(store).acts.a0.seen, true);
   assert.equal(writes(store), 1);
+  assert.equal(game.primerZoneEyebrow(), 'Act 0 primer', 'the number of this act, not another');
+  assert.equal(game.primerZoneTitle(), 'Chapter c-two');
+  assert.equal(game.primerZoneLabel(), 'Primer zero');
 });
 
 test('Z3 a new primer opens the pop-up', () => {
@@ -446,6 +449,10 @@ test('Z3 a new primer opens the pop-up', () => {
   assert.equal(game.primerOpen, true);
   assert.equal(game.primerZoneOpen, false);
   assert.equal(game.primerScreen, -1);
+  assert.equal(game.primerEyebrow(), 'Act 0 primer', 'the pop-up says the same as the zone');
+  const second = setup({ primers: [{ ...P0, act: 'a1' }] });
+  second.game.openPrimer('a1');
+  assert.equal(second.game.primerEyebrow(), 'Act 1 primer');
 });
 
 test('Z4 all read, skipped with nothing read, and seen with nothing read all open the zone at chapter 1', () => {
@@ -691,7 +698,7 @@ test('Z17 what the zone draws carries no style, handler or Alpine attribute', ()
   }
 });
 
-test('Z18 focus after leaving the zone is worked out then: an act folded meanwhile sends it to the act toggle', () => {
+test('Z18 focus after leaving the zone goes to the act toggle when the act was folded meanwhile', () => {
   const shared = fakeStorage();
   const { game, asked } = setup({ storage: () => shared });
   const other = setup({ primers: [], storage: () => shared }).game;
@@ -708,4 +715,23 @@ test('Z18 focus after leaving the zone is worked out then: an act folded meanwhi
   assert.equal(game.actExpanded('a0'), false);
   game.closePrimer();
   assert.equal(asked.at(-1), '#act-toggle-a0');
+});
+
+test('Z19 Done on the last chapter with no level waiting brings the globe back', async () => {
+  let calls = 0;
+  const globe = async () => {
+    calls++;
+    return { update() {}, ignite() {}, dispose() {} };
+  };
+  const { game } = setup({ globe, initial: seeded(['c-one', 'c-two']) });
+  game.showGlobe();
+  await tick();
+  assert.equal(calls, 1);
+  game.openPrimer('a0');
+  assert.equal(game.primerScreen, 2);
+  assert.equal(game.primerNextLabel(), 'Done');
+  game.primerNext();
+  await tick();
+  assert.equal(game.primerZoneOpen, false);
+  assert.equal(calls, 2, 'the map is drawn again');
 });

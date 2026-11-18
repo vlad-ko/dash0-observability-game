@@ -22,7 +22,7 @@ import { freshlyLit, igniteView, litText } from './lib/globe-ignite.mjs';
 import { dotStates, globeCaption, globeLabel, globeLegend, globeLines, globeTarget } from './lib/globe-view.mjs';
 import { HELP_KEY, hideHelp, readHiddenHelp } from './lib/help-prefs.mjs';
 import { howToView } from './lib/how-to-play.mjs';
-import { buildPrimers, firstUnread, primerStatus, primerTile as tileOf, primerView as viewOf, primerZoneView as zoneViewOf } from './lib/primer.mjs';
+import { buildPrimers, firstUnread, primerEyebrow as eyebrowOf, primerStatus, primerTile as tileOf, primerView as viewOf, primerZoneView as zoneViewOf } from './lib/primer.mjs';
 import { PRIMER_KEY, readPrimers, recordPrimer } from './lib/primer-prefs.mjs';
 import { primerBodyHtml, primerZoneHtml } from './lib/primer-view.mjs';
 import { createGuideClient } from './lib/guide/client.mjs';
@@ -1137,8 +1137,15 @@ export function createGame(deps) {
       if (primer === null) return null;
       const then = this.primerThen;
       const thenName = then !== null ? registry.levels[then]?.name : undefined;
-      const actNo = registry.acts.find((a) => a.id === this.primerActId)?.no;
-      return zoneViewOf(primer, this.primerScreen, this.primerStored(this.primerActId), { then: then ?? undefined, thenName, actNo });
+      return zoneViewOf(primer, this.primerScreen, this.primerStored(this.primerActId), { then: then ?? undefined, thenName, actNo: this.primerActNo() });
+    },
+    // The registry number of the act whose primer is open (undefined when none).
+    primerActNo() {
+      return registry.acts.find((a) => a.id === this.primerActId)?.no;
+    },
+    // The pop-up's eyebrow, from the same rule as the zone's (lib/primer.mjs primerEyebrow).
+    primerEyebrow() {
+      return eyebrowOf(this.primerActNo());
     },
     primerZoneTitle() {
       return this.primerZoneCurrent()?.title ?? '';
