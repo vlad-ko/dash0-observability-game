@@ -26,8 +26,6 @@ export const RUN_FIXTURES = {
     'service.version',
     'deployment.environment.name',
     'OTEL_RESOURCE_ATTRIBUTES',
-    // The chip label is the same word as the kit's own "Hints" heading in the score card (lib/ui/side.mjs), so a play-through cannot tell the two apart.
-    'Hints',
   ],
 };
 
@@ -38,7 +36,15 @@ function entriesOf(value, path, key = '') {
   return typeof value === 'string' && key !== 'id' && key !== 'key' ? [{ path, text: value }] : [];
 }
 
+/**
+ * Elements of the UI kit whose text the kit fixes, not the level: they show on a screen whatever the content says, so a content
+ * entry with the same words is not a leak when it is seen next to one. Each is matched by its kit class, never by its words
+ * (a heading of another kind that says the same is still checked). Only the score card's Hints heading (lib/ui/side.mjs) so far.
+ */
+const KIT_CHROME = [/<h3 class="ui-hints-head">[^<]*<\/h3>/g];
+
 const stripWbr = (s) => s.replace(/<wbr\s*\/?>/g, '');
+const stripKit = (s) => KIT_CHROME.reduce((out, re) => out.replace(re, ' '), s);
 const norm = (s) => s.replace(/\s+/g, ' ').trim();
 const plain = (s) => norm(s.replace(/<[^>]*>/g, ' '));
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -76,7 +82,7 @@ function pattern(s, flags = '', trim = false, capture = false) {
  */
 export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {}) {
   const entries = entriesOf(coreRun, 'run');
-  const html = screens.map(stripWbr).join('\n');
+  const html = screens.map((s) => stripKit(stripWbr(s))).join('\n');
   const words = [...new Set(entries.map((e) => e.text))].sort((a, b) => b.length - a.length);
   const mark = (i) => `EDITED${i} `;
   // An entry is seen when it shows with its own mark (so a duplicate, or an entry that starts another, is judged on its

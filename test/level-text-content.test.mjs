@@ -235,6 +235,15 @@ test('checkWords: a fill-in value that holds an inline tag is matched too, marke
   assert.equal(e.set, 'EDITED0 Set {{attr}} on the root span.');
 });
 
+test('checkWords: the kit\'s own Hints heading is not a leak of a content entry that says Hints, but an unedited copy still is', () => {
+  const run = { chip: 'Hints', other: 'Another long sentence.' };
+  const e = editRun(run);
+  const kit = '<div class="ui-hints"><h3 class="ui-hints-head">Hints</h3></div>';
+  assert.deepEqual(checkWords(run, [kit, `<span>${e.chip}</span>`, e.other]), CLEAN, 'the heading beside the edited chip');
+  assert.deepEqual(checkWords(run, [kit, '<span>Hints</span>', `<span>${e.chip}</span>`, e.other]).leaked, ['Hints'], 'the chip shown unedited');
+  assert.deepEqual(checkWords(run, ['<h3>Hints</h3>', `<span>${e.chip}</span>`, e.other]).leaked, ['Hints'], 'a heading that is not the kit\'s is not skipped');
+});
+
 test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
   const long = 'Set tenant.tier on the root span';
   const e = editRun({ a: long });

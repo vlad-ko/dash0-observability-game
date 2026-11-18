@@ -83,7 +83,7 @@ function screens(ctx, say) {
     });
     const chips = helpChips('nys', [
       { key: 'instant', label: say.fixInstantChip, on: true },
-      { key: 'hints', label: 'Hints', on: true }, // the same word as the kit's own heading in the score card (lib/ui/side.mjs): RUN_FIXTURES
+      { key: 'hints', label: say.fixHintsChip, on: true },
     ]);
     const side = sideColumn({ id: 'nys', titleHtml: say.fixSideTitle, counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: RULE });
     ctx.renderStep(

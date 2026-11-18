@@ -40,6 +40,7 @@ export default {
     "fixEditorLabel": "checkout .env",
     "fixCheckButton": "Check",
     "fixInstantChip": "Instant feedback",
+    "fixHintsChip": "Hints",
     "fixSideTitle": "Config solved",
     "fixNextReason": "Fix the config and press Check to continue.",
     "fixWrongNounOne": "failed Check",
