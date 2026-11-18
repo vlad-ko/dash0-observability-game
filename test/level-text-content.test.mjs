@@ -13,7 +13,7 @@ import { contentFileText, extractLevelText } from '../tools/extract-level-text.m
 import { codeOnly, literalSites } from '../tools/js-strings.mjs';
 import { readJsonModule } from './helpers/content-files.mjs';
 import { makeDom } from './helpers/dom.mjs';
-import { editRun } from './helpers/run-edit.mjs';
+import { checkWords, editRun, RUN_FIXTURES } from './helpers/run-edit.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = join(ROOT, 'content', 'core', 'levels');
@@ -25,8 +25,6 @@ const CORE_OF = (id) => readJsonModule(join(DIR, `${id}.mjs`)).value;
 // A content file has `play` (a play level) or `run` (a run(ctx) level, docs/CONTENT.md section 11), never both.
 const RUN_IDS = IDS.filter((id) => CORE_OF(id).run !== undefined);
 const PLAY_IDS = IDS.filter((id) => CORE_OF(id).play !== undefined);
-/** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literal's text. */
-const RUN_FIXTURES = {};
 const readLogic = (id) => readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8');
 
 test('there are converted levels to check (the pilot has at least two)', () => {
@@ -138,13 +136,16 @@ test('editing a run level\'s words shows on its first screen, and withText leave
 // A literal that may be a word a player sees: prose (letter, space, letter), one capitalised word, or anything with a
 // letter in it that is not id-like (`bag-next`, `#bag-next`, `only-if-copied`). Tags are taken out first.
 const PROSE = [/[A-Za-z]\s+[A-Za-z]/, /^[A-Z][a-z]+[.:?!]?$/];
-const ID_LIKE = /^[#.]?[a-z0-9-]+$/;
-const looksVisible = (t) => PROSE.some((re) => re.test(t)) || (/[A-Za-z]/.test(t) && !ID_LIKE.test(t));
+// Id-like also covers a CSS selector made of those and attribute selectors (`[data-ask]`, `input[name=" "]`).
+const ID_LIKE = /^(?:[#.]?[a-z0-9-]+)?(?:\[[a-z-]+(?:=(?:"[^"]*"|'[^']*'|[^\]]*))?\])*$/;
+const textOf = (pieces, glue) => pieces.join(glue).replace(/<[^>]*>/g, ' ').trim();
+// Prose is read with a space where a template had a `${}`; the id test with nothing there (`its-q-${n}-feedback`).
+const looksVisible = (s) => PROSE.some((re) => re.test(textOf(s.pieces, ' '))) || (/[A-Za-z]/.test(textOf(s.pieces, '')) && !ID_LIKE.test(textOf(s.pieces, '')));
 /** The literals of `src` that look like visible words and are not in `kept`, as text. */
 const proseLiterals = (src, kept = []) =>
   literalSites(src)
-    .map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim())
-    .filter((t) => looksVisible(t) && !kept.includes(t));
+    .filter((s) => looksVisible(s) && !kept.includes(textOf(s.pieces, ' ')))
+    .map((s) => textOf(s.pieces, ' '));
 
 test('a run level\'s code holds no prose literal: its words are say.<name> reads (docs/CONTENT.md 11.1)', () => {
   for (const id of RUN_IDS) {
@@ -159,6 +160,26 @@ test('the prose check flags a visible literal that has no letter-space-letter: m
   const src = "const a = ['<code>tenant.tier</code>', 'Sort 5 items.', 'Next \\u2192', 'Baggage', 'bag-next', '#bag-next', 'ok', '2.5'];";
   assert.deepEqual(proseLiterals(src), ['tenant.tier', 'Sort 5 items.', 'Next →', 'Baggage']);
   assert.deepEqual(proseLiterals(src, ['tenant.tier']), ['Sort 5 items.', 'Next →', 'Baggage'], 'a kept fixture is not flagged');
+});
+
+test('the prose check lets CSS attribute selectors and template ids through', () => {
+  const src = "const a = ['[data-ask]', 'input[name=\" \"]', `its-q-${n}-feedback`, 'button[data-pick]'];";
+  assert.deepEqual(proseLiterals(src), []);
+});
+
+test('checkWords: a word shown without its edit, a word never shown edited, and a stale unreached entry are each reported', () => {
+  const run = { a: 'A long enough sentence.', b: 'Dash0', c: { id: 'x', label: 'Another long sentence.' }, d: 'Never reached here.' };
+  const shown = ['EDITED A long enough sentence.', 'EDITED Dash0 and EDITED Another long sentence.'];
+  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d'] }), { leaked: [], unseen: [], stale: [] });
+  assert.deepEqual(checkWords(run, [...shown, 'A long enough sentence.'], { unreached: ['run.d'] }).leaked, ['A long enough sentence.'], 'a long word without the edit');
+  assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'] }).leaked, ['Dash0'], 'a short word without the edit');
+  assert.deepEqual(checkWords(run, [...shown, '<p>Dash0</p>'], { unreached: ['run.d'], kept: ['Dash0'] }).leaked, [], 'a fixture is skipped');
+  assert.deepEqual(checkWords(run, [...shown, 'Dash01'], { unreached: ['run.d'] }).leaked, [], 'a short word is matched as a whole word');
+  assert.deepEqual(checkWords(run, shown.slice(0, 1), { unreached: ['run.d'] }).unseen, ['run.b', 'run.c.label'], 'words never shown edited, by path');
+  assert.deepEqual(checkWords(run, [...shown, 'EDITED Never reached here.'], { unreached: ['run.d'] }).stale, ['run.d'], 'an entry listed as unreached that is shown');
+  assert.deepEqual(checkWords(run, shown, { unreached: ['run.d', 'run.zzz'] }).stale, ['run.zzz'], 'an unreached path that is no entry');
+  const wbr = ['EDITED <code>experiment.<wbr>variant=redesign-B</code>'];
+  assert.deepEqual(checkWords({ l: '<code>experiment.variant=redesign-B</code>' }, wbr), { leaked: [], unseen: [], stale: [] }, 'a <wbr> inside a word is ignored');
 });
 
 test('a run level reads exactly the names its content defines, as say.<name>, in code only', () => {

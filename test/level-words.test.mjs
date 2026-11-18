@@ -128,6 +128,14 @@ test('codeOnly: comments, strings, regexes and template text are blanked, templa
   assert.deepEqual([...code.matchAll(/\bsay\.([a-z]+)\b/g)].map((m) => m[1]), ['one', 'seven', 'ten']);
 });
 
+test('codeOnly: masks stay in step after a character outside the Basic Multilingual Plane (an emoji)', () => {
+  const src = 'const e = "\u{1F600}"; const f = say.after; // say.no';
+  const code = codeOnly(src);
+  assert.equal(code.length, src.length, 'same length');
+  assert.ok(!code.includes('/'), `the comment is blanked, slashes included: ${code}`);
+  assert.deepEqual([...code.matchAll(/\bsay\.([a-z]+)\b/g)].map((m) => m[1]), ['after']);
+});
+
 test('wordDiff: an id equal to a fill-in name is still the old file\'s id, not an added or lost word', () => {
   const oldSrc = "export default { rows: [{ id: 'host', label: 'Sent' }] };";
   const newSrc = "const VARS = { 'host': 1 };\nexport default { VARS, rows: [{ id: 'host' }] };";

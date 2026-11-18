@@ -26,7 +26,7 @@ export function literalSites(src) {
  * a template's `${}` are code and stay.
  */
 export function codeOnly(src) {
-  const chars = [...src];
+  const chars = src.split(''); // UTF-16 units, like the mask indices (an emoji is two)
   for (const [from, to] of scan(src).masks) {
     for (let i = from; i < Math.min(to, chars.length); i++) if (chars[i] !== '\n' && chars[i] !== '\r') chars[i] = ' ';
   }
