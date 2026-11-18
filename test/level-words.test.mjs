@@ -99,10 +99,23 @@ test('wordDiff: a whyNot entry keyed id or key is text, not an id', () => {
   assert.deepEqual(wordDiff(oldSrc, newSrc, c), { lost: [], added: ['Another', 'Brand', 'new', 'one', 'reason'].sort() });
 });
 
-test('wordDiff: tags do not count, and a content id is not an added word', () => {
+test('wordDiff: tags do not count, and a new content id the old file never had is an added word', () => {
   const c = content();
   c.rows[1].label = '<b>Never</b>';
   assert.deepEqual(wordDiff(OLD, NEW, c), { lost: [], added: [] });
   c.rows.push({ id: 'zzz', label: 'Never' });
-  assert.deepEqual(wordDiff(OLD, NEW, c).added, ['Never']);
+  assert.deepEqual(wordDiff(OLD, NEW, c).added, ['Never', 'zzz']);
+});
+
+test('wordDiff: a new content id the code does not hold is reported as added when the old file never had it', () => {
+  const oldSrc = "ctx.say('Restart the now');";
+  const newSrc = 'export const run = {};';
+  const c = { run: { a: 'Restart the now', steps2: [{ id: 'pod' }] } };
+  assert.deepEqual(wordDiff(oldSrc, newSrc, c), { lost: [], added: ['pod'] });
+});
+
+test('wordDiff: an id equal to a fill-in name is still the old file\'s id, not an added or lost word', () => {
+  const oldSrc = "export default { rows: [{ id: 'host', label: 'Sent' }] };";
+  const newSrc = "const VARS = { 'host': 1 };\nexport default { VARS, rows: [{ id: 'host' }] };";
+  assert.deepEqual(wordDiff(oldSrc, newSrc, { rows: [{ id: 'host', label: 'Sent {{host}}' }] }), { lost: [], added: [] });
 });

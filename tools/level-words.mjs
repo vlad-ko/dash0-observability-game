@@ -21,7 +21,10 @@ const TAG = /<\/?[A-Za-z][^>]*>/g;
 /** The words of one piece of text: tags and fill-ins become spaces, then split on whitespace. */
 const tokensOf = (s) => s.replace(TAG, ' ').replace(FILL_IN, ' ').split(/\s+/).filter(Boolean);
 
-/** Every string of the content, as `{text, ids}`: the values of `id` and `key` are ids, the rest is text. */
+/**
+ * Every string of the content, as `{text, ids, names}`: the values of `id` and `key` are ids, the rest is text,
+ * except under `whyNot`, whose keys are item ids, so every value there is text. `names` are the fill-in names used.
+ */
 function contentStrings(node, out = { text: [], ids: [], names: new Set() }, key = '', inMap = false) {
   if (typeof node === 'string') {
     if (!inMap && (key === 'id' || key === 'key')) out.ids.push(node);
@@ -52,10 +55,10 @@ function minus(a, b) {
 
 /**
  * Compare the words of `oldSrc` with those of `newSrc` plus `content` (the parsed content file).
- * `lost`: old literal words not in (new literals other than fill-in names + content text + the content ids the new
- * literals do not already hold). `added`: (new literals, minus every literal equal to a fill-in name the content uses, + content text
- * without its ids) not in the old literals. A code word equal to a fill-in name is therefore not compared. Sorted
- * multisets.
+ * `lost`: old literal words not in (new literals other than fill-in names + content text + the content ids that
+ * those new literals do not already hold). `added`: (new literals other than fill-in names + content text + the
+ * same content ids) not in the old literals; an id the old file held is cancelled by the old literals. A code word
+ * equal to a fill-in name is therefore not compared. Sorted multisets.
  */
 export function wordDiff(oldSrc, newSrc, content) {
   const { text, ids, names } = contentStrings(content);
@@ -64,12 +67,14 @@ export function wordDiff(oldSrc, newSrc, content) {
   // A code literal equal to a fill-in name is a VARS key or a SLOT, however many times the code writes it: not compared.
   const newWords = newLiterals.filter((t) => !names.has(t));
   const textWords = text.flatMap(tokensOf);
-  // An id the new code already holds is in `newLiterals`; counting it again as a content id would cancel a dropped word.
+  // An id the new code already holds (other than a fill-in name) is in `newWords`; counting it again as a content id
+  // would cancel a dropped word. An id it does not hold is new words: supply for `lost` and, unless the old file
+  // held it too, an addition.
   const idsNotInCode = minus(ids.flatMap(tokensOf), newWords);
   return {
     // `newWords`, not `newLiterals`: a name literal is not compared, so it must not cancel a dropped word either.
     lost: minus(oldWords, [...newWords, ...textWords, ...idsNotInCode]),
-    added: minus([...newWords, ...textWords], oldWords),
+    added: minus([...newWords, ...textWords, ...idsNotInCode], oldWords),
   };
 }
 
