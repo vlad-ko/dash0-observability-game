@@ -203,6 +203,17 @@ test('checkWords: two entries with the same words are told apart, each must show
   assert.deepEqual(checkWords(run, [e.a, e.b]), CLEAN, 'both are shown');
 });
 
+test('checkWords: an entry with fill-ins is seen when shown edited with its values in, and leaks when shown unedited', () => {
+  const run = { chip: '{{label}} {{step-pct}} percent', other: 'Another long sentence.' };
+  const e = editRun(run);
+  const chip = (mark) => `<span>${mark}Which service? 25 percent</span>`;
+  assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other]), CLEAN, 'shown edited, values filled in');
+  assert.deepEqual(checkWords(run, [e.other]).unseen, ['run.chip'], 'never shown');
+  assert.deepEqual(checkWords(run, [chip(''), e.other]).leaked, [run.chip], 'shown without its edit');
+  assert.deepEqual(checkWords(run, [chip(''), e.other], { unreached: ['run.chip'] }).stale, [], 'an unreached entry that is not shown edited is not stale');
+  assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other], { unreached: ['run.chip'] }).stale, ['run.chip'], 'an unreached entry that is shown edited is stale');
+});
+
 test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
   const long = 'Set tenant.tier on the root span';
   const e = editRun({ a: long });

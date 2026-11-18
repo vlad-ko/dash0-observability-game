@@ -33,6 +33,22 @@ const norm = (s) => s.replace(/\s+/g, ' ').trim();
 const plain = (s) => norm(s.replace(/<[^>]*>/g, ' '));
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const LONG = 12;
+const FILL_IN = /\{\{[a-z][a-z0-9-]*\}\}/;
+/**
+ * A regex for `s` where each `{{name}}` (a fill-in or slot, filled on the screen) is a short run of text without a tag
+ * (a value is plain words; the bound keeps a search of a whole page fast): the fixed parts are matched as written.
+ * With `trim`, a fill-in at the start or end of `s` is left out (it adds nothing to a search that has no mark to anchor
+ * on); a `s` that is only fill-ins then matches nothing.
+ */
+function pattern(s, flags = '', trim = false) {
+  const parts = s.split(FILL_IN);
+  if (trim) {
+    if (parts[0] === '') parts.shift();
+    if (parts.length && parts[parts.length - 1] === '') parts.pop();
+    if (parts.length === 0) return /(?!)/;
+  }
+  return new RegExp(parts.map(escapeRe).join('[^<>]{1,80}?'), flags);
+}
 
 /**
  * Check the screens a play-through showed (`screens`: strings of HTML or text) against `coreRun`, a content file's `run`,
@@ -41,6 +57,7 @@ const LONG = 12;
  *   in the HTML (raw or escaped, `<wbr>` taken out); a shorter one in the text with the tags taken out, as a whole
  *   word. `kept` (the level's RUN_FIXTURES) are fixture literals the level shows as they are: a word equal to one is
  *   skipped, and they are taken out of the screens before the short-word check only.
+ *   An entry with `{{name}}` fill-ins matches any text where each one is, in all three checks.
  * - unseen: paths of entries (not in `unreached`) that never show with their own mark on any screen.
  * - stale: paths listed in `unreached` that do show edited, or that are no entry: the list must not outlive the drivers.
  * `unreached` names the entries the drivers do not reach, by path, for this level.
@@ -54,10 +71,11 @@ export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {})
   // own). Take every marked entry out of the screens, longest first (a shorter word can sit inside a longer edited
   // one): what is left is shown as it is.
   const text = plain(html);
-  const seen = entries.map((e, i) => [e.text, escapeHtml(e.text)].some((f) => html.includes(`${mark(i)}${f}`)) || text.includes(`${mark(i)}${plain(e.text)}`));
+  // An entry with `{{name}}` fill-ins is matched with any text where each one is (its values are on the screen).
+  const seen = entries.map((e, i) => [e.text, escapeHtml(e.text)].some((f) => pattern(`${mark(i)}${f}`).test(html)) || pattern(`${mark(i)}${plain(e.text)}`).test(text));
   let rest = html;
   for (const i of entries.map((_, i) => i).sort((a, b) => entries[b].text.length - entries[a].text.length)) {
-    for (const f of [entries[i].text, escapeHtml(entries[i].text)]) rest = rest.split(`${mark(i)}${f}`).join('\u0000');
+    for (const f of [entries[i].text, escapeHtml(entries[i].text)]) rest = rest.replace(pattern(`${mark(i)}${f}`, 'g'), '\u0000');
   }
   // A fixture is stripped only for the short words: inside a longer word it must not hide that word leaking.
   let restShort = rest;
@@ -65,9 +83,9 @@ export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {})
   const restText = plain(restShort);
   const leaked = words.filter((w) => {
     if (kept.includes(w)) return false;
-    if (w.length >= LONG) return [w, escapeHtml(w)].some((f) => rest.includes(f));
+    if (w.length >= LONG) return [w, escapeHtml(w)].some((f) => pattern(f, '', true).test(rest));
     const t = plain(w);
-    return t !== '' && [t, escapeHtml(t)].some((f) => new RegExp(`(?<![A-Za-z0-9])${escapeRe(f)}(?![A-Za-z0-9])`).test(restText));
+    return t !== '' && [t, escapeHtml(t)].some((f) => new RegExp(`(?<![A-Za-z0-9])${pattern(f, '', true).source}(?![A-Za-z0-9])`).test(restText));
   });
   const paths = entries.map((e) => e.path);
   return {

@@ -844,10 +844,9 @@ const UNREACHED = {
     'run.sort.items[4].whyNot.ok',
     'run.onSpans[1].why',
   ],
-  // The sloppy run places one item wrong and presses no Hint button; the other wrong-placement explanations, the hints
-  // and the explanations of the wrong picks it does not make are never on a screen.
+  // The sloppy run places one item wrong; the other wrong-placement explanations and the explanations of the wrong
+  // picks it does not make are never on a screen. The hints are: HINT_PLAYS presses each Hint button.
   'monitoring-vs-observability': [
-    'run.sort.hint',
     'run.sort.items[1].whyNot.known',
     'run.sort.items[2].whyNot.new',
     'run.sort.items[3].whyNot.known',
@@ -858,7 +857,6 @@ const UNREACHED = {
     'run.answerable[3].why',
   ],
   'the-signals': [
-    'run.data.hint',
     'run.data.items[0].whyNot.log',
     'run.data.items[0].whyNot.trace',
     'run.data.items[0].whyNot.profile',
@@ -874,7 +872,6 @@ const UNREACHED = {
     'run.data.items[4].whyNot.metric',
     'run.data.items[4].whyNot.log',
     'run.data.items[4].whyNot.profile',
-    'run.ask.hint',
     'run.ask.items[0].whyNot.log',
     'run.ask.items[0].whyNot.trace',
     'run.ask.items[0].whyNot.profile',
@@ -890,10 +887,7 @@ const UNREACHED = {
     'run.newest[0].why',
     'run.newest[2].why',
   ],
-  // Both runs show the chip, but its entry holds {{label}} and {{step-pct}}, so checkWords cannot find its text on a screen.
-  'the-pager': ['run.spentChip'],
   'why-opentelemetry': [
-    'run.parts.hint',
     'run.parts.items[0].whyNot.api',
     'run.parts.items[0].whyNot.sdk',
     'run.parts.items[0].whyNot.collector',
@@ -919,6 +913,36 @@ const UNREACHED = {
   ],
 };
 
+// A play per run level with Hint buttons that presses each step's Hint button (one tier 1 hint, the step's own `hint`)
+// before solving it. DRIVERS stay as they are: no driver presses Hint, and a hint costs a star, so this run is only
+// looked at for the words it shows. baggage and the-pager have no Hint button.
+const HINT_PLAYS = {
+  'monitoring-vs-observability'() {
+    click('#mvo-sort-hint');
+    sortAll(MVO_SORT);
+    click('#mvo-next');
+    click('[data-pick="rich"]');
+    click('#mvo-finish');
+  },
+  'the-signals'() {
+    click('#sig-data-hint');
+    sortAll(SIG_DATA);
+    click('#sig-next');
+    click('#sig-ask-hint');
+    sortAll(SIG_ASK);
+    click('#sig-next');
+    click('[data-pick="profiles"]');
+    click('#sig-finish');
+  },
+  'why-opentelemetry'() {
+    click('#otel-parts-hint');
+    sortAll(OTEL_PARTS);
+    click('#otel-next');
+    click('[data-pick="api"]');
+    click('#otel-finish');
+  },
+};
+
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
   for (const id of ['baggage', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
@@ -926,7 +950,8 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
     const level = mod.withText({ ...core, run: editRun(core.run) });
     const shown = [];
-    for (const [label, run] of [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy]]) {
+    const runs = [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy], ...(HINT_PLAYS[id] ? [['hinted', { play: HINT_PLAYS[id] }]] : [])];
+    for (const [label, run] of runs) {
       const { calls, frames, clicks } = playLevel(level, run.play);
       assert.equal(calls.length, 1, `${id} ${label}: finished once`);
       assert.match(calls[0].result.text, /^EDITED\d+ /, `${id} ${label}: the finish text is the one it was given`);
