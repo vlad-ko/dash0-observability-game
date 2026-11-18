@@ -16,10 +16,11 @@ import { bindLevel } from '../lib/content/bind.mjs';
 const VARS = {};
 
 // Step 1. Four resource attributes and four signal attributes. Label wording must not give the bucket away (test/sort-tells.test.mjs).
-// The buckets (ids and labels) and every item's text are in the content file.
+// The bucket labels and every item's text are in the content file.
 const SORT = {
   id: 'res-sort',
   helps: { hints: true },
+  buckets: [{ id: 'resource' }, { id: 'signal' }],
   items: [
     { id: 'service-name', bucket: 'resource' },
     { id: 'http-method', bucket: 'signal' },
