@@ -163,7 +163,7 @@ test('step 2: the intro gives plain figures and no diagnosis, and the show repea
   assert.equal(text.includes('service, route and status'), true);
   assert.equal(/<td>\/pay<\/td><td>60<\/td><td>15<\/td>/.test(RULE_STEP.show), true);
   assert.equal(/<td>\/quote<\/td><td>120<\/td><td>0<\/td>/.test(RULE_STEP.show), true);
-  assert.equal(RULE_STEP.show, WHY_STEP.show, 'the same table on both steps, built once');
+  assert.equal(RULE_STEP.show, WHY_STEP.show, 'the same table on both steps');
 });
 
 test('known pass, not the concept: min by (route) over sum by (route) passes with no status matcher (the 500 series is the smaller one on every route)', () => {

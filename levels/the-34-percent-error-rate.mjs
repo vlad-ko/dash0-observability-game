@@ -18,6 +18,10 @@
 // Invented for the game: every figure, from the one table below (1,000 requests a second, 50 of them failed, a policy that keeps every
 // error and 10% of the rest, a cap of 200 spans a second), and the scenario. Counting one request as one span of the entry service is
 // a simplification. No pricing is stated.
+//
+// The words are in content/core/levels/the-34-percent-error-rate.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
+import CORE from '../content/core/levels/the-34-percent-error-rate.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 
 const REQUESTS = 1000; // a second, at the load balancer
 const ERRORS = 50; // a second, failed requests
@@ -41,126 +45,69 @@ const n = (x) => x.toLocaleString('en-US');
 const WRONG_SUM = `${ERRORS} / ${STORED} = ${STORED_PCT}%`;
 const TRUE_SUM = `${ERRORS} / ${n(REQUESTS)} = ${TRUE_PCT}%`;
 
-// Step 1: does the presenter's answer hold? `why` follows "Right." or "Not quite.".
-const VERDICT = [
-  {
-    key: 'holds',
-    label: `The backend counts the spans it receives, so ${STORED_PCT}% of requests fail`,
-    why: `The ${STORED_PCT}% is a share of the spans that were kept, not of the requests. Most healthy spans were dropped on purpose, and the errors were all kept.`,
-  },
-  {
-    key: 'wrong',
-    label: `${STORED_PCT}% is a share of the kept spans, not a share of the requests`,
-    right: true,
-    why:
-      `The policy keeps every error and ${KEEP_PCT}% of the rest, so the numerator is complete and the denominator is small. ` +
-      `${WRONG_SUM} is a share of kept spans. Of ${n(REQUESTS)} requests a second, ${ERRORS} failed: ${TRUE_SUM}.`,
-  },
-  {
-    key: 'follow-up',
-    label: `${ERRORS} errors in ${STORED} spans is a small sample, so get a week of spans`,
-    why:
-      `A bigger sample does not help, because the bias comes from the policy, not from noise. Keeping every error and ${KEEP_PCT}% of the rest overweights errors at any size. ` +
-      'The question to ask is what the ratio is a share of.',
-  },
-];
+// The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
+// STORED appears both plain and through n(), so it has two names.
+const VARS = {
+  requests: n(REQUESTS),
+  'keep-pct': KEEP_PCT,
+  errors: ERRORS,
+  'kept-healthy': KEPT_HEALTHY,
+  stored: STORED,
+  'stored-n': n(STORED),
+  'stored-pct': STORED_PCT,
+  'wrong-sum': WRONG_SUM,
+  'true-sum': TRUE_SUM,
+  'true-pct': TRUE_PCT,
+  cap: CAP,
+  uniform: n(UNIFORM),
+  'uniform-errors': UNIFORM_ERRORS,
+  'decoy-pct': DECOY_PCT,
+  decoy: n(DECOY),
+  'decoy-errors': DECOY_ERRORS,
+  'more-pct': MORE_PCT,
+  'stored-more': n(STORED_MORE),
+  'times-over': TIMES_OVER,
+  healthy: n(HEALTHY),
+};
+
+// Step 1: does the presenter's answer hold? `why` follows "Right." or "Not quite."; only the right choice is listed here.
+const VERDICT = [{ key: 'wrong', right: true }];
 
 // Step 2: the setup. Two knobs: five sampling policies and three places to compute the rate.
 // Fifteen plans, one passes. Costs are spans a second sent to the backend. Every whyNot is a whole sentence that names its own option, so it holds
 // with either option of the other knob.
 const PLAN = {
   id: 'ser-plan',
-  unit: 'spans/s sent to the backend',
   cap: CAP,
   knobs: [
     {
       id: 'sampler',
-      label: 'Sampling policy',
       options: [
-        {
-          id: 'probabilistic-10pct',
-          label: `A probabilistic policy at ${KEEP_PCT}% of all traces: about ${n(UNIFORM)} spans/s, chosen at random`,
-          cost: UNIFORM,
-          keeps: ['true-rate'],
-        },
-        {
-          id: 'keep-all',
-          label: `Keep every trace: ${n(REQUESTS)} spans/s`,
-          cost: REQUESTS,
-          keeps: ['every-error', 'true-rate'],
-        },
-        {
-          id: 'probabilistic-18pct',
-          label: `A probabilistic policy at ${DECOY_PCT}% of all traces: about ${n(DECOY)} spans/s, chosen at random`,
-          cost: DECOY,
-          keeps: ['true-rate'],
-        },
-        {
-          id: 'errors-10pct',
-          label: `Every error plus ${KEEP_PCT}% of the rest: ${n(STORED)} spans/s`,
-          cost: STORED,
-          keeps: ['every-error'],
-        },
-        {
-          id: 'errors-20pct',
-          label: `Every error plus ${MORE_PCT}% of the rest: ${n(STORED_MORE)} spans/s`,
-          cost: STORED_MORE,
-          keeps: ['every-error'],
-        },
+        { id: 'probabilistic-10pct', cost: UNIFORM, keeps: ['true-rate'] },
+        { id: 'keep-all', cost: REQUESTS, keeps: ['every-error', 'true-rate'] },
+        { id: 'probabilistic-18pct', cost: DECOY, keeps: ['true-rate'] },
+        { id: 'errors-10pct', cost: STORED, keeps: ['every-error'] },
+        { id: 'errors-20pct', cost: STORED_MORE, keeps: ['every-error'] },
       ],
     },
     {
       id: 'rate',
-      label: 'Where the error rate is computed',
       options: [
-        {
-          id: 'red-before',
-          label: 'From RED metrics computed before sampling: data points, no extra spans',
-          cost: 0,
-          keeps: ['true-rate'],
-        },
-        {
-          id: 'mirror',
-          label: `From every span, sent to a second backend that counts them: ${n(REQUESTS)} spans/s`,
-          cost: REQUESTS,
-          keeps: ['true-rate'],
-        },
-        {
-          id: 'stored-spans',
-          label: 'From the spans the backend keeps: no extra spans',
-          cost: 0,
-        },
+        { id: 'red-before', cost: 0, keeps: ['true-rate'] },
+        { id: 'mirror', cost: REQUESTS, keeps: ['true-rate'] },
+        { id: 'stored-spans', cost: 0 },
       ],
     },
   ],
-  needs: [
-    { id: 'every-error', label: 'every failed trace' },
-    { id: 'true-rate', label: 'an error rate that matches the requests' },
-  ],
+  needs: [{ id: 'every-error' }, { id: 'true-rate' }],
   answer: { sampler: 'errors-10pct', rate: 'red-before' },
-  whyNot: {
-    'sampler:probabilistic-10pct': `This policy keeps an honest ratio, but only about ${UNIFORM_ERRORS} of the ${ERRORS} failed traces a second, so most failures can't be opened.`,
-    'sampler:probabilistic-18pct': `This policy keeps an honest ratio, but only about ${DECOY_ERRORS} of the ${ERRORS} failed traces a second, so most failures can't be opened.`,
-    'sampler:keep-all': `Keeping every trace sends ${n(REQUESTS)} spans/s, ${TIMES_OVER} times the cap of ${CAP}.`,
-    'sampler:errors-20pct': `This policy keeps every error and a larger share of the healthy traces: ${n(STORED_MORE)} spans/s, over the cap of ${CAP}.`,
-    'rate:mirror': `Counting every span gives the true rate, and sending all ${n(REQUESTS)} spans a second to a second backend is ${TIMES_OVER} times the cap of ${CAP} on its own.`,
-    'rate:stored-spans': `The rate from the spans the backend keeps is a share of kept spans. With every error kept and ${KEEP_PCT}% of the rest, that reads ${WRONG_SUM}, not ${TRUE_PCT}%.`,
-  },
-  explain:
-    `The plan sends ${n(STORED)} of ${CAP} spans/s: all ${ERRORS} errors and ${KEPT_HEALTHY} of the ${n(HEALTHY)} healthy traces. The rate comes from RED metrics computed before sampling, from all ${n(REQUESTS)} requests, so it reads ${TRUE_SUM}; those metrics are data points, not spans, so they add nothing to the spans sent. ` +
-    `Computed from the kept spans it would read ${WRONG_SUM}. Sampling and the rate answer different questions: sampling decides which traces you keep to look at, the rate must count everything. ` +
-    'Dash0 computes RED metrics before sampling when it samples your traces (SignalControl), and at the edge the <code>dash0redmetrics</code> connector runs in the pre-sampling pipeline, on 100% of spans. ' +
-    'If you sample in your own Collector, the pipeline fix is the one in 6.2: compute span metrics before the sampler. ' +
-    'These figures come from one authored table, not a measurement.',
 };
 
-export default {
+// The level as it was, minus the words.
+const SKELETON = {
   id: 'the-34-percent-error-rate',
   no: '9.2',
-  name: 'The 34% error rate',
-  sub: 'Does that answer hold?',
   icon: '\u{1F399}',
-  rewardTitle: 'Ratio sceptic',
   cards: [],
   lights: ['collector'],
   scored: true,
@@ -168,32 +115,15 @@ export default {
   play: {
     prefix: 'ser',
     steps: [
-      {
-        intro:
-          'On a call, a customer asks: "Does checkout really fail 34% of requests?" The presenter answers without a pause: ' +
-          '"Yes. That number comes straight from the spans, so it is real."',
-        show:
-          `<p>Here is the setup behind the number. The load balancer sees ${n(REQUESTS)} requests a second. ` +
-          `Tail sampling keeps every trace with an error plus ${KEEP_PCT}% of the rest. The backend gets this many spans a second:</p>` +
-          '<table><caption>Spans a second reaching the backend</caption><thead><tr><th scope="col">Spans</th><th scope="col">Per second</th></tr></thead><tbody>' +
-          `<tr><td>With status Error</td><td>${ERRORS}</td></tr>` +
-          `<tr><td>Healthy, kept at ${KEEP_PCT}%</td><td>${KEPT_HEALTHY}</td></tr>` +
-          `<tr><td>Total reaching the backend</td><td>${STORED}</td></tr></tbody></table>`,
-        question: 'Does the presenter\'s answer hold?',
-        qid: 'ser-q-verdict',
-        choice: { id: 'ser-verdict', choices: VERDICT },
-      },
-      {
-        intro:
-          `The honest answer needs a setup that keeps the failed traces you want to open and an error rate that matches the requests. ` +
-          `A sampling policy decides which traces are kept: a random share of all of them, every trace, or every error plus a share of the rest. The backend takes ${CAP} spans a second.`,
-        question: 'Pick the setup: keep what the team needs and stay within the cap.',
-        qid: 'ser-q-plan',
-        tradeoff: PLAN,
-      },
+      { qid: 'ser-q-verdict', choice: { id: 'ser-verdict', choices: VERDICT } },
+      { qid: 'ser-q-plan', tradeoff: PLAN },
     ],
-    finish:
-      `You did not take ${STORED_PCT}% on trust: ${WRONG_SUM} is a share of kept spans, and the request error rate is ${TRUE_SUM}. ` +
-      'Keep the errors you want to open, but compute the rate before sampling.',
   },
 };
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+export default withText(CORE);

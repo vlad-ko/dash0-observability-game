@@ -27,6 +27,10 @@
 //
 // Invented for the game: the company, the 120 ms handler, the suspension right after return, every id, trace id, name and time, the batch of
 // three messages and the fourth message of another trace. No Dash0, hostname or pricing claim is made.
+//
+// The words are in content/core/levels/edge-of-the-platform.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
+import CORE from '../content/core/levels/edge-of-the-platform.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 import { shortTrace } from '../lib/widgets/build-it-names.mjs';
 
 const HANDLER_MS = 120; // the handler runs this long, then the platform suspends the environment
@@ -51,31 +55,8 @@ const span = (spanId, traceId, service, name, kind, startMs, endMs, parentId = n
 });
 
 // Step 1: the fix. `why` follows "Right." or "Not quite.". Labels are of one length and each names its own mechanism.
-const FIX = [
-  {
-    key: 'lower-delay',
-    label: `Set <code>OTEL_BSP_SCHEDULE_DELAY</code> to ${LOWER_MS} ms in the function\'s environment`,
-    why:
-      `A shorter delay is still a timer. The invocation takes ${HANDLER_MS} ms and the root span ends as the handler returns, so the timer cannot fire before the last span exists, ` +
-      `and from then on the environment is suspended. ${LOWER_MS} ms is longer than the whole invocation, and no value of the delay changes the order: span ends, handler returns, environment suspended, timer due. (This is reasoning from the numbers, not a quote.)`,
-  },
-  {
-    key: 'shutdown',
-    label: 'Call <code>Shutdown</code> on the tracer provider at the end of each request',
-    why:
-      'Shutdown does export what is pending (a SpanProcessor\'s Shutdown "MUST include the effects of ForceFlush"), but the SDK spec says it "MUST be called only once for each TracerProvider instance" and that after it "subsequent attempts to get a Tracer are not allowed". ' +
-      'The same environment serves the next request, and a shut-down provider can no longer give it a tracer. (The last part is reasoning from the scenario, not a quote.)',
-  },
-  {
-    key: 'force-flush',
-    label: 'Call <code>ForceFlush</code> on the tracer provider before each handler returns',
-    right: true,
-    why:
-      'ForceFlush on the provider exports every span that has not been exported yet, so the spans are out before the handler returns and before the platform suspends the environment, and the provider stays usable for the next request. ' +
-      'The SDK spec names this case: ForceFlush "SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans". ' +
-      `Without it the batch processor waits for its ${DELAY_MS} ms delay (the default) or a full batch.`,
-  },
-];
+// Only the right choice is listed here.
+const FIX = [{ key: 'force-flush', right: true }];
 
 // Step 2: the batch. The consumer is a root in a trace of its own. Four publish spans: three are the messages of the batch, one is the message
 // of the next batch. PUBLISH ids and times are chosen so no ordering rule (start, span id, row) picks the three: the fourth message is
@@ -102,52 +83,45 @@ const MESSAGES = [['m-1', P1], ['m-2', P2], ['m-3', P3]].map(([message, spanId])
   return { message, spanId, trace: shortTrace(s.traceId) };
 });
 
-const messageTable =
-  '<table><caption>Messages in this batch</caption><thead><tr><th scope="col">Message</th><th scope="col">In trace</th></tr></thead><tbody>' +
-  MESSAGES.map((m) => `<tr><td>${m.message}</td><td><code>${m.trace}</code></td></tr>`).join('') +
-  '</tbody></table>';
+// The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
+// The message table's rows are built from MESSAGES; its caption and headings are in the content file.
+const VARS = {
+  'handler-ms': HANDLER_MS,
+  'delay-ms': DELAY_MS,
+  'lower-ms': LOWER_MS,
+  start: START,
+  'message-rows': MESSAGES.map((m) => `<tr><td>${m.message}</td><td><code>${m.trace}</code></td></tr>`).join(''),
+};
 
-/** The level's answer tables (pinned by test/edge-of-the-platform.test.mjs). */
-export const CONTENT = { choices: FIX, build: BATCH, messages: MESSAGES, ids: { P1, P2, P3, P4, REQ_A, PROC } };
-
-export default {
+// The level as it was, minus the words.
+const SKELETON = {
   id: 'edge-of-the-platform',
   no: '9.8',
-  name: 'Edge of the platform',
-  sub: 'Before the function freezes',
   icon: '\u{1F9CA}',
-  rewardTitle: 'Flush keeper',
   cards: [],
   lights: ['orders'],
   scoring: { parMs: null },
   play: {
     prefix: 'eop',
     steps: [
-      {
-        intro:
-          'Kettle &amp; Co\'s order function runs on a serverless platform, with a batch span processor. In the trace backend, almost no span from the function ever shows up. ' +
-          `Each request takes ${HANDLER_MS} ms, and the platform suspends the environment right after the handler returns, as some FaaS platforms do. A later request may land on the same environment.`,
-        show:
-          '<table><caption>One request, in time</caption><thead><tr><th scope="col">Time</th><th scope="col">What happens</th></tr></thead><tbody>' +
-          '<tr><td>0 ms</td><td>The request arrives; the first span starts</td></tr>' +
-          `<tr><td>${HANDLER_MS} ms</td><td>The handler returns; the platform suspends the environment</td></tr>` +
-          `<tr><td>${DELAY_MS} ms</td><td>The default delay of the batch span processor</td></tr></tbody></table>`,
-        question: 'Which change gets the spans of every request out?',
-        qid: 'eop-q-fix',
-        choice: { id: 'eop-fix', choices: FIX },
-      },
-      {
-        intro:
-          `The spans arrive now. At ${START} ms the platform hands the worker a batch of three messages, and <code>orders process</code> handles all three in one invocation. ` +
-          'Each message was published by a different request. The worker\'s span starts a trace of its own.',
-        show: messageTable,
-        question: 'Connect <code>orders process</code> to the messages of this batch, and only those.',
-        qid: 'eop-q-batch',
-        build: BATCH,
-      },
+      { qid: 'eop-q-fix', choice: { id: 'eop-fix', choices: FIX } },
+      { qid: 'eop-q-batch', build: BATCH },
     ],
-    finish:
-      'A function can be suspended before a timer fires, so a handler on such a platform exports its spans itself: ForceFlush on the tracer provider before it returns, ' +
-      'not a shorter delay, and not Shutdown, which a provider gets once. A consumer span that handles a batch links to the creation context of each message it accounts for.',
   },
+};
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+export default withText(CORE);
+
+// The level's answer tables (pinned by test/edge-of-the-platform.test.mjs), read from the bound level so the choices carry their text.
+const BOUND = withText(CORE);
+export const CONTENT = {
+  choices: BOUND.play.steps[0].choice.choices,
+  build: BOUND.play.steps[1].build,
+  messages: MESSAGES,
+  ids: { P1, P2, P3, P4, REQ_A, PROC },
 };
