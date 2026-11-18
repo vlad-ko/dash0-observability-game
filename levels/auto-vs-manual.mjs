@@ -4,165 +4,63 @@
 // Spec: docs/M1-DESIGN.md §6 Act 2.
 // Docs (GitHub README, not an allowed Spec host; it says instrumentation-undici subscribes to diagnostics_channel and does not state that two setups double the spans, so the copy is the scenario, not a general claim): https://github.com/open-telemetry/opentelemetry-js-contrib/blob/main/packages/instrumentation-undici/README.md
 // Spec: https://opentelemetry.io/docs/zero-code/js/ , https://opentelemetry.io/docs/platforms/kubernetes/operator/automatic/ , https://opentelemetry.io/docs/specs/otel/trace/api/#spankind , https://opentelemetry.io/docs/concepts/signals/traces/
+//
+// The words are in content/core/levels/auto-vs-manual.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
+import CORE from '../content/core/levels/auto-vs-manual.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
+
+// The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
+const VARS = {};
 
 // Step 1. Label wording must not give the bucket away (test/sort-tells.test.mjs).
 const SORT = {
   id: 'avm-sort',
   helps: { hints: false },
-  buckets: [
-    { id: 'auto', label: 'Automatic' },
-    { id: 'manual', label: 'Manual' },
-  ],
+  buckets: [{ id: 'auto' }, { id: 'manual' }],
   items: [
-    {
-      id: 'server',
-      label: 'The HTTP SERVER spans, one per <code>express</code> route',
-      bucket: 'auto',
-      why: 'The HTTP server instrumentation starts a span for every request that reaches an Express route, with no code of yours.',
-      whyNot: {
-        manual: 'Nothing here needs your own code: the instrumentation sees each Express request arrive and starts the span itself.',
-      },
-    },
-    {
-      id: 'loyalty',
-      label: 'INTERNAL spans around <code>applyLoyaltyDiscount()</code> calls',
-      bucket: 'manual',
-      why: 'Instrumentation knows nothing about your business functions. You start that span yourself with the API. Its span kind defaults to INTERNAL, though instrumentation libraries may emit INTERNAL spans too.',
-      whyNot: {
-        auto: 'No library has heard of <code>applyLoyaltyDiscount()</code>. It is your own function, so nothing wraps it unless you do.',
-      },
-    },
-    {
-      id: 'redis',
-      label: 'A span for each Redis command',
-      bucket: 'auto',
-      why: 'The Redis instrumentation wraps the client and starts a span for each command.',
-      whyNot: {
-        manual: 'You never call a tracer for Redis. The instrumentation wraps the client and does it.',
-      },
-    },
-    {
-      id: 'coupon',
-      label: '<code>app.coupon.code</code> on the checkout span',
-      bucket: 'manual',
-      why: 'Only your code knows which coupon the customer used, so you set that attribute on the span yourself.',
-      whyNot: {
-        auto: 'A library cannot see which coupon the customer used. Only your code holds that value.',
-      },
-    },
-    {
-      id: 'client',
-      label: 'Outgoing <code>fetch</code> CLIENT spans',
-      bucket: 'auto',
-      why: 'The HTTP client instrumentation starts a CLIENT span for each outgoing call, with no code of yours.',
-      whyNot: {
-        manual: 'Your code only calls <code>fetch</code>. The HTTP client instrumentation starts the CLIENT span around it.',
-      },
-    },
-    {
-      id: 'item-count',
-      label: '<code>app.cart.item_count</code>',
-      bucket: 'manual',
-      why: 'That is a business number only your code can read, so you add it as an attribute yourself.',
-      whyNot: {
-        auto: 'A library cannot see your cart. The count is a business value, so your code has to read it and set it.',
-      },
-    },
+    { id: 'server', bucket: 'auto' },
+    { id: 'loyalty', bucket: 'manual' },
+    { id: 'redis', bucket: 'auto' },
+    { id: 'coupon', bucket: 'manual' },
+    { id: 'client', bucket: 'auto' },
+    { id: 'item-count', bucket: 'manual' },
   ],
 };
 
-// Step 2: why does each fetch call show two CLIENT spans? `why` follows "Right." or "Not quite.".
-const WHY = [
-  {
-    key: 'retries',
-    label: 'Cart retries every <code>fetch</code> call once, and each attempt is recorded as its own span',
-    why: 'A retry would show two spans with different start times, and cart does not retry. Here each call has a twin, and the twins start together.',
-  },
-  {
-    key: 'two-setups',
-    label: 'Two setups: the injected agent and <code>tracing.js</code> each instrument fetch',
-    right: true,
-    why: 'The operator\'s <code>NODE_OPTIONS</code> loads the auto-instrumentation agent, and <code>tracing.js</code> starts a second NodeSDK with the same instrumentations. Fetch instrumentation subscribes to a diagnostics channel, so a second setup subscribes again, and in this scenario each call gets a CLIENT span from each setup.',
-  },
-  {
-    key: 'collector',
-    label: 'The Collector copies each span on its way to Dash0, and its <code>otlp_grpc</code> exporter sends both copies',
-    why: 'A Collector forwards the spans it receives. Both copies were already in what cart exported.',
-  },
-];
+// Step 2: why does each fetch call show two CLIENT spans? `why` follows "Right." or "Not quite."; only the right choice is listed here.
+const WHY = [{ key: 'two-setups', right: true }];
 
-// Step 3: the fix.
-const FIX = [
-  {
-    key: 'sample',
-    label: 'Sample 50% of traces, to keep fewer duplicate spans',
-    why: 'Sampling drops whole traces. In the traces you keep, each fetch call still has two CLIENT spans.',
-  },
-  {
-    key: 'keep-one',
-    label: 'Keep one setup and add the business spans through the API',
-    right: true,
-    why: 'Run the agent or your own SDK, not both. Then add spans such as <code>applyLoyaltyDiscount()</code> and attributes such as <code>app.coupon.code</code> with the API, which the one setup exports.',
-  },
-  {
-    key: 'dedupe',
-    label: 'Dedupe the twin spans in the Collector',
-    why: 'That hides the symptom and keeps both setups running, with twice the instrumentation work in every cart request.',
-  },
-];
+// Step 3: the fix. Only the right choice is listed here.
+const FIX = [{ key: 'keep-one', right: true }];
 
-const PLAY = {
-  prefix: 'avm',
-  steps: [
-    {
-      intro:
-        'Cart runs with zero-code instrumentation, so it already emits spans. Some of what ' +
-        'you want to see in them comes with that, and some only your own code can add.',
-      question: 'Pick an item, then say whether it comes automatically or needs your code.',
-      qid: 'avm-q-sort',
-      sort: SORT,
-    },
-    {
-      intro:
-        'Now cart\'s traces look wrong: each outgoing <code>fetch</code> call shows two CLIENT ' +
-        'spans. The operator injects ' +
-        '<code>NODE_OPTIONS=--require @opentelemetry/auto-instrumentations-node/register</code> ' +
-        'into the pod, and cart\'s own <code>tracing.js</code> starts a NodeSDK with ' +
-        '<code>getNodeAutoInstrumentations()</code>.',
-      question: 'Why does each fetch call show two CLIENT spans?',
-      qid: 'avm-q-why',
-      choice: { id: 'avm-why', choices: WHY },
-    },
-    {
-      intro:
-        'Cart still needs spans for <code>applyLoyaltyDiscount()</code> and the coupon, which ' +
-        'no agent can add for you.',
-      question: 'What is the fix?',
-      qid: 'avm-q-fix',
-      choice: { id: 'avm-fix', choices: FIX },
-    },
-  ],
-  finish:
-    'You know what zero-code instrumentation covers, and that a second setup can double some spans. Run one and add business spans through the API.',
-};
-
-/** The level's answer tables, in play order (pinned by test/act-2.test.mjs); derived from PLAY, never written by hand. */
-export const CONTENT = {
-  steps: PLAY.steps.map((s) =>
-    s.choice ? { id: s.choice.id, question: s.question, choices: s.choice.choices } : { sort: s.sort },
-  ),
-};
-
-export default {
+const SKELETON = {
   id: 'auto-vs-manual',
   no: '2.7',
-  name: 'Auto vs manual',
-  sub: 'What the agent covers',
   icon: '\u{1F916}',
-  rewardTitle: 'Hands-on instrumenter',
   mechanics: ['sort'],
   cards: ['double-instrumentation'],
   lights: ['cart'],
   scoring: { parMs: null },
-  play: PLAY,
+  play: {
+    prefix: 'avm',
+    steps: [
+      { qid: 'avm-q-sort', sort: SORT },
+      { qid: 'avm-q-why', choice: { id: 'avm-why', choices: WHY } },
+      { qid: 'avm-q-fix', choice: { id: 'avm-fix', choices: FIX } },
+    ],
+  },
 };
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindLevel(text, SKELETON, { vars: VARS });
+}
+
+/** The level's answer tables, in play order (pinned by test/act-2.test.mjs); derived from the core text joined to the logic, never written by hand. */
+export const CONTENT = {
+  steps: withText(CORE).play.steps.map((s) =>
+    s.choice ? { id: s.choice.id, question: s.question, choices: s.choice.choices } : { sort: s.sort },
+  ),
+};
+
+export default withText(CORE);
