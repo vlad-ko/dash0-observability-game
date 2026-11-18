@@ -94,7 +94,7 @@ Do one act at a time and change only that act's level files and their content fi
 1. **Baseline, on a clean checkout of main.** Pick a scratch folder `S` outside the repo. Run `node tools/level-fingerprint.mjs $S/before` (the exact data of every level) and `LEVEL_SNAPSHOT=$S/before node --test test/levels-play.test.mjs` (the page of every step, happy and sloppy run).
 2. **Extract.** `node tools/extract-level-text.mjs <id>` prints every text field of the level as a content file, in the order the game shows it. Save it as `content/core/levels/<id>.mjs`.
 3. **Put back the figures.** Every `${...}` in the old copy is now its computed result in the content file. For each, add an entry to `VARS` in the level file with the same expression (including any `n()` formatting), and write `{{name}}` in the content instead. A figure that the old copy wrote as literal text (not as `${...}`) stays literal text: turning it into a fill-in is a separate change, not part of the move. A `${...}` that only echoes a value the level's code passes in (for example a helper's argument) may stay plain text. A content file that ends up with fill-ins gets a longer first header line: `// Text of levels/<id>.mjs (docs/CONTENT.md). {{name}} is a figure from the level's VARS table.` (as in `content/core/levels/cardinality.mjs`).
-4. **Strip the logic.** In `levels/<id>.mjs` delete every text field (`name`, `sub`, `rewardTitle`, `intro`, `question`, `label`, `why`, `whyNot`, `explain`, `hint`, `finish`, `lines`, `needs`, `unit`, ...). Keep the ids, the answer flags (and `right: false` where it was written), the figures, `faults`, `answer`, `cost`, `keeps`, `helps`, `qid` and the wiring. Leave the header comments. When a comment in the level file sets a rule for text that moves (for example how spot lines or sort labels are placed, enforced by a test such as `test/sort-tells.test.mjs`), keep that comment in the level file. Add a one-line pointer to it in the content file's header.
+4. **Strip the logic.** In `levels/<id>.mjs` delete every text field (`name`, `sub`, `rewardTitle`, `intro`, `question`, `label`, `why`, `whyNot`, `explain`, `hint`, `finish`, `lines`, `needs`, `unit`, ...). Keep the ids, the answer flags (and `right: false` where it was written), the figures, `faults`, `answer`, `cost`, `keeps`, `helps`, `qid` and the wiring. Leave the header comments. Keep every id that an answer or the binder joins on: a sort's bucket ids (`buckets: [{ id: 'resource' }, { id: 'signal' }]`; the binder then rejects content that drops or renames a bucket), a trade-off knob's, option's and need's ids, and the ids of the spot lines that `faults` names. When a comment in the level file sets a rule for text that moves (for example how spot lines or sort labels are placed, enforced by a test such as `test/sort-tells.test.mjs`), keep that comment in the level file. Add a one-line pointer to it in the content file's header.
 5. **Wire it.** Gather what is left into one object, `SKELETON`: the level as it was, minus the words. Then:
 
 ```js
@@ -107,6 +107,10 @@ export function withText(text) {
 
 export default withText(CORE);
 ```
+
+A level that also exports an object built from its text (`levels/auto-vs-manual.mjs` and `levels/edge-of-the-platform.mjs` export `CONTENT`, which tests pin) builds it from a second `withText(CORE)` call. The binder is pure, so both binds are equal. Keep the literal default line: `test/level-text-content.test.mjs` requires it.
+
+A fill-in's value may be HTML built from the level's data (a table, rows, code). The binder checks the markup after filling in (section 4). Words inside such a value stay in the level file; moving them is a separate change.
 
 A level with no fill-ins declares `const VARS = {};` and passes `{ vars: VARS }` as above (every converted level on main does this); a literal `{ vars: {} }` binds the same, but use `VARS = {}` so every level reads alike.
 

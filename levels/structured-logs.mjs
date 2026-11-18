@@ -36,6 +36,7 @@ const VARS = {};
 const SORT = {
   id: 'sl-sort',
   helps: { hints: false },
+  buckets: [{ id: 'body' }, { id: 'attributes' }, { id: 'severity' }, { id: 'resource' }, { id: 'trace' }],
   items: [
     { id: 'msg-declined', bucket: 'body' },
     { id: 'order-id', bucket: 'attributes' },

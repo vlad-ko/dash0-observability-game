@@ -30,6 +30,7 @@ const VARS = {};
 const SORT = {
   id: 'dist-sort',
   helps: { hints: false },
+  buckets: [{ id: 'all-three' }, { id: 'contrib-k8s' }, { id: 'contrib-only' }, { id: 'none' }],
   items: [
     { id: 'k8sattributes', bucket: 'contrib-k8s' },
     { id: 'batch', bucket: 'all-three' },
