@@ -41,6 +41,7 @@ const VARS = {};
 const SORT = {
   id: 'mv-sort',
   helps: { hints: false },
+  buckets: [{ id: 'translated' }, { id: 'approximated' }, { id: 'manual' }, { id: 'skipped' }],
   items: [
     { id: 'p95-chart', bucket: 'approximated' },
     { id: 'ratio-alert', bucket: 'translated' },
