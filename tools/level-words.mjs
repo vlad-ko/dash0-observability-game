@@ -8,8 +8,9 @@
 // snapshots (test/levels-play.test.mjs with LEVEL_SNAPSHOT) cover the markup. A word in the code that equals a
 // fill-in name used by the content is not compared either (it is a VARS key or a slot). It cannot tell a dropped
 // word from one now held elsewhere under the same spelling, as a new code literal or as a content id; the
-// snapshots and the fingerprint cover those. `lost` is a word the old file had that nothing now has; `added` is a word now there that the old file did not have. Exit 1 unless both are
-// empty, 2 on a usage error. A developer tool, kept out of the deployed site by .vercelignore.
+// snapshots and the fingerprint cover those. `lost` is a word the old file had that nothing now has; `added` is
+// a word now there that the old file did not have. Exit 1 unless both are empty, 2 on a usage error. A developer
+// tool, kept out of the deployed site by .vercelignore.
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -69,8 +70,8 @@ export function wordDiff(oldSrc, newSrc, content) {
   const newWords = newLiterals.filter((t) => !names.has(t));
   const textWords = text.flatMap(tokensOf);
   // An id the new code already holds (other than a fill-in name) is in `newWords`; counting it again as a content id
-  // would cancel a dropped word. An id it does not hold is new words: supply for `lost` and, unless the old file
-  // held it too, an addition.
+  // would cancel a dropped word. An id it does not hold counts as new words: it can cancel a dropped word in `lost`,
+  // and it is an addition unless the old file held it too.
   const idsNotInCode = minus(ids.flatMap(tokensOf), newWords);
   return {
     // `newWords`, not `newLiterals`: a name literal is not compared, so it must not cancel a dropped word either.
