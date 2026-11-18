@@ -42,7 +42,7 @@ const REFERENCE =
   `sum by (route) (rate(${M}{service="checkout"}[5m])) > ${THRESHOLD}`;
 
 // The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
-// The per-route figures and the label values, shown on both steps (a step replaces the screen, so step 2 repeats them).
+// The content file writes the per-route table and the label values on both steps (a step replaces the screen, so step 2 repeats them); test/the-alert-that-stayed-green.test.mjs keeps the two copies identical.
 const VARS = {
   rule: RULE,
   'pay-requests': PAY_REQUESTS,
