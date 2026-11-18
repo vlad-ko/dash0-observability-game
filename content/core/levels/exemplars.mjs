@@ -1,4 +1,5 @@
 // Text of levels/exemplars.mjs (docs/CONTENT.md).
+// When editing the point lines, keep their placement rule: no blind tell (count, sum, length, digits, words) separates answers from decoys; see the header of levels/exemplars.mjs, enforced by test/spot-tells.test.mjs.
 export default {
   "id": "exemplars",
   "name": "Exemplars",
