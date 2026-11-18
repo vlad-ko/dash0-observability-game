@@ -1,5 +1,5 @@
 // Text of levels/ai-assisted-debugging.mjs (docs/CONTENT.md). {{name}} is a figure from the level's VARS table.
-// The step 2 choice labels are all about the attribute name, so only the 8.2 migration pair separates them: the rule is in levels/ai-assisted-debugging.mjs.
+// The step 2 choice labels are all about the attribute name, so only the 8.2 migration pair separates them: the rule is in the Step 2 comment of levels/ai-assisted-debugging.mjs.
 export default {
   "id": "ai-assisted-debugging",
   "name": "AI-assisted debugging",
