@@ -214,6 +214,14 @@ test('checkWords: an entry with fill-ins is seen when shown edited with its valu
   assert.deepEqual(checkWords(run, [chip('EDITED0 '), e.other], { unreached: ['run.chip'] }).stale, ['run.chip'], 'an unreached entry that is shown edited is stale');
 });
 
+test('checkWords: the values of a fill-in entry are leak-checked as entries of their own', () => {
+  const run = { looks: [{ key: 'service', label: 'Which service?' }], chip: '{{label}} {{pct}} percent' };
+  const e = editRun(run);
+  const chip = (label) => `<span>EDITED1 ${label} 25 percent</span>`;
+  assert.deepEqual(checkWords(run, [chip(e.looks[0].label)]), CLEAN, 'the value is the marked label');
+  assert.deepEqual(checkWords(run, [chip(run.looks[0].label)]).leaked, [run.looks[0].label], 'the value is the label without its edit');
+});
+
 test('checkWords: a fill-in value that holds an inline tag is matched too, marked and unmarked', () => {
   const run = { set: 'Set {{attr}} on the root span.' };
   const e = editRun(run);

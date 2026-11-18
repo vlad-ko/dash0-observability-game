@@ -41,14 +41,15 @@ const FILL_IN = /\{\{[a-z][a-z0-9-]*\}\}/;
  * With `trim`, a fill-in at the start or end of `s` is left out (it adds nothing to a search that has no mark to anchor
  * on); a `s` that is only fill-ins then matches nothing.
  */
-function pattern(s, flags = '', trim = false) {
+function pattern(s, flags = '', trim = false, capture = false) {
   const parts = s.split(FILL_IN);
   if (trim) {
     if (parts[0] === '') parts.shift();
     if (parts.length && parts[parts.length - 1] === '') parts.pop();
     if (parts.length === 0) return /(?!)/;
   }
-  return new RegExp(parts.map(escapeRe).join('(?:[^<>]|<\\/?[a-z]+(?:\\s[^<>]*)?>){1,80}?'), flags);
+  const unit = '(?:[^<>]|<\\/?[a-z]+(?:\\s[^<>]*)?>){1,80}?';
+  return new RegExp(parts.map(escapeRe).join(capture ? `(${unit})` : unit), flags);
 }
 
 /**
@@ -70,13 +71,18 @@ export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {})
   const mark = (i) => `EDITED${i} `;
   // An entry is seen when it shows with its own mark (so a duplicate, or an entry that starts another, is judged on its
   // own). Take every marked entry out of the screens, longest first (a shorter word can sit inside a longer edited
-  // one): what is left is shown as it is.
+  // one): what is left is shown as it is. Entries without fill-ins go first, so a value that is the text of another
+  // entry is taken out as that entry; an entry with fill-ins then leaves its values in `rest` (between separators, the
+  // captures joined by a space, since two neighbouring wildcards split a value at any space), where they are leak-checked.
   const text = plain(html);
   // An entry with `{{name}}` fill-ins is matched with any text where each one is (its values are on the screen).
   const seen = entries.map((e, i) => [e.text, escapeHtml(e.text)].some((f) => pattern(`${mark(i)}${f}`).test(html)) || pattern(`${mark(i)}${plain(e.text)}`).test(text));
   let rest = html;
-  for (const i of entries.map((_, i) => i).sort((a, b) => entries[b].text.length - entries[a].text.length)) {
-    for (const f of [entries[i].text, escapeHtml(entries[i].text)]) rest = rest.replace(pattern(`${mark(i)}${f}`, 'g'), '\u0000');
+  const order = entries.map((_, i) => i).sort((a, b) => FILL_IN.test(entries[a].text) - FILL_IN.test(entries[b].text) || entries[b].text.length - entries[a].text.length);
+  for (const i of order) {
+    for (const f of [entries[i].text, escapeHtml(entries[i].text)]) {
+      rest = rest.replace(pattern(`${mark(i)}${f}`, 'g', false, true), (m, ...g) => `\u0000${g.slice(0, -2).join(' ')}\u0000`);
+    }
   }
   // A fixture is stripped only for the short words: inside a longer word it must not hide that word leaking.
   let restShort = rest;
