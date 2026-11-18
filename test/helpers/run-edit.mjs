@@ -28,10 +28,12 @@ const LONG = 12;
 
 /**
  * Check the screens a play-through showed (`screens`: strings of HTML or text) against `coreRun`, a content file's `run`,
- * that was edited with `editRun`. Returns `{leaked, unseen, stale}`, each empty when all is well:
+ * that was edited with `editRun`. Returns `{leaked, unseen, stale, duplicates}`, each empty when all is well:
  * - leaked: words of the real content shown without `EDITED ` in front. A word of 12 characters or more is looked for
  *   in the HTML (raw or escaped, `<wbr>` taken out); a shorter one in the text with the tags taken out, as a whole
- *   word. `kept` (the level's RUN_FIXTURES) are fixture literals the level shows as they are: skipped.
+ *   word. `kept` (the level's RUN_FIXTURES) are fixture literals the level shows as they are: a word equal to one is
+ *   skipped, and they are taken out of the screens before the short-word check only.
+ * - duplicates: texts that two entries share. They cannot be told apart on a screen: give them different words.
  * - unseen: paths of entries (not in `unreached`) that never show edited on any screen.
  * - stale: paths listed in `unreached` that do show edited, or that are no entry: the list must not outlive the drivers.
  * `unreached` names the entries the drivers do not reach, by path, for this level.
@@ -39,15 +41,20 @@ const LONG = 12;
 export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {}) {
   const entries = entriesOf(coreRun, 'run');
   const html = screens.map(stripWbr).join('\n');
-  const text = plain(html);
-  const shownEdited = (w) => [w, escapeHtml(w)].some((f) => html.includes(`EDITED ${f}`)) || text.includes(`EDITED ${plain(w)}`);
   const words = [...new Set(entries.map((e) => e.text))].sort((a, b) => b.length - a.length);
-  // Take every edited word out of the screens, longest first (a short word can sit inside a longer edited one), and the
-  // fixtures: what is left is shown as it is.
+  // Take every edited word out of the screens, longest first (a shorter word can sit inside a longer edited one).
+  // Whether a word shows edited is decided against what is left when its turn comes, so an entry that is the start of
+  // another is not seen just because the other is. What is left at the end is shown as it is.
   let rest = html;
-  for (const w of words) for (const f of [w, escapeHtml(w)]) rest = rest.split(`EDITED ${f}`).join('\u0000');
-  for (const k of kept) rest = rest.split(k).join('\u0000');
-  const restText = plain(rest);
+  const seen = new Map();
+  for (const w of words) {
+    seen.set(w, [w, escapeHtml(w)].some((f) => rest.includes(`EDITED ${f}`)) || plain(rest).includes(`EDITED ${plain(w)}`));
+    for (const f of [w, escapeHtml(w)]) rest = rest.split(`EDITED ${f}`).join('\u0000');
+  }
+  // A fixture is stripped only for the short words: inside a longer word it must not hide that word leaking.
+  let restShort = rest;
+  for (const k of kept) restShort = restShort.split(k).join('\u0000');
+  const restText = plain(restShort);
   const leaked = words.filter((w) => {
     if (kept.includes(w)) return false;
     if (w.length >= LONG) return [w, escapeHtml(w)].some((f) => rest.includes(f));
@@ -57,7 +64,8 @@ export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {})
   const paths = entries.map((e) => e.path);
   return {
     leaked,
-    unseen: entries.filter((e) => !unreached.includes(e.path) && !shownEdited(e.text)).map((e) => e.path),
-    stale: unreached.filter((p) => !paths.includes(p) || shownEdited(entries.find((e) => e.path === p).text)),
+    unseen: entries.filter((e) => !unreached.includes(e.path) && !seen.get(e.text)).map((e) => e.path),
+    stale: unreached.filter((p) => !paths.includes(p) || seen.get(entries.find((e) => e.path === p).text)),
+    duplicates: words.filter((w) => entries.filter((e) => e.text === w).length > 1),
   };
 }
