@@ -914,7 +914,7 @@ for (const level of PLAY_LEVELS) {
   });
 }
 
-test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames, and a fixture writes none', () => {
+test('LEVEL_SNAPSHOT: a real level writes its happy and sloppy frames and click frames, and a fixture writes none', () => {
   const dir = mkdtempSync(join(tmpdir(), 'lvl-snap-'));
   const was = process.env.LEVEL_SNAPSHOT;
   process.env.LEVEL_SNAPSHOT = dir;

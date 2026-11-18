@@ -34,6 +34,15 @@ test('literalSites: strings and templates only, comments, regexes and imports sk
   assert.deepEqual(sites.map((s) => s.line), [6, 8, 8, 8, 8, 9, 10]);
 });
 
+test('literalSites: a slash after ++, an exponent number or a property named like a keyword is division', () => {
+  const src = [
+    "n = i++ / 2; const a = 'word';",
+    "m = 1e-5 / 2; const b = 'word2';",
+    "k = obj.in / 2; const c = 'word3';",
+  ].join('\n');
+  assert.deepEqual(literalSites(src).map((s) => s.pieces[0]), ['word', 'word2', 'word3']);
+});
+
 const OLD = [
   "export default { rows: [{ id: 'a', label: 'Fine in baggage' }, { id: 'b', label: 'Never' }], done: (n) => `Done with ${n} items.` };",
 ].join('\n');
@@ -60,6 +69,19 @@ test('wordDiff: a dropped entry loses its words, sorted', () => {
   const c = content();
   delete c.finish;
   assert.deepEqual(wordDiff(OLD, NEW, c).lost, ['Done', 'items.', 'with']);
+});
+
+test('wordDiff: a dropped word that is also an id is still lost', () => {
+  const oldSrc = "export default { rows: [{ id: 'checkout', label: 'The checkout service is slow' }] };";
+  const newSrc = "export default { rows: [{ id: 'checkout', right: true }] };";
+  const c = { rows: [{ id: 'checkout', label: 'The service is slow' }] };
+  assert.deepEqual(wordDiff(oldSrc, newSrc, c), { lost: ['checkout'], added: [] });
+});
+
+test('wordDiff: a code literal that equals a fill-in name is reported unless it is the name itself', () => {
+  const oldSrc = "export default { done: (n) => `Sent to ${n}.` };";
+  const newSrc = "const SLOTS = ['host'];\nconst b = 'host';\nexport default { SLOTS, b };";
+  assert.deepEqual(wordDiff(oldSrc, newSrc, { done: 'Sent to {{host}}.' }), { lost: [], added: ['host'] });
 });
 
 test('wordDiff: tags do not count, and a content id is not an added word', () => {

@@ -159,11 +159,14 @@ export function literalSites(src) {
       } else if (WORD_START.test(c)) {
         let j = i + 1;
         while (j < src.length && WORD_PART.test(src[j])) j++;
-        see(src.slice(i, j));
+        // A word after `.` is a property, never a keyword (`obj.in / 2` divides).
+        see(prev === '.' ? 'prop' : src.slice(i, j));
         i = j;
       } else if (/[0-9]/.test(c)) {
         let j = i + 1;
-        while (j < src.length && /[\w.]/.test(src[j])) j++;
+        // An exponent sign belongs to the number (`1e-5`), except in a hex literal (`0xE+1`).
+        const exponentSign = () => (src[j] === '+' || src[j] === '-') && /[eE]$/.test(src.slice(i, j)) && !/^0[xX]/.test(src.slice(i, j));
+        while (j < src.length && (/[\w.]/.test(src[j]) || exponentSign())) j++;
         see('num');
         i = j;
       } else if (c === '{') {
@@ -175,6 +178,10 @@ export function literalSites(src) {
         depth = Math.max(0, depth - 1);
         see(c);
         i++;
+      } else if ((c === '+' || c === '-') && src[i + 1] === c) {
+        // `++` and `--` end an operand (`i++ / 2` divides).
+        see(c + c);
+        i += 2;
       } else {
         see(c);
         i++;

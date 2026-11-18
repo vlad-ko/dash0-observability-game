@@ -291,7 +291,7 @@ const runText = () => ({
 });
 const bindRun = (t = runText(), s = runSkeleton(), o = { vars: { n: 2 }, slots: ['where'] }) => bindText(t, s, o);
 
-test('run: entries join by id and key, content order wins, stories are taken whole (R1)', () => {
+test('run: entries join by id and key, content order wins, stories are taken whole', () => {
   const v = only(bindRun());
   assert.deepEqual(v.run.sort.items, [
     { id: 'b', bucket: 'y', label: 'Bee', whyNot: { x: 'Not <b>x</b>.' } },
@@ -303,21 +303,21 @@ test('run: entries join by id and key, content order wins, stories are taken who
   assert.deepEqual(v.run.stories, [['charge', 'payments', 'It failed.']]);
 });
 
-test('run: a slot stays in the output as {{name}} (R2)', () => {
+test('run: a slot stays in the output as {{name}}', () => {
   assert.equal(only(bindRun()).run.sentTo, '{{where}} accepted the test span.');
 });
 
-test('run: slot rules (R3)', () => {
+test('run: slot rules', () => {
   assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2 } }).errors.includes('run.sentTo: fill-in {{where}} has no value'));
-  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where', 'host'] }).errors.includes('slot "host" is never used'));
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where', 'host'] }).errors.includes('slot "host" is never used: remove it from slots, or write {{host}} in the copy'));
   assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: 2, where: 'x' }, slots: ['where'] }).errors.includes('"where" is both a var and a slot'));
   const t = runText();
   t.name = 'Run {{where}}';
   assert.ok(bindRun(t).errors.some((e) => e.startsWith('name: slot {{where}} may only be used under run')));
-  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: '{{where}}' }, slots: ['where'] }).errors.some((e) => /var "n"/.test(e) && /\{\{/.test(e)));
+  assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: '{{where}}' }, slots: ['where'] }).errors.includes('var "n" must not contain "{{" when slots are declared'));
 });
 
-test('run: logic-only keys and non-strings are refused (R4)', () => {
+test('run: logic-only keys and non-strings are refused', () => {
   for (const k of ['right', 'bucket', 'answer', 'kind', 'steps']) {
     const t = runText();
     t.run.picks[0][k] = true;
@@ -329,13 +329,13 @@ test('run: logic-only keys and non-strings are refused (R4)', () => {
   assert.ok(bindRun(t).errors.some((e) => e.startsWith('run.picks[0].label:') && /must be a string/.test(e)));
 });
 
-test('run: an entry name is lowerCamelCase (R5)', () => {
+test('run: an entry name is lowerCamelCase', () => {
   const t = runText();
   t.run['sort-intro'] = 'x';
   assert.ok(bindRun(t).errors.some((e) => /run\.sort-intro: a run entry name is lowerCamelCase/.test(e)));
 });
 
-test('run: the HTML check runs after the fill-ins (R6)', () => {
+test('run: the HTML check runs after the fill-ins', () => {
   assert.ok(bindRun(runText(), runSkeleton(), { vars: { n: '<img src=x>' }, slots: ['where'] }).errors.some((e) => e.startsWith('run.sortIntro ') && /must not contain the tag <img>/.test(e)));
   const t = runText();
   t.run.picks[0].says = 'See <a href="x">this</a>.';
@@ -345,13 +345,32 @@ test('run: the HTML check runs after the fill-ins (R6)', () => {
   assert.ok(bindRun(u).errors.some((e) => /run\.sentTo must not give <b> the attribute class/.test(e)));
 });
 
-test('run: only the top-level run entry is free; deeper it is not a content key (R7)', () => {
+test('run: a slot inside a tag is an error, even in an allowed attribute', () => {
+  const t = runText();
+  t.run.sentTo = '<code data-token="{{where}}">x</code>';
+  const { errors } = bindRun(t);
+  assert.ok(errors.some((e) => e.startsWith('run.sentTo ') && /slot/.test(e) && /inside a tag/.test(e)), errors.join('\n'));
+  const ok = runText();
+  ok.run.sentTo = 'p99 < {{where}} and <b>bold</b>';
+  assert.deepEqual(bindRun(ok).errors, []);
+});
+
+test('run: the content has a run entry exactly when the logic has one', () => {
+  const noLogicRun = runSkeleton();
+  delete noLogicRun.run;
+  assert.ok(bindText(runText(), noLogicRun, { vars: { n: 2 }, slots: ['where'] }).errors.some((e) => /^run: .*content has a run entry.*logic has none/.test(e)));
+  const noContentRun = runText();
+  delete noContentRun.run;
+  assert.ok(bindText(noContentRun, runSkeleton(), { vars: {} }).errors.some((e) => /^run: .*logic has a run entry.*content has none/.test(e)));
+});
+
+test('run: only the top-level run entry is free; deeper it is not a content key', () => {
   const t = { id: 'lv', name: 'L', sub: 'S', rewardTitle: 'R', play: { steps: [{ run: { a: 'b' }, choice: { id: 'c1', choices: [] } }] } };
   const { errors } = bindText(t, { id: 'lv', play: { steps: [{ choice: { id: 'c1', choices: [] } }] } });
   assert.ok(errors.some((e) => /play\.steps\[0\]\.run: "run" is not a content key/.test(e)), errors.join('\n'));
 });
 
-test('bindRunLevel: returns the meta and a run(ctx) that hands the bound words to screens (R8)', () => {
+test('bindRunLevel: returns the meta and a run(ctx) that hands the bound words to screens', () => {
   const calls = [];
   const screens = (ctx, say) => calls.push([ctx, say]);
   const opts = { vars: { n: 2 }, slots: ['where'], screens };
@@ -375,4 +394,16 @@ test('bindRunLevel: returns the meta and a run(ctx) that hands the bound words t
   delete none.run;
   assert.throws(() => bindRunLevel(none, runSkeleton(), opts), (e) => e instanceof ContentError && /rl/.test(e.message) && /needs a run object/.test(e.message));
   assert.throws(() => bindRunLevel(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where'] }), TypeError);
+});
+
+test('bindRunLevel: every run(ctx) of one level gets its own copy of the words', () => {
+  const seen = [];
+  const level = bindRunLevel(runText(), runSkeleton(), { vars: { n: 2 }, slots: ['where'], screens: (ctx, say) => seen.push(say) });
+  level.run({});
+  seen[0].sortIntro = 'changed';
+  seen[0].sort.items.pop();
+  level.run({});
+  assert.notEqual(seen[0], seen[1]);
+  assert.equal(seen[1].sortIntro, 'Sort 2 things.');
+  assert.equal(seen[1].sort.items.length, 2);
 });

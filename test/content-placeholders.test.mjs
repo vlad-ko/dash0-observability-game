@@ -76,7 +76,7 @@ test('fillSlots: fills each slot in one pass, a number prints with String (#391)
 });
 
 test('fillSlots: a slot with no value, a value with no slot and a bad value all throw', () => {
-  assert.throws(() => fillSlots('{{a}} and {{b}}', { a: 'x' }), /slot \{\{b\}\} has no value/);
-  assert.throws(() => fillSlots('{{a}}', { a: 'x', c: 'y' }), /"c" is not a slot of this text/);
+  assert.throws(() => fillSlots('{{a}} and {{b}}', { a: 'x' }), /no value passed for slot \{\{b\}\}/);
+  assert.throws(() => fillSlots('{{a}}', { a: 'x', c: 'y' }), /"c" is not a slot in this text: do not pass it/);
   assert.throws(() => fillSlots('{{a}}', { a: NaN }), /must be a string or a finite number/);
 });

@@ -15,7 +15,7 @@ function tmp() {
   return mkdtempSync(join(tmpdir(), 'snap-'));
 }
 
-test('writeFrames writes exactly one file holding the frames and the finish text', () => {
+test('writeFrames writes exactly one file holding the frames, the click frames and the finish text', () => {
   const dir = tmp();
   try {
     const clicks = [{ sel: '#next', body: '<p>one</p>', actions: '<button>next</button>' }];
