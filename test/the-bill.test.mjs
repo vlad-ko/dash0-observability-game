@@ -120,6 +120,7 @@ test('one series count runs through the alert, the volume view and the label bre
   const volume = plain(view('volume-by-metric').html);
   assert.equal(volume.includes('228'), true);
   assert.equal(volume.includes('118,904'), true);
+  assert.equal(volume.includes('91% of all series'), true, '118,904 of 131,076 is 90.7%, shown as 91%');
   assert.equal(plain(view('label-breakdown').html).includes('118,904'), true);
   // The fleet: every other metric is unchanged, so total points a minute = 12,400 - 228 + 118,904, at one point per series per minute.
   assert.equal(12400 - SERIES_BEFORE + SERIES_AFTER, 131076);
@@ -173,6 +174,7 @@ test('each wrong hypothesis is refuted by a view the player can open, and the ri
   for (const w of ['118,904', '228', 'user_id', '5.12.0', '09:41']) assert.equal(right.includes(w), true, w);
   assert.equal(why('traffic-growth').includes('same as last Thursday'), true);
   assert.equal(why('new-service-metrics').includes('46'), true);
+  assert.equal(why('new-service-metrics').includes('118,676 new series'), true, '118,904 - 228 new series');
   assert.equal(why('export-interval-change').includes('60 s'), true);
 });
 

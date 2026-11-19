@@ -1,4 +1,4 @@
-// Text of levels/correlation.mjs (docs/CONTENT.md).
+// Text of levels/correlation.mjs (docs/CONTENT.md). {{name}} is a figure from the level's VARS table.
 export default {
   "id": "correlation",
   "name": "Correlation",
@@ -8,11 +8,11 @@ export default {
     "finish": "You can tell a linked log record from an unlinked one: the ids are fields of the record, set only when the log call ran inside an active span through a bridged logger.",
     "steps": [
       {
-        "intro": "From a log, an engineer wants to jump to its trace. That works when the record carries a <code>trace_id</code> and a <code>span_id</code>, and a log call gets them only from the span that is the current span when it runs. Kettle &amp; Co logged these six records while order 8841 was paid, with order 8842 in flight at checkout. When spans nest, the innermost span that was current is the one the call ran in. Attach each record to the span it was written in, or to none.",
+        "intro": "From a log, an engineer wants to jump to its trace. That works when the record carries a <code>trace_id</code> and a <code>span_id</code>, and a log call gets them only from the span that is the current span when it runs. Kettle &amp; Co logged these six records while order {{order}} was paid, with order {{other-order}} in flight at checkout. When spans nest, the innermost span that was current is the one the call ran in. Attach each record to the span it was written in, or to none.",
         "build": {
           "id": "cor-build",
           "hint": "A record belongs to a span only if that span was the current one when the log call ran: look at the record's service, its time and its attributes, and at the span's.",
-          "explain": "Three records get a span. The cart check was written inside <code>validate cart</code>, the innermost span of order 8841, started as the current span. The neighbour order's record shares checkout and the time with order 8841's spans; its <code>order.id</code> says which trace it is in. The provider warning ran on the charge request's thread. Three stay unlinked: startup ran before any request, the email has no span on the board, and the retry worker's record falls inside the charge span's window but a different thread wrote it, so no span was current."
+          "explain": "Three records get a span. The cart check was written inside <code>{{cart-span}}</code>, the innermost span of order {{order}}, started as the current span. The neighbour order's record shares checkout and the time with order {{order}}'s spans; its <code>order.id</code> says which trace it is in. The provider warning ran on the charge request's thread. Three stay unlinked: startup ran before any request, the email has no span on the board, and the retry worker's record falls inside the charge span's window but a different thread wrote it, so no span was current."
         }
       },
       {
@@ -64,7 +64,7 @@ export default {
         }
       },
       {
-        "intro": "You open the trace of order 8841 in Dash0, select the payments span and open its <b>Related Logs &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
+        "intro": "You open the trace of order {{order}} in Dash0, select the payments span and open its <b>Related Logs &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
         "question": "Is the worker's record in the list?",
         "choice": {
           "id": "cor-dash0",

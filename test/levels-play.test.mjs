@@ -936,6 +936,18 @@ const UNREACHED = {
     'run.findFinishUnfiltered',
     'run.findFinishLive',
   ],
+  // The sloppy run makes one wrong pick; the explanations of the other wrong picks are never on a screen.
+  'context-propagation': [
+    'run.where[0].why',
+    'run.where[2].why',
+    'run.valid[0].why',
+    'run.valid[1].why',
+  ],
+  // The sloppy run makes no wrong pick: the explanations of the wrong picks are never on a screen.
+  'events-and-links': [
+    'run.recorded[0].why',
+    'run.recorded[1].why',
+  ],
   // The sloppy run places one item wrong; the other wrong-placement explanations and the explanations of the wrong
   // picks it does not make are never on a screen. The hints are: HINT_PLAYS presses each Hint button.
   'monitoring-vs-observability': [
@@ -947,6 +959,22 @@ const UNREACHED = {
     'run.answerable[1].why',
     'run.answerable[2].why',
     'run.answerable[3].why',
+  ],
+  // The sloppy run makes no wrong pick (its one slip is a wrong drop on the board): the explanations of the wrong picks are never on a screen.
+  'spans-and-traces': [
+    'run.oneTrace[1].why',
+    'run.other[0].why',
+    'run.other[1].why',
+  ],
+  // The sloppy run places one item wrong (b); the other wrong-placement explanations and the explanations of the wrong
+  // picks are never on a screen. The hint is: HINT_PLAYS presses the Hint button.
+  'status-and-errors': [
+    'run.sort.items[0].whyNot.wrong',
+    'run.sort.items[2].whyNot.ok',
+    'run.sort.items[3].whyNot.wrong',
+    'run.sort.items[4].whyNot.wrong',
+    'run.okThenError[0].why',
+    'run.okThenError[2].why',
   ],
   'the-signals': [
     'run.data.items[0].whyNot.log',
@@ -1007,14 +1035,40 @@ const UNREACHED = {
 
 // A play per run level with Hint buttons that presses each step's Hint button (one tier 1 hint, the step's own `hint`)
 // before solving it. DRIVERS stay as they are: no driver presses Hint, and a hint costs a star, so this run is only
-// looked at for the words it shows. baggage and the-pager have no Hint button.
+// looked at for the words it shows. baggage, events-and-links and the-pager have no Hint button.
 const HINT_PLAYS = {
+  'context-propagation'() {
+    click('[data-pick="proxy"]');
+    click('#prop-next');
+    click('[data-pick="valid"]');
+    click('#prop-next');
+    click('#prop-tree-hint');
+    buildAll('parent', PROP_TREE);
+    click('#prop-tree-check');
+    click('#prop-finish');
+  },
   'monitoring-vs-observability'() {
     click('#mvo-sort-hint');
     sortAll(MVO_SORT);
     click('#mvo-next');
     click('[data-pick="rich"]');
     click('#mvo-finish');
+  },
+  'spans-and-traces'() {
+    click('[data-pick="trace-id"]');
+    click('#sat-next');
+    click('#sat-tree-hint');
+    buildAll('parent', [...SAT_TREE, [SAT_E, 'none']]);
+    click('#sat-next');
+    click('[data-pick="other-request"]');
+    click('#sat-finish');
+  },
+  'status-and-errors'() {
+    click('#status-sort-hint');
+    sortAll(STATUS_SORT);
+    click('#status-next');
+    click('[data-pick="stays-ok"]');
+    click('#status-finish');
   },
   'the-signals'() {
     click('#sig-data-hint');
@@ -1036,7 +1090,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'connect-to-dash0', 'its-us', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'connect-to-dash0', 'context-propagation', 'events-and-links', 'its-us', 'monitoring-vs-observability', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);

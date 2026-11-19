@@ -82,31 +82,32 @@ const code = (text) => `<code>${text}</code>`;
 const header = (text) => `<code data-token>${text}</code>`; // a traceparent: kept whole on a line while it fits
 const row = (cells) => `<tr>${cells.map((c) => `<td>${c}</td>`).join('')}</tr>`;
 
-// Step 1 data: every span as received, and the header on each hop before and after its sidecar. Data text, authored constants.
-const RECEIVED_ROWS = TREE.spans
-  .map((s) => row([s.service, code(s.name), s.kind, code(s.spanId), s.parentId === null ? 'none' : code(s.parentId)]))
-  .join('');
-const HOP_ROWS = [
-  row(['web to cart', header(traceparent(WEB_C)), header(traceparent(MESH1))]),
-  row(['cart to payments', header(traceparent(CART_C)), header(traceparent(MESH2))]),
-].join('');
+// Step 1 data: every span as received, and the header on each hop before and after its sidecar. The code supplies the data cells
+// only; every word the player reads (the "none" of the root's parent cell, the hop names) is in the content file's table markup.
+// The root is the first span: the content holds its row (`<tr>{{root-cells}}<td>none</td></tr>`) and `{{child-rows}}` follows it.
+const [ROOT, ...CHILDREN] = TREE.spans;
+if (ROOT.parentId !== null || CHILDREN.some((s) => s.parentId === null)) throw new Error('the tree must have exactly one root, listed first');
+const dataCells = (s) => [s.service, code(s.name), s.kind, code(s.spanId)].map((c) => `<td>${c}</td>`).join('');
+const CHILD_ROWS = CHILDREN.map((s) => row([s.service, code(s.name), s.kind, code(s.spanId), code(s.parentId)])).join('');
 
-// Step 2 data: the client spans' ids, so the header's parent-id can be looked up, and the headers once the sidecars pass them through.
+// Step 2 data: the client spans' ids, so the header's parent-id can be looked up.
 const CLIENT_ROWS = TREE.spans
   .filter((s) => s.kind === 'CLIENT' && s.service !== 'payments')
   .map((s) => row([s.service, code(s.name), code(s.spanId)]))
   .join('');
-const PASS_ROWS = [row(['web to cart', header(traceparent(WEB_C))]), row(['cart to payments', header(traceparent(CART_C))])].join('');
 
 // The figures the copy quotes, each filled into the content's {{name}} marks with the same expression and formatting the copy used.
+// The headers: `web-c-header` and `cart-c-header` left the caller (and, after the fix, pass through); `*-mesh-header` is what the sidecar wrote.
 const VARS = {
   'trace-short': T.slice(0, 8),
-  'received-rows': RECEIVED_ROWS,
-  'hop-rows': HOP_ROWS,
+  'root-cells': dataCells(ROOT),
+  'child-rows': CHILD_ROWS,
   'web-c-header': header(traceparent(WEB_C)),
   'web-c': code(WEB_C),
   mesh1: code(MESH1),
-  'pass-rows': PASS_ROWS,
+  'web-mesh-header': header(traceparent(MESH1)),
+  'cart-c-header': header(traceparent(CART_C)),
+  'cart-mesh-header': header(traceparent(MESH2)),
   'client-rows': CLIENT_ROWS,
 };
 

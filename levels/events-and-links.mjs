@@ -3,6 +3,11 @@
 // happened in them, then links a batch consumer to the three messages it handled, one
 // from each of three traces. Spec: docs/M1-DESIGN.md §6 Act 2.
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#record-exception , https://opentelemetry.io/docs/specs/semconv/general/recording-errors/ , https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
+//
+// A run(ctx) level: its words are in content/core/levels/events-and-links.mjs (docs/CONTENT.md section 11), read here as
+// say.<name>; this file keeps the answers, the span fixtures and the screens.
+import CORE from '../content/core/levels/events-and-links.mjs';
+import { bindLevel, bindRunLevel } from '../lib/content/bind.mjs';
 import { choiceHtml, mountChoice } from '../lib/widgets/choice.mjs';
 import { mountBuild, renderBuild } from '../lib/widgets/build-it-view.mjs';
 import { newBuildState } from '../lib/widgets/build-it.mjs';
@@ -21,25 +26,9 @@ const span = (spanId, traceId, service, name, kind, startMs, endMs, status = 'UN
   attributes: {}, events, parentId: null, links: [],
 });
 
-// Step 1: an exception recorded, then the span ended. `why` follows "Right." or "Not quite.".
-const RECORDED = [
-  {
-    key: 'error',
-    label: 'Error: recording the exception marked the span as failed',
-    why: 'Recording an exception only records it. The status is a separate field, and nothing in this code sets it.',
-  },
-  {
-    key: 'event-only',
-    label: 'Error if it was recorded as a span event, Unset if it was logged',
-    why: 'Neither way of recording it touches the status. A span event and a log record both leave the status as it was.',
-  },
-  {
-    key: 'unset',
-    label: 'Unset: nothing set the status',
-    right: true,
-    why: 'An exception record, whether a span event or a log record, does not change the status. The code or instrumentation that ends the span sets it, and this code never does, so the failure is invisible to anything that counts errors by status.',
-  },
-];
+// This level's copy has no figures a grader computes over and no values only the code knows: no fill-ins.
+const VARS = {};
+const SLOTS = [];
 
 // Step 2: what happened in each span (authored), and the statuses as recorded. charge's
 // exception escaped and was recorded, yet its status is Unset; a helper set Error on
@@ -59,10 +48,11 @@ const ERRORS = {
   helps: {}, // the help ladder's last rung (docs/M1-DESIGN.md §4.2): no helps, a Check button, no hints
 };
 
-const STORIES = [
-  ['charge', 'payments', 'The provider declined the card. <code>CardDeclinedError</code> was recorded and escaped the span: the charge failed.'],
-  ['charge with retry', 'payments', 'The span covers the whole charge, retries included. The first try hit a connection reset; the code caught it and retried, and the second try went through. Nothing was recorded, but a helper set Error.'],
-  ['GET /stock', 'inventory', 'Answered 200. No exception.'],
+// The name and service each story is told under, in the order of the content's `stories`.
+const STORY_HEADS = [
+  ['charge', 'payments'],
+  ['charge with retry', 'payments'],
+  ['GET /stock', 'inventory'],
 ];
 
 // Step 3: notifications handles one batch of three order messages, each published in its
@@ -80,106 +70,106 @@ const BATCH = {
   helps: {}, // no helps, a Check button, no hints
 };
 
-/** The level's answer tables, in play order (pinned by test/act-2.test.mjs). */
-export const CONTENT = {
-  steps: [
-    { id: 'evl', question: 'What status does the span end with?', choices: RECORDED },
-    { build: ERRORS },
-    { build: BATCH },
-  ],
-};
-
-export default {
+const SKELETON = {
   id: 'events-and-links',
   no: '2.6',
-  name: 'Events and links',
-  sub: 'Errors and batches',
   icon: '\u{1F4CE}',
-  rewardTitle: 'Link keeper',
   mechanics: ['build'],
   widgets: ['choice', 'build'],
   hintless: ['build'], // both builds have helps: {}: a Check button, no Hint button
   cards: ['exception-no-status', 'batch-links'],
   lights: [],
   scoring: { parMs: null },
-  run(ctx) {
-    const bar = ctx.ovActions;
-    const e = ctx.escapeHtml;
-    const next = (onclick) => {
-      const btn = bar.querySelector('#evl-next');
-      btn.onclick = onclick;
-      return btn;
-    };
-
-    const stepRecorded = () => {
-      ctx.renderStep(
-        step({
-          wide: false,
-          bodyHtml: `${ctx.speech(
-          'In payments, a handler catches the provider\'s error, records it, and rethrows. Nothing else touches the span:',
-          )}${codeBlock('catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}')}${question({ id: 'evl-q', html: 'What status does the span end with?' })}${choiceHtml(ctx, RECORDED, { id: 'evl', labelledBy: 'evl-q' })}`,
-        }),
-        actions({ wide: false, buttonsHtml: nextButton('evl-next', 'Pick the right answer to continue.') }),
-      );
-      const btn = next(stepErrors);
-      mountChoice(ctx, RECORDED, {
-        id: 'evl',
-        onRight: () => {
-          btn.disabled = false;
-          return btn;
-        },
-      });
-    };
-
-    const stepErrors = () => {
-      const stories = STORIES.map(([name, service, what]) => `<li><code>${e(name)}</code> (${e(service)}): ${what}</li>`).join('');
-      ctx.renderStep(
-        step({
-          wide: true,
-          bodyHtml: `${ctx.speech(
-          '<p>Here is what happened in three spans. Set each status by the outcome: Error when ' +
-            'the operation failed, Unset when it completed, even if it handled an error on the way.</p>' +
-            `<ul>${stories}</ul>`,
-          )}${question({ html: 'Give each span the status its outcome calls for.' })}${renderBuild(ERRORS, newBuildState(ERRORS), { escapeHtml: e })}`,
-        }),
-        actions({ wide: true, buttonsHtml: nextButton('evl-next', 'Solve the board and press Check to continue.') }),
-      );
-      const btn = next(stepBatch);
-      mountBuild(ctx, ERRORS, {
-        onComplete: () => {
-          btn.disabled = false;
-          return btn;
-        },
-      });
-    };
-
-    const stepBatch = () => {
-      ctx.renderStep(
-        step({
-          wide: true,
-          bodyHtml: `${ctx.speech(
-          'notifications reads three order messages in one batch and sends one email run for ' +
-            'them. Each message was published by a different request, so each ' +
-            '<code>orders publish</code> span sits in its own trace. <code>send batch</code> can ' +
-            'have only one parent, so it stays a root.',
-          )}${question({ html: 'Connect <code>send batch</code> to every message it handled.' })}${renderBuild(BATCH, newBuildState(BATCH), { escapeHtml: e })}`,
-        }),
-        actions({ wide: true, buttonsHtml: finishButton('evl-finish', 'Solve the board and press Check to finish the level.') }),
-      );
-      const finish = bar.querySelector('#evl-finish');
-      mountBuild(ctx, BATCH, {
-        onComplete: () => {
-          finish.disabled = false;
-          return finish;
-        },
-      });
-      finish.onclick = () =>
-        ctx.finish({
-          text: 'You set status by outcome, not by what was recorded, and you link a batch to every message in it.',
-          cards: ['exception-no-status', 'batch-links'],
-        });
-    };
-
-    stepRecorded();
+  run: {
+    // Step 1: an exception recorded, then the span ended. `why` follows "Right." or "Not quite.".
+    recorded: [{ key: 'unset', right: true }],
   },
 };
+
+/** The level's answer tables, in play order (pinned by test/act-2.test.mjs), from the bound words `say`. */
+const contentOf = (say) => ({
+  steps: [
+    { id: 'evl', question: say.recordedQuestion, choices: say.recorded },
+    { build: ERRORS },
+    { build: BATCH },
+  ],
+});
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+
+function screens(ctx, say) {
+  const bar = ctx.ovActions;
+  const e = ctx.escapeHtml;
+  const [{ choices: RECORDED }] = contentOf(say).steps; // the same table CONTENT holds
+  const next = (onclick) => {
+    const btn = bar.querySelector('#evl-next');
+    btn.onclick = onclick;
+    return btn;
+  };
+
+  const stepRecorded = () => {
+    ctx.renderStep(
+      step({
+        wide: false,
+        bodyHtml: `${ctx.speech(say.recordedIntro)}${codeBlock('catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}')}${question({ id: 'evl-q', html: say.recordedQuestion })}${choiceHtml(ctx, RECORDED, { id: 'evl', labelledBy: 'evl-q' })}`,
+      }),
+      actions({ wide: false, buttonsHtml: nextButton('evl-next', say.recordedReason) }),
+    );
+    const btn = next(stepErrors);
+    mountChoice(ctx, RECORDED, {
+      id: 'evl',
+      onRight: () => {
+        btn.disabled = false;
+        return btn;
+      },
+    });
+  };
+
+  const stepErrors = () => {
+    const stories = STORY_HEADS.map(([name, service], i) => `<li><code>${e(name)}</code> (${e(service)}): ${say.stories[i]}</li>`).join('');
+    ctx.renderStep(
+      step({
+        wide: true,
+        bodyHtml: `${ctx.speech(`${say.errorsIntro}<ul>${stories}</ul>`)}${question({ html: say.errorsQuestion })}${renderBuild(ERRORS, newBuildState(ERRORS), { escapeHtml: e })}`,
+      }),
+      actions({ wide: true, buttonsHtml: nextButton('evl-next', say.errorsReason) }),
+    );
+    const btn = next(stepBatch);
+    mountBuild(ctx, ERRORS, {
+      onComplete: () => {
+        btn.disabled = false;
+        return btn;
+      },
+    });
+  };
+
+  const stepBatch = () => {
+    ctx.renderStep(
+      step({
+        wide: true,
+        bodyHtml: `${ctx.speech(say.batchIntro)}${question({ html: say.batchQuestion })}${renderBuild(BATCH, newBuildState(BATCH), { escapeHtml: e })}`,
+      }),
+      actions({ wide: true, buttonsHtml: finishButton('evl-finish', say.batchReason) }),
+    );
+    const finish = bar.querySelector('#evl-finish');
+    mountBuild(ctx, BATCH, {
+      onComplete: () => {
+        finish.disabled = false;
+        return finish;
+      },
+    });
+    finish.onclick = () =>
+      ctx.finish({
+        text: say.finish,
+        cards: ['exception-no-status', 'batch-links'],
+      });
+  };
+
+  stepRecorded();
+}
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+}
+
+export default withText(CORE);
