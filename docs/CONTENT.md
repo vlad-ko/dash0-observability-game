@@ -199,3 +199,15 @@ Rules:
 8. **Mutation check.** Put one old literal back in the code: the "a run level's code holds no prose literal" test in `test/level-text-content.test.mjs` goes red. Misspell one `say.<name>`: "a run level reads exactly the names its content defines" goes red. Make a screen read the module's built-in words instead of the ones it was given (for example `CONTENT.steps[1].choices`): "a converted run level plays every screen ... with the words it was given and no others" in `test/levels-play.test.mjs` goes red. Change one word in the content: `tools/level-words.mjs` reports it lost and added. Put all four back.
 
 One act per pull request, as in section 9.
+
+## 12. The glossary
+
+`content/core/glossary.mjs` is the one source of the game's terms (#428). It is a strict-JSON module like a primer (header `//` lines, then `export default {...};`), loads in the browser and under `node --test`, and holds `{ "terms": [...] }`. Each term has:
+- `id`: lowercase kebab, unique. A primer will mark a term by this id, so never rename one that is in use.
+- `name`: the display name.
+- `variants`: other spellings or plurals a primer may use. Names and variants share one case-insensitive key space: none may repeat, within a term or across terms.
+- `definition`: plain text, one or two short sentences, at most 240 characters. No markup (no backticks, asterisks, tags or Markdown links), no em dashes, UK spelling.
+- `act`: the act id that teaches it, or `null` for a game term (Hint, 50/50, Save code).
+- `topic`: the section heading in the generated doc (Foundations, OpenTelemetry, Traces, Metrics, Logs, Collector, Reliability, Dash0). Terms are grouped by the order each topic first appears.
+
+`lib/glossary.mjs` is pure: `validateGlossary(glossary, { actIds })` returns the list of problems (empty is clean), `glossaryIndex(glossary)` returns a `Map` from each lowercase name and variant to its term id, and `glossaryDoc(glossary)` is the text of `docs/GLOSSARY.md`. That doc is generated: after changing the module run `node tools/build-glossary-doc.mjs`, never edit the doc by hand. `test/glossary.test.mjs` validates the module against the registry's act ids and fails when the committed doc differs from the generator's output.
