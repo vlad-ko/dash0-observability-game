@@ -154,6 +154,12 @@ test('the pods view shows restarts, not a limit: the Collector never stays up, a
   assert.equal(/renam/.test(plain(view('collector-log').html)), false, 'the log says what is missing, not why');
 });
 
+test('the pod names the player sees are pinned: two distinct Collector pods, and the log is the first one\'s (#416)', () => {
+  const POD = /\botel-collector-[0-9a-z]+-[0-9a-z]+\b/g;
+  assert.deepEqual(plain(view('collector-pods').html).match(POD), ['otel-collector-7c8d9b6f5-4xk2p', 'otel-collector-7c8d9b6f5-q8w7n']);
+  assert.deepEqual(plain(view('collector-log').html).match(POD), ['otel-collector-7c8d9b6f5-4xk2p']);
+});
+
 test('herrings and neutrals say why they do not explain the silence, in times and numbers the clues contradict', () => {
   const blip = plain(view('network-blip').html);
   assert.equal(blip.includes('13:12') && blip.includes('13:14') && blip.includes('recovered'), true);
