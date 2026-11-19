@@ -110,6 +110,7 @@ test('the log record and the trace share one valid trace id: that is how the pla
   const inTrace = TRACE_ID.exec(plain(view('trace-of-error').html))?.[0];
   assert.equal(typeof inLog, 'string');
   assert.equal(inLog, inTrace);
+  assert.equal(inLog, '4bf92f3577b34da6a3ce929d0e0e4736', 'the trace id the player sees, pinned (#416)');
   assert.equal(/^0+$/.test(inLog), false, 'not the invalid all-zero id');
   assert.equal(/trace_id/.test(view('error-patterns').html), true, 'the log says the id is its trace_id field');
 });
