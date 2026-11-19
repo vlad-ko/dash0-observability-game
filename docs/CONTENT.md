@@ -2,9 +2,9 @@
 
 For anyone who writes or edits what a level says. A level has two parts: the **words** (questions, choices, explanations) and the **logic** (which answer is right, the figures the copy quotes, how the pieces are wired). The words live in a content file; the logic stays in `levels/<id>.mjs`. Each part is checked on its own, and a tool joins them when the game loads. Design background: docs/FOUNDATION.md §2.13. Act primers use the same text rules and have their own guide: [PRIMERS.md](PRIMERS.md), which this page does not repeat.
 
-Play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) and levels that draw their screens in `run(ctx)` can be converted; run(ctx) levels convert by section 11 and stay run levels. The converted levels are the ones with a file in `content/core/levels/`; the other levels still hold their words in the level file, and both kinds work side by side.
+Play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLARATIVE-LEVELS.md)) and levels that draw their screens in `run(ctx)` can be converted; run(ctx) levels convert by section 11 and stay run levels. Every level is converted: each has a file in `content/core/levels/` that holds its words (test/level-source.test.mjs checks this).
 
-**A new level** is written in the level file, as before. It is converted in its act's conversion pull request (section 9), not at birth.
+**A new level** is written with its content file from the start: the logic in the level file, the words in `content/core/levels/<id>.mjs` (test/level-source.test.mjs fails without one).
 
 ## 1. Where files live
 
@@ -86,11 +86,11 @@ The messages include: "is not a content key" (a key outside the list), "must be 
 
 ## 8. Editions (later)
 
-The folder name `core` is the edition: the one version of the words the game ships. A second edition (the same levels explained for another audience) would be new files under `content/<edition>/levels/` and `primers/`, and a registry that builds the acts with `levelModule.withText(text)` for that edition's text, chosen once at start-up. Every converted level exports `withText(text)` for this reason, so an edition covers converted levels only; a level that is not converted yet has one set of words. Nothing selects an edition yet, and engine words (buttons, card text, act names) are not part of an edition.
+The folder name `core` is the edition: the one version of the words the game ships. A second edition (the same levels explained for another audience) would be new files under `content/<edition>/levels/` and `primers/`, and a registry that builds the acts with `levelModule.withText(text)` for that edition's text, chosen once at start-up. Every converted level exports `withText(text)` for this reason, so an edition covers every level. Nothing selects an edition yet, and engine words (buttons, card text, act names) are not part of an edition.
 
 ## 9. Converting a level, step by step
 
-Do one act at a time and change only that act's level files and their content files. Play levels convert by the steps below; a level with `run(ctx)` converts by section 11 and stays a run level. A level written new is converted the same way, in its act's pull request.
+Do one act at a time and change only that act's level files and their content files. Play levels convert by the steps below; a level with `run(ctx)` converts by section 11 and stays a run level. A level written new gets its content file the same way, in the pull request that adds it.
 
 1. **Baseline, on a clean checkout of main.** Pick a scratch folder `S` outside the repo. Run `node tools/level-fingerprint.mjs $S/before` (the exact data of every level) and `LEVEL_SNAPSHOT=$S/before node --test test/levels-play.test.mjs` (the page of every step, happy and sloppy run).
 2. **Extract.** `node tools/extract-level-text.mjs <id>` prints every text field of the level as a content file, in the order the game shows it. Save it as `content/core/levels/<id>.mjs`.

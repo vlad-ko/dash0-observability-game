@@ -1,6 +1,6 @@
 // levelSource (test/helpers/level-source.mjs): the one way a test reads a level's source text.
-// Today it is the logic file; once a level's copy moves to content/core/levels/<id>.mjs it is
-// the logic file plus the decoded string leaves of that file, so source scans keep seeing the copy.
+// It is the logic file plus the decoded string leaves of the level's content file
+// (content/core/levels/<id>.mjs, which every level has), so source scans see the copy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -13,19 +13,16 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const FIXTURE_ROOT = join(ROOT, 'test', 'fixtures', 'level-source');
 const EM_DASH = String.fromCharCode(0x2014);
 
-test('with no content file, levelSource is the level file exactly (every level not yet converted)', () => {
-  const ids = readdirSync(join(ROOT, 'levels'))
+test('every registered level has a content file', () => {
+  const withoutContent = readdirSync(join(ROOT, 'levels'))
     .filter((f) => f.endsWith('.mjs') && f !== 'index.mjs')
     .map((f) => f.slice(0, -4))
     .filter((id) => !existsSync(join(ROOT, 'content', 'core', 'levels', `${id}.mjs`)));
-  const converted = readdirSync(join(ROOT, 'content', 'core', 'levels'))
+  const contentIds = readdirSync(join(ROOT, 'content', 'core', 'levels'))
     .filter((f) => f.endsWith('.mjs'))
     .map((f) => f.slice(0, -4));
-  assert.ok(ids.length > 0, 'some levels are not converted yet');
-  assert.deepEqual([...ids, ...converted].sort(), Object.keys(liveRegistry().levels).sort(), 'the unconverted and converted levels are every registered level');
-  for (const id of ids) {
-    assert.equal(levelSource(id), readFileSync(join(ROOT, 'levels', `${id}.mjs`), 'utf8'), id);
-  }
+  assert.deepEqual(withoutContent, [], 'levels with no content file in content/core/levels/');
+  assert.deepEqual(contentIds.sort(), Object.keys(liveRegistry().levels).sort(), 'the content files are exactly the registered levels');
 });
 
 test('with a content file, the logic text comes first and the decoded leaves follow', () => {
