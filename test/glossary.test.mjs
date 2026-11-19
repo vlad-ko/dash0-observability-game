@@ -121,6 +121,15 @@ test('glossaryIndex maps every lowercase name and variant to its term id', () =>
   assert.equal(index.size, 4);
 });
 
+test('glossaryIndex: when two terms claim one key, the first term wins, whatever the case', () => {
+  const first = term({ id: 'first', name: 'First', variants: ['Spans'] });
+  const second = term({ id: 'second', name: 'Second', variants: ['spans', 'SPANS'] });
+  const index = glossaryIndex(gloss(first, second));
+  assert.equal(index.get('spans'), 'first');
+  assert.equal(index.get('second'), 'second', 'the second term keeps its own keys');
+  assert.equal(glossaryIndex(gloss(second, first)).get('spans'), 'second');
+});
+
 test('glossaryIndex over the shipped glossary resolves each term by its name', () => {
   const index = glossaryIndex(GLOSSARY);
   for (const t of GLOSSARY.terms) {
