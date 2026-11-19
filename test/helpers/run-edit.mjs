@@ -19,7 +19,13 @@ export function editRun(run) {
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
-export const RUN_FIXTURES = {};
+export const RUN_FIXTURES = {
+  // Span fixtures: the kinds, status and names of the spans the Build it board draws and grades, and the hop and root data the screen quotes.
+  // events-and-links also keeps its catch/finally code sample: test/code-readable.test.mjs pins it as a codeBlock('catch (err) {...') call in the level source.
+  'context-propagation': ['UNSET', 'POST /checkout', 'SERVER', 'POST checkout', 'CLIENT', 'POST orders', 'POST /orders'],
+  'events-and-links': ['UNSET', 'INTERNAL', 'exception.type', 'CardDeclinedError', 'ERROR', 'GET /stock', 'SERVER', 'PRODUCER', 'CONSUMER', 'charge with retry', 'orders publish', 'send batch', 'catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}'],
+  'spans-and-traces': ['UNSET', 'POST /checkout', 'SERVER', 'POST', 'CLIENT', 'INTERNAL', 'GET /products', 'validate cart'],
+};
 
 /** Every string of a content `run` that is not an id or a key: `[{path, text}]`, the path like `run.sort.items[0].why`. */
 function entriesOf(value, path, key = '') {
