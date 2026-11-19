@@ -13,9 +13,9 @@ export default {
     {
       "type": "list",
       "items": [
-        "Spans are the units of work, and together they make a trace.",
+        "Spans are the timed units of work, and together they make a trace.",
         "Span kind and status say what role a span played and how it ended.",
-        "Context propagation joins spans from different services into one trace."
+        "Context propagation (passing the trace and span IDs on to the next service) joins spans from different services into one trace."
       ]
     },
     {
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans), start and end timestamps, a span context (the trace ID, the span ID, trace flags and trace state), attributes, events, links and a status."
+          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans, which have no parent), start and end timestamps, a span context made of the trace ID (shared by every span in the request), the span ID (this span's own), trace flags and trace state, attributes, events, links and a status."
         },
         {
           "type": "paragraph",
@@ -63,14 +63,14 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind is a hint to the tracing backend about how the trace should be assembled. If it is not provided, the kind is assumed to be INTERNAL."
+          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind tells the tracing backend how to assemble the trace. If it is not provided, the kind is assumed to be INTERNAL."
         },
         {
           "type": "list",
           "items": [
-            "CLIENT: a synchronous outgoing remote call, such as an outgoing HTTP request or a database call.",
+            "CLIENT: an outgoing remote call that waits for its reply (synchronous), such as an outgoing HTTP request or a database call.",
             "SERVER: a synchronous incoming remote call, such as an incoming HTTP request.",
-            "INTERNAL: an operation that does not cross a process boundary.",
+            "INTERNAL: an operation that stays inside one running program.",
             "PRODUCER: the creation of a job that may be processed later.",
             "CONSUMER: the processing of a job created by a producer."
           ]
@@ -99,7 +99,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Propagation moves the context between services and processes, and is usually handled by instrumentation libraries. The default propagator uses the headers of the W3C TraceContext specification."
+          "text": "Propagation moves the context between services and processes, and is usually handled by instrumentation libraries (code that emits telemetry). The default propagator, the code that writes and reads the trace headers, uses the W3C Trace Context standard (the traceparent and tracestate headers)."
         },
         {
           "type": "paragraph",
@@ -131,7 +131,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Span links associate one span with one or more other spans, implying a causal relationship. They are useful when the next operation is asynchronous and you cannot predict when it will start."
+          "text": "Span links associate one span with one or more other spans, implying a causal relationship. They are useful when the next operation runs later (asynchronous) and you cannot predict when it will start."
         },
         {
           "type": "paragraph",
