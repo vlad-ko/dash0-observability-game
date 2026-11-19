@@ -19,62 +19,57 @@
 // Teaching copy only: the endpoint row labels and the Create token button of the practice panel,
 // and the 401 and 403 behaviour practice simulates, are marked VERIFY (#195) below and listed for
 // owner sign-off.
+//
+// A run(ctx) level: its words are in content/core/levels/connect-to-dash0.mjs (docs/CONTENT.md section 11), read here as
+// say.<name>; this file keeps the answers and the screens.
+import CORE from '../content/core/levels/connect-to-dash0.mjs';
+import { bindRunLevel } from '../lib/content/bind.mjs';
+import { fillSlots } from '../lib/content/placeholders.mjs';
 import { PRACTICE_HOSTS, REASONS, TOKEN_PREFIX } from '../lib/dash0/ingress.mjs';
 import { OUTCOME, TIMEOUT_MS } from '../lib/otlp/send.mjs';
 import { MODE, STATE } from '../lib/telemetry.mjs';
 import { focusFirst } from '../lib/widgets/focus.mjs';
 import { actions as actionsBar, button, chip, feedback, field, note, panel, prose, radio, radioGroup, reason, setFeedback, step } from '../lib/ui/index.mjs';
 
+// The one figure the copy quotes; every other {{name}} in the content is a slot the code fills as it runs.
+const VARS = { 'timeout-s': TIMEOUT_MS / 1000 };
+const SLOTS = ['where', 'status', 'message', 'host', 'prefix', 'session'];
+
 // The Permissions options of an auth token (glossary/auth-tokens). Only Ingesting is right. The
-// keys are the telemetry session's PRACTICE_SCOPE values (it mints the practice token per key).
-const SCOPES = [
-  {
-    key: 'all',
-    label: 'All permissions',
-    wrong:
-      'That token works, but it can also query your data and change your configuration. ' +
-      'Dash0 recommends Ingesting-only tokens whenever you distribute a token publicly, ' +
-      'for example in browser instrumentation.',
+// keys are the telemetry session's PRACTICE_SCOPE values (it mints the practice token per key); their
+// labels and the explanation of each pick are the content's `scopes`, joined here by key.
+const SKELETON = {
+  id: 'connect-to-dash0',
+  no: '9.3',
+  icon: '\u{1F50C}',
+  mechanics: ['configure'],
+  // It builds its own form from the UI kit; none of the shared widgets is on a screen here.
+  widgets: [],
+  cards: [],
+  lights: ['collector'],
+  scored: true,
+  scoring: { parMs: null },
+  run: {
+    scopes: [
+      { key: 'all', right: false },
+      { key: 'ingest', right: true },
+      { key: 'read', right: false },
+    ],
   },
-  {
-    key: 'ingest',
-    label: 'Ingesting',
-    right:
-      'Right. An Ingesting token can only send telemetry. It cannot read your data back or ' +
-      'change your configuration, so a leaked one does little harm.',
-  },
-  {
-    key: 'read',
-    label: 'Reading',
-    wrong:
-      'A Reading token can only query data. It cannot send telemetry, so the test span is not ' +
-      'stored. Create an Ingesting token instead.',
-  },
-];
-
-const FIELD_NAME = { endpoint: 'Endpoint', token: 'Token', dataset: 'Dataset' };
-
-// Why a send failed, by what came back. `auth` rejections are the token's fault; the rest are
-// the network's or Dash0's, which never costs a star.
-const UNREACHABLE = {
-  network:
-    'The request never got an answer. In a browser that can be a wrong host, a CORS refusal or ' +
-    "the page's Content Security Policy, and the browser cannot tell them apart.",
-  timeout: `There was no answer within ${TIMEOUT_MS / 1000} seconds.`,
-  opaque: 'Something answered, but not with a usable HTTP response.',
-  aborted: 'The request was cancelled before it finished.',
 };
-const UNREACHABLE_FALLBACK = 'The game is not connected, so the test span was not sent.';
+
+// Why a send failed, by what came back (the content's `unreachable`, keyed by the cause). `auth` rejections are the
+// token's fault; the rest are the network's or Dash0's, which never costs a star.
 
 /** The feedback for a failed connect: {field, reason} from ctx.telemetry.connect, as plain words. */
-function connectProblem(e, { field: which, reason }) {
+function connectProblem(say, e, { field: which, reason }) {
   if (which === 'mode') {
-    return reason === 'unavailable'
-      ? 'Your own Dash0 is not available in this browser. Use practice: it works the same way.'
-      : 'That mode is not known.';
+    return reason === 'unavailable' ? say.problemUnavailable : say.problemMode;
   }
-  const why = REASONS[reason] ?? 'That could not be checked.';
-  return `${FIELD_NAME[which] ?? 'Input'}: ${e(why)}`;
+  const why = REASONS[reason] ?? say.problemUnchecked;
+  // The content calls the dataset's name `datasetField`: "dataset" is a logic-only key under run.
+  const names = { endpoint: say.fieldName.endpoint, token: say.fieldName.token, dataset: say.fieldName.datasetField };
+  return `${names[which] ?? say.fieldNameOther}: ${e(why)}`;
 }
 
 // An address for display: escaped first, then <wbr> after "//" and each ".", and before ":", so a long
@@ -84,11 +79,11 @@ export function breakableAddress(address, escape) {
 }
 
 /** The tone, words and whether to offer a retry for an outcome of the test span. */
-function describeOutcome(outcome, mode) {
-  const where = mode === MODE.practice ? 'The simulated Dash0' : 'Dash0';
+function describeOutcome(say, outcome, mode) {
+  const where = mode === MODE.practice ? say.whereSimulated : say.whereLive;
   switch (outcome.kind) {
     case OUTCOME.accepted:
-      return { tone: 'success', html: `${where} accepted the test span.`, retry: false };
+      return { tone: 'success', html: fillSlots(say.outcomeAccepted, { where }), retry: false };
     case OUTCOME.rejected:
       if (outcome.auth) {
         // VERIFY (#195): that live Dash0 answers 401 for an unknown token and 403 for a token that
@@ -96,355 +91,316 @@ function describeOutcome(outcome, mode) {
         // split them: either way the remedy is the same three checks.
         return {
           tone: 'error',
-          html: `${where} refused this token and would not take the test span. Check that you copied all of ` +
-            'the token, that it is from this organization, and that it has the Ingesting permission.',
+          html: fillSlots(say.outcomeRefusedToken, { where }),
           retry: false,
         };
       }
       return {
         tone: 'error',
-        html: `${where} refused the test span (HTTP ${Number(outcome.status)}).`,
+        html: fillSlots(say.outcomeRefusedStatus, { where, status: String(Number(outcome.status)) }),
         retry: true,
         message: outcome.message,
       };
     case OUTCOME.unreachable:
-      return { tone: 'error', html: UNREACHABLE[outcome.cause] ?? UNREACHABLE_FALLBACK, retry: true };
+      return { tone: 'error', html: say.unreachable[outcome.cause] ?? say.unreachableFallback, retry: true };
     default:
-      return { tone: 'error', html: UNREACHABLE_FALLBACK, retry: true };
+      return { tone: 'error', html: say.unreachableFallback, retry: true };
   }
 }
 
-export default {
-  id: 'connect-to-dash0',
-  no: '9.3',
-  name: 'Connect the game to Dash0',
-  sub: 'An endpoint and a token for a browser tab',
-  icon: '\u{1F50C}',
-  rewardTitle: 'Connected',
-  mechanics: ['configure'],
-  // It builds its own form from the UI kit; none of the shared widgets is on a screen here.
-  widgets: [],
-  cards: [],
-  lights: ['collector'],
-  scored: true,
-  scoring: { parMs: null },
-  run(ctx) {
-    const tele = ctx.telemetry;
-    const e = ctx.escapeHtml;
-    const body = ctx.ovBody;
-    const actions = ctx.ovActions;
-    const $ = (sel) => body.querySelector(sel);
-    const screen = (...parts) => step({ bodyHtml: parts.join('') });
-    const bar = (buttonsHtml) => actionsBar({ buttonsHtml });
+function screens(ctx, say) {
+  const tele = ctx.telemetry;
+  const e = ctx.escapeHtml;
+  const body = ctx.ovBody;
+  const actions = ctx.ovActions;
+  const $ = (sel) => body.querySelector(sel);
+  const screen = (...parts) => step({ bodyHtml: parts.join('') });
+  const bar = (buttonsHtml) => actionsBar({ buttonsHtml });
 
-    if (!tele) {
-      ctx.renderStep(
-        screen(ctx.speech('The game has no telemetry session in this build, so there is nothing to connect.'), note('Use Back to return to the map.')),
-        bar(''),
+  if (!tele) {
+    ctx.renderStep(
+      screen(ctx.speech(say.startIntro), note(say.startNote)),
+      bar(''),
+    );
+    return;
+  }
+
+  // ---- screen 1: practice or live ----
+  const stepMode = () => {
+    const live = tele.liveAvailable();
+    ctx.renderStep(
+      screen(
+        ctx.speech(say.modeIntro),
+        chip({ text: say.modeChip, tone: 'attention' }),
+        prose(say.modePractice + (live ? say.modeLive : `<p id="ctd-live-why">${say.modeLiveWhy}</p>`)),
+      ),
+      bar(
+        button({ id: 'ctd-practice', label: say.modePracticeButton, variant: 'primary' }) +
+          button({ id: 'ctd-live', label: say.modeLiveButton, variant: 'ghost', disabled: !live }) +
+          (live ? '' : reason({ id: 'ctd-live-reason', text: say.modeLiveReason })),
+      ),
+    );
+    actions.querySelector('#ctd-practice').onclick = () => stepConnect(MODE.practice);
+    actions.querySelector('#ctd-live').onclick = () => stepConnect(MODE.live);
+  };
+
+  // ---- screen 2: find the endpoint, make a token, connect ----
+  const stepConnect = (mode) => {
+    const practice = mode === MODE.practice;
+    const host = PRACTICE_HOSTS[0];
+    // VERIFY (#195): the row labels of the endpoint reference ("OTLP via gRPC", "OTLP via HTTP";
+    // the owner's screenshot of real Dash0, 2026-11-16, shows both in the integrations list)
+    // and the Create token button. The docs say the endpoint reference lives in the
+    // organization's settings and that tokens are created in Settings -> Auth Tokens.
+    const simulated = panel({
+      headHtml: `${chip({ text: say.connectSimulated, tone: 'attention' })} ${say.connectSimulatedHead}`,
+      sections: [
+        prose(
+          `<h4>${say.connectEndpointsTitle}</h4>` +
+            // The table is built here, not held in the content: prose() wraps a table in a scroller, which a
+            // play-through check of the edited words cannot see past when the entry is the table itself.
+            `<table><caption>${say.connectEndpointsCaption}</caption><thead><tr><th scope="col">${say.connectEndpointsHead[0]}</th><th scope="col">${say.connectEndpointsHead[1]}</th></tr></thead><tbody>` +
+            `<tr><td>${say.connectEndpointGrpc}</td><td><code id="ctd-ep-grpc">${breakableAddress(`https://${host}:4317`, e)}</code></td></tr>` +
+            `<tr><td>${say.connectEndpointHttp}</td><td><code id="ctd-ep-http">${breakableAddress(`https://${host}`, e)}</code></td></tr>` +
+            '</tbody></table>',
+        ),
+        `<h4>${say.connectTokensTitle}</h4>` +
+          radioGroup({
+            legend: say.connectPermissionsLegend,
+            itemsHtml: say.scopes.map((s) =>
+              radio({ id: `ctd-scope-${s.key}`, name: 'ctd-scope', value: s.key, labelHtml: s.label })).join(''),
+          }) +
+          `<p>${button({ id: 'ctd-mint', label: say.connectMintButton, variant: 'ghost' })}</p>` +
+          feedback({ id: 'ctd-mint-feedback' }) +
+          `<div id="ctd-minted-row" hidden>${say.connectMintedLabel} <code id="ctd-minted"></code></div>`,
+      ],
+    });
+    // Live: where to look, without naming the answer. Cited in the header: the endpoint
+    // reference and Auth Tokens are in the organization's Settings, and only Admins create tokens.
+    const guide = say.connectGuide;
+    // Live cannot see a token's permission, so the player says which one they gave it. It is
+    // charged by the same rule as the practice mint (chargeScope below).
+    const liveScope =
+      radioGroup({
+        legend: say.connectLiveLegend,
+        itemsHtml: say.scopes.map((s) => radio({ id: `ctd-scope-${s.key}`, name: 'ctd-scope', value: s.key, labelHtml: s.label })).join(''),
+      }) +
+      feedback({ id: 'ctd-scope-feedback' });
+    ctx.renderStep(
+      screen(
+        ctx.speech(practice ? say.connectIntroPractice : say.connectIntroLive),
+        chip(practice
+          ? { text: say.connectChipPractice, tone: 'attention' }
+          : { text: say.connectChipLive, tone: 'success' }),
+        practice ? simulated : prose(guide),
+        field({
+          id: 'ctd-endpoint',
+          label: say.connectEndpointLabel,
+          autocompleteOff: true,
+          noteHtml: say.connectEndpointNote,
+        }),
+        field({
+          id: 'ctd-token',
+          label: say.connectTokenLabel,
+          kind: 'secret',
+          noteHtml: fillSlots(say.connectTokenNote, { prefix: e(TOKEN_PREFIX) }),
+        }),
+        practice ? '' : liveScope,
+        field({
+          id: 'ctd-dataset',
+          label: say.connectDatasetLabel,
+          noteHtml: say.connectDatasetNote,
+        }),
+        practice ? '' : note(say.connectLiveNote),
+        feedback({ id: 'ctd-feedback' }),
+      ),
+      bar(button({ id: 'ctd-connect', label: say.connectButton, variant: 'primary' })),
+    );
+
+    const fb = $('#ctd-feedback');
+    const tell = (tone, html) => setFeedback(fb, tone, html, { scroll: true }); // each line answers a button press (#339)
+    const endpointEl = $('#ctd-endpoint');
+    const tokenEl = $('#ctd-token');
+    const datasetEl = $('#ctd-dataset');
+    const minted = practice ? $('#ctd-minted') : null;
+    const mintedRow = practice ? $('#ctd-minted-row') : null;
+    focusFirst(endpointEl, { fallback: fb }); // a new step opens at its top, on a visible element (#331, #339)
+
+    // The shown practice token goes with the secret field: after Connect it is gone from the page.
+    const scrub = () => {
+      if (!practice) return;
+      minted.textContent = '';
+      mintedRow.setAttribute('hidden', '');
+    };
+
+    // The actions bar: Connect, plus a retry (a send that failed through no fault of the token)
+    // and, for a live connection that could not be reached, a way into practice.
+    const setActions = ({ busy = false, retry = false, toPractice = false } = {}) => {
+      actions.innerHTML = bar(
+        button({ id: 'ctd-connect', label: say.connectBarButton, variant: 'primary', disabled: busy }) +
+          (retry ? button({ id: 'ctd-retry', label: say.connectRetryButton, variant: 'ghost', disabled: busy }) : '') +
+          (toPractice ? button({ id: 'ctd-switch', label: say.connectSwitchButton, variant: 'ghost' }) : ''),
       );
-      return;
+      actions.querySelector('#ctd-connect').onclick = onConnect;
+      const again = actions.querySelector('#ctd-retry');
+      if (again) again.onclick = send;
+      const sw = actions.querySelector('#ctd-switch');
+      if (sw) sw.onclick = () => stepConnect(MODE.practice);
+    };
+
+    // One charge rule for everything the player gets wrong here: each distinct cause costs one
+    // mistake, once. A cause is a permission (`scope:<key>`), a form error (`<field>:<reason>`) or a
+    // rejected token (`rejected:<status>`).
+    const charged = new Set();
+    const charge = (cause) => {
+      if (charged.has(cause)) return;
+      charged.add(cause);
+      ctx.mistake();
+    };
+
+    let scope = null;
+    for (const s of say.scopes) $(`#ctd-scope-${s.key}`).onclick = () => { scope = s; };
+    // A permission other than Ingesting is a mistake; `fbEl` says why.
+    const declareScope = (fbEl) => {
+      if (!scope.right) charge(`scope:${scope.key}`);
+      setFeedback(fbEl, scope.right ? 'success' : 'error', scope.why);
+    };
+
+    // Practice: create a token. The token's name does not say what it can do.
+    if (practice) {
+      const mintFb = $('#ctd-mint-feedback');
+      $('#ctd-mint').onclick = () => {
+        if (!scope) {
+          setFeedback(mintFb, 'neutral', say.connectMintSays, { scroll: true });
+          return;
+        }
+        minted.textContent = tele.practiceCredential(scope.key); // a public practice token, only ever shown here
+        mintedRow.removeAttribute('hidden');
+        declareScope(mintFb);
+      };
     }
 
-    // ---- screen 1: practice or live ----
-    const stepMode = () => {
-      const live = tele.liveAvailable();
-      ctx.renderStep(
-        screen(
-          ctx.speech(
-            'Every level so far ran against a simulation. This one connects the game to a Dash0. ' +
-              'A sender needs two things: the <b>endpoint</b> of your organization, and an <b>auth token</b>. ' +
-              'The game sends from a browser tab, and browsers cannot make gRPC calls, so it uses the <b>OTLP via HTTP</b> endpoint. ' +
-              'Then it sends one test span, and you will see whether it was accepted.',
-          ),
-          chip({ text: 'Practice: a simulated Dash0, not your account', tone: 'attention' }),
-          prose(
-            '<p>Practice shows a simulated Dash0 settings page to read the endpoint from and to create a token in. ' +
-              'Nothing leaves this page, and it is scored the same way as your own Dash0.</p>' +
-              (live
-                ? '<p>Your own Dash0: the game sends one test span, and a level-complete span for each level you finish ' +
-                  'until you reload the page, to the endpoint you enter. Nothing goes to the game\'s servers.</p>'
-                : '<p id="ctd-live-why">Your own Dash0 is not available in this browser. Practice works the same way.</p>'),
-          ),
-        ),
-        bar(
-          button({ id: 'ctd-practice', label: 'Practice with a simulated Dash0', variant: 'primary' }) +
-            button({ id: 'ctd-live', label: 'Use my own Dash0', variant: 'ghost', disabled: !live }) +
-            (live ? '' : reason({ id: 'ctd-live-reason', text: 'Not available in this browser.' })),
-        ),
+    // The last reason shown for a bad form or a rejected token, and the endpoint and dataset it
+    // was shown for. It is kept only while a press has nothing new to say: an emptied token field
+    // over the same endpoint and dataset. Once either changed, the old reason would be stale.
+    let lastProblem = false;
+    let lastInput = '';
+
+    const send = async () => {
+      setActions({ busy: true });
+      fb.removeAttribute('data-outcome');
+      tell('neutral', say.connectSendingSays);
+      const outcome = await tele.sendTest({ signal: ctx.signal });
+      if (ctx.signal.aborted) return; // the level was closed while the request was out
+      // "Connected?" has one answer: the session's own state, never the outcome alone.
+      if (outcome.kind === OUTCOME.accepted && tele.status().state === STATE.connected) {
+        stepConnected();
+        return;
+      }
+      const shown = describeOutcome(
+        say,
+        outcome.kind === OUTCOME.accepted ? { kind: OUTCOME.unreachable, cause: 'not-connected' } : outcome,
+        mode,
       );
-      actions.querySelector('#ctd-practice').onclick = () => stepConnect(MODE.practice);
-      actions.querySelector('#ctd-live').onclick = () => stepConnect(MODE.live);
+      // Only the player's own token counts against them: the network's and Dash0's faults do not.
+      if (outcome.kind === OUTCOME.rejected && outcome.auth) charge(`rejected:${outcome.status}`);
+      lastProblem = outcome.kind === OUTCOME.rejected && outcome.auth;
+      const message = shown.message ? ` ${fillSlots(say.outcomeSaid, { message: e(shown.message) })}` : '';
+      tell(shown.tone, `${shown.html}${message}`);
+      fb.setAttribute('data-outcome', outcome.kind);
+      setActions({ retry: shown.retry, toPractice: !practice && outcome.kind === OUTCOME.unreachable });
+      (shown.retry ? actions.querySelector('#ctd-retry') : endpointEl).focus({ preventScroll: true }); // the feedback just scrolled into view stays in view (#331)
     };
 
-    // ---- screen 2: find the endpoint, make a token, connect ----
-    const stepConnect = (mode) => {
-      const practice = mode === MODE.practice;
-      const host = PRACTICE_HOSTS[0];
-      // VERIFY (#195): the row labels of the endpoint reference ("OTLP via gRPC", "OTLP via HTTP";
-      // the owner's screenshot of real Dash0, 2026-11-16, shows both in the integrations list)
-      // and the Create token button. The docs say the endpoint reference lives in the
-      // organization's settings and that tokens are created in Settings -> Auth Tokens.
-      const simulated = panel({
-        headHtml:
-          `${chip({ text: 'Simulated', tone: 'attention' })} Dash0 settings. Nothing here is your account.`,
-        sections: [
-          prose(
-            '<h4>Settings, Endpoints</h4>' +
-              '<table><caption>Endpoints of this organization</caption><thead><tr><th scope="col">Name</th><th scope="col">Address</th></tr></thead><tbody>' +
-              `<tr><td>OTLP via gRPC</td><td><code id="ctd-ep-grpc">${breakableAddress(`https://${host}:4317`, e)}</code></td></tr>` +
-              `<tr><td>OTLP via HTTP</td><td><code id="ctd-ep-http">${breakableAddress(`https://${host}`, e)}</code></td></tr>` +
-              '</tbody></table>',
-          ),
-          '<h4>Settings, Auth Tokens: create a token</h4>' +
-            radioGroup({
-              legend: 'Permissions',
-              itemsHtml: SCOPES.map((s) =>
-                radio({ id: `ctd-scope-${s.key}`, name: 'ctd-scope', value: s.key, labelHtml: s.label })).join(''),
-            }) +
-            `<p>${button({ id: 'ctd-mint', label: 'Create token', variant: 'ghost' })}</p>` +
-            feedback({ id: 'ctd-mint-feedback' }) +
-            '<div id="ctd-minted-row" hidden>Your new token: <code id="ctd-minted"></code></div>',
-        ],
-      });
-      // Live: where to look, without naming the answer. Cited in the header: the endpoint
-      // reference and Auth Tokens are in the organization's Settings, and only Admins create tokens.
-      const guide =
-        '<p>In Dash0, open the list of ways to send data and pick <b>OTLP via HTTP</b>. Copy its endpoint, ' +
-        'the address without a path, such as https://ingress.us-west-2.aws.dash0.com. The game adds /v1/traces itself. ' +
-        'Then open Settings, Auth Tokens and create a token for this job. Only Admins can create tokens.</p>';
-      // Live cannot see a token's permission, so the player says which one they gave it. It is
-      // charged by the same rule as the practice mint (chargeScope below).
-      const liveScope =
-        radioGroup({
-          legend: 'Which permission did you give this token?',
-          itemsHtml: SCOPES.map((s) => radio({ id: `ctd-scope-${s.key}`, name: 'ctd-scope', value: s.key, labelHtml: s.label })).join(''),
-        }) +
-        feedback({ id: 'ctd-scope-feedback' });
-      ctx.renderStep(
-        screen(
-          ctx.speech(
-            practice
-              ? 'Copy the OTLP via HTTP endpoint and make a token for the job. ' +
-                  'The token will sit in a browser tab that anyone can open with dev tools.'
-              : 'Copy the OTLP via HTTP endpoint and make a token for the job. ' +
-                  'The token will sit in a browser tab that anyone can open with dev tools.',
-          ),
-          chip(practice
-            ? { text: 'Practice: a simulated Dash0, not your account', tone: 'attention' }
-            : { text: 'Your own Dash0', tone: 'success' }),
-          practice ? simulated : prose(guide),
-          field({
-            id: 'ctd-endpoint',
-            label: 'Endpoint',
-            autocompleteOff: true,
-            noteHtml: 'The address of your organization, copied exactly as Dash0 shows it. The game adds the signal path itself.',
-          }),
-          field({
-            id: 'ctd-token',
-            label: 'Auth token',
-            kind: 'secret',
-            noteHtml: `A token looks like <code>${e(TOKEN_PREFIX)}abc123...</code>. The game keeps it only in this tab's ` +
-              'memory and never saves it: it is cleared from this field the moment you press Connect and forgotten ' +
-              'when you reload the page. Your browser may offer to save it. Decline.',
-          }),
-          practice ? '' : liveScope,
-          field({
-            id: 'ctd-dataset',
-            label: 'Dataset (optional)',
-            noteHtml: "Leave it empty to use the token's default ingestion dataset.",
-          }),
-          practice ? '' : note('The test span is named <code>connection.test</code>, and carries your session id and nothing you typed.'),
-          feedback({ id: 'ctd-feedback' }),
-        ),
-        bar(button({ id: 'ctd-connect', label: 'Connect and send a test span', variant: 'primary' })),
-      );
-
-      const fb = $('#ctd-feedback');
-      const say = (tone, html) => setFeedback(fb, tone, html, { scroll: true }); // each line answers a button press (#339)
-      const endpointEl = $('#ctd-endpoint');
-      const tokenEl = $('#ctd-token');
-      const datasetEl = $('#ctd-dataset');
-      const minted = practice ? $('#ctd-minted') : null;
-      const mintedRow = practice ? $('#ctd-minted-row') : null;
-      focusFirst(endpointEl, { fallback: fb }); // a new step opens at its top, on a visible element (#331, #339)
-
-      // The shown practice token goes with the secret field: after Connect it is gone from the page.
-      const scrub = () => {
-        if (!practice) return;
-        minted.textContent = '';
-        mintedRow.setAttribute('hidden', '');
-      };
-
-      // The actions bar: Connect, plus a retry (a send that failed through no fault of the token)
-      // and, for a live connection that could not be reached, a way into practice.
-      const setActions = ({ busy = false, retry = false, toPractice = false } = {}) => {
-        actions.innerHTML = bar(
-          button({ id: 'ctd-connect', label: 'Connect and send a test span', variant: 'primary', disabled: busy }) +
-            (retry ? button({ id: 'ctd-retry', label: 'Send the test span again', variant: 'ghost', disabled: busy }) : '') +
-            (toPractice ? button({ id: 'ctd-switch', label: 'Practice instead', variant: 'ghost' }) : ''),
-        );
-        actions.querySelector('#ctd-connect').onclick = onConnect;
-        const again = actions.querySelector('#ctd-retry');
-        if (again) again.onclick = send;
-        const sw = actions.querySelector('#ctd-switch');
-        if (sw) sw.onclick = () => stepConnect(MODE.practice);
-      };
-
-      // One charge rule for everything the player gets wrong here: each distinct cause costs one
-      // mistake, once. A cause is a permission (`scope:<key>`), a form error (`<field>:<reason>`) or a
-      // rejected token (`rejected:<status>`).
-      const charged = new Set();
-      const charge = (cause) => {
-        if (charged.has(cause)) return;
-        charged.add(cause);
-        ctx.mistake();
-      };
-
-      let scope = null;
-      for (const s of SCOPES) $(`#ctd-scope-${s.key}`).onclick = () => { scope = s; };
-      // A permission other than Ingesting is a mistake; `fbEl` says why.
-      const declareScope = (fbEl) => {
-        if (scope.wrong) charge(`scope:${scope.key}`);
-        setFeedback(fbEl, scope.wrong ? 'error' : 'success', scope.wrong ?? scope.right);
-      };
-
-      // Practice: create a token. The token's name does not say what it can do.
-      if (practice) {
-        const mintFb = $('#ctd-mint-feedback');
-        $('#ctd-mint').onclick = () => {
-          if (!scope) {
-            setFeedback(mintFb, 'neutral', 'Pick a permission first.', { scroll: true });
-            return;
-          }
-          minted.textContent = tele.practiceCredential(scope.key); // a public practice token, only ever shown here
-          mintedRow.removeAttribute('hidden');
-          declareScope(mintFb);
-        };
+    function onConnect() {
+      // The token leaves the field once a request is about to be sent or once it is itself refused, and never comes
+      // back; a refusal of anything else (the endpoint, the dataset, a missing scope) keeps what the player typed (#339).
+      const token = tokenEl.value;
+      const endpoint = endpointEl.value;
+      const dataset = datasetEl.value;
+      const input = `${endpoint}\n${dataset}`;
+      const same = input === lastInput;
+      lastInput = input;
+      if (endpoint.trim() === '') {
+        tell('neutral', say.connectEndpointFirstSays);
+        return;
       }
-
-      // The last reason shown for a bad form or a rejected token, and the endpoint and dataset it
-      // was shown for. It is kept only while a press has nothing new to say: an emptied token field
-      // over the same endpoint and dataset. Once either changed, the old reason would be stale.
-      let lastProblem = false;
-      let lastInput = '';
-
-      const send = async () => {
-        setActions({ busy: true });
-        fb.removeAttribute('data-outcome');
-        say('neutral', 'Sending the test span.');
-        const outcome = await tele.sendTest({ signal: ctx.signal });
-        if (ctx.signal.aborted) return; // the level was closed while the request was out
-        // "Connected?" has one answer: the session's own state, never the outcome alone.
-        if (outcome.kind === OUTCOME.accepted && tele.status().state === STATE.connected) {
-          stepConnected();
+      if (!practice) {
+        if (!scope) {
+          tell('neutral', say.connectScopeFirstSays);
           return;
         }
-        const shown = describeOutcome(
-          outcome.kind === OUTCOME.accepted ? { kind: OUTCOME.unreachable, cause: 'not-connected' } : outcome,
-          mode,
-        );
-        // Only the player's own token counts against them: the network's and Dash0's faults do not.
-        if (outcome.kind === OUTCOME.rejected && outcome.auth) charge(`rejected:${outcome.status}`);
-        lastProblem = outcome.kind === OUTCOME.rejected && outcome.auth;
-        const message = shown.message ? ` Dash0 said: ${e(shown.message)}` : '';
-        say(shown.tone, `${shown.html}${message}`);
-        fb.setAttribute('data-outcome', outcome.kind);
-        setActions({ retry: shown.retry, toPractice: !practice && outcome.kind === OUTCOME.unreachable });
-        (shown.retry ? actions.querySelector('#ctd-retry') : endpointEl).focus({ preventScroll: true }); // the feedback just scrolled into view stays in view (#331)
-      };
-
-      function onConnect() {
-        // The token leaves the field once a request is about to be sent or once it is itself refused, and never comes
-        // back; a refusal of anything else (the endpoint, the dataset, a missing scope) keeps what the player typed (#339).
-        const token = tokenEl.value;
-        const endpoint = endpointEl.value;
-        const dataset = datasetEl.value;
-        const input = `${endpoint}\n${dataset}`;
-        const same = input === lastInput;
-        lastInput = input;
-        if (endpoint.trim() === '') {
-          say('neutral', 'Enter the endpoint first. Nothing was sent.');
+        declareScope($('#ctd-scope-feedback'));
+        if (scope.key === 'read') {
+          // Declared and already charged above: sending would only earn a second charge for it.
+          lastProblem = false;
+          tell('error', say.connectReadingSays);
           return;
         }
-        if (!practice) {
-          if (!scope) {
-            say('neutral', 'Say which permission you gave the token first. Nothing was sent.');
-            return;
-          }
-          declareScope($('#ctd-scope-feedback'));
-          if (scope.key === 'read') {
-            // Declared and already charged above: sending would only earn a second charge for it.
-            lastProblem = false;
-            say('error', 'A Reading token cannot send telemetry. Create an Ingesting token. Nothing was sent.');
-            return;
-          }
+      }
+      const verdict = tele.connect({ mode, endpoint, token, dataset });
+      if (!verdict.ok) {
+        if (verdict.field === 'token') {
+          tokenEl.value = '';
+          scrub();
         }
-        const verdict = tele.connect({ mode, endpoint, token, dataset });
-        if (!verdict.ok) {
-          if (verdict.field === 'token') {
-            tokenEl.value = '';
-            scrub();
-          }
-          // An emptied token field is a nudge, not a wrong answer. Over the same endpoint and dataset it
-          // keeps the last useful reason (a double click); after a change that reason is stale.
-          if (verdict.reason === 'empty' && lastProblem && same) return;
-          if (verdict.reason === 'empty' && lastProblem) {
-            lastProblem = false;
-            fb.removeAttribute('data-outcome');
-            say('neutral', `${connectProblem(e, verdict)} ${practice ? 'Create a token again.' : 'Paste the token again.'} Nothing was sent.`);
-            return;
-          }
-          if (verdict.reason !== 'empty') {
-            charge(`${verdict.field}:${verdict.reason}`);
-            lastProblem = true;
-          }
+        // An emptied token field is a nudge, not a wrong answer. Over the same endpoint and dataset it
+        // keeps the last useful reason (a double click); after a change that reason is stale.
+        if (verdict.reason === 'empty' && lastProblem && same) return;
+        if (verdict.reason === 'empty' && lastProblem) {
+          lastProblem = false;
           fb.removeAttribute('data-outcome');
-          say('error', `${connectProblem(e, verdict)} Nothing was sent.`);
+          tell('neutral', `${connectProblem(say, e, verdict)} ${practice ? say.connectAgainPractice : say.connectAgainLive} ${say.connectNothingSent}`);
           return;
         }
-        lastProblem = false;
-        tokenEl.value = '';
-        scrub();
-        send();
+        if (verdict.reason !== 'empty') {
+          charge(`${verdict.field}:${verdict.reason}`);
+          lastProblem = true;
+        }
+        fb.removeAttribute('data-outcome');
+        tell('error', `${connectProblem(say, e, verdict)} ${say.connectNothingSent}`);
+        return;
       }
+      lastProblem = false;
+      tokenEl.value = '';
+      scrub();
+      send();
+    }
 
-      actions.querySelector('#ctd-connect').onclick = onConnect;
-    };
+    actions.querySelector('#ctd-connect').onclick = onConnect;
+  };
 
-    // ---- screen 3: connected ----
-    const stepConnected = () => {
-      const status = tele.status();
-      const practice = status.mode === MODE.practice;
-      ctx.renderStep(
-        screen(
-          ctx.speech(
-            practice
-              ? 'Connected to the simulated Dash0. The test span was accepted. Nothing left this page.'
-              : 'Connected. Your Dash0 accepted the test span.',
-          ),
-          chip(practice
-            ? { text: 'Practice: a simulated Dash0, not your account', tone: 'attention' }
-            : { text: `Connected to ${status.host ?? ''}`, tone: 'success' }),
-          prose(
-            '<h4 id="ctd-connected-title" tabindex="-1">Connected</h4>' +
-            `<p>Session id: <code id="ctd-session">${e(tele.sessionId)}</code>. Every span the game sends carries it as ` +
-              '<code>session.id</code>, so you can find your own among everyone else\'s.</p>' +
-              '<p>The game keeps the token only in this tab\'s memory. It was cleared from the form, and a page reload drops the ' +
-              'connection. Levels you finish from now on send a <code>level.complete</code> span to the same place.</p>',
-          ),
+  // ---- screen 3: connected ----
+  const stepConnected = () => {
+    const status = tele.status();
+    const practice = status.mode === MODE.practice;
+    ctx.renderStep(
+      screen(
+        ctx.speech(practice ? say.connectedIntroPractice : say.connectedIntroLive),
+        chip(practice
+          ? { text: say.connectedChipPractice, tone: 'attention' }
+          : { text: fillSlots(say.connectedChipLive, { host: status.host ?? '' }), tone: 'success' }),
+        prose(
+          `<h4 id="ctd-connected-title" tabindex="-1">${say.connectedTitle}</h4>` +
+            fillSlots(say.connectedBody, { session: `<code id="ctd-session">${e(tele.sessionId)}</code>` }),
         ),
-        bar(button({ id: 'ctd-finish', label: 'Finish', variant: 'primary', finish: true })),
-      );
-      $('#ctd-connected-title').focus({ preventScroll: true });
-      actions.querySelector('#ctd-finish').onclick = () =>
-        ctx.finish({
-          text: practice
-            ? 'You read the endpoint off the settings page, created a token that can only ingest and got a test span accepted by a simulated Dash0. Your own Dash0 takes the same two steps.'
-            : 'The game is connected to your Dash0: the endpoint was right, the token can only ingest and the test span was accepted.',
-          cards: [],
-        });
-    };
+      ),
+      bar(button({ id: 'ctd-finish', label: say.connectedButton, variant: 'primary', finish: true })),
+    );
+    $('#ctd-connected-title').focus({ preventScroll: true });
+    actions.querySelector('#ctd-finish').onclick = () =>
+      ctx.finish({
+        text: practice ? say.connectedFinishPractice : say.connectedFinishLive,
+        cards: [],
+      });
+  };
 
-    stepMode();
-  },
-};
+  stepMode();
+}
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+}
+
+export default withText(CORE);

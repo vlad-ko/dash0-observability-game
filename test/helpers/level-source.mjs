@@ -1,8 +1,8 @@
 // The one way a test reads a level's source text (#391). A level's grading and wiring live in
-// levels/<id>.mjs; once its copy moves to content/core/levels/<id>.mjs the scans that look for an
-// em dash, a "Spec:" host or markup must still see that copy, so they read through here:
-// the logic file, a newline, then the decoded string leaves of the content file when it exists.
-// With no content file the result is the logic file exactly.
+// levels/<id>.mjs and its words in content/core/levels/<id>.mjs, so the scans that look for an
+// em dash, a "Spec:" host or markup must see both, and they read through here:
+// the logic file, a newline, then the decoded string leaves of the content file.
+// A root with no content file for the id (a test fixture) gives the logic file exactly.
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -20,12 +20,26 @@ const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
 export const RUN_FIXTURES = {
+  'connect-to-dash0': [
+    // The addresses the simulated settings page shows (the host is a code value): the player copies one into the form and the session validates it.
+    'https:// :4317',
+    'https://',
+    // The causes `charge` counts one mistake per, compared in a Set and never shown.
+    'scope:',
+    'rejected:',
+  ],
   // The attribute keys the triage view groups the requests by (compareAttribute reads them); the views' words are content.
   'checkout-is-slow': ['service.version', 'cloud.region'],
   // Span fixtures: the kinds, status and names of the spans the Build it board draws and grades, and the hop and root data the screen quotes.
   // events-and-links also keeps its catch/finally code sample: test/code-readable.test.mjs pins it as a codeBlock('catch (err) {...') call in the level source.
   'context-propagation': ['UNSET', 'POST /checkout', 'SERVER', 'POST checkout', 'CLIENT', 'POST orders', 'POST /orders'],
   'events-and-links': ['UNSET', 'INTERNAL', 'exception.type', 'CardDeclinedError', 'ERROR', 'GET /stock', 'SERVER', 'PRODUCER', 'CONSUMER', 'charge with retry', 'orders publish', 'send batch', 'catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}'],
+  'its-us': [
+    // The span status the trace tables and the span's status chip show, from the span itself; the driver finds the failing span by its `Error` cell.
+    'Error',
+    'Unset',
+    'Error:',
+  ],
   'naming-your-service': [
     // Keys the code reads the checked config with (effectiveResource's attributes and its source): looked up and compared, never shown.
     'service.name',
