@@ -26,6 +26,13 @@ export const RUN_FIXTURES = {
   // events-and-links also keeps its catch/finally code sample: test/code-readable.test.mjs pins it as a codeBlock('catch (err) {...') call in the level source.
   'context-propagation': ['UNSET', 'POST /checkout', 'SERVER', 'POST checkout', 'CLIENT', 'POST orders', 'POST /orders'],
   'events-and-links': ['UNSET', 'INTERNAL', 'exception.type', 'CardDeclinedError', 'ERROR', 'GET /stock', 'SERVER', 'PRODUCER', 'CONSUMER', 'charge with retry', 'orders publish', 'send batch', 'catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}'],
+  'naming-your-service': [
+    // Keys the code reads the checked config with (effectiveResource's attributes and its source): looked up and compared, never shown.
+    'service.name',
+    'service.version',
+    'deployment.environment.name',
+    'OTEL_RESOURCE_ATTRIBUTES',
+  ],
   // Span fixtures: the names, kinds, status, routes and attribute keys of the spans the hunt board draws and the view computes over
   // (a kind or a route is what the view counts), and the locale of the thousands comma in the finance figure (a format, not words).
   'span-kinds': [
@@ -43,7 +50,15 @@ function entriesOf(value, path, key = '') {
   return typeof value === 'string' && key !== 'id' && key !== 'key' ? [{ path, text: value }] : [];
 }
 
+/**
+ * Elements of the UI kit whose text the kit fixes, not the level: they show on a screen whatever the content says, so a content
+ * entry with the same words is not a leak when it is seen next to one. Each is matched by its kit class, never by its words
+ * (a heading of another kind that says the same is still checked). Only the score card's Hints heading (lib/ui/side.mjs) so far.
+ */
+const KIT_CHROME = [/<h3 class="ui-hints-head">[^<]*<\/h3>/g];
+
 const stripWbr = (s) => s.replace(/<wbr\s*\/?>/g, '');
+const stripKit = (s) => KIT_CHROME.reduce((out, re) => out.replace(re, ' '), s);
 const norm = (s) => s.replace(/\s+/g, ' ').trim();
 const plain = (s) => norm(s.replace(/<[^>]*>/g, ' '));
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -81,7 +96,7 @@ function pattern(s, flags = '', trim = false, capture = false) {
  */
 export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {}) {
   const entries = entriesOf(coreRun, 'run');
-  const html = screens.map(stripWbr).join('\n');
+  const html = screens.map((s) => stripKit(stripWbr(s))).join('\n');
   const words = [...new Set(entries.map((e) => e.text))].sort((a, b) => b.length - a.length);
   const mark = (i) => `EDITED${i} `;
   // An entry is seen when it shows with its own mark (so a duplicate, or an entry that starts another, is judged on its

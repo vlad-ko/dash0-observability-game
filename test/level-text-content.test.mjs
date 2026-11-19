@@ -42,7 +42,7 @@ test('each content file is a header, then one strict JSON object, with no repeat
 });
 
 test('every content file is for a play level or a run level, never both, and baggage, Act 0, the Act 2 span levels and the Act 2 boss are run levels', () => {
-  for (const id of ['baggage', 'checkout-is-slow', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_IDS.includes(id), `${id} is a run level; run levels: ${RUN_IDS.join(', ')}`);
+  for (const id of ['baggage', 'checkout-is-slow', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'naming-your-service', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_IDS.includes(id), `${id} is a run level; run levels: ${RUN_IDS.join(', ')}`);
   assert.deepEqual([...PLAY_IDS, ...RUN_IDS].sort(), IDS, 'every content file has play or run');
   assert.deepEqual(PLAY_IDS.filter((id) => RUN_IDS.includes(id)), [], 'no content file has both');
   const reg = liveRegistry();
@@ -233,6 +233,15 @@ test('checkWords: a fill-in value that holds an inline tag is matched too, marke
   assert.deepEqual(checkWords(run, [withAttr('EDITED0 ')]), CLEAN, 'shown edited, a tag with an attribute in the value');
   assert.deepEqual(checkWords(run, [withAttr('EDITED0 '), withAttr('')]).leaked, [run.set], 'a second copy without its edit leaks, the tag having an attribute');
   assert.equal(e.set, 'EDITED0 Set {{attr}} on the root span.');
+});
+
+test('checkWords: the kit\'s own Hints heading is not a leak of a content entry that says Hints, but an unedited copy still is', () => {
+  const run = { chip: 'Hints', other: 'Another long sentence.' };
+  const e = editRun(run);
+  const kit = '<div class="ui-hints"><h3 class="ui-hints-head">Hints</h3></div>';
+  assert.deepEqual(checkWords(run, [kit, `<span>${e.chip}</span>`, e.other]), CLEAN, 'the heading beside the edited chip');
+  assert.deepEqual(checkWords(run, [kit, '<span>Hints</span>', `<span>${e.chip}</span>`, e.other]).leaked, ['Hints'], 'the chip shown unedited');
+  assert.deepEqual(checkWords(run, ['<h3>Hints</h3>', `<span>${e.chip}</span>`, e.other]).leaked, ['Hints'], 'a heading that is not the kit\'s is not skipped');
 });
 
 test('checkWords: a fixture inside a longer word does not hide that word leaking', () => {
