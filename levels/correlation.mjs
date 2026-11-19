@@ -25,8 +25,18 @@
 import CORE from '../content/core/levels/correlation.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
 
-// The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
-const VARS = {};
+// The two orders and the cart span's name are held once here: the fixture below reads them, and so does the copy (as
+// fill-ins), so a change to one cannot leave the other behind.
+const ORDER = '8841';
+const OTHER_ORDER = '8842';
+const CART_SPAN = 'validate cart';
+
+// What each {{name}} in the content file is replaced with.
+const VARS = {
+  order: ORDER,
+  'other-order': OTHER_ORDER,
+  'cart-span': CART_SPAN,
+};
 
 // Step 1: Build it in logs mode. Four spans (two orders at checkout, one charge at payments) and six
 // records from Kettle & Co, none real. The player attaches each record to the span it was written in, or
@@ -52,18 +62,18 @@ const BUILD = {
   id: 'cor-build',
   edit: ['logs'],
   spans: [
-    span(CHECKOUT, T1, null, 'POST /checkout', 'checkout', 'SERVER', 0, 120, { 'order.id': '8841' }),
-    span(CART, T1, CHECKOUT, 'validate cart', 'checkout', 'INTERNAL', 20, 40),
+    span(CHECKOUT, T1, null, 'POST /checkout', 'checkout', 'SERVER', 0, 120, { 'order.id': ORDER }),
+    span(CART, T1, CHECKOUT, CART_SPAN, 'checkout', 'INTERNAL', 20, 40),
     span(CHARGE, T1, CHECKOUT, 'POST /charge', 'payments', 'SERVER', 50, 110, { 'thread.name': 'http-exec-1' }),
-    span(OTHER, T2, null, 'POST /checkout', 'checkout', 'SERVER', 30, 100, { 'order.id': '8842' }),
+    span(OTHER, T2, null, 'POST /checkout', 'checkout', 'SERVER', 30, 100, { 'order.id': OTHER_ORDER }),
   ],
   logs: [
     log('startup', -120, 'INFO', 'checkout', 'Listening on port 8080', { 'thread.name': 'main' }),
-    log('cart', 30, 'DEBUG', 'checkout', 'Cart validated', { 'order.id': '8841' }),
-    log('other-order', 60, 'INFO', 'checkout', 'Order accepted', { 'order.id': '8842' }),
+    log('cart', 30, 'DEBUG', 'checkout', 'Cart validated', { 'order.id': ORDER }),
+    log('other-order', 60, 'INFO', 'checkout', 'Order accepted', { 'order.id': OTHER_ORDER }),
     log('provider-slow', 70, 'WARN', 'payments', 'Provider slow, retrying charge', { 'thread.name': 'http-exec-1' }),
     log('retry-worker', 95, 'ERROR', 'payments', 'Retry worker gave up on charge', { 'thread.name': 'retry-worker-2' }),
-    log('email', 130, 'ERROR', 'notifications', 'Email not sent for order 8841', { 'thread.name': 'mail-pool-1' }),
+    log('email', 130, 'ERROR', 'notifications', `Email not sent for order ${ORDER}`, { 'thread.name': 'mail-pool-1' }),
   ],
   answer: { startup: null, cart: CART, 'other-order': OTHER, 'provider-slow': CHARGE, 'retry-worker': null, email: null },
 };
