@@ -19,7 +19,17 @@ export function editRun(run) {
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
-export const RUN_FIXTURES = {};
+export const RUN_FIXTURES = {
+  // The attribute keys the triage view groups the requests by (compareAttribute reads them); the views' words are content.
+  'checkout-is-slow': ['service.version', 'cloud.region'],
+  // Span fixtures: the names, kinds, status, routes and attribute keys of the spans the hunt board draws and the view computes over
+  // (a kind or a route is what the view counts), and the locale of the thousands comma in the finance figure (a format, not words).
+  'span-kinds': [
+    'UNSET', 'http.request.method', 'POST', 'http.route', 'server.address', 'POST /checkout', 'SERVER', '/checkout', 'POST checkout', 'CLIENT',
+    'compute totals', 'INTERNAL', 'POST payments', 'POST /charge', '/charge', 'validate card', 'card.brand', 'POST provider/charges',
+    'POST /refund', '/refund', 'payments.charge', 'en-US',
+  ],
+};
 
 /** Every string of a content `run` that is not an id or a key: `[{path, text}]`, the path like `run.sort.items[0].why`. */
 function entriesOf(value, path, key = '') {
