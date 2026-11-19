@@ -13,18 +13,18 @@ export default {
           "id": "the-bill",
           "alert": {
             "title": "The bill",
-            "html": "<p>PAGE 10:12: metric data points reaching Dash0 are at about 131,000 a minute, more than 10 times the 12,400 a minute of this morning, and dashboards are timing out. It began at 09:42. The alert names no cause. Find it before the dashboards' query error budget runs out.</p>"
+            "html": "<p>PAGE 10:12: metric data points reaching Dash0 are at about {{fleet-after-round}} a minute, more than 10 times the {{fleet-before}} a minute of this morning, and dashboards are timing out. It began at 09:42. The alert names no cause. Find it before the dashboards' query error budget runs out.</p>"
           },
           "views": [
             {
               "id": "volume-by-metric",
               "label": "Metric volume by metric",
-              "html": "<p>Metric Explorer, tree map sized by Cardinality, last 2 hours:</p><table><caption>Active series by metric</caption><thead><tr><th scope=\"col\">Metric</th><th scope=\"col\">At 09:40</th><th scope=\"col\">At 10:12</th></tr></thead><tbody><tr><td><code>checkout_attempts_total</code></td><td>{{series-before}}</td><td>{{series-after}}</td></tr><tr><td>every other metric together</td><td>{{fleet-other}}</td><td>{{fleet-other}}</td></tr><tr><td>all metrics</td><td>{{fleet-before}}</td><td>{{fleet-after}}</td></tr></tbody></table><p>One tile fills the map: its series count stepped at 09:42 from 228 to 118,904, 91% of all series, while every other metric stayed where it was.</p>"
+              "html": "<p>Metric Explorer, tree map sized by Cardinality, last 2 hours:</p><table><caption>Active series by metric</caption><thead><tr><th scope=\"col\">Metric</th><th scope=\"col\">At 09:40</th><th scope=\"col\">At 10:12</th></tr></thead><tbody><tr><td><code>checkout_attempts_total</code></td><td>{{series-before}}</td><td>{{series-after}}</td></tr><tr><td>every other metric together</td><td>{{fleet-other}}</td><td>{{fleet-other}}</td></tr><tr><td>all metrics</td><td>{{fleet-before}}</td><td>{{fleet-after}}</td></tr></tbody></table><p>One tile fills the map: its series count stepped at 09:42 from {{series-before}} to {{series-after}}, {{series-share}}% of all series, while every other metric stayed where it was.</p>"
             },
             {
               "id": "label-breakdown",
               "label": "The labels of that metric",
-              "html": "<p>The sidebar of <code>checkout_attempts_total</code>, series grouped by label, at 10:12, for example <code>checkout_attempts_total{payment_method=\"card\",store_country=\"DE\",user_id=\"u-8f31c2\"}</code>:</p><table><caption>Distinct values for each label</caption><thead><tr><th scope=\"col\">Label</th><th scope=\"col\">Distinct values</th></tr></thead><tbody><tr><td><code>payment_method</code></td><td>6</td></tr><tr><td><code>store_country</code></td><td>38</td></tr><tr><td><code>user_id</code></td><td>{{users}}</td></tr></tbody></table><p>At 09:40 the labels were <code>payment_method</code> and <code>store_country</code> only: 6 &times; 38 = {{series-before}} series. Now <code>user_id</code> is on every series and almost every user has exactly one series, {{series-after}} in all, and no point carries <code>otel.metric.overflow</code>: this SDK version has no cardinality limit set.</p>"
+              "html": "<p>The sidebar of <code>checkout_attempts_total</code>, series grouped by label, at 10:12, for example <code>checkout_attempts_total{payment_method=\"card\",store_country=\"DE\",user_id=\"u-8f31c2\"}</code>:</p><table><caption>Distinct values for each label</caption><thead><tr><th scope=\"col\">Label</th><th scope=\"col\">Distinct values</th></tr></thead><tbody><tr><td><code>payment_method</code></td><td>{{methods}}</td></tr><tr><td><code>store_country</code></td><td>{{countries}}</td></tr><tr><td><code>user_id</code></td><td>{{users}}</td></tr></tbody></table><p>At 09:40 the labels were <code>payment_method</code> and <code>store_country</code> only: {{methods}} &times; {{countries}} = {{series-before}} series. Now <code>user_id</code> is on every series and almost every user has exactly one series, {{series-after}} in all, and no point carries <code>otel.metric.overflow</code>: this SDK version has no cardinality limit set.</p>"
             },
             {
               "id": "deploys",
@@ -71,7 +71,7 @@ export default {
             {
               "id": "new-service-metrics",
               "label": "The new loyalty service started reporting on Tuesday and now sends far too many metrics",
-              "why": "Loyalty has 46 series, under 0.1% of the total, and it was already reporting at 09:40. It cannot account for 118,676 new series."
+              "why": "Loyalty has 46 series, under 0.1% of the total, and it was already reporting at 09:40. It cannot account for {{series-added}} new series."
             },
             {
               "id": "export-interval-change",
@@ -91,7 +91,7 @@ export default {
             {
               "key": "drop-the-label",
               "label": "Stop recording <code>user.id</code> on the counter, and keep the per-user detail on spans or logs",
-              "why": "Series are the unique combinations of attribute values, so the only fix that works is fewer values: remove the attribute that has one value for each user. A per-customer lookup is what spans and logs are for, where one value for each request is normal and a user.id attribute costs no series; the 228 series that dashboards need stay. In Dash0, the Metric Explorer tree map and the metric sidebar show which metric and which attributes were behind the volume, and the guidance for random or unbounded values is to reduce them at the instrumentation layer. The same is true of <code>http.route</code> against a raw URL: a bounded template, never the raw value."
+              "why": "Series are the unique combinations of attribute values, so the only fix that works is fewer values: remove the attribute that has one value for each user. A per-customer lookup is what spans and logs are for, where one value for each request is normal and a user.id attribute costs no series; the {{series-before}} series that dashboards need stay. In Dash0, the Metric Explorer tree map and the metric sidebar show which metric and which attributes were behind the volume, and the guidance for random or unbounded values is to reduce them at the instrumentation layer. The same is true of <code>http.route</code> against a raw URL: a bounded template, never the raw value."
             },
             {
               "key": "export-less",
@@ -106,7 +106,7 @@ export default {
             {
               "key": "spam-flag",
               "label": "Flag <code>checkout_attempts_total</code> as spam in Dash0, to drop it at ingestion",
-              "why": "A spam filter drops the data points that match its criteria before they are stored, and what it drops cannot be recovered. It does not remove one label and keep the rest: the counter checkout needs, with its 228 useful series, would be dropped along with the new ones, and the filter reduces what Dash0 indexes, not what the service sends. The label is the thing to remove."
+              "why": "A spam filter drops the data points that match its criteria before they are stored, and what it drops cannot be recovered. It does not remove one label and keep the rest: the counter checkout needs, with its {{series-before}} useful series, would be dropped along with the new ones, and the filter reduces what Dash0 indexes, not what the service sends. The label is the thing to remove."
             }
           ]
         }
