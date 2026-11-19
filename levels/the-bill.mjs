@@ -39,7 +39,9 @@
 import CORE from '../content/core/levels/the-bill.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
 
-const SERIES_BEFORE = 6 * 38;
+const METHODS = 6;
+const COUNTRIES = 38;
+const SERIES_BEFORE = METHODS * COUNTRIES;
 const SERIES_AFTER = 118904;
 const FLEET_BEFORE = 12400;
 const FLEET_AFTER = FLEET_BEFORE - SERIES_BEFORE + SERIES_AFTER;
@@ -47,14 +49,20 @@ const USERS = 112367;
 const n = (x) => x.toLocaleString('en-US');
 
 // What each {{name}} in the content file is replaced with. Every figure here is computed, so the copy and the
-// arithmetic above cannot disagree.
+// arithmetic above cannot disagree. 'fleet-after-round' is the alert's "about" figure (to the nearest thousand) and
+// 'series-share' the share of all series the one counter holds after the deploy, in whole percent.
 const VARS = {
+  methods: METHODS,
+  countries: COUNTRIES,
   'series-before': SERIES_BEFORE,
   'series-after': n(SERIES_AFTER),
+  'series-added': n(SERIES_AFTER - SERIES_BEFORE),
+  'series-share': Math.round((SERIES_AFTER / FLEET_AFTER) * 100),
   users: n(USERS),
   'fleet-before': n(FLEET_BEFORE),
   'fleet-other': n(FLEET_BEFORE - SERIES_BEFORE),
   'fleet-after': n(FLEET_AFTER),
+  'fleet-after-round': n(Math.round(FLEET_AFTER / 1000) * 1000),
 };
 
 const SCENARIO = {
