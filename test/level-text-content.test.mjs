@@ -41,8 +41,8 @@ test('each content file is a header, then one strict JSON object, with no repeat
   }
 });
 
-test('every content file is for a play level or a run level, never both, and baggage, Act 0, span-kinds and the Act 2 boss are run levels', () => {
-  for (const id of ['baggage', 'checkout-is-slow', 'monitoring-vs-observability', 'span-kinds', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_IDS.includes(id), `${id} is a run level; run levels: ${RUN_IDS.join(', ')}`);
+test('every content file is for a play level or a run level, never both, and baggage, Act 0, the Act 2 span levels and the Act 2 boss are run levels', () => {
+  for (const id of ['baggage', 'checkout-is-slow', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_IDS.includes(id), `${id} is a run level; run levels: ${RUN_IDS.join(', ')}`);
   assert.deepEqual([...PLAY_IDS, ...RUN_IDS].sort(), IDS, 'every content file has play or run');
   assert.deepEqual(PLAY_IDS.filter((id) => RUN_IDS.includes(id)), [], 'no content file has both');
   const reg = liveRegistry();
