@@ -470,8 +470,12 @@ async function fixAnswers(telemetry) {
   click('#its-check');
 }
 
+// A fixed clock (2023-11-14T22:13:20Z), so the wall-clock times its-us shows are the same on every run
+// and a LEVEL_SNAPSHOT before and after a change to the level can be compared (#391).
+const PRACTICE_NOW_MS = 1_700_000_000_000;
+
 function practiceTelemetry() {
-  return createTelemetry({ randomBytes: (n) => new Uint8Array(n).fill(7), setTimeout, clearTimeout });
+  return createTelemetry({ randomBytes: (n) => new Uint8Array(n).fill(7), now: () => PRACTICE_NOW_MS, setTimeout, clearTimeout });
 }
 
 /** The OTLP/HTTP endpoint the simulated Dash0 settings panel shows. */
