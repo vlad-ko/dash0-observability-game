@@ -104,7 +104,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a logging agent (a Collector run on each node) can each report a different subset, so they look like two separate resources even though they describe the same pod."
+          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a logging agent (often a Collector run on each node) can each report a different subset, so they look like two separate resources even though they describe the same pod."
         },
         {
           "type": "paragraph",
