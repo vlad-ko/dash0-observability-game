@@ -81,7 +81,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, the Trace View shows a single trace with all its spans (the timed steps of the request) and their relationships."
+          "text": "In Dash0, the Trace View shows a single trace with all its spans (timed operations) and their relationships."
         }
       ],
       "sources": [
