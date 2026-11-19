@@ -149,8 +149,8 @@ function screens(ctx, say) {
     const firing = view.firing === true;
     const noData = view.watched === null || view.watched === undefined;
     const text = firing
-      ? fillSlots(say.alertFiringText, { service: e(watch), count: view.watched })
-      : fillSlots(say.alertResolvedText, { service: e(watch) });
+      ? `${fillSlots(say.alertFiringHead, { service: e(watch), count: view.watched })} ${say.alertFinance} ${say.alertFiringTail}`
+      : `${fillSlots(say.alertResolvedHead, { service: e(watch) })} ${say.alertFinance} ${say.alertResolvedTail}`;
     const title = noData
       ? fillSlots(say.alertTitleNoData, { service: e(watch) })
       : fillSlots(say.alertTitle, { service: e(watch), count: view.watched });

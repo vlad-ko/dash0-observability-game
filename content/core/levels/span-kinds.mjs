@@ -1,5 +1,5 @@
 // Text of levels/span-kinds.mjs (docs/CONTENT.md). {{watch}}, {{expected}}, {{hourly}}, {{per-min}}, {{refund-one-in}} and the {{rate-...}} names are figures from the level's VARS table.
-// A run(ctx) level: levels/span-kinds.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). The slots {{service}}, {{count}}, {{rate}}, {{edges}}, {{start}}, {{end}}, {{parent}} and {{name}} are values of the view and the spans, filled by the code. A fill-in value is bounded at 80 characters in the word check, so the verdict on a wrong flag is two entries (flagWrongHead, flagWrongTail) with the span's own explanation (flagWhy) between them, and the finance sentence is written in both alert texts.
+// A run(ctx) level: levels/span-kinds.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). The slots {{service}}, {{count}}, {{rate}}, {{edges}}, {{start}}, {{end}}, {{parent}} and {{name}} are values of the view and the spans, filled by the code. A fill-in value is bounded at 80 characters in the word check, so the verdict on a wrong flag is two entries (flagWrongHead, flagWrongTail) with the span's own explanation (flagWhy) between them, and each alert text is a head, the one finance sentence (alertFinance) and a tail, joined by the code with spaces.
 export default {
   "id": "span-kinds",
   "name": "Span kinds",
@@ -11,8 +11,11 @@ export default {
     "alertEyebrowResolved": "Resolved",
     "alertTitle": "{{service}}: {{count}} requests/min",
     "alertTitleNoData": "{{service}}: no data requests/min",
-    "alertFiringText": "By this view's count, {{service}} handled {{count}} requests/min over the last 60 minutes, below the {{expected}} it usually handles. Finance: the card provider billed {{hourly}} charges in the same hour, one for every checkout. Payments did the work, so the count is wrong, not the service.",
-    "alertResolvedText": "By this view's count, {{service}} is back at the {{expected}} requests/min it usually handles. Finance: the card provider billed {{hourly}} charges in the same hour, one for every checkout. The count now matches the work.",
+    "alertFiringHead": "By this view's count, {{service}} handled {{count}} requests/min over the last 60 minutes, below the {{expected}} it usually handles. Finance:",
+    "alertResolvedHead": "By this view's count, {{service}} is back at the {{expected}} requests/min it usually handles. Finance:",
+    "alertFinance": "the card provider billed {{hourly}} charges in the same hour, one for every checkout.",
+    "alertFiringTail": "Payments did the work, so the count is wrong, not the service.",
+    "alertResolvedTail": "The count now matches the work.",
     "viewChip": "Simulated Dash0 view",
     "viewNote": "This simulated view counts a service's requests from its SERVER spans. Each trace stands for a flow at its own rate: checkouts at {{per-min}} a minute, refunds at one in {{refund-one-in}} of those. It draws an edge from a CLIENT span to its SERVER child in another service. Backends can derive both from span kind.",
     "ratesValue": "{{rate}} requests/min",
