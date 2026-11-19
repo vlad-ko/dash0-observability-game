@@ -1,5 +1,5 @@
-// Prints every content-allowlisted text field of a level as a content file (#391, docs/CONTENT.md), the first
-// step of converting a level: `node tools/extract-level-text.mjs <level-id>`. Text only, in the order the level
+// Prints every content-allowlisted text field of a level as a content file (#391, docs/CONTENT.md):
+// `node tools/extract-level-text.mjs <level-id>`. Text only, in the order the level
 // shows it, each element carrying the id or key it joins on; answers, figures and wiring stay in the level file.
 // Values print as they are today, so a `${...}` in old copy appears as its result: put `{{name}}` back by hand. Every level is converted, so it prints a level's text in the
 // merged order (the logic's keys first): use it to check a level's words or to start the content file of a new level.
