@@ -5,6 +5,12 @@
 // (lib/widgets/incident.mjs, docs/M1-DESIGN.md §4.3). Spec: docs/M1-DESIGN.md §6 Boss
 // checkout-is-slow.
 // Spec: https://opentelemetry.io/docs/concepts/signals/traces/ , https://opentelemetry.io/docs/specs/semconv/database/database-spans/
+//
+// A run(ctx) level: its words are in content/core/levels/checkout-is-slow.mjs (docs/CONTENT.md section 11), read here as
+// say.<name>; this file keeps the scenario's ids, costs, kinds and answers, the triage data and the screens.
+import CORE from '../content/core/levels/checkout-is-slow.mjs';
+import { bindLevel, bindRunLevel } from '../lib/content/bind.mjs';
+import { fillSlots } from '../lib/content/placeholders.mjs';
 import { actions, finishButton, step } from '../lib/ui/index.mjs';
 import { escapeHtml } from '../lib/lesson-kit.mjs';
 import { incidentLesson, renderIncident, mountIncident } from '../lib/widgets/incident-view.mjs';
@@ -25,157 +31,104 @@ const TRIAGE = {
   ],
 };
 
-/** A comparison table: one row per value, share of slow requests then of normal ones. */
-function triageHtml(attr) {
-  const pct = (n) => (n === null ? 'no data' : `${n}%`);
+// This level's copy has no figure a grader computes over: no fill-ins. The slots are the attribute name in a table's
+// caption and the two triage tables, which the code builds from TRIAGE and the table words.
+const VARS = {};
+const SLOTS = ['attr', 'version-table', 'region-table'];
+
+/** A comparison table: one row per value, share of slow requests then of normal ones, with its words from `say`. */
+function triageHtml(attr, say) {
+  const pct = (n) => (n === null ? say.triageNoData : `${n}%`);
   const rows = compareAttribute(TRIAGE.slow, TRIAGE.normal, attr)
     .map((r) => `<tr><th scope="row">${escapeHtml(r.value)}</th><td>${pct(r.slowPct)}</td><td>${pct(r.baselinePct)}</td></tr>`)
     .join('');
   return (
-    `<table><caption><code>${escapeHtml(attr)}</code> on the inventory span</caption>` +
-    `<thead><tr><th scope="col">Value</th><th scope="col">Slow requests</th><th scope="col">Normal requests</th></tr></thead>` +
+    `<table><caption>${fillSlots(say.triageCaption, { attr: escapeHtml(attr) })}</caption>` +
+    `<thead><tr><th scope="col">${say.triageValue}</th><th scope="col">${say.triageSlow}</th><th scope="col">${say.triageNormal}</th></tr></thead>` +
     `<tbody>${rows}</tbody></table>`
   );
 }
 
-const SCENARIO = {
-  id: 'checkout-is-slow',
-  alert: {
-    title: 'Checkout is slow',
-    html: '<p>PAGE: checkout p95 is 2.6 s (it was 400 ms). The alert names no cause. Find it before the error budget runs out.</p>',
-  },
-  budget: { startPct: 100, burnPctPerMin: 4 },
-  views: [
-    {
-      id: 'trace-slow',
-      label: 'A slow trace',
-      costMin: 5,
-      kind: 'clue',
-      html:
-        '<p>One slow <code>GET /checkout</code> trace, 2.6 s. Nearly all of it is inside inventory: its <code>GET /stock</code> SERVER span lasts 2.1 s.</p>' +
-        '<p>Under that span sit 40 <code>SELECT stock</code> CLIENT spans, about 50 ms each, one after another with none overlapping.</p>',
-    },
-    {
-      id: 'triage',
-      label: 'Compare slow with normal',
-      costMin: 4,
-      kind: 'clue',
-      html:
-        '<p>Which attribute separates the slow checkouts from the normal ones?</p>' +
-        `${triageHtml('service.version')}${triageHtml('cloud.region')}`,
-    },
-    {
-      id: 'deploys',
-      label: 'Deploys',
-      costMin: 2,
-      kind: 'neutral',
-      html: '<p>Today: inventory 2.4.0 deployed at 14:03. No other service changed.</p>',
-    },
-    {
-      id: 'checkout-logs',
-      label: 'Checkout logs',
-      costMin: 4,
-      kind: 'neutral',
-      html: '<p>Requests complete with status 200. There are no errors and no timeouts, only long durations.</p>',
-    },
-    {
-      id: 'db-metrics',
-      label: 'Database metrics',
-      costMin: 6,
-      kind: 'neutral',
-      html: '<p>Database CPU is 30%, connections are steady and replica lag is near 0. Nothing is saturated.</p>',
-    },
-    {
-      id: 'gateway-latency',
-      label: 'Gateway latency',
-      costMin: 4,
-      kind: 'neutral',
-      html: '<p>The gateway adds 3 ms at p95, as usual. The time is spent behind it.</p>',
-    },
-    {
-      id: 'payments-errors',
-      label: 'Payments errors',
-      costMin: 5,
-      kind: 'herring',
-      html: '<p>The payment provider error rate is 0.4%, the same as every day this week. Slow checkouts do not wait on payments.</p>',
-    },
-    {
-      id: 'redis-cpu',
-      label: 'Redis CPU',
-      costMin: 3,
-      kind: 'herring',
-      html: '<p>Redis CPU is 12% and flat all day. Cart and session lookups are fast.</p>',
-    },
-  ],
-  hypotheses: [
-    {
-      id: 'n-plus-one',
-      label: 'An N+1 query in the inventory service that runs one query per item',
-      right: true,
-      why: 'One request makes a query per item instead of one query for all items: 40 sequential SELECT stock CLIENT spans under one GET /stock. It started with inventory 2.4.0, which every slow request runs.',
-    },
-    {
-      id: 'provider',
-      label: 'The payment provider is slow at p95 and drags every checkout request down with it',
-      right: false,
-      why: 'The slow traces spend their time in inventory, not in the call to the provider.',
-    },
-    {
-      id: 'redis',
-      label: 'Redis is overloaded by the cart and session lookups that checkout makes',
-      right: false,
-      why: 'Redis shows no sign of load, and the slow time sits in database spans under inventory.',
-    },
-    {
-      id: 'replicas',
-      label: 'The database needs more read replicas to keep up with the load at p95',
-      right: false,
-      why: 'The database is not saturated (30% CPU, replica lag near 0). More replicas would not shorten 40 queries that run one after another.',
-    },
-  ],
-  answerAfterViews: 1,
-  hint:
-    '<p>Find where one slow request spends its time, then ask what the slow ones have in common that the fast ones do not.</p>',
-};
-
-const FINISH =
-  'The cause was an N+1 query: inventory 2.4.0 runs one query per item, 40 sequential database CLIENT spans under one request. ' +
-  'A trace shows where one request spends its time, and comparing slow with normal requests shows what changed.';
-
-// The scenario line on the lesson card (incidentLesson adds one short rules line).
-const INTRO = 'Find where the time goes and what changed.';
-
-/** The boss's data (pinned by test/checkout-is-slow.test.mjs). */
-export const CONTENT = { scenario: SCENARIO, triage: TRIAGE, finish: FINISH, intro: INTRO };
-
-export default {
+// The scenario without its words: each view's cost and kind, the budget, and which hypothesis is right (`right: false`
+// as written). The alert, the views' and hypotheses' words, the hint, the finish text and the scenario line are in the
+// content (the entries scenario, finish and intro).
+const TRIAGE_VIEW = 'triage'; // the view that holds the two triage tables
+const SKELETON = {
   id: 'checkout-is-slow',
   no: null,
-  name: 'Checkout is slow',
-  sub: 'Find the cause before the budget runs out',
   icon: '\u{1F6A8}',
-  rewardTitle: 'On-call hero',
   mechanics: ['incident'],
   widgets: ['incident'],
   cards: [],
   lights: ['inventory'],
   scored: true,
   scoring: { parMs: null },
-  run(ctx) {
-    ctx.renderStep(
-      step({
-        wide: true,
-        bodyHtml: `${ctx.speech(incidentLesson(INTRO))}${renderIncident(SCENARIO, newIncident(SCENARIO), { escapeHtml: ctx.escapeHtml })}`,
-      }),
-      actions({ wide: true, buttonsHtml: finishButton('cis-finish', 'Name the cause to finish the level.') }),
-    );
-    const finish = ctx.ovActions.querySelector('#cis-finish');
-    mountIncident(ctx, SCENARIO, {
-      onComplete: () => {
-        finish.disabled = false;
-        return finish;
-      },
-    });
-    finish.onclick = () => ctx.finish({ text: FINISH, cards: [] });
+  run: {
+    scenario: {
+      id: 'checkout-is-slow',
+      budget: { startPct: 100, burnPctPerMin: 4 },
+      views: [
+        { id: 'trace-slow', costMin: 5, kind: 'clue' },
+        { id: TRIAGE_VIEW, costMin: 4, kind: 'clue' },
+        { id: 'deploys', costMin: 2, kind: 'neutral' },
+        { id: 'checkout-logs', costMin: 4, kind: 'neutral' },
+        { id: 'db-metrics', costMin: 6, kind: 'neutral' },
+        { id: 'gateway-latency', costMin: 4, kind: 'neutral' },
+        { id: 'payments-errors', costMin: 5, kind: 'herring' },
+        { id: 'redis-cpu', costMin: 3, kind: 'herring' },
+      ],
+      hypotheses: [
+        { id: 'n-plus-one', right: true },
+        { id: 'provider', right: false },
+        { id: 'redis', right: false },
+        { id: 'replicas', right: false },
+      ],
+      answerAfterViews: 1,
+    },
   },
 };
+
+/**
+ * The boss's data (pinned by test/checkout-is-slow.test.mjs), from the bound words `say`: the scenario with the two
+ * triage tables built into the triage view, the triage data, the finish text and the scenario line on the lesson card
+ * (incidentLesson adds one short rules line).
+ */
+const contentOf = (say) => ({
+  scenario: {
+    ...say.scenario,
+    views: say.scenario.views.map((v) =>
+      v.id === TRIAGE_VIEW
+        ? { ...v, html: fillSlots(v.html, { 'version-table': triageHtml('service.version', say), 'region-table': triageHtml('cloud.region', say) }) }
+        : v),
+  },
+  triage: TRIAGE,
+  finish: say.finish,
+  intro: say.intro,
+});
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+
+function screens(ctx, say) {
+  const { scenario: SCENARIO } = contentOf(say); // the same scenario CONTENT holds
+  ctx.renderStep(
+    step({
+      wide: true,
+      bodyHtml: `${ctx.speech(incidentLesson(say.intro))}${renderIncident(SCENARIO, newIncident(SCENARIO), { escapeHtml: ctx.escapeHtml })}`,
+    }),
+    actions({ wide: true, buttonsHtml: finishButton('cis-finish', say.startReason) }),
+  );
+  const finish = ctx.ovActions.querySelector('#cis-finish');
+  mountIncident(ctx, SCENARIO, {
+    onComplete: () => {
+      finish.disabled = false;
+      return finish;
+    },
+  });
+  finish.onclick = () => ctx.finish({ text: say.finish, cards: [] });
+}
+
+/** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
+export function withText(text) {
+  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+}
+
+export default withText(CORE);

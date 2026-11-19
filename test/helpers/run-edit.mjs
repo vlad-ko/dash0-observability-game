@@ -20,10 +20,19 @@ const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
 export const RUN_FIXTURES = {
+  // The attribute keys the triage view groups the requests by (compareAttribute reads them); the views' words are content.
+  'checkout-is-slow': ['service.version', 'cloud.region'],
   // Span fixtures: the kinds, status and names of the spans the Build it board draws and grades, and the hop and root data the screen quotes.
   // events-and-links also keeps its catch/finally code sample: test/code-readable.test.mjs pins it as a codeBlock('catch (err) {...') call in the level source.
   'context-propagation': ['UNSET', 'POST /checkout', 'SERVER', 'POST checkout', 'CLIENT', 'POST orders', 'POST /orders'],
   'events-and-links': ['UNSET', 'INTERNAL', 'exception.type', 'CardDeclinedError', 'ERROR', 'GET /stock', 'SERVER', 'PRODUCER', 'CONSUMER', 'charge with retry', 'orders publish', 'send batch', 'catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}'],
+  // Span fixtures: the names, kinds, status, routes and attribute keys of the spans the hunt board draws and the view computes over
+  // (a kind or a route is what the view counts), and the locale of the thousands comma in the finance figure (a format, not words).
+  'span-kinds': [
+    'UNSET', 'http.request.method', 'POST', 'http.route', 'server.address', 'POST /checkout', 'SERVER', '/checkout', 'POST checkout', 'CLIENT',
+    'compute totals', 'INTERNAL', 'POST payments', 'POST /charge', '/charge', 'validate card', 'card.brand', 'POST provider/charges',
+    'POST /refund', '/refund', 'payments.charge', 'en-US',
+  ],
   'spans-and-traces': ['UNSET', 'POST /checkout', 'SERVER', 'POST', 'CLIENT', 'INTERNAL', 'GET /products', 'validate cart'],
 };
 

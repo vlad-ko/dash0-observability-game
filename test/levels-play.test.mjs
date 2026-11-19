@@ -844,6 +844,18 @@ const UNREACHED = {
     'run.sort.items[4].whyNot.ok',
     'run.onSpans[1].why',
   ],
+  // The runs open the two clue views and the herring and make one wrong pick: the other views' notes, the explanations of
+  // the other wrong picks and the triage table's "no data" (no row lacks data) are never on a screen. The hint is: HINT_PLAYS presses the Hint button.
+  'checkout-is-slow': [
+    'run.scenario.views[2].html',
+    'run.scenario.views[3].html',
+    'run.scenario.views[4].html',
+    'run.scenario.views[5].html',
+    'run.scenario.views[7].html',
+    'run.scenario.hypotheses[2].why',
+    'run.scenario.hypotheses[3].why',
+    'run.triageNoData',
+  ],
   // The sloppy run makes one wrong pick; the explanations of the other wrong picks are never on a screen.
   'context-propagation': [
     'run.where[0].why',
@@ -867,6 +879,27 @@ const UNREACHED = {
     'run.answerable[1].why',
     'run.answerable[2].why',
     'run.answerable[3].why',
+  ],
+  // The sloppy run makes one wrong flag (payments' call out to the provider) and opens only that span and the culprit: the
+  // other spans' explanations, the root and no-attribute sidebar words, and the sidebar button of a span opened after the
+  // solve are never on a screen; the "no data" title and the "none" map line cannot occur (the view always has a rate and
+  // an edge). No run makes a wrong fix pick, so those explanations are not shown. The hints are: HINT_PLAYS presses the Hint button.
+  'span-kinds': [
+    'run.alertTitleNoData',
+    'run.edgesNone',
+    'run.sidebarHuntOver',
+    'run.sidebarNoParent',
+    'run.sidebarNoAttrs',
+    'run.flagWhy[0].why',
+    'run.flagWhy[1].why',
+    'run.flagWhy[2].why',
+    'run.flagWhy[3].why',
+    'run.flagWhy[4].why',
+    'run.flagWhy[5].why',
+    'run.flagWhy[6].why',
+    'run.fix[1].why',
+    'run.fix[2].why',
+    'run.fix[3].why',
   ],
   // The sloppy run makes no wrong pick (its one slip is a wrong drop on the board): the explanations of the wrong picks are never on a screen.
   'spans-and-traces': [
@@ -943,8 +976,16 @@ const UNREACHED = {
 
 // A play per run level with Hint buttons that presses each step's Hint button (one tier 1 hint, the step's own `hint`)
 // before solving it. DRIVERS stay as they are: no driver presses Hint, and a hint costs a star, so this run is only
-// looked at for the words it shows. baggage, events-and-links and the-pager have no Hint button.
+// looked at for the words it shows. baggage, events-and-links and the-pager have no Hint button. The Act 2 boss and span-kinds have three
+// hint tiers: each play presses the button three times, so every tier's words are on a screen (the boss's tier 1 is its own `hint`).
 const HINT_PLAYS = {
+  'checkout-is-slow'() {
+    for (let tier = 0; tier < 3; tier++) click('#checkout-is-slow-hint');
+    click('[data-view="trace-slow"]');
+    click('[data-view="triage"]');
+    click('[data-hypothesis="n-plus-one"]');
+    click('#cis-finish');
+  },
   'context-propagation'() {
     click('[data-pick="proxy"]');
     click('#prop-next');
@@ -961,6 +1002,14 @@ const HINT_PLAYS = {
     click('#mvo-next');
     click('[data-pick="rich"]');
     click('#mvo-finish');
+  },
+  'span-kinds'() {
+    for (let tier = 0; tier < 3; tier++) click('#kinds-hunt-hint');
+    click(`[data-open-span="${KINDS_CULPRIT}"]`);
+    click('#kinds-flag');
+    click('#kinds-next');
+    click('[data-pick="server"]');
+    click('#kinds-finish');
   },
   'spans-and-traces'() {
     click('[data-pick="trace-id"]');
@@ -998,7 +1047,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'checkout-is-slow', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
