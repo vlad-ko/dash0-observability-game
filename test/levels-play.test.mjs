@@ -848,6 +848,94 @@ const UNREACHED = {
     'run.sort.items[4].whyNot.ok',
     'run.onSpans[1].why',
   ],
+  // Both drivers connect to the simulated Dash0 (practice). Never on a screen: the no-telemetry build, everything
+  // live (your own Dash0), the wrong pick the sloppy run does not make (All permissions), the form errors it does
+  // not trigger, a token or dataset named in a form error, the failures of a send and the accepted line (an accepted
+  // send moves on to the Connected screen).
+  'connect-to-dash0': [
+    'run.startIntro',
+    'run.startNote',
+    'run.modeLive',
+    'run.scopes[0].why',
+    'run.connectGuide',
+    'run.connectLiveLegend',
+    'run.connectIntroLive',
+    'run.connectChipLive',
+    'run.connectLiveNote',
+    'run.connectRetryButton',
+    'run.connectSwitchButton',
+    'run.connectMintSays',
+    'run.connectEndpointFirstSays',
+    'run.connectScopeFirstSays',
+    'run.connectReadingSays',
+    'run.connectAgainPractice',
+    'run.connectAgainLive',
+    'run.fieldName.token',
+    'run.fieldName.datasetField',
+    'run.fieldNameOther',
+    'run.problemUnavailable',
+    'run.problemMode',
+    'run.problemUnchecked',
+    'run.unreachable.network',
+    'run.unreachable.timeout',
+    'run.unreachable.opaque',
+    'run.unreachable.aborted',
+    'run.unreachableFallback',
+    'run.whereLive',
+    'run.outcomeAccepted',
+    'run.outcomeRefusedStatus',
+    'run.outcomeSaid',
+    'run.connectedIntroLive',
+    'run.connectedChipLive',
+    'run.connectedFinishLive',
+  ],
+  // Never on a screen: the broken-build starts, everything live (the send screen, its failures, the live find
+  // guide and finish), the filters and answers the drivers never get wrong, and the explorer states they never reach
+  // (no match, a match of several, a span with no events).
+  'its-us': [
+    'run.startIntroNoIncident',
+    'run.startIntroNoTelemetry',
+    'run.startNote',
+    'run.notConnectedWhyAvailable',
+    'run.notConnectedReasonAvailable',
+    'run.sendLeadElsewhere',
+    'run.sendHostsJoiner',
+    'run.sendLeadAttempted',
+    'run.sendLeadFresh',
+    'run.sendChip',
+    'run.sendBody',
+    'run.duplicateNote',
+    'run.sendButton',
+    'run.sendBarButton',
+    'run.sendRetryButton',
+    'run.sendSwitchButton',
+    'run.sendSendingSays',
+    'run.describeRefusedToken',
+    'run.describeRefused',
+    'run.describeSaid',
+    'run.unreachable.network',
+    'run.unreachable.timeout',
+    'run.unreachable.opaque',
+    'run.unreachable.aborted',
+    'run.unreachable.invalid',
+    'run.unreachableFallback',
+    'run.filterValueSays',
+    'run.listMatchMany',
+    'run.listNone',
+    'run.detailNoEvents',
+    'run.findGuideTitle',
+    'run.findGuide',
+    'run.findIntroLive',
+    'run.findChipLive',
+    'run.questions[0].nudge',
+    'run.questions[1].nudge',
+    'run.questions[1].wrong',
+    'run.questions[2].nudge',
+    'run.questions[3].nudge',
+    'run.questions[3].wrong',
+    'run.findFinishUnfiltered',
+    'run.findFinishLive',
+  ],
   // The sloppy run places one item wrong; the other wrong-placement explanations and the explanations of the wrong
   // picks it does not make are never on a screen. The hints are: HINT_PLAYS presses each Hint button.
   'monitoring-vs-observability': [
@@ -948,7 +1036,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'connect-to-dash0', 'its-us', 'monitoring-vs-observability', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
@@ -956,7 +1044,10 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     const shown = [];
     const runs = [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy], ...(HINT_PLAYS[id] ? [['hinted', { play: HINT_PLAYS[id] }]] : [])];
     for (const [label, run] of runs) {
-      const { calls, frames, clicks } = playLevel(level, run.play);
+      // A level that sends a request (connect-to-dash0, its-us) has an async driver and a telemetry session.
+      const { calls, frames, clicks } = DRIVERS[id].async
+        ? await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() })
+        : playLevel(level, run.play);
       assert.equal(calls.length, 1, `${id} ${label}: finished once`);
       assert.match(calls[0].result.text, /^EDITED\d+ /, `${id} ${label}: the finish text is the one it was given`);
       shown.push(...[...frames, ...clicks].flatMap((f) => [f.body, f.actions]), calls[0].result.text);

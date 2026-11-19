@@ -19,7 +19,22 @@ export function editRun(run) {
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
-export const RUN_FIXTURES = {};
+export const RUN_FIXTURES = {
+  'connect-to-dash0': [
+    // The addresses the simulated settings page shows (the host is a code value): the player copies one into the form and the session validates it.
+    'https:// :4317',
+    'https://',
+    // The causes `charge` counts one mistake per, compared in a Set and never shown.
+    'scope:',
+    'rejected:',
+  ],
+  'its-us': [
+    // The span status the trace tables and the span's status chip show, from the span itself; the driver finds the failing span by its `Error` cell.
+    'Error',
+    'Unset',
+    'Error:',
+  ],
+};
 
 /** Every string of a content `run` that is not an id or a key: `[{path, text}]`, the path like `run.sort.items[0].why`. */
 function entriesOf(value, path, key = '') {
