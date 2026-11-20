@@ -435,7 +435,7 @@ const DRIVERS = {
   },
 };
 
-/** Read the failing span off the practice trace view and type the four answers (with `over` swapped in). */
+/** Read the failing span off the practice Trace View and type the four answers (with `over` swapped in). */
 async function findIncident(telemetry, over = {}) {
   click('#its-practice');
   // The Trace Explorer lists several sessions' traces: filter by the session id the page shows.

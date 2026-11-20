@@ -168,7 +168,7 @@ export const ACTS = [
     name: 'Live Demo',
     sub: 'Does that answer hold?',
     badges: ['customer-calls'],
-    teaser: 'Judge confident answers about filters and error rates, connect the game to a Dash0 (practice works without an account), then find its incident in a trace view.',
+    teaser: 'Judge confident answers about filters and error rates, connect the game to a Dash0 (practice works without an account), then find its incident in a Trace View.',
     levels: [filterOrSampler, the34PercentErrorRate, connectToDash0, theTraceThatStartsInTheMiddle, lostInTranslation, theAlertThatStayedGreen, twoVendorsOneWeekend, edgeOfThePlatform],
     boss: itsUs,
   },

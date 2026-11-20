@@ -199,7 +199,7 @@ const HAND_WRITTEN_WIDGETS = {
 const NOT_A_WIDGET = {
   'the-pager': 'No help card: its intro explains the board (it is not scored).',
   'connect-to-dash0': 'No help card: its form is its own kit markup, not a shared widget.',
-  'its-us': 'No help card: its trace view and questions are its own kit markup, not a shared widget.',
+  'its-us': 'No help card: its Trace View and questions are its own kit markup, not a shared widget.',
   'span-kinds': 'Its hunt board is its own kit markup; only the fix is a shared widget.',
 };
 
