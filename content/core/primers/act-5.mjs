@@ -195,7 +195,7 @@ export default {
             "OpenTelemetry Collector Contrib (the core components plus a large set from the contrib repository, including vendor-supported ones)",
             "OpenTelemetry Collector Kubernetes",
             "OpenTelemetry Collector OTLP",
-            "OpenTelemetry Collector eBPF Profiling (an eBPF-based profiling agent; profilers can use eBPF, a Linux kernel technology, to capture stack traces from the kernel)"
+            "OpenTelemetry Collector eBPF Profiling (gathers profiles from every process on a host, using eBPF, a Linux kernel technology, to capture stack traces)"
           ]
         },
         {
