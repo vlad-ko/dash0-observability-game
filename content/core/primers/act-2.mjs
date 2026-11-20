@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans, which have no parent), start and end timestamps, a span context made of the trace ID (shared by every span in the request), the span ID (this span's own), trace flags and trace state, attributes, events, links and a status."
+          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans, which have no parent), start and end timestamps, a span context made of the trace ID (shared by every span in the request), the span ID (this span's own), trace flags (whether the trace is sampled) and trace state (vendor-specific data), attributes, events, links and a status."
         },
         {
           "type": "paragraph",
@@ -63,7 +63,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind tells the tracing backend how to assemble the trace. If it is not provided, the kind is assumed to be INTERNAL."
+          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind gives the tracing backend a hint about how to assemble the trace. If it is not provided, the kind is assumed to be INTERNAL."
         },
         {
           "type": "list",
@@ -135,7 +135,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Zero-code instrumentation adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent. It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need code-based instrumentation."
+          "text": "Zero-code instrumentation adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent (a library loaded into the application at start-up). It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need manual instrumentation."
         }
       ],
       "sources": [

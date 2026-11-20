@@ -44,7 +44,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Counter, UpDownCounter and Gauge also have asynchronous forms, collected once for each export. An aggregation combines many measurements into statistics about a time window. Each instrument has a default aggregation."
+          "text": "Counter, UpDownCounter and Gauge also have observable (asynchronous) forms, which are read once for each export. An aggregation combines many measurements into statistics about a time window. Each instrument has a default aggregation."
         }
       ],
       "sources": [
@@ -62,7 +62,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Sums and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an aggregation temporality, which is either delta or cumulative. It tells you how the value was calculated."
+          "text": "Sums (running totals) and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an aggregation temporality, which is either delta or cumulative. It tells you how the value was calculated."
         },
         {
           "type": "paragraph",
@@ -92,7 +92,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A histogram data point (one reported measurement of the metric, with its attributes) sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
+          "text": "A histogram data point (one reported value for a metric and one attribute combination, over one time window) sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
         },
         {
           "type": "paragraph",
@@ -104,7 +104,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In Prometheus, histograms expose bucketed observation counts, and the quantile is calculated from the buckets on the Prometheus server with the histogram_quantile() function. Summaries (a Prometheus metric type) instead calculate their quantiles inside the instrumented program, and you cannot aggregate those quantiles."
+          "text": "In Prometheus, histograms expose bucketed observation counts, and the quantile is calculated from the buckets on the Prometheus server with the histogram_quantile() function (a PromQL function that works out a quantile from the buckets). Summaries (a Prometheus metric type) instead calculate their quantiles inside the instrumented program, and you cannot aggregate those quantiles."
         }
       ],
       "sources": [
@@ -174,7 +174,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The cardinality of a metric is the number of unique attribute combinations reported for it. The SDK keeps a separate data point in memory for each combination, so cardinality drives the memory cost of metrics."
+          "text": "The cardinality of a metric is the number of time series (unique attribute combinations) reported for it. The SDK keeps a separate data point in memory for each combination, so cardinality drives the memory cost of metrics."
         },
         {
           "type": "paragraph",
@@ -222,7 +222,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "RED stands for the three core measures of service performance. Rate is requests per second, Errors is the error percentage, and Duration is the latency distribution."
+          "text": "RED stands for the three core measures of a request-driven service. Rate is requests per second, Errors is the error percentage, and Duration is the latency distribution."
         },
         {
           "type": "paragraph",
@@ -258,7 +258,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Dash0 supports all OpenTelemetry metric data model types (the kinds of metric OpenTelemetry defines): Sum, Gauge, Histogram and Exponential Histogram, plus the legacy Summary type from Prometheus. A Sum can be monotonic, produced by a Counter, or non-monotonic, produced by an UpDownCounter."
+          "text": "Dash0 supports all OpenTelemetry metric data model types (the kinds of metric OpenTelemetry defines): Sum, Gauge, Histogram and Exponential Histogram, plus the legacy Summary type from Prometheus. A Sum can be monotonic (it only goes up), produced by a Counter, or non-monotonic, produced by an UpDownCounter."
         },
         {
           "type": "paragraph",
