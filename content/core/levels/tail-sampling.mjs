@@ -8,7 +8,7 @@ export default {
     "finish": "You know tail sampling keeps what is wrong by deciding on the whole trace, and that the wait and the traces held in memory are its price. And you compute span metrics before sampling, in a pipeline with no sampling processor, or your rates are wrong.",
     "steps": [
       {
-        "intro": "Head sampling kept 1 in 10 of the failures too, so the team moves to tail sampling in the gateway: the <code>tail_sampling</code> processor holds the spans of each trace until it can decide on the whole trace. One gateway replica gets {{traces}} new traces a second. The team wants every failed trace ({{error-pct}} of them) and every slow one ({{slow-pct}}, above 2 seconds, the slowest take {{slowest}} seconds), and a healthy baseline. The processor's <code>decision_wait</code> is 30 seconds by default. Each trace held costs {{mib-per-trace}} MiB, and the replica has {{cap}} MiB for it.",
+        "intro": "Head sampling kept 1 in 10 of the failures too, so the team moves to tail sampling in the [[gateway]]: the <code>tail_sampling</code> [[processor]] holds the spans of each trace until it can decide on the whole trace. One gateway replica gets {{traces}} new traces a second. The team wants every failed trace ({{error-pct}} of them) and every slow one ({{slow-pct}}, above 2 seconds, the slowest take {{slowest}} seconds), and a healthy baseline. The processor's <code>decision_wait</code> is 30 seconds by default. Each trace held costs {{mib-per-trace}} MiB, and the replica has {{cap}} MiB for it.",
         "question": "Pick the wait and the policies: keep what the team wants and stay within the memory.",
         "tradeoff": {
           "id": "ts-budget",
