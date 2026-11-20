@@ -64,7 +64,7 @@ export default {
         }
       },
       {
-        "intro": "You open the trace of order {{order}} in Dash0, select the payments span and open its <b>[[Related Logs]] &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
+        "intro": "You open the trace of order {{order}} in Dash0, select the payments span and open its <b>Related Logs &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
         "question": "Is the worker's record in the list?",
         "choice": {
           "id": "cor-dash0",
