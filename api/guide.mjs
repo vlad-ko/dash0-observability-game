@@ -8,7 +8,9 @@ import { answerTokens, findStep, guideAllowed, stepContext, withholds } from '..
 import { createLimiter } from '../lib/guide/limit.mjs';
 import { systemPrompt, userMessage } from '../lib/guide/prompt.mjs';
 import { clientKey, reply, sameOrigin } from '../lib/http.mjs';
+import { boardOf } from '../lib/pool.mjs';
 import { isId } from '../lib/registry.mjs';
+import { BOARD_ITEMS } from '../lib/widgets/sort-it.mjs';
 import { createServerTelemetry } from '../lib/otel/server.mjs';
 
 const MODEL = 'claude-haiku-5-5';
@@ -20,7 +22,9 @@ const MAX_REPLY = 600;
 const MAX_TOKENS = 300;
 const UPSTREAM_TIMEOUT_MS = 8000;
 const MAX_STEP_ID = 100;
-const BODY_KEYS = ['v', 'levelId', 'stepId', 'question'];
+const BODY_KEYS = ['v', 'levelId', 'stepId', 'question', 'shown'];
+/** The most entries `shown` may list: a board is at most as many items as a sort board holds. */
+const MAX_SHOWN = BOARD_ITEMS.max;
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
 
 /**
@@ -74,6 +78,12 @@ export function createGuide({
       levelId = parsed.levelId;
       stepId = parsed.stepId;
       const { type, spec, step } = found;
+      // A pooled step (#390) has a different board each showing, so the client says which it shows; the model is told
+      // that board, never the pool. A pooled step without a valid board is refused, never answered from the pool, and a
+      // fixed step takes none. The tokens below are the pool's, so every right answer is withheld, drawn or not.
+      const pooled = Object.hasOwn(spec, 'draw');
+      const board = pooled ? boardOf(spec, parsed.shown) : spec;
+      if (pooled === (parsed.shown === undefined) || board === null) return done(400, { ok: false, error: 'bad-request', field: 'shown' }, 'bad-request');
       const tokens = guideAllowed(type, spec) ? answerTokens(type, spec, step) : null;
       if (tokens === null) return done(404, { error: 'unavailable' }, 'unavailable');
 
@@ -82,7 +92,7 @@ export function createGuide({
         return done(429, { error: 'rate-limited', retryAfterS: taken.retryAfterS }, 'rate-limited', { 'retry-after': String(taken.retryAfterS) });
       }
 
-      const answer = await askModel(systemPrompt(stepContext(level, found)), userMessage(question));
+      const answer = await askModel(systemPrompt(stepContext(level, { ...found, spec: board })), userMessage(question));
       if (answer === null) return done(502, { error: 'upstream' }, 'upstream');
       const sent = answer.slice(0, MAX_REPLY); // cut first: the filter must see exactly what goes out, a cut can end on an answer's digits
       if (withholds(sent, tokens)) return done(200, { ok: false, error: 'withheld' }, 'withheld');
@@ -114,7 +124,7 @@ export function createGuide({
   return { GET, POST };
 }
 
-/** `{levelId, stepId, question}` from the request text, or `{field}` naming what is wrong. Fields are listed, never bound blindly. */
+/** `{levelId, stepId, question, shown?}` from the request text, or `{field}` naming what is wrong. Fields are listed, never bound blindly. */
 function parseBody(text) {
   let body;
   try {
@@ -130,7 +140,11 @@ function parseBody(text) {
   if (typeof body.question !== 'string') return { field: 'question' };
   const question = body.question.trim();
   if (question === '' || question.length > MAX_QUESTION || CONTROL.test(question)) return { field: 'question' };
-  return { levelId: body.levelId, stepId: body.stepId, question };
+  // `shown` is only a list of ids (what a pooled step's board holds); whether it fits the step is judged against the step.
+  if (Object.hasOwn(body, 'shown') && !(Array.isArray(body.shown) && body.shown.length <= MAX_SHOWN && body.shown.every((k) => typeof k === 'string' && k.length <= MAX_STEP_ID))) {
+    return { field: 'shown' };
+  }
+  return { levelId: body.levelId, stepId: body.stepId, question, shown: body.shown };
 }
 
 const telemetry = createServerTelemetry({ name: 'guide', env: process.env });
