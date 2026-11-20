@@ -437,3 +437,69 @@ test('renderStep after the signal aborts draws but never touches the term popove
   ctx.renderStep('<p>x</p>');
   assert.deepEqual(calls, []);
 });
+
+// ---- ctx.gloss and ctx.wireTerms: marked terms in feedback share the screen (#442) ----
+
+const TERMS = {
+  terms: [
+    { id: 'span', name: 'Span unit', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' },
+    { id: 'trace', name: 'Trace path', variants: [], definition: 'The path of one request.', act: 'a0', topic: 'Traces' },
+  ],
+};
+const g = (shown, ref) => `<span data-gloss="${ref}">${shown}</span>`;
+
+function glossSetup({ glossary = TERMS, termPops, controller = new AbortController() } = {}) {
+  const dom = makeDom();
+  const ctx = createLevelContext({
+    level: LEVEL_A, ovBody: dom.body, ovActions: dom.actions, now: () => NOW, shuffle: (a) => a, reduceMotion: true,
+    onFinish: () => {}, signal: controller.signal, reportError: () => {}, glossary, termPops,
+  });
+  return { dom, ctx, controller };
+}
+
+test('ctx.gloss shares the screen renderStep drew, and a new screen restarts the numbering', () => {
+  const { ctx } = glossSetup();
+  ctx.renderStep(`<p>${g('span', 'span')}</p>`);
+  const html = ctx.gloss(`<p>${g('span', 'span')} and ${g('trace', 'trace')}</p>`, 'fb');
+  assert.equal((html.match(/data-term/g) ?? []).length, 1, 'span is already on the screen');
+  assert.ok(html.includes('id="lvterm-1-2"'), html);
+  ctx.renderStep('<p>plain</p>');
+  assert.ok(ctx.gloss(g('trace', 'trace'), 'fb').includes('id="lvterm-2-1"'));
+});
+
+test('ctx.gloss releases what its owner drew before, so replaced feedback gives its terms back', () => {
+  const { ctx } = glossSetup();
+  ctx.renderStep('<p>plain</p>');
+  const owner = {};
+  assert.ok(ctx.gloss(g('trace', 'trace'), owner).includes('lvterm-1-1'));
+  assert.ok(ctx.gloss(g('trace', 'trace'), owner).includes('lvterm-1-2'), 'the same owner may draw it again');
+  assert.equal(ctx.gloss(g('trace', 'trace'), {}), 'trace', 'another owner may not while it is on screen');
+});
+
+test('a body with no gloss span still opens the screen, so feedback can draw a term', () => {
+  const { ctx } = glossSetup();
+  ctx.renderStep('<p>plain words</p>');
+  assert.ok(ctx.gloss(g('span', 'span'), 'fb').includes('data-term'));
+});
+
+test('ctx.gloss before the first renderStep, or with no glossary, reads plain words; wireTerms is safe with no popovers', () => {
+  const early = glossSetup().ctx;
+  assert.equal(early.gloss(`a ${g('span', 'span')}`, 'fb'), 'a span');
+  assert.doesNotThrow(() => early.wireTerms());
+  const none = glossSetup({ glossary: null }).ctx;
+  none.renderStep('<p>x</p>');
+  assert.equal(none.gloss(g('span', 'span'), 'fb'), 'span');
+  assert.equal(none.gloss('<p>no span</p>', 'fb'), '<p>no span</p>');
+});
+
+test('wireTerms wires the card body, and nothing after the signal aborts', () => {
+  const calls = [];
+  const { dom, ctx, controller } = glossSetup({ termPops: { wire: (root) => calls.push(root === dom.body ? 'body' : 'other'), closeAll: () => {} } });
+  ctx.renderStep('<p>x</p>');
+  calls.length = 0;
+  ctx.wireTerms();
+  assert.deepEqual(calls, ['body']);
+  controller.abort();
+  ctx.wireTerms();
+  assert.equal(calls.length, 1);
+});
