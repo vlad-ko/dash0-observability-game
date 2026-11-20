@@ -1,18 +1,11 @@
 # Glossary
 
-This file is generated from `content/core/glossary.mjs` by `node tools/build-glossary-doc.mjs`. Do not edit it by hand: edit the module, then run the tool. `test/glossary.test.mjs` fails when this file differs from the tool's output.
+This file is generated from the files in `content/core/glossary/` by `node tools/build-glossary-doc.mjs`. Do not edit it by hand: edit a file there, then run the tool. `test/glossary.test.mjs` fails when this file differs from the tool's output.
 
 Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act N)" is where it is taught; a term with no act belongs to the game itself.
 
 ## Foundations
 
-- **Observability**: Being able to answer new questions about a system's behaviour from its outputs, without shipping new code. (Act 0)
-- **Monitoring**: Watching known indicators for known failure modes. (Act 0)
-- **Telemetry**: The data a system emits about itself. (Act 0)
-- **Signal**: A kind of telemetry. OpenTelemetry defines traces, metrics, logs and (newer) profiles. (Act 0)
-- **Profile**: A recording of resource use at the code level. The newest, still emerging signal. (Act 0)
-- **Backend**: The tool that stores and shows telemetry. (Act 0)
-- **Cardinality**: The number of unique values (or label combinations) a field has; for metrics, the number of time series. (Act 3)
 - **Hint**: Help a board gives for a cost. Each hint counts as one penalty, and the Hint button shows what the next one costs.
 - **50/50**: On a multiple-choice question with four or more answers, removes two wrong answers. It counts as one hint, so it costs one penalty.
 - **Guide**: The on-call mentor you can ask a question on some steps. It never gives the answer away. Each answer you get counts as one hint; a reply it holds back, or an error, is free.
@@ -25,23 +18,19 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Dash0 team only**: The mark on an act primer link that only Dash0 staff can open (a Claap recording). The link is still shown, so outside players know it exists and that it is not for them.
 - **Chapter**: One short section of an act primer. The game remembers which chapters you have read.
 - **Save code**: A short text code for your progress. Copy it from the hub and paste it into the game in another browser to import it; the import merges, so nothing you already have is lowered.
+- **Observability**: Being able to answer new questions about a system's behaviour from its outputs, without shipping new code. (Act 0)
+- **Monitoring**: Watching known indicators for known failure modes. (Act 0)
+- **Telemetry**: The data a system emits about itself. (Act 0)
+- **Signal**: A kind of telemetry. OpenTelemetry defines traces, metrics, logs and (newer) profiles. (Act 0)
+- **Profile**: A recording of resource use at the code level. The newest, still emerging signal. (Act 0)
+- **Backend**: The tool that stores and shows telemetry. (Act 0)
+- **Cardinality**: The number of unique values (or label combinations) a field has; for metrics, the number of time series. (Act 3)
 
 ## OpenTelemetry
 
 - **OpenTelemetry (OTel)**: A CNCF project defining vendor-neutral APIs, SDKs, a wire protocol and a Collector for telemetry. (Act 0)
 - **API**: The interfaces libraries call to emit telemetry; a no-op without an SDK. (Act 0)
 - **SDK**: The implementation an application installs to process and export telemetry. (Act 1)
-- **OTLP**: The OpenTelemetry Protocol; gRPC (port 4317) or HTTP/protobuf (port 4318). (Act 5)
-- **gRPC**: A binary remote-call protocol over HTTP/2. One of the transports OTLP supports, on port 4317. (Act 5)
-- **HTTP/protobuf**: OTLP sent over HTTP with the data encoded as protobuf (Protocol Buffers, a binary encoding), on port 4318. (Act 5)
-- **HTTP/JSON**: OTLP sent over HTTP with the data encoded as JSON. (Act 5)
-- **Endpoint**: The address and port an exporter sends telemetry to. (Act 5)
-- **Instrumentation**: Code that emits telemetry. Auto (zero-code) instrumentation is injected (agents, operator); manual instrumentation is written by you. (Act 2)
-- **Instrumentation scope**: The library or module that produced a piece of telemetry. (Act 4)
-- **Semantic conventions**: Standard attribute names and meanings, such as http.request.method, db.system.name and service.name. They are versioned. (Act 8)
-- **Stability opt-in**: The setting OTEL_SEMCONV_STABILITY_OPT_IN. The value http/dup sends the old and the stable names; http sends only the stable names. (Act 8)
-- **Stable**: Released with no breaking changes. (Act 8)
-- **Opt-in**: A setting you turn on to get the new names. (Act 8)
 - **Resource**: The entity producing telemetry, described by resource attributes. (Act 1)
 - **Resource detector**: An SDK component that fills in resource attributes from the environment (host, container, cloud, Kubernetes). (Act 1)
 - **Attribute**: A key/value pair on a span, metric point, log record or resource. (Act 1)
@@ -51,9 +40,20 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Namespace**: A way to group resources inside one Kubernetes cluster. (Act 1)
 - **Deployment**: A Kubernetes object that keeps a set of pods running. (Act 1)
 - **Cluster**: The group of machines that Kubernetes manages together. (Act 1)
+- **Instrumentation**: Code that emits telemetry. Auto (zero-code) instrumentation is injected (agents, operator); manual instrumentation is written by you. (Act 2)
+- **Instrumentation scope**: The library or module that produced a piece of telemetry. (Act 4)
+- **OTLP**: The OpenTelemetry Protocol; gRPC (port 4317) or HTTP/protobuf (port 4318). (Act 5)
+- **gRPC**: A binary remote-call protocol over HTTP/2. One of the transports OTLP supports, on port 4317. (Act 5)
+- **HTTP/protobuf**: OTLP sent over HTTP with the data encoded as protobuf (Protocol Buffers, a binary encoding), on port 4318. (Act 5)
+- **HTTP/JSON**: OTLP sent over HTTP with the data encoded as JSON. (Act 5)
+- **Endpoint**: The address and port an exporter sends telemetry to. (Act 5)
 - **Exporter**: A component that sends telemetry onward (in the SDK or the Collector). (Act 5)
 - **Processor**: A component that transforms telemetry (in the SDK or the Collector). (Act 5)
 - **Receiver**: A component that accepts telemetry (in the SDK or the Collector). (Act 5)
+- **Semantic conventions**: Standard attribute names and meanings, such as http.request.method, db.system.name and service.name. They are versioned. (Act 8)
+- **Stability opt-in**: The setting OTEL_SEMCONV_STABILITY_OPT_IN. The value http/dup sends the old and the stable names; http sends only the stable names. (Act 8)
+- **Stable**: Released with no breaking changes. (Act 8)
+- **Opt-in**: A setting you turn on to get the new names. (Act 8)
 
 ## Traces
 
@@ -62,8 +62,6 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Trace ID**: The ID that every span in one request shares. (Act 2)
 - **Span ID**: The ID of one span. A child span records its parent's span ID. (Act 2)
 - **Root span**: A span with no parent. (Act 2)
-- **Orphan span**: A span whose parent ID names a span that was never received, so the trace shows it as a root although it has a parent. (Act 9)
-- **Mesh sidecar**: A proxy that a service mesh runs next to each service and that forwards its calls; not the same thing as a Collector run as a sidecar (see Agent). (Act 9)
 - **Span kind**: SERVER, CLIENT, PRODUCER, CONSUMER or INTERNAL. (Act 2)
 - **Span status**: Unset, Error or Ok. (Act 2)
 - **Span event**: A timestamped note inside a span, for example an exception. (Act 2)
@@ -82,6 +80,8 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Baggage**: User-defined key/values propagated with the context. (Act 2)
 - **Sampling**: Keeping a subset of traces. Head sampling decides at the start; tail sampling decides after the trace completes. (Act 6)
 - **Representativeness**: The idea that a small sample can stand for the whole. (Act 6)
+- **Orphan span**: A span whose parent ID names a span that was never received, so the trace shows it as a root although it has a parent. (Act 9)
+- **Mesh sidecar**: A proxy that a service mesh runs next to each service and that forwards its calls; not the same thing as a Collector run as a sidecar (see Agent). (Act 9)
 
 ## Metrics
 
@@ -162,15 +162,13 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 
 - **Dash0**: An OpenTelemetry-native observability platform for traces, metrics, logs and more. (Act 0)
 - **Trace View**: The Dash0 view of one trace with all its spans and their relationships. (Act 0)
-- **Trace Explorer**: The Dash0 page for finding traces: you filter the spans by attribute, then open a trace. (Act 9)
-- **Span Sidebar**: The Dash0 detail panel that opens when you select a span. (Act 9)
+- **Dash0 operator**: A Kubernetes operator that auto-instruments workloads and ships telemetry to Dash0. (Act 1)
+- **Triage**: Comparing attribute distributions between a selection and a baseline to find what is different. (Act 2)
 - **Metric Explorer**: The Dash0 place to browse, filter and investigate metrics; the start of deeper analysis in the Query Builder. (Act 3)
 - **Query Builder**: Dash0's editor for building metric queries. (Act 3)
 - **Related Logs**: The Dash0 tab that shows logs from the same resource and the same trace around a selected log. (Act 4)
-- **Log Explorer**: Dash0's page for finding logs. (Act 9)
-- **Dash0 operator**: A Kubernetes operator that auto-instruments workloads and ships telemetry to Dash0. (Act 1)
-- **Auth token**: The key a user or a service shows Dash0's APIs, for example to send telemetry to Dash0. (Act 9)
-- **Dataset**: A part of a Dash0 organization that keeps its own observability data apart, for example one for production and one for test. (Act 9)
+- **Log AI**: Pattern and severity extraction for unstructured logs. (Act 4)
+- **Spam filter**: A rule that drops unwanted telemetry at ingest. (Act 6)
 - **Check rule**: A Prometheus-compatible alerting rule in Dash0. (Act 7)
 - **Notification channel**: Where Dash0 delivers alerts from check rules and synthetic checks, such as Slack, PagerDuty or email. (Act 7)
 - **Perses**: The open dashboard format that Dash0 dashboards follow; they can be managed as code. (Act 8)
@@ -180,9 +178,6 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Migrator**: The Dash0 tool that converts Grafana dashboards. (Act 8)
 - **Websites Explorer**: The Dash0 view of your frontend health: traffic, sessions and the events in each session. (Act 8)
 - **Web Vitals**: Performance metrics defined by Google for what real users experience on a web page: LCP, INP and CLS. (Act 8)
-- **Spam filter**: A rule that drops unwanted telemetry at ingest. (Act 6)
-- **Triage**: Comparing attribute distributions between a selection and a baseline to find what is different. (Act 2)
-- **Log AI**: Pattern and severity extraction for unstructured logs. (Act 4)
 - **MCP**: Model Context Protocol: a standard for AI tools to call data sources. (Act 8)
 - **MCP Server**: Dash0's MCP Server lets AI assistants read Dash0 data: AI access to your telemetry. (Act 8)
 - **MCP tool**: One named action an AI assistant can take through an MCP server. (Act 8)
@@ -191,6 +186,11 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Agent0 thread**: One conversation with Agent0. (Act 8)
 - **Sandbox**: An isolated environment where code runs with limited access. (Act 8)
 - **DART**: Dashboards, Alerts & Rules to Terraform; migrates assets from other vendors into Dash0. (Act 8)
+- **Trace Explorer**: The Dash0 page for finding traces: you filter the spans by attribute, then open a trace. (Act 9)
+- **Span Sidebar**: The Dash0 detail panel that opens when you select a span. (Act 9)
+- **Log Explorer**: Dash0's page for finding logs. (Act 9)
+- **Auth token**: The key a user or a service shows Dash0's APIs, for example to send telemetry to Dash0. (Act 9)
+- **Dataset**: A part of a Dash0 organization that keeps its own observability data apart, for example one for production and one for test. (Act 9)
 - **Pinned filters**: Filters that stay on screen across pages that have a filter bar. (Act 9)
 - **Filter bar**: The bar on a Dash0 page that holds its filters. (Act 9)
 - **Filter operator**: The comparison in a filter that relates a key to its values, for example equals. (Act 9)
