@@ -143,8 +143,8 @@ export default {
           "type": "list",
           "items": [
             "Largest Contentful Paint (LCP): how long the largest visible element, an image or a text block, takes to fully render.",
-            "Interaction to Next Paint (INP): the latency of all user interactions, such as clicks, taps and keyboard input, over the whole page lifecycle.",
-            "Cumulative Layout Shift (CLS): the total amount of unexpected layout movement during the page lifecycle."
+            "Interaction to Next Paint (INP): one value that all or nearly all user interactions, such as clicks, taps and keyboard input, fall beneath over the page lifecycle.",
+            "Cumulative Layout Shift (CLS): a score for the largest burst of unexpected layout shifts during the page lifecycle."
           ]
         },
         {
@@ -167,6 +167,18 @@ export default {
           "kind": "docs",
           "label": "Dash0 docs: Understand Web Vitals",
           "url": "https://www.dash0.com/docs/dash0/monitoring/websites/understand-web-vitals",
+          "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "web.dev: Interaction to Next Paint (INP)",
+          "url": "https://web.dev/articles/inp",
+          "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "web.dev: Cumulative Layout Shift (CLS)",
+          "url": "https://web.dev/articles/cls",
           "audience": "public"
         }
       ]

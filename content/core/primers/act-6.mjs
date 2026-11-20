@@ -42,7 +42,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Sampling is worth it when you generate a lot of data, for example 1000 or more traces per second. It is not when you generate very little data, such as tens of small traces per second or fewer."
+          "text": "Consider sampling if you generate a lot of data, for example 1000 or more traces per second. It might not be right for you if you generate very little data, such as tens of small traces per second or fewer."
         }
       ],
       "sources": [
