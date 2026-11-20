@@ -1,5 +1,6 @@
 // Helpers for the tests of converted run(ctx) levels (docs/CONTENT.md section 11): edit every word of a content
 // file's `run`, then find the words that still show on a screen without the edit.
+import { shownText } from '../../lib/content/terms.mjs';
 
 /**
  * `run` with `EDITED<n> ` in front of every string that is not an id or a key, n counting the entries in the order
@@ -71,6 +72,13 @@ function entriesOf(value, path, key = '') {
  */
 const KIT_CHROME = [/<h3 class="ui-hints-head">[^<]*<\/h3>/g];
 
+/**
+ * A glossary term the screen drew (#442, lib/ui/term.mjs) read as its shown words: the term's button text, with its popover
+ * left out. A prose entry that marks terms is matched by the words a reader sees, not by the marker or the popover.
+ */
+const TERM_DRAWN = /<span class="ui-term" data-term(?:="")?><button[^>]*>([^<]*)<\/button><span class="ui-term-pop"[^>]*>[\s\S]*?<\/span><\/span>/g;
+const unterm = (s) => s.replace(TERM_DRAWN, '$1');
+
 const stripWbr = (s) => s.replace(/<wbr\s*\/?>/g, '');
 const stripKit = (s) => KIT_CHROME.reduce((out, re) => out.replace(re, ' '), s);
 const norm = (s) => s.replace(/\s+/g, ' ').trim();
@@ -109,8 +117,9 @@ function pattern(s, flags = '', trim = false, capture = false) {
  * `unreached` names the entries the drivers do not reach, by path, for this level.
  */
 export function checkWords(coreRun, screens, { unreached = [], kept = [] } = {}) {
-  const entries = entriesOf(coreRun, 'run');
-  const html = screens.map((s) => stripKit(stripWbr(s))).join('\n');
+  // An entry that marks glossary terms is read as the words it shows (a marker is its shown text).
+  const entries = entriesOf(coreRun, 'run').map((e) => ({ ...e, text: shownText(e.text) }));
+  const html = screens.map((s) => stripKit(stripWbr(unterm(s)))).join('\n');
   const words = [...new Set(entries.map((e) => e.text))].sort((a, b) => b.length - a.length);
   const mark = (i) => `EDITED${i} `;
   // An entry is seen when it shows with its own mark (so a duplicate, or an entry that starts another, is judged on its

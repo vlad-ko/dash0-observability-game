@@ -147,10 +147,12 @@ const proseLiterals = (src, kept = []) =>
     .filter((s) => looksVisible(s) && !kept.includes(textOf(s.pieces, ' ')))
     .map((s) => textOf(s.pieces, ' '));
 
-test('a run level\'s code holds no prose literal: its words are say.<name> reads (docs/CONTENT.md 11.1)', () => {
+test('a run level\'s code holds no prose literal: its words are say.<name> reads (docs/CONTENT.md 11.1)', async () => {
   for (const id of RUN_IDS) {
     const kept = RUN_FIXTURES[id] ?? [];
-    assert.deepEqual(proseLiterals(readLogic(id), kept), [], `${id}: these literals move to content/core/levels/${id}.mjs, or are fixture data (RUN_FIXTURES)`);
+    // The names a level lists in TERMS (#442) are entry names, not words a player sees.
+    const names = (await load(id)).TERMS ?? [];
+    assert.deepEqual(proseLiterals(readLogic(id), [...kept, ...names]), [], `${id}: these literals move to content/core/levels/${id}.mjs, or are fixture data (RUN_FIXTURES)`);
     const texts = literalSites(readLogic(id)).map((s) => s.pieces.join(' ').replace(/<[^>]*>/g, ' ').trim());
     for (const t of kept) assert.ok(texts.includes(t), `${id}: RUN_FIXTURES entry "${t}" is no longer in the file`);
   }
@@ -187,6 +189,14 @@ test('checkWords: a word shown without its edit, a word never shown edited, and 
 test('checkWords: a <wbr> inside a word is ignored', () => {
   const run = { l: '<code>experiment.variant=redesign-B</code>' };
   assert.deepEqual(checkWords(run, [editRun(run).l.replace('experiment.', 'experiment.<wbr>')]), CLEAN);
+});
+
+test('checkWords: a prose entry that marks a term is matched by its shown words, whether the term is drawn or plain', () => {
+  const run = { a: 'Say [[Monitoring]] and [[telemetry|telemetry]] to the whole team.' };
+  const drawn = '<span class="ui-term" data-term><button type="button" class="ui-term-btn" aria-describedby="t-1">Monitoring</button><span class="ui-term-pop" id="t-1" role="tooltip" hidden><b class="ui-term-name">Monitoring</b>: Watching known indicators.</span></span>';
+  assert.deepEqual(checkWords(run, [`EDITED0 Say ${drawn} and telemetry to the whole team.`]), CLEAN, 'one drawn, one plain');
+  assert.deepEqual(checkWords(run, ['EDITED0 Say Monitoring and telemetry to the whole team.']), CLEAN, 'both plain');
+  assert.deepEqual(checkWords(run, [`Say ${drawn} and telemetry to the whole team.`]).unseen, ['run.a'], 'no edit, no sight');
 });
 
 test('checkWords: an entry that is the start of another is not seen because the other is', () => {
