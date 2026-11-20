@@ -8,7 +8,7 @@ export default {
     "finish": "You can read a service with RED and a resource with USE, you know saturation is not utilisation, you can get RED from spans with the span_metrics connector, and Dash0 derives it from your spans.",
     "steps": [
       {
-        "intro": "Kettle & Co's on-call wants two short checklists: one for the services, one for the machines under them. Tom Wilkie's <b>RED</b> method reads the requests a service handles. Brendan Gregg's <b>USE</b> method reads a resource.",
+        "intro": "Kettle & Co's on-call wants two short checklists: one for the services, one for the machines under them. Tom Wilkie's <b>RED</b> method reads the requests a service handles. Brendan Gregg's <b>USE</b> method reads a [[resource|system-resource]].",
         "question": "Which pairing is right?",
         "choice": {
           "id": "ru-methods",
@@ -16,17 +16,17 @@ export default {
             {
               "key": "red-services-use-resources",
               "label": "RED for each service: Rate, Errors, Duration. USE for each resource, such as a CPU or a disk: Utilisation, Saturation, Errors",
-              "why": "RED asks how many requests a service gets, how many of them fail and how long they take. USE asks, of a resource, how busy it is, how much work waits for it and how many errors it throws. RED was made for request-driven services, and USE for resources such as CPUs, disks and network interfaces."
+              "why": "[[RED]] asks how many requests a service gets, how many of them fail and how long they take. [[USE]] asks, of a resource, how busy it is, how much work waits for it and how many errors it throws. RED was made for request-driven services, and USE for resources such as CPUs, disks and network interfaces."
             },
             {
               "key": "swapped",
               "label": "USE for each service: Utilisation, Saturation, Errors. RED for each resource, such as a CPU or a disk: Rate, Errors, Duration",
-              "why": "Swapped. A CPU or a disk has no request to count the rate or duration of, and a service is not \"busy\" the way a resource is. RED reads requests, USE reads resources."
+              "why": "Swapped. A CPU or a disk has no request to count the rate or duration of, and a service is not \"busy\" the way a resource is. [[RED]] reads requests, [[USE]] reads resources."
             },
             {
               "key": "red-everything",
               "label": "RED for everything: Rate, Errors, Duration fit a service, a CPU or a disk alike, as every component takes requests",
-              "why": "RED came out of microservices, because the USE method does not fit a service. The reverse holds too: a CPU, disk or interface is checked by how busy it is and how much work queues for it, which RED does not ask."
+              "why": "[[RED]] came out of microservices, because the [[USE]] method does not fit a service. The reverse holds too: a CPU, disk or interface is checked by how busy it is and how much work queues for it, which RED does not ask."
             }
           ]
         }
@@ -45,7 +45,7 @@ export default {
             {
               "key": "saturation",
               "label": "Saturation: the run queue, the work that wants a CPU and cannot have one yet",
-              "why": "Saturation is the degree to which a resource has more work than it can service, often as a queue, and for a CPU it is the run-queue length or the scheduler latency. It can be present while the average utilisation looks low, because the average smooths out the bursts."
+              "why": "Saturation is the degree to which a resource has more work than it can service, often as a queue, and for a CPU it is the run-queue length or the scheduler latency. It can be present while the average [[utilisation]] looks low, because the average smooths out the bursts."
             },
             {
               "key": "errors",
@@ -56,7 +56,7 @@ export default {
         }
       },
       {
-        "intro": "Cart and checkout send traces but no metrics, and the team wants RED for each service now. Spans have what RED needs: each one is a request with a start, an end and a status. The Collector's <code>span_metrics</code> connector (formerly <code>spanmetrics</code>) is in the contrib distribution.",
+        "intro": "Cart and checkout send traces but no metrics, and the team wants RED for each service now. Spans have what RED needs: each one is a request with a start, an end and a status. The Collector's <code>span_metrics</code> connector (formerly <code>spanmetrics</code>) is in the contrib [[distribution]].",
         "question": "How do you get RED out of the traces?",
         "choice": {
           "id": "ru-connector",
@@ -79,13 +79,13 @@ export default {
             {
               "key": "raw-url",
               "label": "Name the spans with the full URL, giving every request path its own metric series",
-              "why": "Every distinct span name is a new series in each metric, which is the cardinality of 3.5. HTTP server span names are the method and <code>http.route</code>, and instrumentation must not default to the URI path. The connector README names raw URIs in span names as the usual cause of exploding span metrics, and offers an <code>aggregation_cardinality_limit</code> as a circuit breaker, not a fix."
+              "why": "Every distinct span name is a new series in each metric, which is the [[cardinality]] of 3.5. HTTP server span names are the method and <code>http.route</code>, and instrumentation must not default to the URI path. The connector README names raw URIs in span names as the usual cause of exploding span metrics, and offers an <code>aggregation_cardinality_limit</code> as a circuit breaker, not a fix."
             }
           ]
         }
       },
       {
-        "intro": "The span metrics reach your backend under PromQL names, translated as in 3.4: <code>traces.span.metrics.calls</code> is <code>traces_span_metrics_calls_total</code>, and the dimensions <code>service.name</code>, <code>span.name</code> and <code>span.kind</code> are labels. <b>Rate</b> is requests per second. A service also makes calls of its own, recorded as CLIENT spans, and the requests it serves are its SERVER spans.",
+        "intro": "The [[span metrics]] reach your backend under PromQL names, translated as in 3.4: <code>traces.span.metrics.calls</code> is <code>traces_span_metrics_calls_total</code>, and the dimensions <code>service.name</code>, <code>span.name</code> and <code>span.kind</code> are [[labels]]. <b>Rate</b> is requests per second. A service also makes calls of its own, recorded as CLIENT spans, and the requests it serves are its SERVER spans.",
         "question": "Write a query for the request rate of each service, over the last 5 minutes.",
         "query": {
           "id": "ru-rate",

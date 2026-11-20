@@ -8,7 +8,7 @@ export default {
     "finish": "You can read a percentile with histogram_quantile, you know an average hides a tail and that buckets must reach your slowest requests, and that Dash0 takes the same PromQL.",
     "steps": [
       {
-        "intro": "Kettle & Co's checkout durations run from a few milliseconds to several seconds. A <b>histogram</b> counts observations into buckets instead of keeping every value. An <b>explicit bucket</b> histogram uses boundaries you list. An <b>exponential</b> one derives them from a scale.",
+        "intro": "Kettle & Co's checkout durations run from a few milliseconds to several seconds. A <b>histogram</b> counts observations into [[buckets]] instead of keeping every value. An <b>explicit bucket</b> histogram uses boundaries you list. An <b>exponential</b> one derives them from a scale.",
         "question": "What does an exponential histogram do that an explicit one does not?",
         "choice": {
           "id": "hist-kind",
@@ -21,7 +21,7 @@ export default {
             {
               "key": "exponential",
               "label": "Exponential: the boundaries follow a growth factor set by a scale, and one histogram covers a wide range with small relative error",
-              "why": "Bucket boundaries sit at powers of a base set by the scale, so there is no list to pick, and a higher scale means finer buckets. The SDK adjusts the scale to the data it sees. Support varies by backend: the Prometheus text formats cannot carry exponential histograms, so there they are dropped or converted to fixed buckets."
+              "why": "Bucket boundaries sit at powers of a base set by the scale, so there is no list to pick, and a higher scale means finer buckets. The SDK adjusts the scale to the data it sees. Support varies by backend: the [[Prometheus]] text formats cannot carry exponential histograms, so there they are dropped or converted to fixed buckets."
             },
             {
               "key": "exact",
@@ -41,7 +41,7 @@ export default {
         }
       },
       {
-        "intro": "The same histogram has one <code>_bucket</code> series per boundary, each with an <code>le</code> (less or equal) label, and each counts the observations up to that boundary. <code>histogram_quantile(0.99, ...)</code> estimates the 99th percentile from the rates of those series. Take the rate first, then sum by <code>le</code>, because percentiles cannot be averaged but buckets can be added.",
+        "intro": "The same histogram has one <code>_bucket</code> series per boundary, each with an <code>le</code> (less or equal) [[label]], and each counts the observations up to that boundary. <code>histogram_quantile(0.99, ...)</code> estimates the [[99th percentile|quantile]] from the rates of those series. Take the rate first, then sum by <code>le</code>, because percentiles cannot be averaged but buckets can be added.",
         "question": "Write a query for the p99 duration of /pay over the last 5 minutes.",
         "query": {
           "id": "hist-p99",
@@ -74,7 +74,7 @@ export default {
         }
       },
       {
-        "intro": "In Dash0 you write the same PromQL in the Metric Explorer, and a dashboard panel keeps the query. The team wants one p95 line per service on a panel. The label names in this data, such as <code>service</code> and <code>route</code>, are Kettle &amp; Co's own; in Dash0 the OpenTelemetry attributes arrive as <code>service_name</code> and <code>http_route</code>.",
+        "intro": "In Dash0 you write the same [[PromQL]] in the [[Metric Explorer]], and a dashboard panel keeps the query. The team wants one p95 line per service on a panel. The label names in this data, such as <code>service</code> and <code>route</code>, are Kettle &amp; Co's own; in Dash0 the OpenTelemetry attributes arrive as <code>service_name</code> and <code>http_route</code>.",
         "question": "Write the p95 duration per service for the last 5 minutes.",
         "query": {
           "id": "hist-p95",

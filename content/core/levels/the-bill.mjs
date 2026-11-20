@@ -61,7 +61,7 @@ export default {
             {
               "id": "user-id-label",
               "label": "Checkout added a user_id label to a counter so each user gets a series",
-              "why": "The volume view shows one metric, checkout_attempts_total, stepping from {{series-before}} to {{series-after}} series at 09:42 while every other metric stayed put. Its label breakdown shows a new label, user_id, with {{users}} values, and checkout 5.12.0, deployed at 09:41, added user.id to the counter's attributes. Series are the unique combinations of attribute values, so one new unbounded label made the series count follow the user count."
+              "why": "The volume view shows one metric, checkout_attempts_total, stepping from {{series-before}} to {{series-after}} series at 09:42 while every other metric stayed put. Its [[label]] breakdown shows a new label, user_id, with {{users}} values, and checkout 5.12.0, deployed at 09:41, added user.id to the counter's attributes. Series are the unique combinations of attribute values, so one new unbounded label made the series count follow the user count."
             },
             {
               "id": "traffic-growth",
@@ -91,7 +91,7 @@ export default {
             {
               "key": "drop-the-label",
               "label": "Stop recording <code>user.id</code> on the counter, and keep the per-user detail on spans or logs",
-              "why": "Series are the unique combinations of attribute values, so the only fix that works is fewer values: remove the attribute that has one value for each user. A per-customer lookup is what spans and logs are for, where one value for each request is normal and a user.id attribute costs no series; the {{series-before}} series that dashboards need stay. In Dash0, the Metric Explorer tree map and the metric sidebar show which metric and which attributes were behind the volume, and the guidance for random or unbounded values is to reduce them at the instrumentation layer. The same is true of <code>http.route</code> against a raw URL: a bounded template, never the raw value."
+              "why": "Series are the unique combinations of attribute values, so the only fix that works is fewer values: remove the attribute that has one value for each user. A per-customer lookup is what spans and logs are for, where one value for each request is normal and a user.id attribute costs no series; the {{series-before}} series that dashboards need stay. In Dash0, the [[Metric Explorer]] tree map and the metric sidebar show which metric and which attributes were behind the volume, and the guidance for random or unbounded values is to reduce them at the instrumentation layer. The same is true of <code>http.route</code> against a raw URL: a bounded template, never the raw value."
             },
             {
               "key": "export-less",
@@ -101,7 +101,7 @@ export default {
             {
               "key": "cap-and-keep",
               "label": "Set a cardinality limit in the SDK and keep the label, to stop the series at the limit",
-              "why": "The specification says SDKs SHOULD support a cardinality limit, with a default of 2000 per metric that SHOULD be used when none is set, and measurements past it are folded into one point marked otel.metric.overflow. That bounds the volume, but the label stays useless: the user ids seen first keep their series and every other user, and any bounded combination not yet seen, lands in the one overflow point, so a per-user answer is wrong. A limit is a safety net for a mistake, not a design."
+              "why": "The specification says SDKs SHOULD support a [[cardinality]] limit, with a default of 2000 per metric that SHOULD be used when none is set, and measurements past it are folded into [[one point|overflow-data-point]] marked otel.metric.overflow. That bounds the volume, but the label stays useless: the user ids seen first keep their series and every other user, and any bounded combination not yet seen, lands in the one overflow point, so a per-user answer is wrong. A limit is a safety net for a mistake, not a design."
             },
             {
               "key": "spam-flag",

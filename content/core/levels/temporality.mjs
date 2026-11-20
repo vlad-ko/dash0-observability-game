@@ -8,7 +8,7 @@ export default {
     "finish": "You can tell delta from cumulative, you know Prometheus-style backends need cumulative and a restart resets a counter, and that Dash0 takes both.",
     "steps": [
       {
-        "intro": "Every Sum and Histogram point comes in one of two temporalities: <b>cumulative</b>, the total since the process started, or <b>delta</b>, only the change since the last report. The infra team wants Kettle & Co's metrics in their Prometheus-style backend too, and it stores cumulative totals. A debug view lists seven series, with the temporality of each.",
+        "intro": "Every [[Sum]] and [[Histogram]] point comes in one of two temporalities: <b>cumulative</b>, the total since the process started, or <b>delta</b>, only the change since the last report. The infra team wants Kettle & Co's metrics in their [[Prometheus]]-style backend too, and it stores cumulative totals. A debug view lists seven series, with the temporality of each.",
         "question": "Spot the series that need converting before that backend can use them.",
         "spot": {
           "id": "temp-spot",
@@ -119,7 +119,7 @@ export default {
             {
               "key": "both",
               "label": "No: Dash0 accepts both temporalities, and you query with PromQL",
-              "why": "Dash0 takes delta and cumulative series, and you query metrics with PromQL. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram."
+              "why": "Dash0 takes delta and cumulative series, and you query metrics with [[PromQL]]. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram."
             },
             {
               "key": "processor",

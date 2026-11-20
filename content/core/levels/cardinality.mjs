@@ -190,7 +190,7 @@ export default {
         }
       },
       {
-        "intro": "Dash0's Metric Explorer has a tree map that sizes every metric by its cardinality. The <code>recommendations.served</code> counter is a big tile since a <code>user_id</code> attribute shipped last quarter. Dash0 also has spam filters, which drop telemetry at ingestion.",
+        "intro": "Dash0's Metric Explorer has a tree map that sizes every metric by its [[cardinality]]. The <code>recommendations.served</code> counter is a big tile since a <code>user_id</code> attribute shipped last quarter. Dash0 also has spam filters, which drop telemetry at ingestion.",
         "question": "What do you do about it?",
         "choice": {
           "id": "cdn-dash0",
