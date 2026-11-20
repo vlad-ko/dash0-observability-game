@@ -4,12 +4,15 @@
 //
 //   node tools/level-fingerprint.mjs <outdir>       one <level-id>.json per level
 //   node tools/level-fingerprint.mjs <file>.json    one file, every level under its id
+//   node tools/level-fingerprint.mjs --shown <dir>  the same with each glossary marker (#442) replaced by its shown words,
+//                                                   so a PR that marks terms proves no word changed: diff --shown output
 //
 // Canonical form: object keys sorted, arrays in order, a function as "[function]". Not a build
 // step: a developer tool, kept out of the deployed site by .vercelignore.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { unwrapGloss } from '../lib/content/terms.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -61,6 +64,19 @@ function render(value, step, pad, path) {
   }
 }
 
+/**
+ * `value` with each gloss span (a glossary term marked in a level's text, #442) replaced by its shown words, deep through
+ * arrays and plain objects; anything else is returned as it is. A marking PR proves no word changed by a zero diff of
+ * `--shown` output, while the plain output keeps the spans.
+ */
+export function shownValue(value) {
+  if (typeof value === 'string') return unwrapGloss(value);
+  if (Array.isArray(value)) return value.map(shownValue);
+  const proto = value !== null && typeof value === 'object' ? Object.getPrototypeOf(value) : undefined;
+  if (proto === Object.prototype || proto === null) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, shownValue(v)]));
+  return value;
+}
+
 /** The ids of every level (and boss) in the registry, in play order. */
 async function levelIds() {
   const { ACTS } = await import(pathToFileURL(join(ROOT, 'levels', 'index.mjs')).href);
@@ -68,35 +84,38 @@ async function levelIds() {
 }
 
 /** Every export of levels/<id>.mjs (default included) as canonical text. */
-async function fingerprintOf(id) {
+async function fingerprintOf(id, shown) {
   const ns = await import(pathToFileURL(join(ROOT, 'levels', `${id}.mjs`)).href);
-  return `${canonical({ ...ns }, 2)}\n`;
+  return `${canonical(shown ? shownValue({ ...ns }) : { ...ns }, 2)}\n`;
 }
 
-/** Writes <id>.json per level into `dir`; returns the ids written. */
-export async function writeFingerprints(dir) {
+/** Writes <id>.json per level into `dir`; returns the ids written. `shown` unwraps gloss spans (see shownValue). */
+export async function writeFingerprints(dir, { shown = false } = {}) {
   mkdirSync(dir, { recursive: true });
   const ids = await levelIds();
-  for (const id of ids) writeFileSync(join(dir, `${id}.json`), await fingerprintOf(id));
+  for (const id of ids) writeFileSync(join(dir, `${id}.json`), await fingerprintOf(id, shown));
   return ids;
 }
 
 /** Writes every level under its id into one JSON file; returns the ids written. */
-export async function writeFingerprintFile(file) {
+export async function writeFingerprintFile(file, { shown = false } = {}) {
   mkdirSync(dirname(file), { recursive: true });
   const ids = await levelIds();
   const all = {};
   for (const id of ids) all[id] = (await import(pathToFileURL(join(ROOT, 'levels', `${id}.mjs`)).href));
-  writeFileSync(file, `${canonical(Object.fromEntries(Object.entries(all).map(([k, ns]) => [k, { ...ns }])), 2)}\n`);
+  const level = (ns) => (shown ? shownValue({ ...ns }) : { ...ns });
+  writeFileSync(file, `${canonical(Object.fromEntries(Object.entries(all).map(([k, ns]) => [k, level(ns)])), 2)}\n`);
   return ids;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const out = process.argv[2];
+  const args = process.argv.slice(2);
+  const shown = args.includes('--shown');
+  const out = args.find((a) => a !== '--shown');
   if (!out) {
-    process.stderr.write('usage: node tools/level-fingerprint.mjs <outdir | file.json>\n');
+    process.stderr.write('usage: node tools/level-fingerprint.mjs [--shown] <outdir | file.json>\n');
     process.exit(2);
   }
-  const ids = out.endsWith('.json') ? await writeFingerprintFile(out) : await writeFingerprints(out);
+  const ids = out.endsWith('.json') ? await writeFingerprintFile(out, { shown }) : await writeFingerprints(out, { shown });
   process.stdout.write(`fingerprinted ${ids.length} levels into ${out}\n`);
 }

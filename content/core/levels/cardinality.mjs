@@ -8,7 +8,7 @@ export default {
     "finish": "You can count the series a metric makes, spot the attributes that never stop growing, and keep to a budget with http.route and the user id on a span. Dash0 shows what drives volume, and a spam filter drops it at ingestion, though fixing the source comes first.",
     "steps": [
       {
-        "intro": "Kettle & Co's recommendations service counts the requests it serves in <code>http.server.requests</code>. A metric keeps one <b>series</b> for every unique combination of attribute values it has seen. This counter carries <code>http.request.method</code> ({{method}} values), <code>http.route</code> ({{route}} routes) and <code>http.response.status_code</code> ({{status}} codes).",
+        "intro": "Kettle & Co's recommendations service counts the requests it serves in <code>http.server.requests</code>. A [[metric]] keeps one <b>[[series|time-series]]</b> for every unique combination of attribute values it has seen. This counter carries <code>http.request.method</code> ({{method}} values), <code>http.route</code> ({{route}} routes) and <code>http.response.status_code</code> ({{status}} codes).",
         "question": "At most how many series can this one counter have?",
         "choice": {
           "id": "cdn-combos",

@@ -5,8 +5,17 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { canonical, writeFingerprints } from '../tools/level-fingerprint.mjs';
+import { canonical, shownValue, writeFingerprints } from '../tools/level-fingerprint.mjs';
 import { ACTS } from '../levels/index.mjs';
+
+test('shownValue unwraps gloss spans and nothing else, at any depth', () => {
+  const fn = () => {};
+  const out = shownValue({ a: 'x <span data-gloss="span">spans</span>', b: 'p99 < 1s', c: [{ d: '<span data-gloss="">Signals</span>' }], f: fn, n: 3, z: null });
+  assert.deepEqual(out, { a: 'x spans', b: 'p99 < 1s', c: [{ d: 'Signals' }], f: fn, n: 3, z: null });
+  assert.equal(shownValue('<span data-gloss="a">1</span> and <span data-gloss="b">2</span>'), '1 and 2', 'each span on its own, not greedy');
+  const re = /x/;
+  assert.equal(shownValue(re), re, 'a non-plain object is left whole');
+});
 
 test('canonical sorts keys, keeps array order and prints a function as "[function]"', () => {
   assert.equal(canonical({ b: 1, a: [2, 1], f() {} }), '{"a":[2,1],"b":1,"f":"[function]"}');

@@ -8,6 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CONTAINER_KEYS, IDENTITY_KEYS, MAP_KEY, STEP_TYPE_KEYS, TEXT_KEYS } from '../lib/content/keys.mjs';
 import { isId } from '../lib/content/text-rules.mjs';
+import { markerText } from '../lib/content/terms.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -43,7 +44,8 @@ export function extractLevelText(level) {
   if (level.play) {
     const steps = level.play.steps.map((step) => {
       const s = {};
-      for (const k of ['intro', 'question', 'show', 'code']) if (typeof step[k] === 'string') s[k] = step[k];
+      // A marked glossary term (#442) is a gloss span in the bound level: write the marker back, as the content file has it.
+      for (const k of ['intro', 'question', 'show', 'code']) if (typeof step[k] === 'string') s[k] = markerText(step[k]);
       const type = STEP_TYPE_KEYS.find((k) => k in step);
       s[type] = pick(step[type]) ?? { id: step[type].id };
       return s;

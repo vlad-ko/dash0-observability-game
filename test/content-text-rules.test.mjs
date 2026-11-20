@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
 import { HTML_KEYS, MAP_KEY } from '../lib/content/keys.mjs';
 import { checkCode, checkHtml, checkPlain, isId } from '../lib/content/text-rules.mjs';
+import { readGloss, unwrapGloss } from '../lib/content/terms.mjs';
 
 const DASH = String.fromCharCode(0x2014);
 
@@ -64,8 +65,11 @@ function liveHtmlFields() {
 test('checkHtml: every live HTML field of every play level passes', () => {
   const fields = liveHtmlFields();
   assert.ok(fields.length > 500, `the corpus is large (${fields.length})`);
-  const bad = fields.map(([where, s]) => [where, checkHtml(s)]).filter(([, p]) => p.length);
+  // A marked term is a gloss span (#442), which checkHtml refuses by design: judge the shown words, and hold the spans to intro and show.
+  const bad = fields.map(([where, s]) => [where, checkHtml(unwrapGloss(s))]).filter(([, p]) => p.length);
   assert.deepEqual(bad, []);
+  const strayed = fields.filter(([where, s]) => readGloss(s).length > 0 && !/\.(intro|show)$/.test(where)).map(([where]) => where);
+  assert.deepEqual(strayed, []);
 });
 
 test('checkHtml: the allowed tags and attributes pass', () => {

@@ -396,3 +396,44 @@ test('widget(key) is a no-op without onWidget, and a throwing onWidget is report
 test('createLevelContext refuses an onWidget that is not a function', () => {
   assert.throws(() => setup({ onWidget: 'nope' }), /onWidget/);
 });
+
+// ---- glossary terms in a drawn screen (#442) ----
+
+test('renderStep draws each term once per screen, wires the body, and never glosses the actions', () => {
+  const glossary = { terms: [{ id: 'span', name: 'Span unit', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' }] };
+  const dom = makeDom();
+  const calls = [];
+  const termPops = { wire: (root) => calls.push(['wire', root]), closeAll: () => calls.push(['closeAll']) };
+  const ctx = createLevelContext({
+    level: LEVEL_A, ovBody: dom.body, ovActions: dom.actions, now: () => NOW, shuffle: (a) => a, reduceMotion: true,
+    onFinish: () => {}, signal: new AbortController().signal, reportError: () => {}, glossary, termPops,
+  });
+  const g = (s) => `<span data-gloss="span">${s}</span>`;
+  ctx.renderStep(`<p>${g('span')} and ${g('spans')}</p>`, `<button>${g('span')}</button>`);
+  assert.equal(dom.body.querySelectorAll('[data-term]').length, 1);
+  assert.equal(dom.body.querySelector('[role="tooltip"]').id, 'lvterm-1-1');
+  assert.equal(dom.actions.innerHTML, `<button>${g('span')}</button>`);
+  ctx.renderStep(`<p>${g('span')}</p>`);
+  assert.equal(dom.body.querySelectorAll('[data-term]').length, 1, 'a new screen is a new scope');
+  assert.equal(dom.body.querySelector('[role="tooltip"]').id, 'lvterm-2-1');
+  assert.deepEqual(calls, [['closeAll'], ['wire', dom.body], ['closeAll'], ['wire', dom.body]]);
+});
+
+test('renderStep without a glossary or term popovers reads a marked term as plain words', () => {
+  const { dom, ctx } = setup();
+  ctx.renderStep('<p>a <span data-gloss="span">span</span></p>');
+  assert.equal(dom.body.innerHTML, '<p>a span</p>');
+});
+
+test('renderStep after the signal aborts draws but never touches the term popovers', () => {
+  const dom = makeDom();
+  const calls = [];
+  const controller = new AbortController();
+  const ctx = createLevelContext({
+    level: LEVEL_A, ovBody: dom.body, ovActions: dom.actions, now: () => NOW, shuffle: (a) => a, reduceMotion: true,
+    onFinish: () => {}, signal: controller.signal, reportError: () => {}, termPops: { wire: () => calls.push('wire'), closeAll: () => calls.push('closeAll') },
+  });
+  controller.abort();
+  ctx.renderStep('<p>x</p>');
+  assert.deepEqual(calls, []);
+});

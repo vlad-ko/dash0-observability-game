@@ -992,6 +992,8 @@ export function createGame(deps) {
           telemetry,
           guide: guideClient && { configured: guideClient.configured, ask: guideClient.ask },
           onWidget,
+          glossary,
+          termPops,
         });
         level.run(ctx);
       } catch (e) {
@@ -1064,7 +1066,8 @@ export function createGame(deps) {
     // The step's first control through focusFirst (Back when it has none), once the overlay is rendered (#353).
     focusStepStart() {
       const go = () => {
-        const first = doc.querySelector(STEP_CONTROLS);
+        // Not a glossary term in the intro (#442): focusing it would open its definition. linkedom has no reliable :not(), so filter.
+        const first = [...doc.querySelectorAll(STEP_CONTROLS)].find((el) => !el.closest('[data-term]')) ?? null;
         focusFirst(first, { fallback: doc.querySelector('#ov-back') });
       };
       if (typeof this.$nextTick === 'function') this.$nextTick(go);
@@ -1302,6 +1305,7 @@ export function createGame(deps) {
       if (session) session.abort();
       session = null;
       liveCtx = null;
+      termPops.closeAll(); // a level's open definition must not outlive it: its Escape handler would swallow the game's
       this.howTo = NO_HOW_TO;
       this.howToKey = null;
       this.howToFlagKey = null;

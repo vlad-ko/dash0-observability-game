@@ -97,7 +97,7 @@ function fakeGlobe(result = 'handle') {
   return { mount, log };
 }
 
-function setup({ initial, throwOn, storage, registry = REG, reduceMotion = true, globe, window, debug, comingSoon = [], dots = DOTS, telemetry, fetch } = {}) {
+function setup({ initial, throwOn, storage, registry = REG, reduceMotion = true, globe, window, debug, comingSoon = [], dots = DOTS, telemetry, fetch, glossary } = {}) {
   const dom = makeDom(read('index.html'));
   const store = fakeStorage({ initial, throwOn });
   const timers = [];
@@ -122,6 +122,7 @@ function setup({ initial, throwOn, storage, registry = REG, reduceMotion = true,
     debug,
     telemetry,
     fetch,
+    glossary,
   });
   return { game, store, dom, timers, errors };
 }
@@ -2357,4 +2358,51 @@ test('another tab hiding a guide clears the flag and the note (storage event)', 
   assert.equal(s.game.helpRev, rev + 1, 'Alpine is told to re-read');
   assert.equal(s.game.howToFlagged(), false);
   assert.equal(s.game.howToNote, '');
+});
+
+// ---- glossary terms in a level's text (#442) ------------------------------------------
+
+const TERM_GLOSSARY = { terms: [{ id: 'span', name: 'Span', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' }] };
+const REG_TERM = buildRegistry(
+  [
+    {
+      id: 'a0',
+      no: 0,
+      name: 'First act',
+      levels: [L('t', '0.1', {
+        run(ctx) {
+          ctx.renderStep('<p>A <span data-gloss="span">span</span> here.</p><button id="go">Go</button>', '<button data-finish>Finish</button>');
+        },
+      })],
+      boss: null,
+    },
+  ],
+  { deck: [], nodeIds: [] },
+);
+const termGame = () => setup({ registry: REG_TERM, glossary: TERM_GLOSSARY });
+const fireOn = (dom, el, type, init = {}) => {
+  const e = new dom.window.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, init);
+  el.dispatchEvent(e);
+  return e;
+};
+
+test('a level whose intro marks a term opens with focus on the step\'s first real control, not the term', () => {
+  const s = termGame();
+  const focus = recordFocus(s.dom.window);
+  assert.equal(s.game.openLevel('t'), true);
+  assert.ok(s.dom.document.querySelector('#ov-body [data-term]'), 'control: the term is drawn before the button');
+  assert.deepEqual(focus.names(), ['#go']);
+});
+
+test('leaving a level closes an open term card, so the next Escape reaches the game', () => {
+  const s = termGame();
+  s.game.openLevel('t');
+  const term = s.dom.document.querySelector('#ov-body [data-term]');
+  const pop = term.querySelector('[role="tooltip"]');
+  fireOn(s.dom, term, 'mouseenter');
+  assert.equal(pop.hasAttribute('hidden'), false, 'control: hover opened the definition in the level');
+  s.game.closeOverlay();
+  assert.equal(pop.hasAttribute('hidden'), true);
+  assert.equal(fireOn(s.dom, s.dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
 });

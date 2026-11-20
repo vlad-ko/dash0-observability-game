@@ -29,6 +29,7 @@ import { scoreStars } from '../lib/scoring.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { liveRegistry } from '../app.mjs';
+import { GLOSSARY } from '../content/core/glossary/index.mjs';
 import { stepsOf } from './helpers/step-drivers.mjs';
 import { clickFrameOf, frameOf, recordFrames } from './helpers/snapshot.mjs';
 import fixtureLevel, { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
@@ -610,6 +611,9 @@ function openLevel(level, { telemetry = null } = {}) {
     },
     telemetry,
     guide: FAKE_GUIDE,
+    // The glossary draws the marked terms (#442), so the checks below read real term markup. No termPops: card placement
+    // leaves a style attribute that FORBIDDEN_ATTR would flag, and wiring is covered by test/level-context.test.mjs.
+    glossary: GLOSSARY,
   });
   const render = ctx.renderStep;
   // LEVEL_SNAPSHOT=<dir> (test/helpers/snapshot.mjs): the live overlay as each step is left and
