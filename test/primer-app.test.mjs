@@ -47,7 +47,7 @@ const LIT_MAP = {
 };
 const DONE = { stars: 3, text: 'ok', cards: [] };
 
-function setup({ primers = [P0], debug = false, initial, storage, globeMap = GLOBE_MAP, globe = null } = {}) {
+function setup({ primers = [P0], debug = false, initial, storage, globeMap = GLOBE_MAP, globe = null, glossary = null } = {}) {
   const dom = makeDom(html);
   const focus = recordFocus(dom.window);
   const store = fakeStorage({ initial });
@@ -55,7 +55,7 @@ function setup({ primers = [P0], debug = false, initial, storage, globeMap = GLO
   const game = createGame({
     registry: REG, deck: [], storage: storage ?? (() => store), document: dom.document, window: { addEventListener() {} },
     now: () => 0, rand: () => 0, reduceMotion: () => true, setTimeout: () => {}, clearTimeout: () => {},
-    reportError: (e) => errors.push(e), globeMap, dots: [], primers, debug, globe,
+    reportError: (e) => errors.push(e), globeMap, dots: [], primers, debug, globe, glossary,
   });
   // The elements a focus goes back to (the level card, the tile) are Alpine-rendered, so linkedom has none: note the selectors asked for.
   const asked = [];
@@ -69,6 +69,72 @@ function setup({ primers = [P0], debug = false, initial, storage, globeMap = GLO
 const stored = (store) => JSON.parse(store.data.get(PRIMER_KEY));
 const writes = (store) => store.sets.filter(([k]) => k === PRIMER_KEY).length;
 const tileText = (game) => game.primerTile('a0').text;
+
+// ---- glossary terms (#429) ----
+const GLOSSARY = { terms: [{ id: 'span', name: 'Span', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' }] };
+const TERMED = {
+  ...P0,
+  overview: [{ type: 'paragraph', text: 'A [[span]] is the unit.' }],
+  chapters: [{ ...chapter('c-one'), blocks: [{ type: 'paragraph', text: 'Each [[unit|span]] is a span.' }] }, chapter('c-two')],
+};
+const fire = (dom, el, type, init = {}) => {
+  const e = new dom.window.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(e, init);
+  el.dispatchEvent(e);
+  return e;
+};
+
+test('terms: the pop-up draws a marked term wired to open on hover, and the zone does the same for a chapter', () => {
+  const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
+  game.openPrimer('a0');
+  const popup = dom.document.querySelector('#primer-body [data-term]');
+  assert.ok(popup, 'the overview has its term');
+  const pop = popup.querySelector('[role="tooltip"]');
+  assert.equal(pop.hasAttribute('hidden'), true);
+  fire(dom, popup, 'mouseenter');
+  assert.equal(pop.hasAttribute('hidden'), false, 'hover opens it: the drawn body is wired');
+  game.primerProceed();
+  const zoned = dom.document.querySelector('#primer-zone-body [data-term]');
+  assert.ok(zoned, 'the chapter has its term');
+  fire(dom, zoned, 'mouseenter');
+  assert.equal(zoned.querySelector('[role="tooltip"]').hasAttribute('hidden'), false);
+});
+
+test('terms: closing the primer closes an open definition, so a later Escape reaches the page', () => {
+  const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
+  game.openPrimer('a0');
+  game.primerProceed();
+  const zoned = dom.document.querySelector('#primer-zone-body [data-term]');
+  fire(dom, zoned, 'mouseenter');
+  game.closePrimer();
+  assert.equal(zoned.querySelector('[role="tooltip"]').hasAttribute('hidden'), true);
+  assert.equal(fire(dom, dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
+});
+
+test('terms: moving to another chapter draws it afresh and forgets the open definition', () => {
+  const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
+  game.openPrimer('a0');
+  game.primerProceed();
+  fire(dom, dom.document.querySelector('#primer-zone-body [data-term]'), 'mouseenter');
+  game.primerNext();
+  assert.equal(dom.document.querySelectorAll('#primer-zone-body [data-term]').length, 0, 'chapter two marks nothing');
+  assert.equal(fire(dom, dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
+});
+
+test('terms: a primer that marks a term the glossary lacks has no tile and is reported once', () => {
+  const bad = { ...TERMED, overview: [{ type: 'paragraph', text: 'A [[x|ghost]].' }] };
+  const { game, errors } = setup({ primers: [bad], glossary: GLOSSARY });
+  assert.equal(game.primerTile('a0'), null);
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /ghost/);
+});
+
+test('terms: with no glossary a marker reads as plain words and nothing is wired', () => {
+  const { game, dom } = setup({ primers: [TERMED] });
+  game.openPrimer('a0');
+  assert.equal(dom.document.querySelectorAll('#primer-body [data-term]').length, 0);
+  assert.equal(dom.document.querySelector('#primer-body p').textContent, 'A span is the unit.');
+});
 
 test('the tile exists only for an act with a primer', () => {
   const { game } = setup();

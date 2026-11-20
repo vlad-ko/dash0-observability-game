@@ -13,7 +13,7 @@ import * as ui from '../lib/ui/index.mjs';
 const {
   actions, button, buttonRow, checkbox, chip, clearFeedback, codeBlock, dots, eyebrow, feedback, field, finishButton, fold, hintHead,
   helpChips, lesson, linkButton, meter, nextButton, note, option, options, panel, prose, question, radio, radioGroup, reason, setFeedback,
-  sideColumn, split, stars, stats, step, stepHead, table,
+  sideColumn, split, stars, stats, step, stepHead, table, term,
   BUTTON_VARIANTS, DOTS_TONES, FEEDBACK_TONES, LINK_VARIANTS, OPTION_KINDS, OPTION_STATES, OPTIONS_LAYOUTS, PANEL_VARIANTS, TONES,
 } = ui;
 
@@ -319,6 +319,7 @@ const CASES = [
   ['sideColumn', (t) => sideColumn({ id: 's', titleHtml: 't', counts: [{ key: 'wrong', label: t }] }), (h) => sideColumn({ id: 's', titleHtml: h, counts: [], hints: true, ruleHtml: h })],
   ['stars', null, null, () => stars(5, true)],
   ['fold', null, (h) => fold({ value: 'v', titleHtml: h, metaHtml: h, bodyHtml: h })],
+  ['term', (t) => term({ id: 'tm', text: t, name: t, definition: t }), null],
 ];
 
 // Every static variant: each value of the exported enums and each boolean modifier, so a
@@ -338,6 +339,16 @@ const VARIANTS = () => [
 ];
 
 const outputs = () => CASES.flatMap(([, t, h, plain]) => [t?.('x'), h?.('<i>x</i>'), plain?.()].filter((o) => o !== undefined)).concat(VARIANTS());
+
+test('term: a button described by a hidden tooltip, in one wrapper; a bad id or empty text throws', () => {
+  assert.equal(term({ id: 't-1', text: 'span', name: 'Span', definition: 'One unit of work.' }),
+    '<span class="ui-term" data-term><button type="button" class="ui-term-btn" aria-describedby="t-1">span</button>' +
+    '<span class="ui-term-pop" id="t-1" role="tooltip" hidden><b class="ui-term-name">Span</b> One unit of work.</span></span>');
+  assert.throws(() => term({ id: '1 bad', text: 'a', name: 'b', definition: 'c' }), /term/);
+  assert.throws(() => term({ id: 'ok', text: ' ', name: 'b', definition: 'c' }), /term/);
+  assert.throws(() => term({ id: 'ok', text: 'a', name: 'b', definition: '' }), /term/);
+  assert.throws(() => term({ id: 'ok', text: 'a', name: 'b', definition: 'c', extra: 1 }), /term/);
+});
 
 test('T10 every exported helper is covered by the contract table', () => {
   const exported = Object.keys(ui).filter((k) => typeof ui[k] === 'function' && !['setFeedback', 'clearFeedback'].includes(k)).sort();
@@ -509,6 +520,12 @@ const INVALID = [
   ['fold', () => fold({ value: 'v', titleHtml: 't', bodyHtml: 'b', open: 'yes' })],
   ['fold', () => fold({ value: 'v', titleHtml: 't', bodyHtml: 'b', fresh: 1 })],
   ['fold', () => fold({ value: 'v', titleHtml: 't', bodyHtml: 'b', colour: 'red' })],
+  ['term', () => term()],
+  ['term', () => term({ id: 'not a token', text: 'a', name: 'n', definition: 'd' })],
+  ['term', () => term({ id: 'ok', text: '', name: 'n', definition: 'd' })],
+  ['term', () => term({ id: 'ok', text: 'a', name: '', definition: 'd' })],
+  ['term', () => term({ id: 'ok', text: 'a', name: 'n', definition: 5.5 + NaN })],
+  ['term', () => term({ id: 'ok', text: 'a', name: 'n', definition: 'd', colour: 'red' })],
 ];
 
 test('T10 bad input throws a TypeError naming the helper', () => {

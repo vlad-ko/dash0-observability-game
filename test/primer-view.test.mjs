@@ -172,6 +172,128 @@ test('the zone escapes a chapter title', () => {
   assert.ok(root.textContent.includes(evil));
 });
 
+// ---- glossary terms (#429) ----
+const GLOSSARY = {
+  terms: [
+    { id: 'signal', name: 'Signal', variants: ['signals'], definition: 'A kind of telemetry.', act: 'act-0', topic: 'Foundations' },
+    { id: 'span', name: 'Span', variants: [], definition: 'One unit of work & <more>.', act: 'act-1', topic: 'Traces' },
+  ],
+};
+const para = (text) => ({ type: 'paragraph', text });
+const termPrimer = (overview, chapters) => ({
+  ...PRIMER,
+  overview,
+  chapters: chapters.map((blocks, i) => ({ id: `c-${i}`, title: `T${i}`, blocks, sources: [source()] })),
+});
+const drawT = (primer, screen) => {
+  const view = screen === -1 ? primerView(primer, -1) : primerZoneView(primer, screen, undefined, {});
+  const html = screen === -1 ? primerBodyHtml(view, { glossary: GLOSSARY }) : primerZoneHtml(view, { glossary: GLOSSARY });
+  return parseHTML(`<!doctype html><body><div id="r">${html}</div></body>`).document.getElementById('r');
+};
+const termsIn = (root) => [...root.querySelectorAll('[data-term]')];
+const shownOf = (t) => t.querySelector('button').textContent;
+
+test('terms: the first marked use of a term in a chapter is a term control, later uses are plain text', () => {
+  const p = termPrimer([para('x')], [[para('A [[signal]], then [[signals]] and [[Signal|signal]].')]]);
+  const root = drawT(p, 0);
+  const terms = termsIn(root);
+  assert.equal(terms.length, 1);
+  assert.equal(shownOf(terms[0]), 'signal');
+  const text = root.querySelector('.ui-prose p').textContent;
+  assert.match(text, /then signals and Signal\./, 'later uses read as the shown text');
+  assert.equal(root.querySelector('.ui-prose p').querySelectorAll('button').length, 1);
+  assert.equal(root.textContent.includes('[['), false);
+  assert.equal(root.textContent.includes('|signal'), false);
+});
+
+test('terms: "first" runs across a chapter, in paragraphs, list items and callouts, in the order read', () => {
+  const p = termPrimer([para('x')], [[
+    para('Plain.'),
+    { type: 'list', items: ['one [[signal]]', 'two [[signal]] and [[span]]'] },
+    { type: 'callout', tone: 'tip', text: 'A [[span]] and [[signal]].' },
+    para('Again [[span]].'),
+  ]]);
+  const root = drawT(p, 0);
+  const terms = termsIn(root);
+  assert.deepEqual(terms.map(shownOf), ['signal', 'span'], 'two terms, each once');
+  const items = [...root.querySelectorAll('li')];
+  assert.equal(items[0].querySelectorAll('[data-term]').length, 1, 'the first list item holds the first use of signal');
+  assert.equal(items[1].querySelectorAll('[data-term]').length, 1, 'the second holds the first use of span');
+  assert.equal(root.querySelector('.ui-note').querySelectorAll('[data-term]').length, 0, 'both were already used');
+});
+
+test('terms: each chapter starts over, and so does the overview', () => {
+  const body = [para('Use [[signal]] then [[signal]].')];
+  const p = termPrimer(body, [body, body]);
+  for (const screen of [-1, 0, 1]) {
+    const terms = termsIn(drawT(p, screen));
+    assert.equal(terms.length, 1, `screen ${screen}`);
+  }
+});
+
+test('terms: unmarked text never changes, even a word that is a term name', () => {
+  const p = termPrimer([para('A signal and a span.')], [[para('A signal and a span.')]]);
+  for (const screen of [-1, 0]) {
+    const root = drawT(p, screen);
+    assert.equal(termsIn(root).length, 0);
+    assert.equal(root.querySelector('.ui-prose p').textContent, 'A signal and a span.');
+  }
+});
+
+test('terms: the control is a button described by a tooltip that is always in the DOM and hidden, with the name and definition', () => {
+  const root = drawT(termPrimer([para('A [[unit|span]].')], [[para('x')]]), -1);
+  const [term] = termsIn(root);
+  const button = term.querySelector('button');
+  assert.equal(button.getAttribute('type'), 'button');
+  const pop = root.querySelector(`#${button.getAttribute('aria-describedby')}`);
+  assert.ok(pop, 'aria-describedby names an element');
+  assert.equal(term.contains(pop), true);
+  assert.equal(pop.getAttribute('role'), 'tooltip');
+  assert.equal(pop.hasAttribute('hidden'), true);
+  assert.equal(button.textContent, 'unit', 'the shown text, not the term name');
+  assert.match(pop.textContent, /^Span/);
+  assert.equal(pop.textContent.includes('One unit of work & <more>.'), true, 'the definition, as text');
+  assert.equal(pop.querySelectorAll('more').length, 0, 'escaped');
+});
+
+test('terms: every popover id on a screen is unique, and the pop-up and the zone never share one', () => {
+  const p = termPrimer([para('[[signal]] [[span]]')], [[para('[[signal]] [[span]]')]]);
+  const ids = (root) => termsIn(root).map((t) => t.querySelector('[role="tooltip"]').id);
+  const overview = ids(drawT(p, -1));
+  const chapter = ids(drawT(p, 0));
+  assert.equal(new Set(overview).size, 2);
+  assert.equal(new Set([...overview, ...chapter]).size, 4);
+});
+
+test('terms: no glossary, or a term it does not define, draws the shown text and never the marker', () => {
+  const p = termPrimer([para('A [[signal]] and [[ghost|nope]].')], [[para('x')]]);
+  const none = parseHTML(`<!doctype html><body><div id="r">${primerBodyHtml(primerView(p, -1))}</div></body>`).document.getElementById('r');
+  assert.equal(termsIn(none).length, 0);
+  assert.equal(none.querySelector('p').textContent, 'A signal and ghost.');
+  const unknown = drawT(p, -1);
+  assert.deepEqual(termsIn(unknown).map(shownOf), ['signal']);
+  assert.equal(unknown.querySelector('p').textContent.includes('[['), false);
+});
+
+test('terms: a broken marker in a primer that skipped validation is shown as written, escaped', () => {
+  const root = drawT(termPrimer([para('Odd [[<b>x')], [[para('x')]]), -1);
+  assert.equal(root.querySelectorAll('b').length, 0);
+  assert.equal(root.querySelector('p').textContent, 'Odd [[<b>x');
+});
+
+test('terms: a term in the zone sits in the main column, and the chapter list has none', () => {
+  const root = drawT(termPrimer([para('x')], [[para('A [[signal]].')]]), 0);
+  assert.equal(root.querySelector('.ui-split-main').querySelectorAll('[data-term]').length, 1);
+  assert.equal(root.querySelector('nav').querySelectorAll('[data-term]').length, 0);
+});
+
+test('terms: nothing the term draws carries a style, an event handler or an Alpine attribute', () => {
+  const root = drawT(termPrimer([para('A [[signal]] [[span]].')], [[para('A [[signal]].')]]), -1);
+  for (const el of root.querySelectorAll('*')) {
+    for (const name of el.getAttributeNames()) assert.equal(/^(style$|on|x-|@|:)/.test(name), false, `${el.localName} has ${name}`);
+  }
+});
+
 test('nothing the zone draws carries a style, an event handler or an Alpine attribute', () => {
   for (const screen of [0, 2]) {
     const root = drawZone(THREE, screen, { read: ['c-one'] }, { draft: true });

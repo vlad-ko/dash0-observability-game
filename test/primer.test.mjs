@@ -323,3 +323,80 @@ test('primerZoneView: eyebrow, primer title, back, the chapter list with current
   assert.equal(primerZoneView(P0(), 0, undefined, { actNo: 0 }).eyebrow, 'Act 0 primer');
   assert.equal(primerZoneView(P0(), 0, undefined, {}).eyebrow, 'Act primer');
 });
+
+// ---- glossary term markers (#429, docs/PRIMERS.md "Marking glossary terms") ----
+const GLOSSARY = {
+  terms: [
+    { id: 'signal', name: 'Signal', variants: ['signals'], definition: 'A kind of telemetry.', act: 'act-0', topic: 'Foundations' },
+    { id: 'span', name: 'Span', variants: [], definition: 'One unit of work.', act: 'act-1', topic: 'Traces' },
+  ],
+};
+const checkT = (p, glossary = GLOSSARY) => validatePrimer(p, { actIds: ACT_IDS, glossary });
+const withOverview = (...blocks) => mutate((p) => (p.overview = blocks));
+const para = (text) => ({ type: 'paragraph', text });
+
+test('terms: a marker by id, a short form by name or variant, in a paragraph, a list item and a callout, is valid', () => {
+  const p = withOverview(para('A [[unit|span]] of [[signals]].'), { type: 'list', items: ['See [[Span]].'] }, { type: 'callout', tone: 'tip', text: 'A [[signal]].' });
+  assert.deepEqual(checkT(p), { ok: true, errors: [] });
+});
+
+test('terms: a primer that marks a term the glossary does not define is invalid, naming the path and the id', () => {
+  const byId = checkT(withOverview(para('A [[thing|no-such-term]] here.')));
+  assert.equal(byId.ok, false);
+  assert.ok(byId.errors.some((e) => e.includes('overview[0].text') && e.includes('no-such-term')), JSON.stringify(byId.errors));
+  const inChapter = checkT(mutate((p) => (p.chapters[1].blocks = [{ type: 'list', items: ['ok', 'a [[ghost|nope]]'] }])));
+  assert.ok(inChapter.errors.some((e) => e.includes('chapters[1].blocks[0].items[1]') && e.includes('nope')), JSON.stringify(inChapter.errors));
+});
+
+test('terms: a short form that names no term or variant is invalid', () => {
+  const r = checkT(withOverview(para('A [[Unicorn]] here.')));
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some((e) => e.includes('overview[0].text') && e.includes('Unicorn')), JSON.stringify(r.errors));
+});
+
+test('terms: unbalanced, nested and empty markers are invalid, each naming its path', () => {
+  for (const text of ['open [[span', 'close span]]', 'a [[x [[span]] y]]', 'a [[]] b', 'a [[|span]] b']) {
+    const r = checkT(withOverview(para(text)));
+    assert.equal(r.ok, false, text);
+    assert.ok(r.errors.some((e) => e.startsWith('overview[0].text')), `${text}: ${JSON.stringify(r.errors)}`);
+  }
+});
+
+test('terms: the syntax is checked even with no glossary, and a name is only resolved with one', () => {
+  assert.equal(checkT(withOverview(para('open [[span')), null).ok, false);
+  assert.equal(checkT(withOverview(para('A [[ghost|nope]] here.')), null).ok, true);
+  assert.equal(checkT(withOverview(para('A [[ghost|nope]] here.')), { terms: [] }).ok, false, 'an empty glossary defines nothing');
+});
+
+test('terms: a title, a link label and a placeholder note carry no marker', () => {
+  assert.equal(checkT(mutate((p) => (p.title = 'About [[span]]'))).ok, false);
+  const chapterTitle = checkT(mutate((p) => (p.chapters[0].title = 'The [[span]]')));
+  assert.ok(chapterTitle.errors.some((e) => e.includes('chapters[0].title')), JSON.stringify(chapterTitle.errors));
+  const label = checkT(withOverview({ type: 'link', kind: 'docs', label: 'The [[span]]', url: 'https://www.dash0.com/docs/', audience: 'public' }));
+  assert.ok(label.errors.some((e) => e.includes('overview[0].label')), JSON.stringify(label.errors));
+  assert.equal(checkT(mutate((p) => (p.chapters[0].sources[0].label = 'The [[span]]'))).ok, false);
+  assert.equal(checkT(mutate((p) => { p.placeholder = true; p.placeholderNote = 'PLACEHOLDER: [[span]]'; })).ok, false);
+});
+
+test('terms: a code block is not parsed, so shell [[ ]] in it is fine', () => {
+  assert.equal(checkT(withOverview({ type: 'code', text: 'if [[ -f x ]]; then echo ok; fi' })).ok, true);
+});
+
+test('terms: length limits count the shown text, not the marker', () => {
+  const marked = '[[signals|signal]]'; // 18 characters in the file, 7 shown
+  const fits = `${'x'.repeat(600 - 7)}${marked}`; // 593 + 7 = 600 shown, 611 raw
+  assert.equal(checkT(withOverview(para(fits))).ok, true, 'exactly at the limit once the marker is shown');
+  assert.equal(checkT(withOverview(para(`${fits}y`))).ok, false, 'one more shown character is over');
+  assert.equal(checkT(withOverview({ type: 'list', items: [`${'x'.repeat(200 - 7)}${marked}`] })).ok, true);
+  assert.equal(checkT(withOverview({ type: 'callout', tone: 'note', text: `${'x'.repeat(400 - 7)}${marked}` })).ok, true);
+  assert.equal(checkT(withOverview({ type: 'callout', tone: 'note', text: `${'x'.repeat(400 - 6)}${marked}` })).ok, false);
+});
+
+test('terms: buildPrimers with a glossary drops a primer that marks an undefined term, and reports it', () => {
+  const bad = withOverview(para('A [[x|ghost]] here.'));
+  const { byAct, errors } = buildPrimers([bad], { acts: [{ id: 'a0' }] }, GLOSSARY);
+  assert.deepEqual(Object.keys(byAct), []);
+  assert.ok(errors.some((e) => e.includes('ghost')), JSON.stringify(errors));
+  assert.deepEqual(Object.keys(buildPrimers([withOverview(para('A [[span]].'))], { acts: [{ id: 'a0' }] }, GLOSSARY).byAct), ['a0']);
+  assert.equal(validatePrimers([bad], { actIds: ACT_IDS, glossary: GLOSSARY }).ok, false);
+});

@@ -203,9 +203,9 @@ One act per pull request, as in section 9.
 ## 12. The glossary
 
 `content/core/glossary/` is the one source of the game's terms (#428), one file per act (#427) so that parallel act pull requests do not conflict: `act-0.mjs` to `act-9.mjs` for the terms an act teaches, and `general.mjs` for the game's own terms (for example Hint, 50/50, Save code). Each file is a strict-JSON module like a primer (header `//` lines, then `export default {...};`), loads in the browser and under `node --test`, and holds `{ "terms": [...] }`. `content/core/glossary/index.mjs` lists the files, as `content/core/primers/index.mjs` lists the primers: a new act's file needs its file, one import and one entry there. Each term has:
-- `id`: lowercase kebab, unique. A primer will mark a term by this id, so never rename one that is in use.
+- `id`: lowercase kebab, unique. A primer marks a term by this id (`[[shown text|id]]`, docs/PRIMERS.md "Marking glossary terms"), and `npm test` fails when a marker names an id that is gone, so never rename or remove one that is in use.
 - `name`: the display name.
-- `variants`: other spellings or plurals a primer may use. Names and variants share one case-insensitive key space: none may repeat, within a term or across terms.
+- `variants`: other spellings or plurals a primer may use (the short marker `[[shown text]]` finds a term by its name or a variant, so a variant that is a common word, such as "status" or "target", makes that short form match it: give the marker the id instead). Names and variants share one case-insensitive key space: none may repeat, within a term or across terms.
 - `definition`: plain text, one or two short sentences, at most 240 characters. No markup (no backticks, asterisks, tags or Markdown links), no em dashes, UK spelling.
 - `topic`: the section heading in the generated doc. It must be one of `TOPIC_ORDER` in `lib/glossary.mjs` (Foundations, OpenTelemetry, Traces, Metrics, Logs, Collector, Reliability, Dash0), and the doc shows the topics in that order.
 

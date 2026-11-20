@@ -38,6 +38,36 @@ password. `AUDIENCES` lists who may see it.
 Chapter ids are the key the game saves "read" against. Never rename a chapter id once players may have read it; add a new
 chapter instead.
 
+## Marking glossary terms
+
+A word the glossary defines (`content/core/glossary/`, docs/CONTENT.md section 12) can be marked in a primer, and the reader then
+sees its definition in place: the word gets a dashed underline, and hovering it, focusing it with the keyboard or tapping it
+opens a small card with the term's name and definition. Escape or a tap elsewhere closes it.
+
+Write the marker around the words as they appear in the sentence:
+
+- `[[shown text|term-id]]` marks the term with that glossary id. The reader sees only the shown text, so it can be a plural or any
+  wording: `[[spans|span]]`.
+- `[[shown text]]` is the short form. It finds the term by name or variant, ignoring case: `[[Signals]]` finds the term whose name
+  or variants include "signals". Use the long form when the sentence's words are not a name or variant.
+
+Where: in a paragraph, a list item or a callout. Not in a title, a link label or a source, and a code block is never read for
+markers (so `[[ -f file ]]` in a shell sample is fine).
+
+What gets underlined: the first marked use of each term in a chapter, and separately the first in the overview. Later markers of the
+same term in that chapter or overview show as plain words, so mark every use you like: only the first draws attention. Text you do
+not mark never changes, so a plain "signal" stays plain. Mark a term where it helps a reader meet it, not every common word, and
+only when the glossary's sense is the one meant (a "target" or a "status" in the everyday sense is not the glossary term).
+
+The checks are in `npm test`, each naming the path of the problem:
+
+- the id names no term in the glossary, or a short form matches no name or variant;
+- a marker is not closed, a closing `]]` has no opening, a marker is inside another, or the shown text is empty or starts or ends with a space;
+- a marker is in a title, a link label or a source.
+
+Length limits count what the reader sees, not the marker: `[[signals|signal]]` counts as the 7 characters of "signals", so marking
+a term never pushes a paragraph, list item or callout over its limit.
+
 ## Placeholders
 
 Until the Dash0 team has written its own words, a primer is a placeholder: set `"placeholder": true` and give a
