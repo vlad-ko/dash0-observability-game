@@ -26,6 +26,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
 - `tools/serve.mjs` dev server; `.github/workflows/ci.yml`; `tools/pr-findings.mjs` (findings
   detector) and `tools/pr-findings-status.mjs`, run by `.github/workflows/pr-findings.yml`
   (triggered by `pr-findings-relay.yml` for PR and review events).
+- `tools/homeostasis`: local repo health check for worktrees and branches left by agents, vendored from claude-homeostasis at 6ebd7dd (sha256 `378b37ebb362c0a04e97d95b0c0cdab553ce8a0449598e2ff723d361d8b4cf46`, MIT). `tools/homeostasis --check` reports, `--apply` does the safe part.
 - Content-move checks (#391): `node tools/level-fingerprint.mjs <dir>` writes every level's canonical exports; `LEVEL_SNAPSHOT=<dir>` makes `test/levels-play.test.mjs` write each run's screens. Diff before and after.
 - Play events (epic #18, docs/GAME-EVENTS.md): `lib/play-telemetry.mjs` is the browser client (off in debug, never throws), `lib/play-events.mjs` the wire contract, `api/events.mjs` the receiver; separate from the Act 9 lab `lib/telemetry.mjs`.
 - Act primers (#389, docs/FOUNDATION.md §2.12): `content/core/primers/<act-id>.mjs` is strict-JSON content kept apart from code, `lib/primer.mjs` the pure validator, status and view, `lib/primer-prefs.mjs` the saved state (`oncall.primers`), `lib/primer-view.mjs` the pop-up and zone bodies (`createGame` takes `primers`, default `[]`; `main.mjs` passes `PRIMERS`), `lib/content/` the text rules shared by authored content; authoring guide: docs/PRIMERS.md.
@@ -82,3 +83,5 @@ The wizard skill (`/wizard`) lives at `.claude/skills/wizard`, its agent roster 
 - Each agent pins its default model in frontmatter (opus only for architect, qa-engineer and level-design-reviewer, cheaper tiers elsewhere); a dispatch may override per task with a stated reason.
 - Claude may merge at the full merge-ready bar (merge commit only), overriding the skill's and pr-manager's human-merges default.
 - PR review is split per head and routed by the diff: `.claude/skills/wizard/reference/game-review-routing.md`.
+- Before finishing a task, run `tools/homeostasis --check` and include the result. When the owner asks to bring the local back to homeostasis, run `--check`, show the report, then run `--apply`.
+- Never delete worktrees or branches by hand. KEEP-DIRTY and INCONCLUSIVE items are the owner's call.
