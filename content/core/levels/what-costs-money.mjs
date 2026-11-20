@@ -8,7 +8,7 @@ export default {
     "finish": "You know what each pricing model counts: hosts, bytes or signals. Volume, cardinality and retention drive the bill, sampling is the lever on volume, and the model decides whether size or count is the thing to cut.",
     "steps": [
       {
-        "intro": "Kettle & Co is choosing where to send its telemetry, and the price lists differ in what they count. Whatever the meter counts is what you optimise, so the first thing to find out is what that is. Three drivers sit behind every model: how much you send (volume), how many series your metrics make (cardinality) and how long you keep it (retention). Sampling is the lever on volume. The first vendor charges a flat amount for each <b>host</b> that sends telemetry.",
+        "intro": "Kettle & Co is choosing where to send its [[telemetry]], and the price lists differ in what they count. Whatever the meter counts is what you optimise, so the first thing to find out is what that is. Three drivers sit behind every model: how much you send (volume), how many [[series|time-series]] your metrics make (cardinality) and how long you keep it (retention). [[Sampling]] is the lever on volume. The first vendor charges a flat amount for each <b>host</b> that sends telemetry.",
         "question": "Under per-host pricing, which change lowers the bill?",
         "choice": {
           "id": "wcm-host",
@@ -125,7 +125,7 @@ export default {
         }
       },
       {
-        "intro": "The third vendor charges per <b>signal</b>: each span, log record and metric data point is one, however large. The budget is {{signal-cap}} cost units a day. The costs are invented, and each option shows the units it adds.",
+        "intro": "The third vendor charges per <b>signal</b>: each span, [[log record]] and metric data point is one, however large. The budget is {{signal-cap}} cost units a day. The costs are invented, and each option shows the units it adds.",
         "question": "Pick a setting for each of the three: keep every need and stay within the budget.",
         "tradeoff": {
           "id": "wcm-signal",
