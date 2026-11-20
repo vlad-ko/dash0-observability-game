@@ -88,7 +88,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Dash0 shows SLO gauges, error budget burndown charts and [[burn-rate|burn-rate]] views instead of a simple pass or fail. An SLO gauge is a dial, not the Gauge [[instrument]] from the metrics act. A burndown chart shows the remaining budget over time. A burn-rate view shows how fast the budget is being spent. Every SLO also emits metrics, which you can chart on dashboards, query, and build check rules on."
+          "text": "Dash0 shows SLO gauges, error budget burndown charts and [[burn-rate|burn-rate]] views instead of a simple pass or fail. An SLO gauge is a dial, not the Gauge [[instrument]] from the metrics act. A burndown chart shows the remaining budget over time. A burn-rate view shows how fast the budget is being spent. Every SLO also emits [[metrics]], which you can chart on dashboards, query, and build check rules on."
         }
       ],
       "sources": [

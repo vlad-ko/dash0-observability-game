@@ -8,7 +8,7 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "Every trace, metric and log needs to say which system it describes. In [[OpenTelemetry]] that is the job of a [[resource]], the description of the system that emits telemetry. This act is about telling your services apart, so you can find the one that is misbehaving."
+      "text": "Every trace, [[metric]] and log needs to say which system it describes. In [[OpenTelemetry]] that is the job of a [[resource]], the description of the system that emits telemetry. This act is about telling your services apart, so you can find the one that is misbehaving."
     },
     {
       "type": "list",
@@ -39,7 +39,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A resource is added to the tracer provider or meter provider (the objects that create tracers and meters) when it is created. That association cannot be changed later, and all [[spans]] (timed operations) and metrics from that provider carry the resource."
+          "text": "A resource is added to the tracer provider or meter provider (the objects that create tracers and meters) when it is created. That association cannot be changed later, and all [[spans]] (timed operations) and [[metrics]] from that provider carry the resource."
         }
       ],
       "sources": [

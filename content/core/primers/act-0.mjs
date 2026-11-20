@@ -14,7 +14,7 @@ export default {
       "type": "list",
       "items": [
         "Observability is the ability to understand what is going on inside a system from its outputs, so you can ask questions about problems nobody predicted.",
-        "The main signals are traces, metrics and logs, with [[profiles]] emerging as a fourth. Each answers a different kind of question.",
+        "The main signals are traces, [[metrics]] and logs, with [[profiles]] emerging as a fourth. Each answers a different kind of question.",
         "OpenTelemetry is the shared, vendor-neutral way to generate, collect and export that telemetry."
       ]
     },
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Observability]] is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analysing [[telemetry]] data such as traces, metrics and logs."
+          "text": "[[Observability]] is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analysing [[telemetry]] data such as traces, [[metrics]] and logs."
         },
         {
           "type": "paragraph",
@@ -64,7 +64,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A [[signal]] is a kind of [[telemetry]]: a system output that describes what the operating system and applications are doing. Traces, metrics and logs are the main ones. [[Profiles]] are emerging as a fourth, and are still experimental in OpenTelemetry (it calls this stage Alpha)."
+          "text": "A [[signal]] is a kind of [[telemetry]]: a system output that describes what the operating system and applications are doing. Traces, [[metrics]] and logs are the main ones. [[Profiles]] are emerging as a fourth, and are still experimental in OpenTelemetry (it calls this stage Alpha)."
         },
         {
           "type": "list",
@@ -111,7 +111,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[OpenTelemetry]] is an open source observability framework and toolkit for generating, collecting and exporting [[telemetry]] data such as traces, metrics and logs. Storing and visualising that data is intentionally left to other tools."
+          "text": "[[OpenTelemetry]] is an open source observability framework and toolkit for generating, collecting and exporting [[telemetry]] data such as traces, [[metrics]] and logs. Storing and visualising that data is intentionally left to other tools."
         },
         {
           "type": "paragraph",

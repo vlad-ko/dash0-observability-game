@@ -8,7 +8,7 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "A metric is a measurement of a service captured at runtime. Metrics give you statistics in aggregate, where traces show single requests. This act covers choosing the right [[instrument]] (the thing that records a metric, explained below), reading metrics and keeping them manageable."
+      "text": "A [[metric]] is a measurement of a service captured at runtime. Metrics give you statistics in aggregate, where traces show single requests. This act covers choosing the right [[instrument]] (the thing that records a metric, explained below), reading metrics and keeping them manageable."
     },
     {
       "type": "list",
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In OpenTelemetry, measurements are captured by metric [[instruments]]. An instrument has a name, a kind, and an optional unit and description."
+          "text": "In OpenTelemetry, measurements are captured by [[metric]] [[instruments]]. An instrument has a name, a kind, and an optional unit and description."
         },
         {
           "type": "list",
@@ -62,7 +62,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Sums (running totals) and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an [[aggregation temporality]], which is either delta or cumulative. It tells you how the value was calculated."
+          "text": "[[Sums]] (running totals) and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an [[aggregation temporality]], which is either delta or cumulative. It tells you how the value was calculated."
         },
         {
           "type": "paragraph",
@@ -92,7 +92,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A [[histogram]] [[data point]] (one reported value for a metric and one attribute combination, over one time window) sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
+          "text": "A [[histogram]] [[data point]] (one reported value for a metric and one attribute combination, over one time window) sums up many recorded measurements in a compact form. It groups them into [[buckets]] and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
         },
         {
           "type": "paragraph",
@@ -128,14 +128,14 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Dash0, the [[Metric Explorer]] sidebar shows a live data preview with the underlying [[PromQL]] query of the selected metric. These are three PromQL functions from the Prometheus documentation."
+          "text": "In Dash0, the [[Metric Explorer]] sidebar shows a live data preview with the underlying [[PromQL]] query of the selected [[metric]]. These are three PromQL functions from the Prometheus documentation."
         },
         {
           "type": "list",
           "items": [
             "[[rate()]]: the average increase per second of a [[time series]], over the time range you give it.",
             "[[increase()]]: how much a time series grew over the time range you give it.",
-            "[[histogram_quantile()]]: works out a quantile from a classic histogram, which uses fixed buckets, or a native histogram, which normally uses exponential buckets."
+            "[[histogram_quantile()]]: works out a quantile from a classic histogram, which uses fixed [[buckets]], or a native histogram, which normally uses exponential buckets."
           ]
         },
         {
@@ -174,7 +174,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The [[cardinality]] of a metric is the number of [[time series]] (unique attribute combinations) reported for it. The SDK keeps a separate [[data point]] in memory for each combination, so cardinality drives the memory cost of metrics."
+          "text": "The [[cardinality]] of a [[metric]] is the number of [[time series]] (unique attribute combinations) reported for it. The SDK keeps a separate [[data point]] in memory for each combination, so cardinality drives the memory cost of metrics."
         },
         {
           "type": "paragraph",
@@ -200,7 +200,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "An [[exemplar]] is a recorded value that associates OpenTelemetry context with one recorded measurement. One use case is to link traces with metrics."
+          "text": "An [[exemplar]] is a recorded value that associates OpenTelemetry context with one recorded measurement. One use case is to link traces with [[metrics]]."
         },
         {
           "type": "paragraph",
@@ -230,7 +230,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Utilisation is the average time that a system resource (such as CPU, memory, network or disk) was busy servicing work. Saturation is how much extra work a system resource has that it cannot service."
+          "text": "Utilisation is the average time that a [[system resource]] (such as CPU, memory, network or disk) was busy servicing work. Saturation is how much extra work a system resource has that it cannot service."
         }
       ],
       "sources": [
@@ -254,11 +254,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The [[Metric Explorer]] lets you browse, filter and investigate the metrics across your services and infrastructure. It is the starting point for deeper analysis in the [[Query Builder]]."
+          "text": "The [[Metric Explorer]] lets you browse, filter and investigate the [[metrics]] across your services and infrastructure. It is the starting point for deeper analysis in the [[Query Builder]]."
         },
         {
           "type": "paragraph",
-          "text": "Dash0 supports all OpenTelemetry [[metric data model]] types (the kinds of metric OpenTelemetry defines): Sum, Gauge, Histogram and Exponential Histogram, plus the [[legacy Summary]] type from Prometheus. A Sum can be [[monotonic]] (it only goes up), produced by a Counter, or non-monotonic, produced by an UpDownCounter."
+          "text": "Dash0 supports all OpenTelemetry [[metric data model]] types (the kinds of metric OpenTelemetry defines): [[Sum]], Gauge, Histogram and Exponential Histogram, plus the [[legacy Summary]] type from Prometheus. A Sum can be [[monotonic]] (it only goes up), produced by a Counter, or non-monotonic, produced by an UpDownCounter."
         },
         {
           "type": "paragraph",

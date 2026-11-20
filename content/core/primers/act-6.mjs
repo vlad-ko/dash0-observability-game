@@ -15,7 +15,7 @@ export default {
       "items": [
         "Head sampling decides as early as possible, without looking at the whole trace.",
         "Tail sampling decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
-        "Each unique combination of [[attribute]] values on a metric is a separate [[time series]] (one stream of points), and that count is a cost of its own."
+        "Each unique combination of [[attribute]] values on a [[metric]] is a separate [[time series]] (one stream of points), and that count is a cost of its own."
       ]
     },
     {
@@ -110,7 +110,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Each unique combination of [[attribute]] values on a metric is an additional [[time series]], with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of combinations across hundreds of servers it can add up quickly."
+          "text": "Each unique combination of [[attribute]] values on a [[metric]] is an additional [[time series]], with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of combinations across hundreds of servers it can add up quickly."
         },
         {
           "type": "paragraph",

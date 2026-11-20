@@ -45,7 +45,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The pipelines subsection of the [[service section]] (the service: key in the configuration file) is where the pipelines are configured. A pipeline is of one of these types: traces, metrics or logs."
+          "text": "The pipelines subsection of the [[service section]] (the service: key in the configuration file) is where the pipelines are configured. A pipeline is of one of these types: traces, [[metrics]] or logs."
         },
         {
           "type": "paragraph",
@@ -161,7 +161,7 @@ export default {
         {
           "type": "list",
           "items": [
-            "The transform processor lets you specify transformations on metrics, logs and traces, written in OTTL.",
+            "The transform processor lets you specify transformations on [[metrics]], logs and traces, written in OTTL.",
             "The attributes processor can update, insert, delete or replace existing [[attributes]] on metrics or traces.",
             "The resource processor works the same way, but only on resource attributes."
           ]
