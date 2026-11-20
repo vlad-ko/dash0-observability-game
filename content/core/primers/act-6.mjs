@@ -8,14 +8,14 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "Sampling decides which traces and spans are processed and exported, and relies on a smaller group representing a larger one. This act is about deciding what to keep, and about what drives the cost."
+      "text": "[[Sampling]] decides which [[traces]] and [[spans]] are processed and exported, and relies on a smaller group representing a larger one. This act is about deciding what to keep, and about what drives the cost."
     },
     {
       "type": "list",
       "items": [
         "Head sampling decides as early as possible, without looking at the whole trace.",
         "Tail sampling decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
-        "Each unique combination of attribute values on a metric is a separate time series (one stream of points), and that count is a cost of its own."
+        "Each unique combination of [[attribute]] values on a metric is a separate [[time series]] (one stream of points), and that count is a cost of its own."
       ]
     },
     {
@@ -31,18 +31,18 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Sampling relies on representativeness: the principle that a smaller group can accurately represent a larger group."
+          "text": "[[Sampling]] relies on [[representativeness]]: the principle that a smaller group can accurately represent a larger group."
         },
         {
           "type": "list",
           "items": [
-            "Sampled: a trace or span is processed and exported.",
+            "Sampled: a [[trace]] or [[span]] is processed and exported.",
             "Not sampled: a trace or span is not processed or exported."
           ]
         },
         {
           "type": "paragraph",
-          "text": "Sampling is worth it when you generate a lot of data, for example 1000 or more traces per second. It is not when you generate very little data, such as tens of small traces per second or fewer."
+          "text": "Consider sampling if you generate a lot of data, for example 1000 or more traces per second. It might not be right for you if you generate very little data, such as tens of small traces per second or fewer."
         }
       ],
       "sources": [
@@ -60,7 +60,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Head sampling makes a sampling decision as early as possible. It is easy to understand, easy to configure and efficient, and it can be done at any point in the trace collection pipeline."
+          "text": "[[Head sampling]] makes a sampling decision as early as possible. It is easy to understand, easy to configure and efficient, and it can be done at any point in the trace collection pipeline."
         },
         {
           "type": "paragraph",
@@ -82,7 +82,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Tail sampling gives you the option to sample your traces based on specific criteria."
+          "text": "[[Tail sampling]] gives you the option to sample your traces based on specific criteria."
         },
         {
           "type": "list",
@@ -110,15 +110,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Each unique combination of attribute values on a metric is an additional time series, with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of combinations across hundreds of servers it can add up quickly."
+          "text": "Each unique combination of [[attribute]] values on a metric is an additional [[time series]], with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of combinations across hundreds of servers it can add up quickly."
         },
         {
           "type": "paragraph",
-          "text": "The Prometheus guideline is that the vast majority of your metrics should have no labels (Prometheus's word for an attribute). If you are unsure, start with no labels and add more over time as concrete use cases arise."
+          "text": "The [[Prometheus]] guideline is that the vast majority of your metrics should have no [[labels]] (Prometheus's word for an attribute). If you are unsure, start with no labels and add more over time as concrete use cases arise."
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, you can install pre-built dashboards that rank services by telemetry volume and forecast volume trends across any resource attribute."
+          "text": "In [[Dash0]], you can install pre-built dashboards that rank services by telemetry volume and forecast volume trends across any resource attribute."
         }
       ],
       "sources": [

@@ -135,7 +135,7 @@ export default {
           "items": [
             "[[rate()]]: the average increase per second of a [[time series]], over the time range you give it.",
             "[[increase()]]: how much a time series grew over the time range you give it.",
-            "[[histogram_quantile()]]: works out a quantile from a classic (fixed-bucket) or native (exponential) histogram."
+            "[[histogram_quantile()]]: works out a quantile from a classic histogram, which uses fixed buckets, or a native histogram, which normally uses exponential buckets."
           ]
         },
         {

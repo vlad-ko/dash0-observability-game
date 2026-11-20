@@ -8,15 +8,15 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "In this act you hear confident answers from customer calls and check each one against the telemetry. Then you connect the game to Dash0 and find its incident in the Trace View."
+      "text": "In this act you hear confident answers from customer calls and check each one against the telemetry. Then you connect the game to [[Dash0]] and find its incident in the [[Trace View]]."
     },
     {
       "type": "list",
       "items": [
-        "Observability lets you ask questions about a system from the outside, once the application is instrumented.",
-        "To send to Dash0 you need an auth token (a key that lets a user or service call Dash0's APIs).",
-        "Datasets, which are parts of one organisation with their own data, keep data apart.",
-        "In Dash0 you find telemetry with attribute filters (a key, an operator such as equals, and values) and read a single trace in the Trace View."
+        "[[Observability]] lets you ask questions about a system from the outside, once the application is [[instrumented|instrumentation]].",
+        "To send to Dash0 you need an [[auth token]] (a key that lets a user or service call Dash0's APIs).",
+        "[[Datasets]], which are parts of one organisation with their own data, keep data apart.",
+        "In Dash0 you find [[telemetry]] with [[attribute filters]] (a key, an operator such as equals, and values) and read a single trace in the Trace View."
       ]
     },
     {
@@ -37,11 +37,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Observability lets you understand a system from the outside, by letting you ask questions about that system without knowing its inner workings."
+          "text": "[[Observability]] lets you understand a system from the outside, by letting you ask questions about that system without knowing its inner workings."
         },
         {
           "type": "paragraph",
-          "text": "To ask those questions about your system, your application must be properly instrumented."
+          "text": "To ask those questions about your system, your application must be properly [[instrumented|instrumentation]]."
         }
       ],
       "sources": [
@@ -59,11 +59,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Auth tokens authenticate and authorise users and services when they access Dash0's APIs. You use them to send telemetry to Dash0, and to integrate Dash0 with other solutions, for example Grafana or Terraform (a tool that manages infrastructure as code)."
+          "text": "[[Auth tokens]] authenticate and authorise users and services when they access Dash0's APIs. You use them to send [[telemetry]] to Dash0, and to integrate Dash0 with other solutions, for example Grafana or Terraform (a tool that manages infrastructure as code)."
         },
         {
           "type": "paragraph",
-          "text": "Datasets separate observability data within one organisation, while organisation data such as users and billing stays shared. Common uses are environments, such as datasets called production and test, audit logging, and local development and experiments."
+          "text": "[[Datasets]] separate observability data within one organisation, while organisation data such as users and billing stays shared. Common uses are environments, such as datasets called production and test, audit logging, and local development and experiments."
         }
       ],
       "sources": [
@@ -87,19 +87,19 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Dash0 uses attribute filters to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then an operator (a comparison such as equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
+          "text": "Dash0 uses [[attribute filters]] to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then an [[operator|filter-operator]] (a comparison such as equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
         },
         {
           "type": "paragraph",
-          "text": "Many Dash0 pages have a filter bar, the bar that holds the page's filters. Pinned filters work across all of those pages: they stay on screen as you move between them."
+          "text": "Many Dash0 pages have a [[filter bar]], the bar that holds the page's filters. [[Pinned filters]] work across all of those pages: they stay on screen as you move between them."
         },
         {
           "type": "paragraph",
-          "text": "The pages with a filter bar include the Trace Explorer, the page for finding traces, and the Log Explorer, the page for finding logs. The Services page and the Resources page have one too."
+          "text": "The pages with a filter bar include the [[Trace Explorer]], the page for finding traces, and the [[Log Explorer]], the page for finding logs. The Services page and the Resources page have one too."
         },
         {
           "type": "paragraph",
-          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The Trace View gives a detailed look at a single trace in three visualisations: a waterfall, a flame graph and a trace graph. Selecting a span opens the Span Sidebar, a detail panel for that span."
+          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The [[Trace View]] gives a detailed look at a single trace in three visualisations: a waterfall, a flame graph and a trace graph. Selecting a span opens the [[Span Sidebar]], a detail panel for that span."
         }
       ],
       "sources": [
