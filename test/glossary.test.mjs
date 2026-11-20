@@ -2,7 +2,7 @@
 // crafted bad input, the lookup maps names and variants to ids, and docs/GLOSSARY.md is exactly what the files generate.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { ACTS } from '../levels/index.mjs';
 import { GLOSSARY, GLOSSARY_FILES } from '../content/core/glossary/index.mjs';
 import { LIMITS, TOPIC_ORDER, glossaryDoc, glossaryIndex, joinGlossaryFiles, validateGlossary, validateGlossaryFiles } from '../lib/glossary.mjs';
@@ -35,6 +35,14 @@ test('every glossary file is strict JSON with no duplicate keys, named general o
 
 test('every act with a glossary file is in the collector, in act order after general', () => {
   assert.deepEqual(GLOSSARY_FILES.map((f) => f.name), ['general', ...actIds.filter((id) => GLOSSARY_FILES.some((f) => f.name === id))]);
+});
+
+test('every .mjs file in content/core/glossary/ is in the collector, so no file drops its terms silently', () => {
+  const onDisk = readdirSync(new URL('../content/core/glossary/', import.meta.url))
+    .filter((f) => f.endsWith('.mjs') && f !== 'index.mjs')
+    .map((f) => f.slice(0, -'.mjs'.length))
+    .sort();
+  assert.deepEqual(GLOSSARY_FILES.map((f) => f.name).sort(), onDisk);
 });
 
 test('joinGlossaryFiles adds act from the file name: general gives null', () => {
