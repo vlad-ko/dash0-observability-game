@@ -61,7 +61,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Processor**: A component that transforms telemetry (in the SDK or the Collector). (Act 5)
 - **Receiver**: A component that accepts telemetry (in the SDK or the Collector). (Act 5)
 - **DaemonSet**: A Kubernetes object that runs a copy of a pod on every eligible node. A common way to run a Collector as an agent, one per node. (Act 5)
-- **Sidecar**: A second container that runs next to the main application container in the same pod. A Collector run this way is an agent; a service mesh proxy run this way is a mesh proxy. (Act 5)
+- **Sidecar**: A second container that runs next to the main application container in the same pod. A Collector run this way is an agent, and a service mesh runs its proxy this way too. (Act 5)
 - **Kubernetes Service**: A Kubernetes object that exposes an application running in one or more pods on the network. A headless Service has no cluster IP and no load balancing: DNS returns the pods' own IPs. (Act 5)
 - **Semantic conventions**: Standard attribute names and meanings, such as http.request.method, db.system.name and service.name. They are versioned. (Act 8)
 - **Stability opt-in**: The setting OTEL_SEMCONV_STABILITY_OPT_IN. The value http/dup sends the old and the stable names; http sends only the stable names. (Act 8)
