@@ -8,7 +8,7 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "This act covers dashboards kept as code, names that change between semantic convention versions, moving from another tool, telemetry from the browser, and AI assistants that query your data."
+      "text": "This act covers dashboards kept as code, names that change between versions of the semantic conventions (the shared naming rules for telemetry), moving from another tool, telemetry from the browser, and AI assistants that query your data."
     },
     {
       "type": "list",
@@ -32,7 +32,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Dash0 dashboards are assets that can be versioned and managed as code, the way teams manage servers and networks as infrastructure as code. That enables version control, automated deployment pipelines, consistent configuration across environments, and code review for dashboard changes."
+          "text": "Dash0 dashboards are assets that can be versioned and managed as code, the way teams already manage servers and networks (infrastructure as code). That enables version control, automated deployment pipelines, consistent configuration across environments, and code review for dashboard changes."
         },
         {
           "type": "paragraph",
@@ -51,6 +51,12 @@ export default {
           "kind": "docs",
           "label": "Dash0 docs: Manage dashboards as code",
           "url": "https://www.dash0.com/docs/dash0/dashboards/manage-dashboards-as-code",
+          "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "Perses",
+          "url": "https://perses.dev/",
           "audience": "public"
         },
         {
@@ -77,11 +83,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The HTTP semantic conventions now have a stable release. Stable means released, with no breaking changes. The stable release changed many attribute names. So existing HTTP instrumentations published by OpenTelemetry are required to implement a migration plan."
+          "text": "The HTTP semantic conventions now have a stable release (they were experimental before). The stable release changed many attribute names. So existing HTTP instrumentations published by OpenTelemetry are required to implement a migration plan."
         },
         {
           "type": "paragraph",
-          "text": "Under that plan, an instrumentation updated to the stable conventions should add an opt-in setting (one you turn on to get the new names), the environment variable OTEL_SEMCONV_STABILITY_OPT_IN, in its current major version. By default, it keeps its existing behaviour."
+          "text": "Under that plan, an instrumentation updated to the stable conventions should add an opt-in setting, one you turn on to get the new names. The setting is the environment variable OTEL_SEMCONV_STABILITY_OPT_IN, added in its current major version. By default, it keeps its existing behaviour."
         }
       ],
       "sources": [
@@ -105,11 +111,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Dash0 can import dashboards from Dash0 itself (Perses), from Grafana (another dashboard tool), and from external Perses dashboards."
+          "text": "Dash0 can import dashboards from Dash0 itself in the Perses format, from Grafana, a dashboard tool, and from external Perses dashboards."
         },
         {
           "type": "paragraph",
-          "text": "These Grafana panel types are supported for conversion: time series, stat, gauge, pie, table, and text or Markdown. Specialised panels like heatmaps, and custom panels, may not convert properly. In those cases, the migrator (the Dash0 tool that converts Grafana dashboards) shows a placeholder panel in the dashboard."
+          "text": "These Grafana panel types are supported for conversion: time series, stat, gauge, pie, table, and text or Markdown. Specialised panels like heatmaps, which show density as colour, and custom panels may not convert properly. In those cases, the migrator (the Dash0 tool that converts Grafana dashboards) shows a placeholder panel in the dashboard."
         }
       ],
       "sources": [
@@ -127,11 +133,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Dash0, the Websites Explorer is a built-in view of your frontend health. It shows traffic volume: sessions (one visit to your site by one browser), page views, users, bounce rate, backend requests and JavaScript errors. A bounce is a session that views only one page, so the bounce rate is the share of sessions that bounce."
+          "text": "In Dash0, the Websites Explorer is a built-in view of your frontend health. It shows traffic volume: sessions, page views, users, bounce rate (usually the share of sessions that view only one page), backend requests and JavaScript errors. A session is usually one visit to your site."
         },
         {
           "type": "paragraph",
-          "text": "Web Vitals are a set of performance metrics defined by Google that quantify the real-user experience of a webpage. Dash0 shows their p75 scores (the 75th percentile: three quarters of the measurements are at or below it)."
+          "text": "Web Vitals are a set of performance metrics defined by Google that quantify the real-user experience of a web page. Dash0 shows their p75 scores (the 75th percentile: three quarters of the measurements are at or below it)."
         },
         {
           "type": "list",
@@ -143,7 +149,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A session's events include page views, HTTP requests, Web Vitals, errors, rage clicks (repeated clicks on something that does not respond) and custom events."
+          "text": "A session's events include page views, HTTP requests, Web Vitals, errors, rage clicks (typically repeated, frustrated clicks) and custom events."
         },
         {
           "type": "paragraph",
@@ -175,7 +181,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The one exception is the run-task tool (runTask), which hands an open-ended question to Agent0, Dash0's AI agent. Each task creates an Agent0 thread (one conversation with Agent0) in your organisation, the only thing the server creates."
+          "text": "The one exception is the runTask tool, which hands an open-ended question to Agent0, which investigates your telemetry. Each task creates an Agent0 thread (one conversation with Agent0) in your organisation, the only thing the server creates."
         },
         {
           "type": "paragraph",

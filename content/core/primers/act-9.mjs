@@ -16,13 +16,13 @@ export default {
         "Observability lets you ask questions about a system from the outside, once the application is instrumented.",
         "To send to Dash0 you need an auth token (a key that lets a user or service call Dash0's APIs).",
         "Datasets, which are parts of one organisation with their own data, keep data apart.",
-        "In Dash0 you find telemetry with attribute filters (a key, a comparison and values) and read a single trace in the Trace View."
+        "In Dash0 you find telemetry with attribute filters (a key, an operator such as equals, and values) and read a single trace in the Trace View."
       ]
     },
     {
       "type": "callout",
       "tone": "note",
-      "text": "You do not need a Dash0 account: choose Practice to use a simulated Dash0 instead."
+      "text": "You do not need a Dash0 account: choose \"Practice with a simulated Dash0\" instead."
     },
     {
       "type": "callout",
@@ -87,7 +87,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Dash0 uses attribute-based filters to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then a comparison (for example equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
+          "text": "Dash0 uses attribute filters to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then an operator (a comparison such as equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
         },
         {
           "type": "paragraph",
@@ -95,11 +95,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The pages with a filter bar include the Trace Explorer (the page for finding traces), the Log Explorer (the page for finding logs), Services and Resources."
+          "text": "The pages with a filter bar include the Trace Explorer, the page for finding traces, and the Log Explorer, the page for finding logs. The Services page and the Resources page have one too."
         },
         {
           "type": "paragraph",
-          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The Trace View gives a detailed look at a single trace in three views, which Dash0's About tracing page describes. Selecting a span opens the Span Sidebar, a detail panel for that span."
+          "text": "In the Trace Explorer, the filter narrows the span data shown across all views. The Trace View gives a detailed look at a single trace in three visualisations: a waterfall, a flame graph and a trace graph. Selecting a span opens the Span Sidebar, a detail panel for that span."
         }
       ],
       "sources": [
