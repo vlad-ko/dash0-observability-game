@@ -9,7 +9,7 @@ export default {
     "finish": "You can rename, redact and drop in the Collector with OTTL and the filter processor. Redact before the exporter sends: a Dash0 spam filter drops whole points at ingestion, and it cannot edit one attribute.",
     "steps": [
       {
-        "intro": "The Collector can change telemetry on its way through. The <b>transform processor</b> does it with statements in OTTL, the OpenTelemetry Transformation Language: a function, such as <code>set</code> or <code>delete_key</code>, and optionally a <code>where</code> condition. Statements run in the order they are listed. The checkout spans carry a custom attribute <code>cust</code>, and the data team wants it called <code>app.customer.id</code>.",
+        "intro": "The [[Collector]] can change telemetry on its way through. The <b>transform processor</b> does it with statements in OTTL, the OpenTelemetry Transformation Language: a function, such as <code>set</code> or <code>delete_key</code>, and optionally a <code>where</code> condition. Statements run in the order they are listed. The checkout spans carry a custom [[attribute]] <code>cust</code>, and the data team wants it called <code>app.customer.id</code>.",
         "question": "Which statements rename an attribute?",
         "choice": {
           "id": "ottl-rename",
@@ -33,7 +33,7 @@ export default {
         }
       },
       {
-        "intro": "Now the part legal cares about. Checkout puts the customer's email on every span as <code>user.email</code>, and it must not leave the cluster. Eight statements were proposed for the span context of the transform processor, and some of them do not remove it.",
+        "intro": "Now the part legal cares about. Checkout puts the customer's email on every span as <code>user.email</code>, and it must not leave the [[cluster]]. Eight statements were proposed for the span context of the transform processor, and some of them do not remove it.",
         "question": "Spot the statements that would leave the email on the exported span.",
         "spot": {
           "id": "ottl-spot",
@@ -81,7 +81,7 @@ export default {
         }
       },
       {
-        "intro": "The email is in logs too, so the platform team wrote a processor, <code>transform/pii</code>, that deletes it from spans and from log records. The Collector will not start, and nothing is redacted yet.",
+        "intro": "The email is in logs too, so the platform team wrote a [[processor]], <code>transform/pii</code>, that deletes it from spans and from [[log records]]. The Collector will not start, and nothing is redacted yet.",
         "question": "Fix the config so the Collector starts and <code>transform/pii</code> runs in both the traces and the logs pipeline.",
         "configure": {
           "id": "ottl-config",
@@ -90,7 +90,7 @@ export default {
         }
       },
       {
-        "intro": "The new config is rolling out, but spans with the email are already in Dash0. Someone suggests a spam filter, the backend-side drop, instead of the Collector change.",
+        "intro": "The new config is rolling out, but spans with the email are already in Dash0. Someone suggests a spam filter, the backend-side drop, instead of the [[Collector]] change.",
         "question": "Can a Dash0 spam filter do the redaction?",
         "choice": {
           "id": "ottl-backend",

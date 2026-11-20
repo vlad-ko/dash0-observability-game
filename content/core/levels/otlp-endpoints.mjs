@@ -8,7 +8,7 @@ export default {
     "finish": "You know OTLP/gRPC is 4317 and OTLP/HTTP is 4318, that the general endpoint variable gets /v1/traces added while a per-signal one is used as is, and that the Dash0 token travels in an Authorization header.",
     "steps": [
       {
-        "intro": "The checkout service at Kettle &amp; Co is a Node app. Its environment says <code>OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf</code> and <code>OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317</code>. The Collector is running, and nothing arrives.",
+        "intro": "The checkout service at Kettle &amp; Co is a Node app. Its environment says <code>OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf</code> and <code>OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317</code>. The [[Collector]] is running, and nothing arrives.",
         "question": "What is wrong?",
         "choice": {
           "id": "otlp-port",
@@ -32,7 +32,7 @@ export default {
         }
       },
       {
-        "intro": "The port is fixed. In staging the team sets only the traces variable, <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://collector:4318</code>, for an OTLP/HTTP exporter, and leaves the general variable unset.",
+        "intro": "The port is fixed. In staging the team sets only the traces variable, <code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://collector:4318</code>, for an [[OTLP]]/HTTP [[exporter]], and leaves the general variable unset.",
         "question": "Where do the traces go?",
         "choice": {
           "id": "otlp-signal",
@@ -56,7 +56,7 @@ export default {
         }
       },
       {
-        "intro": "The Collector in front of the apps accepts both transports, on 4317 and 4318, and should send to Dash0 through the exporter <code>otlp_grpc/dash0</code>. Its config is half done: traces go to the debug exporter only, and metrics name an exporter nobody defined, so it will not start.",
+        "intro": "The [[Collector]] in front of the apps accepts both transports, on 4317 and 4318, and should send to Dash0 through the [[exporter]] <code>otlp_grpc/dash0</code>. Its config is half done: traces go to the debug exporter only, and metrics name an exporter nobody defined, so it will not start.",
         "question": "Fix the config so the Collector starts and both traces and metrics go to Dash0 through <code>otlp_grpc/dash0</code>.",
         "configure": {
           "id": "otlp-config",
@@ -65,7 +65,7 @@ export default {
         }
       },
       {
-        "intro": "The Collector config reads the Dash0 token from an environment variable. The checkout service's SDK needs it as well, and the team is arguing about where it goes. In the examples the token is the made-up <code>auth_token_example</code>.",
+        "intro": "The Collector config reads the Dash0 [[token|auth-token]] from an environment variable. The checkout service's [[SDK]] needs it as well, and the team is arguing about where it goes. In the examples the token is the made-up <code>auth_token_example</code>.",
         "question": "Where does the Dash0 auth token go?",
         "choice": {
           "id": "otlp-token",

@@ -8,7 +8,7 @@ export default {
     "finish": "You know a component does nothing until it is enabled: listed in a pipeline, or under service.extensions. A defined memory_limiter that no pipeline lists protects nothing.",
     "steps": [
       {
-        "intro": "Every service at Kettle &amp; Co sends its telemetry to one Collector. A Collector config has five kinds of component: <b>receivers</b> take data in, <b>processors</b> change it, <b>exporters</b> send it out, <b>connectors</b> join two pipelines, and <b>extensions</b> add abilities beside the data path, such as a health check. The team wants a metric that counts particular span events in its traces.",
+        "intro": "Every service at Kettle &amp; Co sends its [[telemetry]] to one [[Collector]]. A Collector config has five kinds of component: <b>receivers</b> take data in, <b>processors</b> change it, <b>exporters</b> send it out, <b>connectors</b> join two pipelines, and <b>extensions</b> add abilities beside the data path, such as a health check. The team wants a metric that counts particular [[span events]] in its traces.",
         "question": "Which component turns the end of the traces pipeline into the start of a metrics pipeline?",
         "choice": {
           "id": "pipe-connector",
@@ -32,7 +32,7 @@ export default {
         }
       },
       {
-        "intro": "The Collector ran out of memory on Friday and was killed. The platform team added a <code>memory_limiter</code> processor, but the Collector is still unprotected, and today it will not start.",
+        "intro": "The Collector ran out of memory on Friday and was killed. The platform team added a <code>memory_limiter</code> [[processor]], but the Collector is still unprotected, and today it will not start.",
         "question": "Fix the config so the Collector starts, <code>memory_limiter</code> runs in both the traces and the metrics pipeline, and the <code>health_check</code> extension stays enabled.",
         "configure": {
           "id": "pipe-config",
@@ -41,7 +41,7 @@ export default {
         }
       },
       {
-        "intro": "The Collector runs now. A second one, in the EU cluster, has a <code>health_check</code> extension defined under <code>extensions</code>, so Kubernetes can probe it. The probe never gets an answer.",
+        "intro": "The Collector runs now. A second one, in the EU [[cluster]], has a <code>health_check</code> [[extension]] defined under <code>extensions</code>, so [[Kubernetes]] can probe it. The probe never gets an answer.",
         "question": "What is missing?",
         "choice": {
           "id": "pipe-extension",
