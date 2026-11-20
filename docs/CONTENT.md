@@ -132,9 +132,38 @@ A level with no fill-ins declares `const VARS = {};` and passes `{ vars: VARS }`
 
 A test that reads a level's source text uses `levelSource(id)` (`test/helpers/level-source.mjs`), which also reads the content file.
 
-## 10. Later: answer pools (#390)
+## 10. Answer pools (#390)
 
-A level could carry more wrong answers in its content than one play shows, and the logic would say how many to draw (`draw: {count, always: [...]}`). The content format would not change. This is not built; do not write `draw` yet.
+A multiple-choice or sort step may list more answers in its content than one play shows. Each time the step is shown, the game draws a board from the pool, so a player who replays a level meets different wrong answers (and, for a choice, a different right one).
+
+**Where it applies.** Multiple-choice (`choice`) and sort (`sort`) steps only, and only where the step is opted in. Not build, incident, spot, trade-off, query or configure steps, not boss levels, not Act 9, and not a question whose answer depends on data on the screen (a table, a trace or a config the player reads), because another board would change that data. The mechanism is in `lib/pool.mjs`; no live level uses it yet.
+
+**The format.** The content file does not change: the pool is the full `choices` (or `items`) list, with a `key` (or `id`), a `label` and a `why` for every entry. The logic file opts the step in by stating `draw`, and still marks the answers (`right`, `keep`, `bucket`):
+
+```js
+choice: { id: 'wcm-host', draw: 4, choices: [{ key: 'fewer-hosts', right: true }, { key: 'consolidate-vms', right: true }, { key: 'drop-idle-senders', right: true }] }
+sort: { id: 'avm-sort', draw: { auto: 3, manual: 3 }, items: [{ id: 'server', bucket: 'auto' }, /* the rest of the pool */] }
+```
+
+- A choice's `draw` is the whole number of answers shown, today's count. A showing has exactly one right answer and `draw - 1` wrong ones. Several pool entries are marked `right: true`, and each is a different correct phrasing of the one fact the question tests.
+- A sort's `draw` names every bucket id and gives how many items of that bucket one showing shows, today's count per bucket. Every item still needs its `bucket` in the logic file.
+- `draw` is never a content key: put it in the content file and the join fails with `"draw" is not a content key`.
+- A phrasing added in the content file without `right: true` in the logic file is graded wrong. The playtest is the backstop for that slip; a new right answer is a logic edit as well.
+
+**How a board is drawn.** The step draws through the level's random source (`ctx.shuffle`), once each time it is shown. That board is fixed for the showing: the buttons, the 50/50, the hints and the guide all see it. Nothing is saved, so a reload or a replay may draw another board, and the same board twice is fine. A test with a fixed random source draws a fixed board. Display order is shuffled as before.
+
+**What a pool must hold.** `validateChoicePool` and `validateSortPool` (in `lib/pool.mjs`) run when the registry is built:
+
+- A choice: `2 <= draw < choices`, at least one right answer and `draw - 1` wrong ones. Exposure parity: with R right and W wrong answers, `W <= 2 * R * (draw - 1)`, so a wrong answer is never shown much less often than a right one. A pool of about 20 entries that shows 3 has 4 right and 16 wrong, and one that shows 4 has 3 right and 17 wrong.
+- The 50/50: when `draw` is 4 or more, at most `draw - 3` wrong answers carry `keep`, so every board has two wrong answers it may remove. `keep` marks the tempting near-miss. The earlier idea of an `always` list is dropped, because `keep` already covers that need.
+- Every right answer is checked with all the wrong ones as an ordinary question (`validateChoiceSpec`), keys are unique across the pool, and so are the labels once markup is removed.
+- A sort: `draw` names exactly the buckets, each from 1 up to that bucket's items, the board's total within 2 to 12 items, and at least one bucket has more items than it shows. The pool is checked as an ordinary sort without the item-count range.
+
+**What the words must not do.** A board is a random draw, so no line may depend on what else is on it. `test/pool-content.test.mjs` checks every pooled step: no `label`, `why` or `whyNot` points at a position or at its siblings ("the other two options", "the first answer"), and the step's `intro`, `show`, `question` and `hint` quote no pool label of 12 or more characters. Write each `why` so it stands alone.
+
+**Tests.** `test/choice-tells.test.mjs` and `test/sort-tells.test.mjs` score a pool over every board it can show (a large sort pool is sampled with a seeded draw). The answer key in `test/answers.test.mjs` lists every right answer of a pooled choice as `a|b|c` and every item of a pooled sort with its bucket. The step drivers play the board that the harness's identity shuffle draws, and `test/levels-play.test.mjs` checks the screen shows that board.
+
+**The guide.** A pooled step's board changes, so the browser sends the keys (or item ids) its board shows with each question, in `shown`. The server tells the model that board and nothing else of the pool, and withholds every right answer of the pool in a reply, drawn or not (docs/FOUNDATION.md section 2.8).
 
 ## 11. Converting a run(ctx) level
 
