@@ -5,8 +5,8 @@ export default {
   "terms": [
     {"id": "semantic-conventions", "name": "Semantic conventions", "variants": ["semantic convention", "conventions"], "definition": "Standard attribute names and meanings, such as http.request.method, db.system.name and service.name. They are versioned.", "topic": "OpenTelemetry"},
     {"id": "stability-opt-in", "name": "Stability opt-in", "variants": ["OTEL_SEMCONV_STABILITY_OPT_IN"], "definition": "The setting OTEL_SEMCONV_STABILITY_OPT_IN. The value http/dup sends the old and the stable names; http sends only the stable names.", "topic": "OpenTelemetry"},
-    {"id": "stable", "name": "Stable", "variants": [], "definition": "Released with no breaking changes.", "topic": "OpenTelemetry"},
-    {"id": "opt-in", "name": "Opt-in", "variants": [], "definition": "A setting you turn on to get the new names.", "topic": "OpenTelemetry"},
+    {"id": "stable", "name": "Stable", "variants": [], "definition": "Ready for general use: from then on, breaking changes are allowed only in special circumstances. Reaching this status can itself break names; the stable HTTP semantic conventions renamed many attributes.", "topic": "OpenTelemetry"},
+    {"id": "opt-in", "name": "Opt-in", "variants": [], "definition": "Off until you turn it on. For the stable HTTP semantic conventions the opt-in is OTEL_SEMCONV_STABILITY_OPT_IN; without it, an updated instrumentation keeps emitting its old names.", "topic": "OpenTelemetry"},
     {"id": "perses", "name": "Perses", "variants": ["Dashboards (Perses)"], "definition": "The open dashboard format that Dash0 dashboards follow; they can be managed as code.", "topic": "Dash0"},
     {"id": "infrastructure-as-code", "name": "Infrastructure as code", "variants": [], "definition": "Managing setup, such as dashboards, as code files in version control.", "topic": "Dash0"},
     {"id": "panel", "name": "Panel", "variants": ["panels"], "definition": "One chart on a dashboard.", "topic": "Dash0"},
@@ -21,6 +21,12 @@ export default {
     {"id": "agent0", "name": "Agent0", "variants": [], "definition": "Dash0's AI agent, which takes an open-ended question about your telemetry.", "topic": "Dash0"},
     {"id": "agent0-thread", "name": "Agent0 thread", "variants": ["thread", "threads"], "definition": "One conversation with Agent0.", "topic": "Dash0"},
     {"id": "sandbox", "name": "Sandbox", "variants": ["sandboxed"], "definition": "An isolated environment where code runs with limited access.", "topic": "Dash0"},
-    {"id": "dart", "name": "DART", "variants": [], "definition": "Dashboards, Alerts & Rules to Terraform; migrates assets from other vendors into Dash0.", "topic": "Dash0"}
+    {"id": "dart", "name": "DART", "variants": [], "definition": "Dashboards, Alerts & Rules to Terraform; migrates assets from other vendors into Dash0.", "topic": "Dash0"},
+    {"id": "terraform", "name": "Terraform", "variants": ["Dash0 Terraform Provider"], "definition": "A tool for managing infrastructure as code. The Dash0 Terraform Provider manages Dash0 assets, such as dashboards, alerting rules and synthetic checks, as Terraform resources.", "topic": "Dash0"},
+    {"id": "dash0-monitoring-resource", "name": "Dash0 monitoring resource", "variants": ["monitoring resource", "monitoring resources", "Dash0Monitoring"], "definition": "The Kubernetes resource, of kind Dash0Monitoring, that turns on Dash0 monitoring for its namespace. The Dash0 operator picks up dashboard and other Dash0 resources only in such namespaces.", "topic": "Dash0"},
+    {"id": "origin", "name": "Origin", "variants": ["origins"], "definition": "The scheme, host name and port of a URL. Two URLs have the same origin only when all three match.", "topic": "Foundations"},
+    {"id": "cors", "name": "CORS", "variants": ["Cross-Origin Resource Sharing"], "definition": "Cross-Origin Resource Sharing: HTTP headers, such as Access-Control-Allow-Origin, with which a server lets the browser give a page from another origin its responses.", "topic": "Foundations"},
+    {"id": "preflight-request", "name": "Preflight request", "variants": ["preflight", "preflight requests"], "definition": "An OPTIONS request the browser sends before some cross-origin requests, to ask the server whether their method and headers are allowed. Simple requests skip it.", "topic": "Foundations"},
+    {"id": "rum", "name": "RUM", "variants": ["Real User Monitoring"], "definition": "Real user monitoring: measuring a web page's performance and user interactions from real users' browsers, through a script on each page.", "topic": "Foundations"}
   ]
 };

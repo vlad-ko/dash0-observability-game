@@ -22,7 +22,7 @@ export default {
     {"id": "propagator", "name": "Propagator", "variants": ["propagators"], "definition": "The code that writes and reads trace headers between services.", "topic": "Traces"},
     {"id": "w3c-trace-context", "name": "W3C Trace Context", "variants": ["W3C TraceContext", "trace context"], "definition": "The standard headers (traceparent and tracestate) for context propagation.", "topic": "Traces"},
     {"id": "synchronous", "name": "Synchronous", "variants": [], "definition": "A call that waits for its reply before going on.", "topic": "Traces"},
-    {"id": "asynchronous", "name": "Asynchronous", "variants": [], "definition": "A call that does not wait for its reply; the next operation runs later.", "topic": "Traces"},
+    {"id": "asynchronous", "name": "Asynchronous", "variants": [], "definition": "A call that does not wait for its reply; the next operation runs later. For metric instruments the word means something else: see Asynchronous instrument.", "topic": "Traces"},
     {"id": "symptom-hunt", "name": "Symptom hunt", "variants": [], "definition": "A level shape where an alert and a view show the symptom and the player opens the spans to find its cause (level 2.2, the pilot, #364).", "topic": "Traces"},
     {"id": "flag", "name": "Flag", "variants": ["flagged"], "definition": "In a symptom hunt, naming a span as the cause. A miss rules that span out and costs one penalty. Once the culprit is found, it reads Flagged and the other spans read Hunt over.", "topic": "Traces"},
     {"id": "baggage", "name": "Baggage", "variants": [], "definition": "User-defined key/values propagated with the context.", "topic": "Traces"},

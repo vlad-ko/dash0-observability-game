@@ -5,6 +5,9 @@ export default {
   "terms": [
     {"id": "orphan-span", "name": "Orphan span", "variants": ["orphan spans"], "definition": "A span whose parent ID names a span that was never received, so the trace shows it as a root although it has a parent.", "topic": "Traces"},
     {"id": "mesh-sidecar", "name": "Mesh sidecar", "variants": [], "definition": "A proxy that a service mesh runs next to each service and that forwards its calls; not the same thing as a Collector run as a sidecar (see Agent).", "topic": "Traces"},
+    {"id": "creation-context", "name": "Creation context", "variants": ["message creation context"], "definition": "The context a producer attaches to a message so that consumer spans can be correlated with the producer. A consumer span that handles a batch links to the context each message carries.", "topic": "Traces"},
+    {"id": "force-flush", "name": "ForceFlush", "variants": [], "definition": "A provider call that exports at once every span not yet exported. The SDK spec says to call it only when it is truly necessary, such as on FaaS platforms that may suspend the process after an invocation.", "topic": "OpenTelemetry"},
+    {"id": "faas", "name": "FaaS", "variants": ["Function as a Service", "serverless", "serverless function", "serverless functions"], "definition": "Function as a Service: a platform that runs your code as functions without you provisioning or managing servers, also called serverless.", "topic": "Foundations"},
     {"id": "trace-explorer", "name": "Trace Explorer", "variants": [], "definition": "The Dash0 page for finding traces: you filter the spans by attribute, then open a trace.", "topic": "Dash0"},
     {"id": "span-sidebar", "name": "Span Sidebar", "variants": [], "definition": "The Dash0 detail panel that opens when you select a span.", "topic": "Dash0"},
     {"id": "log-explorer", "name": "Log Explorer", "variants": [], "definition": "Dash0's page for finding logs.", "topic": "Dash0"},

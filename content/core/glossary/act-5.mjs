@@ -11,7 +11,7 @@ export default {
     {"id": "exporter", "name": "Exporter", "variants": ["exporters"], "definition": "A component that sends telemetry onward (in the SDK or the Collector).", "topic": "OpenTelemetry"},
     {"id": "processor", "name": "Processor", "variants": ["processors"], "definition": "A component that transforms telemetry (in the SDK or the Collector).", "topic": "OpenTelemetry"},
     {"id": "receiver", "name": "Receiver", "variants": ["receivers"], "definition": "A component that accepts telemetry (in the SDK or the Collector).", "topic": "OpenTelemetry"},
-    {"id": "collector", "name": "Collector", "variants": ["collectors"], "definition": "A standalone service that receives, processes and exports telemetry.", "topic": "Collector"},
+    {"id": "collector", "name": "Collector", "variants": ["collectors"], "definition": "A program that receives, processes and exports telemetry. It can run as an agent on the same host as the application, or as a gateway in a central tier.", "topic": "Collector"},
     {"id": "component-id", "name": "Component id", "variants": [], "definition": "The type, then an optional slash and name (type/name).", "topic": "Collector"},
     {"id": "pipeline", "name": "Pipeline", "variants": ["pipelines"], "definition": "Receivers, then processors, then exporters, per signal, declared under service.pipelines.", "topic": "Collector"},
     {"id": "service-section", "name": "service section", "variants": [], "definition": "The top-level key in a Collector config that lists the pipelines.", "topic": "Collector"},
@@ -21,6 +21,15 @@ export default {
     {"id": "gateway", "name": "Gateway", "variants": ["gateways"], "definition": "A central tier of Collectors that receives telemetry from the rest.", "topic": "Collector"},
     {"id": "ottl", "name": "OTTL", "variants": [], "definition": "The OpenTelemetry Transformation Language, used in transform and filter processors.", "topic": "Collector"},
     {"id": "distribution", "name": "Distribution", "variants": ["distributions"], "definition": "A packaged Collector build (core, contrib, vendor, or custom via the OpenTelemetry Collector Builder, OCB).", "topic": "Collector"},
-    {"id": "opamp", "name": "OpAMP", "variants": [], "definition": "A protocol for remotely managing agents and Collectors.", "topic": "Collector"}
+    {"id": "opamp", "name": "OpAMP", "variants": [], "definition": "A protocol for remotely managing agents and Collectors.", "topic": "Collector"},
+    {"id": "ocb", "name": "OCB", "variants": ["OpenTelemetry Collector Builder"], "definition": "The OpenTelemetry Collector Builder: a tool that builds your own Collector distribution, a binary with only the components you choose.", "topic": "Collector"},
+    {"id": "batch-processor", "name": "Batch processor", "variants": ["batch processors"], "definition": "A Collector processor that groups spans, metrics or logs into batches, which compress better and need fewer outgoing connections. It goes after memory_limiter and any sampling.", "topic": "Collector"},
+    {"id": "memory-limiter", "name": "memory_limiter", "variants": ["memory limiter", "memory limiter processor"], "definition": "A Collector processor that checks memory use and, past its limits, refuses data so the Collector does not run out of memory. Best placed first in each pipeline.", "topic": "Collector"},
+    {"id": "backpressure", "name": "Backpressure", "variants": [], "definition": "Making a sender slow down or retry when the next component cannot take more data. When memory_limiter refuses data, receivers can retry it and slow their own sources down.", "topic": "Collector"},
+    {"id": "routing-key", "name": "Routing key", "variants": ["routing_key"], "definition": "The load_balancing exporter setting that picks which Collector gets each piece of telemetry, such as traceID, so every span of one trace reaches the same one.", "topic": "Collector"},
+    {"id": "ebpf-profiler", "name": "eBPF profiler", "variants": ["eBPF profiling"], "definition": "OpenTelemetry's whole-system profiler for Linux, built on eBPF, that profiles every process on a host across languages. Its own Collector distribution runs it as a node agent.", "topic": "Collector"},
+    {"id": "daemonset", "name": "DaemonSet", "variants": ["DaemonSets"], "definition": "A Kubernetes object that runs a copy of a pod on every eligible node. A common way to run a Collector as an agent, one per node.", "topic": "OpenTelemetry"},
+    {"id": "sidecar", "name": "Sidecar", "variants": ["sidecars", "sidecar container"], "definition": "A second container that runs next to the main application container in the same pod. A Collector run this way is an agent, and a service mesh runs its proxy this way too.", "topic": "OpenTelemetry"},
+    {"id": "kubernetes-service", "name": "Kubernetes Service", "variants": ["headless Service", "headless Services", "Kubernetes Services"], "definition": "A Kubernetes object that exposes an application running in one or more pods on the network. A headless Service has no cluster IP and no load balancing: DNS returns the pods' own IPs.", "topic": "OpenTelemetry"}
   ]
 };

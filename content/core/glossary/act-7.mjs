@@ -4,7 +4,7 @@
 export default {
   "terms": [
     {"id": "sli", "name": "SLI", "variants": ["service level indicator"], "definition": "A measured indicator of service quality (for example, the share of requests under 300 ms).", "topic": "Reliability"},
-    {"id": "slo", "name": "SLO", "variants": ["service level objective"], "definition": "A target for an SLI over a window (99.9% over a rolling 28-day window).", "topic": "Reliability"},
+    {"id": "slo", "name": "SLO", "variants": ["service level objective"], "definition": "A target for an SLI over a time window, for example 99.9% over 30 days, the window this game's levels use. Dash0's SLOs use a rolling 28-day window.", "topic": "Reliability"},
     {"id": "error-budget", "name": "Error budget", "variants": [], "definition": "The allowed failure under an SLO (0.1%). In the game's incident boards, the minutes of investigation you can spend before the budget runs out.", "topic": "Reliability"},
     {"id": "burn-rate", "name": "Burn rate", "variants": [], "definition": "How fast the error budget is being used relative to plan.", "topic": "Reliability"},
     {"id": "synthetic-check", "name": "Synthetic check", "variants": ["synthetic checks"], "definition": "A scripted probe from outside the system.", "topic": "Reliability"},
