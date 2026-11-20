@@ -9,6 +9,7 @@ import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { liveRegistry } from '../app.mjs';
 import { playFixture, FIXTURE_CARD } from './fixtures/play-level.mjs';
+import { poolFixture } from './fixtures/pool-fixtures.mjs';
 
 const ANSWERS = {
   'auto-vs-manual': [
@@ -211,10 +212,16 @@ const ANSWERS = {
     'configure fx-config: receivers: otlp: processors: batch: exporters: otlp/dash0: service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp/dash0]',
     'build fx-logs: l-boot=none l-cart=aaaaaaaaaaaaaaa2 l-other=ccccccccccccccc4 l-charge=ddddddddddddddd3 l-worker=none',
   ],
+  // A pooled choice lists every right answer of its pool; a pooled sort every item of its pool (#390).
+  'pool-fixture': [
+    'choice cp: r1|r2|r3',
+    'sort sp: a1=a b1=b a2=a b2=b a3=a b3=b a4=a b4=b a5=a',
+    'choice cf: r1|r2|r3',
+  ],
 };
 
 const FX = buildRegistry(
-  [{ id: 'a', no: 0, levels: [playFixture()], boss: null }],
+  [{ id: 'a', no: 0, levels: [playFixture(), poolFixture()], boss: null }],
   { deck: [FIXTURE_CARD], nodeIds: [], play: { validatePlay, runPlay } },
 ).levels;
 const PLAY_LEVELS = [...Object.values(liveRegistry().levels).filter((l) => l.play), ...Object.values(FX)];

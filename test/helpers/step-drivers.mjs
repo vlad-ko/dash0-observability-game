@@ -7,6 +7,7 @@
 //   first(spec) -> focus name the step starts on (test/helpers/focus.mjs names)
 //   answerKey(spec) -> string   the spec's answer as one line, for test/answers.test.mjs
 // Adding a step type to lib/play.mjs means adding its driver here (test/play.test.mjs checks).
+import { drawChoiceBoard, drawSortBoard } from '../../lib/pool.mjs';
 import { STEP_TYPES } from '../../lib/play.mjs';
 import { isLogMode } from '../../lib/widgets/build-it.mjs';
 import { waterfall } from '../../lib/widgets/trace.mjs';
@@ -15,23 +16,31 @@ import { allPlans, evaluatePlan } from '../../lib/widgets/trade-off.mjs';
 const own = (o, k) => Object.hasOwn(o, k);
 const NOT_QUITE = /^Not quite\./;
 
+// A pooled step (a `draw`, #390) is played on the board the harness's identity shuffle draws: the first right answer and
+// the first draw-1 wrong ones; the first draw items of each bucket. Every harness shuffles with the identity.
+const identity = (list) => [...list];
+const boardOfChoice = (s) => (s.draw === undefined ? s : drawChoiceBoard(s, identity));
+const boardOfSort = (s) => (s.draw === undefined ? s : drawSortBoard(s, identity));
+
 const choice = {
-  solve: (s) => [`[data-pick="${s.choices.find((c) => c.right).key}"]`],
+  solve: (s) => [`[data-pick="${boardOfChoice(s).choices.find((c) => c.right).key}"]`],
   slips: (s) =>
-    s.choices.filter((c) => !c.right).map((c) => ({ name: `pick ${c.key}`, clicks: [`[data-pick="${c.key}"]`], says: NOT_QUITE })),
-  first: (s) => `pick:${s.choices[0].key}`,
-  answerKey: (s) => `choice ${s.id}: ${s.choices.find((c) => c.right).key}`,
+    boardOfChoice(s).choices.filter((c) => !c.right).map((c) => ({ name: `pick ${c.key}`, clicks: [`[data-pick="${c.key}"]`], says: NOT_QUITE })),
+  first: (s) => `pick:${boardOfChoice(s).choices[0].key}`,
+  // Every right answer of a pool, sorted, joined with "|"; a fixed question has one.
+  answerKey: (s) => `choice ${s.id}: ${s.choices.filter((c) => c.right).map((c) => c.key).sort().join('|')}`,
 };
 
 const sort = {
-  solve: (s) => s.items.flatMap((it) => [`[data-item="${it.id}"]`, `[data-bucket="${it.bucket}"]`]),
+  solve: (s) => boardOfSort(s).items.flatMap((it) => [`[data-item="${it.id}"]`, `[data-bucket="${it.bucket}"]`]),
   slips: (s) =>
-    s.items.map((it) => ({
+    boardOfSort(s).items.map((it) => ({
       name: `${it.id} in ${s.buckets.find((b) => b.id !== it.bucket).id}`,
       clicks: [`[data-item="${it.id}"]`, `[data-bucket="${s.buckets.find((b) => b.id !== it.bucket).id}"]`],
       says: NOT_QUITE,
     })),
-  first: (s) => `item:${s.items[0].id}`,
+  first: (s) => `item:${boardOfSort(s).items[0].id}`,
+  // Every item of the pool with its bucket, in content order.
   answerKey: (s) => `sort ${s.id}: ${s.items.map((it) => `${it.id}=${it.bucket}`).join(' ')}`,
 };
 
