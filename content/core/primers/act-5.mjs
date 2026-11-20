@@ -8,12 +8,12 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "The OpenTelemetry Collector receives telemetry, works on it and sends it on to one or more backends. This act is about running it: how its parts fit together, how it speaks OTLP, where it runs and which build of it you use."
+      "text": "The OpenTelemetry Collector receives telemetry, works on it and sends it on to one or more backends. This act is about running it: how its parts fit together, how it speaks OTLP (the OpenTelemetry Protocol, see item 2 below), where it runs and which distribution (a packaged Collector build) of it you use."
     },
     {
       "type": "list",
       "items": [
-        "A Collector is built from components, and pipelines decide which ones handle which signal.",
+        "A Collector is built from components (receivers, processors, exporters and more), and pipelines decide which ones handle which signal.",
         "OTLP is the protocol that carries telemetry between SDKs, Collectors and backends.",
         "The Collector can run in different deployment patterns, and comes in several pre-built distributions."
       ]
@@ -45,7 +45,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The pipelines subsection of the service section is where the pipelines are configured. A pipeline is of one of these types: traces, metrics or logs."
+          "text": "The pipelines subsection of the service section (the service: key in the configuration file) is where the pipelines are configured. A pipeline is of one of these types: traces, metrics or logs."
         },
         {
           "type": "paragraph",
@@ -89,11 +89,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "OTLP is implemented over two transports, gRPC and HTTP."
+          "text": "OTLP is implemented over two transports (ways of carrying the data): gRPC (a binary remote-call protocol over HTTP/2) and HTTP."
         },
         {
           "type": "paragraph",
-          "text": "An SDK's OTLP exporter is set up with environment variables. OTEL_EXPORTER_OTLP_PROTOCOL picks the protocol, one of grpc, http/protobuf or http/json. The endpoint can be set once for all signals with OTEL_EXPORTER_OTLP_ENDPOINT, or per signal with variables such as OTEL_EXPORTER_OTLP_TRACES_ENDPOINT."
+          "text": "An SDK's OTLP exporter is set up with environment variables. OTEL_EXPORTER_OTLP_PROTOCOL picks the protocol, one of grpc, http/protobuf (HTTP with the data encoded as protobuf, short for Protocol Buffers, a binary encoding) or http/json. The endpoint (the address and port the exporter sends to) can be set once for all signals with OTEL_EXPORTER_OTLP_ENDPOINT, or per signal with variables such as OTEL_EXPORTER_OTLP_TRACES_ENDPOINT."
         }
       ],
       "sources": [
@@ -117,7 +117,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The Collector documentation describes deployment patterns, among them the agent pattern and the gateway pattern. Each comes with pros and cons."
+          "text": "The Collector documentation describes deployment patterns, among them the agent pattern (a Collector run on each node, next to the applications) and the gateway pattern (a central tier of Collectors that receives telemetry from the rest). Each comes with pros and cons."
         },
         {
           "type": "list",
@@ -125,7 +125,7 @@ export default {
             "Agent, pros: straightforward to get started, and a clear one-to-one mapping between application and Collector.",
             "Agent, cons: limited scalability for teams and infrastructure resources, and inflexible for complex or evolving deployments.",
             "Gateway, pros: separation of concerns such as centrally managed credentials, and centralized policy management.",
-            "Gateway, cons: one more thing to maintain that can fail, added latency with cascaded Collectors, and higher overall resource usage."
+            "Gateway, cons: one more thing to maintain that can fail, added latency with chained Collectors, and higher overall resource usage."
           ]
         }
       ],
@@ -150,7 +150,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The OpenTelemetry Transformation Language (OTTL) is the language the transform processor uses for its transformations."
+          "text": "The transform processor edits telemetry using the OpenTelemetry Transformation Language (OTTL), the language its transformations are written in."
         },
         {
           "type": "list",
@@ -180,21 +180,21 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The OpenTelemetry project offers pre-built distributions of the Collector."
+          "text": "The OpenTelemetry project offers pre-built distributions of the Collector. A distribution is a packaged Collector build: a chosen set of components bundled into one ready-to-run program."
         },
         {
           "type": "list",
           "items": [
-            "OpenTelemetry Collector Core",
-            "OpenTelemetry Collector Contrib",
+            "OpenTelemetry Collector Core (the basic set of components)",
+            "OpenTelemetry Collector Contrib (a large set of components contributed by the community)",
             "OpenTelemetry Collector Kubernetes",
             "OpenTelemetry Collector OTLP",
-            "OpenTelemetry Collector eBPF Profiling"
+            "OpenTelemetry Collector eBPF Profiling (uses eBPF, a Linux kernel technology for observing running programs, to profile them)"
           ]
         },
         {
           "type": "paragraph",
-          "text": "The components a distribution includes are listed in its manifest.yaml file."
+          "text": "The components a distribution includes are listed in its manifest file (manifest.yaml)."
         }
       ],
       "sources": [
