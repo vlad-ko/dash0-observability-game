@@ -103,7 +103,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "[[Baggage]] is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is a separate store, kept apart from the attributes on spans, metrics and logs."
+          "text": "[[Baggage]] is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is a separate store, kept apart from the attributes on spans, [[metrics]] and logs."
         }
       ],
       "sources": [

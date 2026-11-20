@@ -189,7 +189,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The [[Dash0 MCP Server]] ([[MCP]] is the Model Context Protocol, a standard for AI tools to call data sources) lets AI assistants such as Claude, Claude Code and Cursor query your Dash0 observability data. The assistant calls [[MCP tools]] (named actions it can take) to read services, metrics, logs, traces, [[synthetic checks]], [[SLOs|slo]] and dashboards. These tools only read data: they never create, change or delete anything in Dash0."
+          "text": "The [[Dash0 MCP Server]] ([[MCP]] is the Model Context Protocol, a standard for AI tools to call data sources) lets AI assistants such as Claude, Claude Code and Cursor query your Dash0 observability data. The assistant calls [[MCP tools]] (named actions it can take) to read services, [[metrics]], logs, traces, [[synthetic checks]], [[SLOs|slo]] and dashboards. These tools only read data: they never create, change or delete anything in Dash0."
         },
         {
           "type": "paragraph",

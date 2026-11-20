@@ -130,7 +130,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Applications can also send logs through [[logging bridges]] that connect existing logging frameworks. A bridge is built on the [[Logs Bridge API]], which exists for logging library authors: as an application developer, you should not call that part directly. The Logs API itself can be called directly by application code."
+          "text": "Applications can also send logs through [[logging bridges]] that connect existing logging frameworks. A bridge is built on the [[Logs Bridge API]], which exists for logging library authors: as an application developer, you should not call that part directly. The [[Logs API]] itself can be called directly by application code."
         }
       ],
       "sources": [
