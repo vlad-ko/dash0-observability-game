@@ -203,7 +203,7 @@ simplified UI) and then the "after" view in Dash0. Points to make, one per act:
 - **Log AI**: structure for unstructured logs (Act 4).
 - **Cost control you can see**: per-signal pricing, spam filters to drop noise at
   ingest (Acts 3, 6).
-- **Prometheus-compatible alerting and synthetic checks** (Act 7).
+- **PromQL check rules and synthetic checks** (Act 7).
 - **As code**: Perses dashboards, Terraform provider, operator CRDs; DART for
   migration (Act 8).
 - **AI**: MCP server and Agent0 (Act 8).

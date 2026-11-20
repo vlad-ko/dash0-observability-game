@@ -230,7 +230,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Utilisation is the average time that a system resource (such as CPU, disk, memory or network) was busy servicing work. Saturation is how much extra work a system resource has that it cannot service."
+          "text": "Utilisation is the average time that a system resource (such as CPU, memory, network or disk) was busy servicing work. Saturation is how much extra work a system resource has that it cannot service."
         }
       ],
       "sources": [
