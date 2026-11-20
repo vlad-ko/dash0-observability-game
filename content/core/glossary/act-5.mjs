@@ -17,7 +17,7 @@ export default {
     {"id": "service-section", "name": "service section", "variants": [], "definition": "The top-level key in a Collector config that lists the pipelines.", "topic": "Collector"},
     {"id": "connector", "name": "Connector", "variants": ["connectors"], "definition": "A component that is an exporter in one pipeline and a receiver in another (for example span_metrics, whose deprecated alias is spanmetrics).", "topic": "Collector"},
     {"id": "extension", "name": "Extension", "variants": ["extensions"], "definition": "A non-pipeline capability (health check, auth, storage).", "topic": "Collector"},
-    {"id": "agent", "name": "Agent", "variants": ["agents", "logging agent"], "definition": "A Collector run on each node.", "topic": "Collector"},
+    {"id": "agent", "name": "Agent", "variants": ["agents", "logging agent"], "definition": "A Collector run alongside the application or on the same host, for example as a sidecar or DaemonSet.", "topic": "Collector"},
     {"id": "gateway", "name": "Gateway", "variants": ["gateways"], "definition": "A central tier of Collectors that receives telemetry from the rest.", "topic": "Collector"},
     {"id": "ottl", "name": "OTTL", "variants": [], "definition": "The OpenTelemetry Transformation Language, used in transform and filter processors.", "topic": "Collector"},
     {"id": "distribution", "name": "Distribution", "variants": ["distributions"], "definition": "A packaged Collector build (core, contrib, vendor, or custom via the OpenTelemetry Collector Builder, OCB).", "topic": "Collector"},

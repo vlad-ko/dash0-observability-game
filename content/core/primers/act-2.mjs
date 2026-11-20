@@ -135,7 +135,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "[[Zero-code instrumentation]] adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent (a library loaded into the application at start-up). It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need manual instrumentation."
+          "text": "[[Zero-code instrumentation]] adds the OpenTelemetry API and SDK to your application without writing code, typically as an [[instrumentation agent]], a library loaded into the application at startup. It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need manual instrumentation."
         }
       ],
       "sources": [
