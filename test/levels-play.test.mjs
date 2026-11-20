@@ -537,6 +537,29 @@ function pageClasses(into) {
   }
 }
 
+// The glossary leak guard (#442): a marked term is a gloss span in bound text, and only the ctx draws it into a term. Any
+// span left on the page was drawn by a path that skipped the ctx; a term in a control's name or label is a button inside a
+// control or a name read twice. Checked after every click and at the end of a run, over the card body and the actions.
+const NOT_TERM_HOSTS = '.ui-question, .ui-actions, [data-pick], label, legend';
+
+/** The problems with the gloss markup under `roots`: `[]` when none. */
+function leakProblems(...roots) {
+  const found = [];
+  for (const root of roots) {
+    if (root.querySelector('[data-gloss]')) found.push('a [data-gloss] element is on the page');
+    for (const el of [root, ...root.querySelectorAll('*')]) {
+      for (const n of el.getAttributeNames()) {
+        if (el.getAttribute(n).includes('data-gloss')) found.push(`<${el.localName} ${n}> holds data-gloss`);
+      }
+    }
+    if (root.textContent.includes('data-gloss=')) found.push('a text node shows data-gloss=');
+    for (const t of root.querySelectorAll('[data-term]')) {
+      if (t.closest(NOT_TERM_HOSTS)) found.push('a term sits inside a question, an action, an answer card, a label or a legend');
+    }
+  }
+  return found;
+}
+
 // A configured guide (#17 P4): every play step with a panel shows it, so the class, CSP and Alpine
 // checks below cover the panel on every step. It is never asked here (test/guide-panel.test.mjs does).
 const FAKE_GUIDE = Object.freeze({ configured: true, ask: async () => ({ kind: 'failed' }) });
@@ -577,6 +600,7 @@ function click(elOrSel) {
   } finally {
     current = null;
     if (seenClasses) pageClasses(seenClasses);
+    if (recording) recording.leaks.push(...leakProblems(recording.dom.body, recording.dom.actions).map((p) => `after ${String(elOrSel)}: ${p}`));
   }
 }
 
@@ -630,7 +654,8 @@ function openLevel(level, { telemetry = null } = {}) {
   const attrs = new Set();
   seenAttrs = attrs;
   const clicks = [];
-  recording = { dom, clicks };
+  const leaks = [];
+  recording = { dom, clicks, leaks };
   let first;
   const injected = [];
   try {
@@ -657,7 +682,8 @@ function openLevel(level, { telemetry = null } = {}) {
       injected.push(...liveAlpineAttrs(dom.body, dom.actions));
       pageClasses(classes);
       frames.push(frameOf('end', dom.body, dom.actions));
-      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames, clicks };
+      leaks.push(...leakProblems(dom.body, dom.actions).map((p) => `at the end: ${p}`));
+      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames, clicks, leaks };
     },
   };
 }
@@ -750,7 +776,8 @@ async function checkRunAsync(level, run, label = 'happy') {
   return assertRun(level, run, await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() }), label);
 }
 
-function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames, clicks }, label) {
+function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames, clicks, leaks }, label) {
+  assert.deepEqual(leaks, [], 'glossary markup leaked onto the page (#442)');
   // The How to play modal follows the step the player is on: every widget a level declares is
   // reported as its step mounts, and nothing it does not declare (#316).
   if (level.widgets) assert.deepEqual([...new Set(widgets)].sort(), [...new Set(level.widgets)].sort(), 'ctx.widget reports the level\'s declared widgets');
@@ -770,6 +797,7 @@ function assertRun(level, run, { calls, steps, first, injected, classes, attrs, 
     assert.ok(level.cards.includes(c), `card ${c} is not in level.cards`);
   }
   assert.ok(result.text.length > 10, 'finish carries reward text');
+  assert.ok(!result.text.includes('data-gloss'), 'reward text carries a gloss span (#442)');
   assert.ok(!result.text.includes('\u2014'), 'reward text has an em dash');
   assert.ok(!/&(amp|lt|gt|quot|apos|#\d+);/.test(result.text), 'reward text has an HTML entity; the card sets it as plain text (x-text)');
   assert.ok(result.text.split(/\n\s*\n/).every((p) => p.length <= 420), 'a reward paragraph over 420 characters; split it at a blank line');
@@ -1378,6 +1406,25 @@ test('harness: an unscored level passes without a sloppy run, or with one that e
   const happy = { play: FIXTURE_DRIVER.play, expect: zero };
   checkLevel(lvl, happy);
   checkLevel(lvl, { ...happy, sloppy: { play: FIXTURE_DRIVER.sloppy.play, expect: zero } });
+});
+
+test('harness: the glossary leak guard catches each way a span or a term can reach the wrong place, and passes a clean screen', () => {
+  const dom = makeDom();
+  const check = (html) => {
+    dom.body.innerHTML = html;
+    return leakProblems(dom.body, dom.actions);
+  };
+  const term = '<span class="ui-term" data-term><button type="button">t</button><span role="tooltip" hidden>d</span></span>';
+  assert.deepEqual(check(`<p>A ${term}.</p><div class="ui-feedback"><div data-feedback-text>plain</div></div>`), [], 'control: a term in prose is fine');
+  assert.ok(check('<div class="ui-feedback"><div data-feedback-text>A <span data-gloss="span">span</span></div></div>').some((p) => p.includes('[data-gloss] element')), 'raw setFeedback with a span');
+  assert.ok(check('<button aria-label="the <span data-gloss=&quot;x&quot;>x</span>">b</button>').some((p) => p.includes('aria-label')), 'a span in an aria-label');
+  assert.ok(check('<p>&lt;span data-gloss="span"&gt;x&lt;/span&gt;</p>').some((p) => p.includes('text node')), 'a span shown as text');
+  for (const [open, close] of [['<h3 class="ui-question">', '</h3>'], ['<button data-pick="a">', '</button>'], ['<label>', '</label>'], ['<fieldset><legend>', '</legend></fieldset>']]) {
+    assert.ok(check(`${open}Q ${term}${close}`).some((p) => p.includes('a term sits inside')), open);
+  }
+  dom.actions.innerHTML = `<div class="ui-actions">${term}</div>`;
+  assert.ok(leakProblems(dom.body, dom.actions).some((p) => p.includes('a term sits inside')), 'a term in the actions');
+  dom.actions.innerHTML = '';
 });
 
 test('harness: clicking a missing element throws naming the selector', () => {

@@ -45,6 +45,13 @@ test('extractLevelText writes a marked term back as its marker, so an extracted 
   assert.equal(JSON.stringify(text).includes('data-gloss'), false);
 });
 
+test('cardinality marks a term in a wrong answer and in a hint: the proof content of answer feedback (glossary sense only)', () => {
+  const steps = liveRegistry().levels.cardinality.play.steps;
+  const sum = steps[0].choice.choices.find((c) => c.key === 'sum');
+  assert.deepEqual(readGloss(sum.why), [{ shown: 'attribute', ref: null }]);
+  assert.deepEqual(readGloss(steps[1].spot.hint), [{ shown: 'label', ref: null }]);
+});
+
 test('readGloss does not read a span with no shown text as a term', () => {
   assert.deepEqual(readGloss('<span data-gloss="span"></span>'), []);
 });
@@ -59,6 +66,38 @@ test('a level extracted from its bound form binds back to the same words and spa
   assert.equal(readGloss(bound.play.steps[0].intro).length, 2, 'control: the bound intro holds two gloss spans');
   const again = bindLevel(extractLevelText(bound), logic);
   assert.equal(again.play.steps[0].intro, bound.play.steps[0].intro);
+});
+
+test('extractLevelText writes a marker in answer feedback back as [[...]] and leaves no gloss span anywhere', () => {
+  const level = {
+    id: 't',
+    play: {
+      finish: 'Done.',
+      steps: [{
+        intro: 'I',
+        question: 'Q?',
+        spot: {
+          id: 's',
+          lines: [{ id: 'l1', text: 'one' }],
+          whyNot: { l1: `Not ${gloss('span', 'span')}.` },
+          explain: `See ${gloss('Trace')}.`,
+          hint: `Try ${gloss('series', 'time-series')}.`,
+          closing: `Again ${gloss('span', 'span')}.`,
+        },
+      }, {
+        intro: 'I2',
+        question: 'Q2?',
+        choice: { id: 'c', choices: [{ key: 'a', label: 'A', why: `A ${gloss('span', 'span')} here.` }] },
+      }],
+    },
+  };
+  const text = extractLevelText(level);
+  assert.equal(text.play.steps[0].spot.whyNot.l1, 'Not [[span|span]].');
+  assert.equal(text.play.steps[0].spot.explain, 'See [[Trace]].');
+  assert.equal(text.play.steps[0].spot.hint, 'Try [[series|time-series]].');
+  assert.equal(text.play.steps[0].spot.closing, 'Again [[span|span]].');
+  assert.equal(text.play.steps[1].choice.choices[0].why, 'A [[span|span]] here.');
+  assert.equal(JSON.stringify(text).includes('data-gloss'), false);
 });
 
 test('checkLevelTerms: a level with no span has no problem, and a glossary that is not one resolves nothing', () => {

@@ -694,10 +694,22 @@ primers keep their own schema (§2.12) over the same text rules.
 
 A play step's `intro` and `show` may mark glossary terms with the primer marker (`[[shown|id]]`, `[[shown]]`, §2.12). `bindLevel`
 validates the syntax and writes each marker as `<span data-gloss="id">shown</span>`, so the guide's plain-text reads
-(`lib/guide/context.mjs`) see the shown words only; no other field and nothing under `run` reads a marker yet. `createLevelContext`
-takes `glossary` and `termPops` (default `null`; `app.mjs` passes both) and `renderStep` closes the open card, draws the body through
-`glossHtml` (`lib/term-text.mjs`: the first use of each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every
-other span is plain escaped words) and wires the body. The first-use rule is `createTermScope`, shared with the primer view. `endSession`
+(`lib/guide/context.mjs`) see the shown words only. Markers are read in `intro`, `show` and the answer feedback keys (`why`, a
+`whyNot` value, `explain`, `hint`, `closing`; `MARKER_KEYS` in `lib/content/keys.mjs`); no other field and nothing under `run` reads
+one yet. `createLevelContext` takes `glossary` and `termPops` (default `null`; `app.mjs` passes both). `renderStep` closes the open
+card, opens a scope for the screen (even for a body with no span), draws the body through it (`lib/term-text.mjs`: the first use of
+each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every other span is plain escaped words) and wires the body.
+The first-use rule is `createTermScope`, shared with the primer view. It records which owner drew each term, so `release(owner)` gives
+that owner's terms back; the number only goes up, so an id is never reused. Feedback draws through the same scope:
+`ctx.gloss(html, owner)` releases what `owner` drew before and returns the html with its spans drawn, and `ctx.wireTerms()` wires the
+card body, which is the bounds a definition stays inside (nothing after the signal aborts). A term already on the screen stays plain
+words in feedback, one not yet drawn becomes a term, and replacing feedback releases its terms. Widgets never call `setFeedback`
+themselves: `tell(ctx, el, tone, html, opts)` (`lib/widgets/tell.mjs`) is `setFeedback` over `ctx.gloss(html, el)` plus
+`ctx.wireTerms()`, with the feedback element as owner, and `mountSide`'s `showHint` and `succeed` draw the hint and the closing line
+the same way (`test/feedback-terms.test.mjs` checks the seam). The guide panel stays on `setFeedback`: its text is escaped model output
+and holds no span. `escapeFromHint` leaves Escape alone when it comes from a term whose card is open, so that key closes only the
+card. `test/levels-play.test.mjs` fails a run that leaves a `data-gloss` span, attribute value or text on the page, or a term inside a
+question, an action, an answer card, a label or a legend. `endSession`
 closes an open card, and `focusStepStart` skips a term so that opening a level does not open a definition. Whether a term exists is
 checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind, which never imports the glossary.
 Authoring rules: `docs/CONTENT.md` section 5.1.
