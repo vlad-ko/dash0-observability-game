@@ -13,9 +13,9 @@ export default {
     {
       "type": "list",
       "items": [
-        "Head sampling decides as early as possible.",
-        "Tail sampling decides based on specific criteria, and is harder to run.",
-        "The number of label sets of a metric is a cost of its own."
+        "Head sampling decides as early as possible, without looking at the whole trace.",
+        "Tail sampling decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
+        "Each unique combination of attribute values on a metric is a separate time series (one stream of points), and that count is a cost of its own."
       ]
     },
     {
@@ -89,7 +89,8 @@ export default {
           "items": [
             "It can be difficult to implement.",
             "It can be difficult to operate.",
-            "The components that implement it must be stateful systems that can accept and store a large amount of data.",
+            "The components that implement it must keep state, for example by holding spans while they wait to decide.",
+        "They must also be able to accept and store a large amount of data.",
             "Tail samplers often end up vendor-specific."
           ]
         }
@@ -109,11 +110,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Each label set of a metric is an additional time series, with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of label sets across hundreds of servers it can add up quickly."
+          "text": "Each unique combination of attribute values on a metric is an additional time series, with RAM, CPU, disk and network costs. Usually the overhead is negligible, but with lots of metrics and hundreds of combinations across hundreds of servers it can add up quickly."
         },
         {
           "type": "paragraph",
-          "text": "The Prometheus guideline is that the vast majority of your metrics should have no labels. If you are unsure, start with no labels and add more over time as concrete use cases arise."
+          "text": "The Prometheus guideline is that the vast majority of your metrics should have no labels (Prometheus's word for an attribute). If you are unsure, start with no labels and add more over time as concrete use cases arise."
         },
         {
           "type": "paragraph",

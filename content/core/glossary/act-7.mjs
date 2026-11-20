@@ -4,20 +4,20 @@
 export default {
   "terms": [
     {"id": "sli", "name": "SLI", "variants": ["service level indicator"], "definition": "A measured indicator of service quality (for example, the share of requests under 300 ms).", "topic": "Reliability"},
-    {"id": "slo", "name": "SLO", "variants": ["service level objective"], "definition": "A target for an SLI over a window (99.9% over 30 days).", "topic": "Reliability"},
+    {"id": "slo", "name": "SLO", "variants": ["service level objective"], "definition": "A target for an SLI over a window (99.9% over a rolling 28-day window).", "topic": "Reliability"},
     {"id": "error-budget", "name": "Error budget", "variants": [], "definition": "The allowed failure under an SLO (0.1%). In the game's incident boards, the minutes of investigation you can spend before the budget runs out.", "topic": "Reliability"},
     {"id": "burn-rate", "name": "Burn rate", "variants": [], "definition": "How fast the error budget is being used relative to plan.", "topic": "Reliability"},
     {"id": "synthetic-check", "name": "Synthetic check", "variants": ["synthetic checks"], "definition": "A scripted probe from outside the system.", "topic": "Reliability"},
     {"id": "private-location", "name": "Private location", "variants": ["private locations"], "definition": "A place inside your own network where synthetic checks run.", "topic": "Reliability"},
     {"id": "alert-fatigue", "name": "Alert fatigue", "variants": [], "definition": "Ignoring alerts because too many are noise.", "topic": "Reliability"},
     {"id": "alerting-rule", "name": "Alerting rule", "variants": ["alerting rules", "Prometheus alerting rule"], "definition": "A Prometheus rule that raises an alert when a PromQL expression is true.", "topic": "Reliability"},
-    {"id": "labels-clause", "name": "Labels clause", "variants": [], "definition": "The part of an alerting rule that adds extra labels (tags) to the alert.", "topic": "Reliability"},
+    {"id": "labels-clause", "name": "Labels clause", "variants": [], "definition": "The part of an alerting rule that adds extra labels (Prometheus's word for an attribute) to the alert.", "topic": "Reliability"},
     {"id": "annotations-clause", "name": "Annotations clause", "variants": [], "definition": "The part of an alerting rule that adds longer annotations (notes) to the alert, such as descriptions or runbook links.", "topic": "Reliability"},
     {"id": "runbook", "name": "Runbook", "variants": ["runbooks"], "definition": "The team's written steps for handling an alert.", "topic": "Reliability"},
     {"id": "alertmanager", "name": "Alertmanager", "variants": [], "definition": "The Prometheus component that groups, silences and routes alerts.", "topic": "Reliability"},
     {"id": "silencing", "name": "Silencing", "variants": [], "definition": "Muting the notifications for matching alerts for a set time.", "topic": "Reliability"},
     {"id": "alert-dependencies", "name": "Alert dependencies", "variants": [], "definition": "Rules that hold back one alert's notifications while a related alert is already firing.", "topic": "Reliability"},
-    {"id": "check-rule", "name": "Check rule", "variants": ["check rules"], "definition": "A Prometheus-compatible alerting rule in Dash0.", "topic": "Dash0"},
+    {"id": "check-rule", "name": "Check rule", "variants": ["check rules"], "definition": "A Dash0 rule that evaluates a PromQL expression against your telemetry and triggers an alert when values cross a threshold.", "topic": "Dash0"},
     {"id": "notification-channel", "name": "Notification channel", "variants": ["notification channels"], "definition": "Where Dash0 delivers alerts from check rules and synthetic checks, such as Slack, PagerDuty or email.", "topic": "Dash0"}
   ]
 };
