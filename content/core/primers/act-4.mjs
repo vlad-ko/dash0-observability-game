@@ -13,9 +13,9 @@ export default {
     {
       "type": "list",
       "items": [
-        "A structured log has a stable schema, so tools can rely on its fields.",
-        "OpenTelemetry can add the trace and span IDs of the active span to your existing logs, through its SDKs and logging bridges.",
-        "The Collector can read, parse and export logs from many sources."
+        "A structured log has a stable schema (fixed field names, types and meanings), so tools can rely on its fields.",
+        "OpenTelemetry can add the trace and span IDs of the running span to your existing logs, through its SDKs and logging bridges (adapters from a logging library to OpenTelemetry).",
+        "The Collector (see act 5) can read, parse and export logs from many sources."
       ]
     },
     {
@@ -39,17 +39,21 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "An OpenTelemetry log record has these fields: Timestamp, ObservedTimestamp, TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, Body, Resource, InstrumentationScope, Attributes and EventName."
+          "text": "An OpenTelemetry log record has these fields: Timestamp, ObservedTimestamp, TraceId, SpanId, TraceFlags, SeverityText, SeverityNumber, Body, Resource, InstrumentationScope, Attributes and EventName. The list explains them."
         },
         {
           "type": "list",
           "items": [
+            "Timestamp and ObservedTimestamp: when the event occurred, and when the system observed the log record.",
             "Body: the message of the log record.",
             "Attributes: additional information about the event.",
             "Resource: describes the observed entity that generated the log.",
             "SeverityText: the original string for the severity, also known as the log level.",
             "SeverityNumber: a number for the severity, where smaller values are less severe events.",
-            "TraceId and SpanId: the request trace and span the log belongs to, when there is one."
+            "TraceId and SpanId: the request trace and span the log belongs to, when there is one.",
+            "TraceFlags: flags carried with the trace context, such as the sampled flag, which means the caller may have recorded trace data (there is no guarantee).",
+            "InstrumentationScope: the library or module that emitted the log.",
+            "EventName: a name that says what kind of event the record describes."
           ]
         }
       ],
@@ -65,6 +69,12 @@ export default {
           "label": "OpenTelemetry: Logs data model",
           "url": "https://opentelemetry.io/docs/specs/otel/logs/data-model/",
           "audience": "public"
+        },
+        {
+          "kind": "article",
+          "label": "W3C: Trace Context",
+          "url": "https://www.w3.org/TR/trace-context/",
+          "audience": "public"
         }
       ]
     },
@@ -74,7 +84,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When you add auto-instrumentation or activate an SDK, OpenTelemetry automatically correlates your existing logs with any active trace and span: a log written while a span is active can carry that trace ID and span ID, which the SDK injects into the log record. OpenTelemetry connects to existing logging frameworks through logging bridges."
+          "text": "When you add zero-code instrumentation (see act 2) or activate an SDK, OpenTelemetry automatically correlates (links) your existing logs with any running trace and span: a log written while a span is running can carry that trace ID and span ID (the fields TraceId and SpanId), which the SDK injects into the log record."
         },
         {
           "type": "paragraph",
@@ -112,15 +122,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "OpenTelemetry is designed to work with the logs you already produce. The first step in adopting it often is deploying a Collector as a general-purpose logging agent."
+          "text": "OpenTelemetry is designed to work with the logs you already produce. The first step in adopting it often is deploying a Collector (see act 5) as a general-purpose logging agent, meaning a Collector that runs alongside the application or on the same host."
         },
         {
           "type": "paragraph",
-          "text": "The Collector has receivers that parse logs from known sources, and a filelog receiver that reads logs from any file and can parse different formats or use a regular expression. Processors such as the transform processor can parse nested data and add, remove or update values."
+          "text": "The Collector has receivers (components that accept telemetry) that parse logs from known sources, and a receiver named filelog that reads logs from any file and can parse different formats or use a regular expression. Processors are components that modify telemetry on its way through. The transform processor, for example, can parse nested data and add, remove or update values."
         },
         {
           "type": "paragraph",
-          "text": "Applications can also send logs through the Logs API or through logging bridges that connect existing logging frameworks."
+          "text": "Applications can also send logs through logging bridges that connect existing logging frameworks. A bridge is built on the Logs Bridge API, which exists for logging library authors: as an application developer, you should not call that part directly. The Logs API itself can be called directly by application code."
         }
       ],
       "sources": [
