@@ -59,7 +59,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Auth tokens]] authenticate and authorise users and services when they access [[Dash0]]'s [[APIs]]. You use them to send [[telemetry]] to Dash0, and to integrate Dash0 with other solutions, for example Grafana or Terraform (a tool that manages infrastructure as code)."
+          "text": "[[Auth tokens]] authenticate and authorise users and services when they access Dash0's APIs. You use them to send [[telemetry]] to Dash0, and to integrate Dash0 with other solutions, for example Grafana or Terraform (a tool that manages infrastructure as code)."
         },
         {
           "type": "paragraph",
@@ -87,7 +87,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Dash0]] uses [[attribute filters]] to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then an [[operator|filter-operator]] (a comparison such as equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
+          "text": "Dash0 uses [[attribute filters]] to get to the telemetry you need. You build a filter in three parts: first the key to filter on, then an [[operator|filter-operator]] (a comparison such as equals), then one or more values. While you type, Dash0 suggests the keys and values that match."
         },
         {
           "type": "paragraph",

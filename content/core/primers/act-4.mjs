@@ -14,7 +14,7 @@ export default {
       "type": "list",
       "items": [
         "A [[structured log]] has a stable schema (fixed field names, types and meanings), so tools can rely on its fields.",
-        "OpenTelemetry can add the trace and span IDs of the running span to your existing logs, through its [[SDKs]] and [[logging bridges]] (adapters from a logging library to OpenTelemetry).",
+        "[[OpenTelemetry]] can add the trace and [[span]] IDs of the running span to your existing logs, through its [[SDKs]] and [[logging bridges]] (adapters from a logging library to OpenTelemetry).",
         "The [[Collector]] (see act 5) can read, parse and export logs from many sources."
       ]
     },
@@ -49,9 +49,9 @@ export default {
             "[[Attributes]]: additional information about the event.",
             "[[Resource]]: describes the observed entity that generated the log.",
             "[[SeverityText]]: the original string for the severity, also known as the log level.",
-            "[[SeverityNumber]]: a number for the severity, where smaller values are less severe events.",
+            "SeverityNumber: a number for the severity, where smaller values are less severe events.",
             "[[TraceId]] and [[SpanId]]: the request trace and span the log belongs to, when there is one.",
-            "[[TraceFlags]]: flags carried with the trace context, such as the sampled flag, which means the caller may have recorded trace data (there is no guarantee).",
+            "[[TraceFlags]]: flags carried with the [[trace context|w3c-trace-context]], such as the sampled flag, which means the caller may have recorded trace data (there is no guarantee).",
             "[[InstrumentationScope]]: the library or module that emitted the log.",
             "[[EventName]]: a name that says what kind of event the record describes."
           ]
@@ -130,7 +130,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Applications can also send logs through [[logging bridges]] that connect existing logging frameworks. A bridge is built on the [[Logs Bridge API]], which exists for logging library authors: as an application developer, you should not call that part directly. The [[Logs API]] itself can be called directly by application code."
+          "text": "Applications can also send logs through [[logging bridges]] that connect existing logging frameworks. A bridge is built on the [[Logs Bridge API]], which exists for logging library authors: as an application developer, you should not call that part directly. The Logs API itself can be called directly by application code."
         }
       ],
       "sources": [

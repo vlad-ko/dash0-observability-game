@@ -13,8 +13,8 @@ export default {
     {
       "type": "list",
       "items": [
-        "[[Head sampling]] decides as early as possible, without looking at the whole trace.",
-        "[[Tail sampling]] decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
+        "Head sampling decides as early as possible, without looking at the whole trace.",
+        "Tail sampling decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
         "Each unique combination of [[attribute]] values on a metric is a separate [[time series]] (one stream of points), and that count is a cost of its own."
       ]
     },
@@ -36,7 +36,7 @@ export default {
         {
           "type": "list",
           "items": [
-            "Sampled: a trace or span is processed and exported.",
+            "Sampled: a [[trace]] or [[span]] is processed and exported.",
             "Not sampled: a trace or span is not processed or exported."
           ]
         },

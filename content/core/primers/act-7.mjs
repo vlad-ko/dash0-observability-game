@@ -50,7 +50,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In [[Dash0]], [[check rules]] continuously evaluate PromQL expressions against your telemetry data. They trigger alerts when values cross defined thresholds."
+          "text": "In Dash0, [[check rules]] continuously evaluate PromQL expressions against your telemetry data. They trigger alerts when values cross defined thresholds."
         }
       ],
       "sources": [
@@ -116,7 +116,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Each check validates one URL's availability, response time and correctness through assertions (conditions the response must meet), and collects latency, status code and error on every run. In [[Dash0]], checks run from Dash0-operated public regions or from [[private locations]] (places inside your own network)."
+          "text": "Each check validates one URL's availability, response time and correctness through assertions (conditions the response must meet), and collects latency, status code and error on every run. In Dash0, checks run from Dash0-operated public regions or from [[private locations]] (places inside your own network)."
         }
       ],
       "sources": [
@@ -140,7 +140,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In [[Dash0]], [[notification channels]] deliver alerts from [[check rules]] and [[synthetic checks]] to your team, through messaging platforms, incident management systems and email. Examples are Slack, PagerDuty and email."
+          "text": "In Dash0, [[notification channels]] deliver alerts from [[check rules]] and [[synthetic checks]] to your team, through messaging platforms, incident management systems and email. Examples are Slack, PagerDuty and email."
         }
       ],
       "sources": [

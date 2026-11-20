@@ -32,7 +32,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Dash0]] dashboards are assets that can be versioned and managed as code, the way teams already manage servers and networks ([[infrastructure as code]]). That enables version control, automated deployment pipelines, consistent configuration across environments, and code review for dashboard changes."
+          "text": "Dash0 dashboards are assets that can be versioned and managed as code, the way teams already manage servers and networks ([[infrastructure as code]]). That enables version control, automated deployment pipelines, consistent configuration across environments, and code review for dashboard changes."
         },
         {
           "type": "paragraph",
@@ -111,7 +111,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Dash0]] can import dashboards from Dash0 itself in the [[Perses]] format, from Grafana, a dashboard tool, and from external Perses dashboards."
+          "text": "Dash0 can import dashboards from Dash0 itself in the [[Perses]] format, from Grafana, a dashboard tool, and from external Perses dashboards."
         },
         {
           "type": "paragraph",
@@ -133,7 +133,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In [[Dash0]], the [[Websites Explorer]] is a built-in view of your frontend health. It shows traffic volume: sessions, page views, users, bounce rate (usually the share of sessions that view only one page), [[backend]] requests and JavaScript errors. A session is usually one visit to your site."
+          "text": "In Dash0, the [[Websites Explorer]] is a built-in view of your frontend health. It shows traffic volume: sessions, page views, users, bounce rate (usually the share of sessions that view only one page), backend requests and JavaScript errors. A session is usually one visit to your site."
         },
         {
           "type": "paragraph",
@@ -143,7 +143,7 @@ export default {
           "type": "list",
           "items": [
             "Largest Contentful Paint (LCP): how long the largest visible element, an image or a text block, takes to fully render.",
-            "Interaction to Next Paint (INP): one value that all or nearly all user interactions, such as clicks, taps and keyboard input, fall beneath over the page lifecycle.",
+            "Interaction to Next Paint (INP): a single value that all or nearly all user interactions, such as clicks, taps and keyboard input, stay under across the page lifecycle.",
             "Cumulative Layout Shift (CLS): a score for the largest burst of unexpected layout shifts during the page lifecycle."
           ]
         },

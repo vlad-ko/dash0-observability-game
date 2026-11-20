@@ -8,13 +8,13 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "The [[OpenTelemetry]] [[Collector]] receives [[telemetry]], works on it and sends it on to one or more [[backends]]. This act is about running it: how its parts fit together, how it speaks [[OTLP]] (the OpenTelemetry Protocol), where it runs and which [[distribution]] (a packaged Collector build) of it you use."
+      "text": "The OpenTelemetry [[Collector]] receives [[telemetry]], works on it and sends it on to one or more backends. This act is about running it: how its parts fit together, how it speaks [[OTLP]] (the OpenTelemetry Protocol), where it runs and which [[distribution]] (a packaged Collector build) of it you use."
     },
     {
       "type": "list",
       "items": [
         "A Collector is built from components ([[receivers]], [[processors]], [[exporters]] and more), and [[pipelines]] (the routes that decide which components handle which signal) wire them together.",
-        "OTLP is the protocol that carries telemetry between [[SDKs]], Collectors and backends.",
+        "OTLP is the protocol that carries telemetry between SDKs, Collectors and backends.",
         "The Collector can run in different deployment patterns, and comes in several pre-built distributions."
       ]
     },
