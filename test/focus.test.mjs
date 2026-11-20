@@ -68,6 +68,34 @@ test('escapeFromHint: with no focusable target the Escape is not prevented and n
   assert.deepEqual(calls, ['later']);
 });
 
+test('escapeFromHint: Escape on a term whose card is open leaves the key to the card; with the card closed it goes to the hint button', async () => {
+  const { escapeFromHint } = await import('../lib/widgets/focus.mjs');
+  const dom = makeDom();
+  dom.body.innerHTML =
+    '<button id="hint">Hint</button><div id="t" tabindex="-1">A ' +
+    '<span class="ui-term" data-term><button id="term" type="button" aria-describedby="p1">trace</button>' +
+    '<span id="p1" role="tooltip" hidden>The path.</span></span></div>';
+  const text = dom.document.getElementById('t');
+  const calls = [];
+  dom.window.HTMLElement.prototype.focus = function focus() {
+    calls.push(this.id);
+  };
+  escapeFromHint(text, dom.document.getElementById('hint'));
+  const termBtn = dom.document.getElementById('term');
+  const press = (target) => {
+    const e = { key: 'Escape', target, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+    text.onkeydown(e);
+    return e.defaultPrevented;
+  };
+  dom.document.getElementById('p1').removeAttribute('hidden'); // the card is open
+  assert.equal(press(termBtn), false, 'left for the card to close');
+  assert.deepEqual(calls, []);
+  dom.document.getElementById('p1').setAttribute('hidden', '');
+  assert.equal(press(termBtn), true, 'no card open: the hint behaviour');
+  assert.deepEqual(calls, ['hint']);
+  assert.equal(press(text), true, 'Escape on the hint text itself is unchanged');
+});
+
 // ---- #339: a new step never focuses a control that is off-screen ----
 
 /** A step with a question and a first control; `rects` stubs layout (linkedom has none). Returns what took focus. */
