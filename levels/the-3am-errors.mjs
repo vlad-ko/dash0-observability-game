@@ -28,7 +28,7 @@ import { bindLevel } from '../lib/content/bind.mjs';
 
 const TRACE_ID = '4bf92f3577b34da6a3ce929d0e0e4736';
 
-// The figure the copy quotes: the trace id the error log record carries and the trace view shows.
+// The figure the copy quotes: the trace id the error log record carries and the Trace View shows.
 const VARS = { 'trace-id': TRACE_ID };
 
 const SCENARIO = {

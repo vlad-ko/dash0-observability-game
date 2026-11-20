@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[Observability]] is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analyzing [[telemetry]] data such as traces, metrics and logs."
+          "text": "[[Observability]] is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analysing [[telemetry]] data such as traces, metrics and logs."
         },
         {
           "type": "paragraph",

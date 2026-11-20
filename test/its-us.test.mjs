@@ -1,5 +1,5 @@
 // The lab boss "It's us" (Act 9): the player finds the incident the game sent from their own session
-// and answers questions about it. Practice renders the same spans in a simulated Dash0 trace view;
+// and answers questions about it. Practice renders the same spans in a simulated Dash0 Trace View;
 // live sends the incident once and shows no trace at all. Covers the not-connected path, every send
 // outcome, the grading and mistake rules, the answer never being rendered where it can be copied,
 // the time-rebase decision and the token isolation invariants of docs/DASH0-LAB.md. The practice
@@ -156,7 +156,7 @@ test('practice: focus starts at the explorer heading, not the first answer field
   assert.deepEqual(focus.unfocusable(), []);
 });
 
-test('Open trace: focus lands on the trace view heading', () => {
+test('Open trace: focus lands on the Trace View heading', () => {
   const { tele } = session({ live: false });
   open(tele);
   const focus = recordFocus(globalThis.window);
@@ -214,7 +214,7 @@ test('a session connected after 9.3 with live open goes to the send screen, not 
   assert.ok(!q('#its-practice'));
 });
 
-test('a session connected to the practice Dash0 goes straight to the simulated trace view and sends nothing more', async () => {
+test('a session connected to the practice Dash0 goes straight to the simulated Trace View and sends nothing more', async () => {
   const { tele, sent } = session({ live: false });
   assert.equal(tele.connect({ mode: MODE.practice, endpoint: `https://${PRACTICE_HOSTS[0]}`, token: tele.practiceCredential('ingest'), dataset: '' }).ok, true);
   assert.equal((await tele.sendTest()).kind, 'accepted');
@@ -224,14 +224,14 @@ test('a session connected to the practice Dash0 goes straight to the simulated t
   assert.equal(sent.length, 0);
 });
 
-// ---- practice: the simulated trace view ----
+// ---- practice: the simulated Trace View ----
 
-test('practice: the trace view lists every span of the shared incident and labels itself simulated', () => {
+test('practice: the Trace View lists every span of the shared incident and labels itself simulated', () => {
   const { h, inc } = practiceView();
   const t = h.text();
   assert.ok(t.includes('Simulated'), 'labelled');
   for (const s of inc.spans) assert.ok(t.includes(s.name), s.name);
-  assert.ok(t.includes(inc.traceId), 'the trace id is in the opened trace view, as in Dash0');
+  assert.ok(t.includes(inc.traceId), 'the trace id is in the opened Trace View, as in Dash0');
   assert.equal(q('#its-trace').textContent, inc.traceId);
   assert.equal(qa('[data-finish]').filter((b) => !b.disabled).length, 0, 'no Finish before the answers');
 });
@@ -692,7 +692,7 @@ test('live: the incident is sent once, carrying the session id, and the fault co
     assert.ok(!s.includes(key.traceId), 'nor the trace id');
     assert.ok(!s.includes(key.operation), 'nor the failing operation');
   }
-  assert.equal(qa('#its-detail').length, 0, 'live renders no trace view');
+  assert.equal(qa('#its-detail').length, 0, 'live renders no Trace View');
 });
 
 test('live: Dash0 instructions name the filter and where to read the span, without naming an answer', async () => {

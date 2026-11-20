@@ -11,7 +11,7 @@ export default {
     "startNote": "Use Back to return to the map.",
     "notConnectedIntro": "The game ran into a problem of its own. Your job is to find it, in Dash0, from the game's own telemetry. But the game is not connected to a Dash0: you skipped the connection in level 9.3, or the page was reloaded, which drops it.",
     "notConnectedChip": "Not connected",
-    "notConnectedPractice": "<p>Practice shows the same incident in a simulated Dash0 trace view, and it scores the same way as your own Dash0. Nothing leaves this page.</p>",
+    "notConnectedPractice": "<p>Practice shows the same incident in a simulated Dash0 Trace View, and it scores the same way as your own Dash0. Nothing leaves this page.</p>",
     "notConnectedWhyAvailable": "Your own Dash0 needs a connection from level 9.3 first. Connect there, then come back.",
     "notConnectedWhyUnavailable": "Your own Dash0 needs a connection from level 9.3 first, and connecting to your own Dash0 is not available in this browser. Practice works the same way.",
     "notConnectedPracticeButton": "Practice with a simulated Dash0",
