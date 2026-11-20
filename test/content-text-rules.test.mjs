@@ -62,7 +62,7 @@ function liveHtmlFields() {
   return out;
 }
 
-test('checkHtml: every live HTML field of every play level passes', () => {
+test('checkHtml: the shown text of every live HTML field of every play level passes', () => {
   const fields = liveHtmlFields();
   assert.ok(fields.length > 500, `the corpus is large (${fields.length})`);
   // A marked term is a gloss span (#442), which checkHtml refuses by design: judge the shown words, and hold the spans to intro and show.

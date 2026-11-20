@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
+import { bindLevel } from '../lib/content/bind.mjs';
 import { GLOSSARY } from '../content/core/glossary/index.mjs';
 import { checkLevelTerms, readGloss } from '../lib/content/terms.mjs';
 import { extractLevelText } from '../tools/extract-level-text.mjs';
@@ -42,6 +43,22 @@ test('extractLevelText writes a marked term back as its marker, so an extracted 
   assert.ok(text.play.steps[0].intro.includes('<b>[[series|time-series]]</b>'), text.play.steps[0].intro);
   assert.ok(text.play.steps[0].intro.includes('A [[metric]] keeps'));
   assert.equal(JSON.stringify(text).includes('data-gloss'), false);
+});
+
+test('readGloss does not read a span with no shown text as a term', () => {
+  assert.deepEqual(readGloss('<span data-gloss="span"></span>'), []);
+});
+
+test('a level extracted from its bound form binds back to the same words and spans', () => {
+  const logic = { id: 't', play: { prefix: 'p', steps: [{ qid: 'q', choice: { id: 'c', choices: [{ key: 'a', right: true }] } }] } };
+  const words = {
+    id: 't',
+    play: { finish: 'Done.', steps: [{ intro: 'One <b>[[series|time-series]]</b> and a [[metric]].', question: 'Q?', choice: { id: 'c', choices: [{ key: 'a', label: 'A', why: 'W.' }] } }] },
+  };
+  const bound = bindLevel(words, logic);
+  assert.equal(readGloss(bound.play.steps[0].intro).length, 2, 'control: the bound intro holds two gloss spans');
+  const again = bindLevel(extractLevelText(bound), logic);
+  assert.equal(again.play.steps[0].intro, bound.play.steps[0].intro);
 });
 
 test('checkLevelTerms: a level with no span has no problem, and a glossary that is not one resolves nothing', () => {

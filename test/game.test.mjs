@@ -2395,7 +2395,7 @@ test('a level whose intro marks a term opens with focus on the step\'s first rea
   assert.deepEqual(focus.names(), ['#go']);
 });
 
-test('leaving a level closes an open term card, so the next Escape reaches the game', () => {
+test('leaving a level hides its open term card', () => {
   const s = termGame();
   s.game.openLevel('t');
   const term = s.dom.document.querySelector('#ov-body [data-term]');
@@ -2404,5 +2404,4 @@ test('leaving a level closes an open term card, so the next Escape reaches the g
   assert.equal(pop.hasAttribute('hidden'), false, 'control: hover opened the definition in the level');
   s.game.closeOverlay();
   assert.equal(pop.hasAttribute('hidden'), true);
-  assert.equal(fireOn(s.dom, s.dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
 });

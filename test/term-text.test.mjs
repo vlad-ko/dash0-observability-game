@@ -45,7 +45,7 @@ test('glossHtml: a screen has its own scope, so the same term is a control again
   assert.ok(b.includes('id="lvterm-2-1"'));
 });
 
-test('createTermScope: use() escapes the words it does not draw as a term', () => {
+test('createTermScope: use() escapes the words it does not draw as a term, including a term already drawn', () => {
   const scope = createTermScope({ glossary: GLOSSARY, prefix: 'p' });
   assert.equal(scope.use('a<b', 'nope'), 'a&lt;b');
   assert.ok(scope.use('span', 'span').includes('data-term'));

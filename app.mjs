@@ -1066,7 +1066,7 @@ export function createGame(deps) {
     // The step's first control through focusFirst (Back when it has none), once the overlay is rendered (#353).
     focusStepStart() {
       const go = () => {
-        // Not a glossary term in the intro (#442): focusing it would open its definition. linkedom has no reliable :not(), so filter.
+        // Not a glossary term anywhere in the step (#442): focusing it would open its definition. linkedom has no reliable :not(), so filter.
         const first = [...doc.querySelectorAll(STEP_CONTROLS)].find((el) => !el.closest('[data-term]')) ?? null;
         focusFirst(first, { fallback: doc.querySelector('#ov-back') });
       };
@@ -1305,7 +1305,7 @@ export function createGame(deps) {
       if (session) session.abort();
       session = null;
       liveCtx = null;
-      termPops.closeAll(); // a level's open definition must not outlive it: its Escape handler would swallow the game's
+      termPops.closeAll(); // housekeeping: drops the card's state and hides it with the level
       this.howTo = NO_HOW_TO;
       this.howToKey = null;
       this.howToFlagKey = null;

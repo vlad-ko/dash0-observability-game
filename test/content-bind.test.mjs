@@ -482,16 +482,21 @@ test('terms: a marker under run is refused until run reads them', () => {
 });
 
 test('terms: broken markers are one error each at the field', () => {
-  for (const intro of ['[[a', 'a]]', '[[ a|span]]', '[[<b>x</b>|span]]', '[[a &amp; b|span]]', '[[{{n}}|span]]', '[[a|Not An Id]]']) {
+  for (const intro of ['[[a', 'a]]', '[[ a|span]]', '[[<b>x</b>|span]]', '[[a &amp; b|span]]', '[[{{n}}|span]]', '[[a|Not An Id]]', '{{[[n]]}}']) {
     const { errors } = bind(withStep({ intro }));
     assert.equal(errors.length, 1, `${intro}: ${JSON.stringify(errors)}`);
     assert.ok(errors[0].startsWith(AT_INTRO), errors[0]);
   }
 });
 
-test('terms: a marker inside a tag is refused', () => {
-  const { errors } = bind(withStep({ intro: '<a href="[[x]]">y</a>' }));
-  assert.ok(errors.some((e) => e.startsWith(AT_INTRO) && e.includes('inside a tag')), JSON.stringify(errors));
+test('terms: a fill-in that wraps a marker is refused', () => {
+  const { errors } = bind(withStep({ intro: '{{[[n]]}}' }));
+  assert.deepEqual(errors, [`${AT_INTRO}: a fill-in must not wrap a term marker`]);
+});
+
+test('terms: a marker inside a tag is refused by the tag scan', () => {
+  const { errors } = bind(withStep({ intro: '<th scope="[[col]]">a</th>' }));
+  assert.deepEqual(errors, [`${AT_INTRO}: a term marker must not be inside a tag`]);
 });
 
 test('terms: the HTML rules judge the shown text, not the span', () => {

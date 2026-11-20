@@ -699,7 +699,7 @@ takes `glossary` and `termPops` (default `null`; `app.mjs` passes both) and `ren
 `glossHtml` (`lib/term-text.mjs`: the first use of each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every
 other span is plain escaped words) and wires the body. The first-use rule is `createTermScope`, shared with the primer view. `endSession`
 closes an open card, and `focusStepStart` skips a term so that opening a level does not open a definition. Whether a term exists is
-checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind (§8 of `docs/CONTENT.md`).
+checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind, which never imports the glossary.
 Authoring rules: `docs/CONTENT.md` section 5.1.
 
 ## 3. Invariants
