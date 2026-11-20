@@ -8,7 +8,7 @@ export default {
     "finish": "You know an agent runs beside the workload and a gateway is a standalone service, and that tail sampling needs every span of a trace in one Collector: a load_balancing exporter routing by traceID in front of the gateways.",
     "steps": [
       {
-        "intro": "Kettle &amp; Co now runs a [[Collector]] on every node, and the platform team wants a central place for heavier work such as [[sampling]]. The Collector docs call the two shapes agent and gateway.",
+        "intro": "Kettle &amp; Co now runs a Collector on every node, and the platform team wants a central place for heavier work such as [[sampling]]. The Collector docs call the two shapes agent and gateway.",
         "question": "Which of these is the gateway pattern?",
         "choice": {
           "id": "agw-pattern",

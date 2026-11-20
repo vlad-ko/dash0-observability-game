@@ -56,7 +56,7 @@ export default {
         }
       },
       {
-        "intro": "The [[Collector]] in front of the apps accepts both transports, on 4317 and 4318, and should send to Dash0 through the [[exporter]] <code>otlp_grpc/dash0</code>. Its config is half done: traces go to the debug exporter only, and metrics name an exporter nobody defined, so it will not start.",
+        "intro": "The Collector in front of the apps accepts both transports, on 4317 and 4318, and should send to Dash0 through the [[exporter]] <code>otlp_grpc/dash0</code>. Its config is half done: traces go to the debug exporter only, and metrics name an exporter nobody defined, so it will not start.",
         "question": "Fix the config so the Collector starts and both traces and metrics go to Dash0 through <code>otlp_grpc/dash0</code>.",
         "configure": {
           "id": "otlp-config",

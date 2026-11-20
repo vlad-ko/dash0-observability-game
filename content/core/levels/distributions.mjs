@@ -150,7 +150,7 @@ export default {
         }
       },
       {
-        "intro": "Your team also wrote <code>acme_scrubber</code>, a [[processor]] that masks card numbers, and wants it in the [[Collector]].",
+        "intro": "Your team also wrote <code>acme_scrubber</code>, a [[processor]] that masks card numbers, and wants it in the Collector.",
         "question": "How do you get a Collector that contains it?",
         "choice": {
           "id": "dist-build",

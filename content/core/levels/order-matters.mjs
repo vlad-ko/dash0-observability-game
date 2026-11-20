@@ -81,7 +81,7 @@ export default {
         }
       },
       {
-        "intro": "The other half of the advice is about <code>batch</code>, which groups [[telemetry]] into batches before it is sent.",
+        "intro": "The other half of the advice is about <code>batch</code>, which groups telemetry into batches before it is sent.",
         "question": "Where does <code>batch</code> go, and is the processor the only way to batch?",
         "choice": {
           "id": "order-batch",

@@ -90,7 +90,7 @@ export default {
         }
       },
       {
-        "intro": "The new config is rolling out, but spans with the email are already in Dash0. Someone suggests a spam filter, the backend-side drop, instead of the [[Collector]] change.",
+        "intro": "The new config is rolling out, but spans with the email are already in Dash0. Someone suggests a spam filter, the backend-side drop, instead of the Collector change.",
         "question": "Can a Dash0 spam filter do the redaction?",
         "choice": {
           "id": "ottl-backend",
