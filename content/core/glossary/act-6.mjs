@@ -5,6 +5,9 @@ export default {
   "terms": [
     {"id": "sampling", "name": "Sampling", "variants": ["head sampling", "tail sampling"], "definition": "Keeping a subset of traces. Head sampling decides at the start; tail sampling decides after the trace completes.", "topic": "Traces"},
     {"id": "representativeness", "name": "Representativeness", "variants": [], "definition": "The idea that a small sample can stand for the whole.", "topic": "Traces"},
+    {"id": "parentbased-sampler", "name": "ParentBased sampler", "variants": ["ParentBased", "parent-based sampler"], "definition": "An SDK sampler that decides by the parent: by default a span with a parent is kept only if its parent was sampled, and a span with no parent is decided by the root sampler you give it.", "topic": "Traces"},
+    {"id": "probabilistic-sampler", "name": "Probabilistic sampler", "variants": ["probabilistic sampling", "probabilistic_sampler"], "definition": "Sampling that keeps a set percentage of traces, decided from the trace ID, as in the Collector's probabilistic_sampler processor or the probabilistic policy of tail_sampling.", "topic": "Traces"},
+    {"id": "retention", "name": "Retention", "variants": ["data retention"], "definition": "How long a backend keeps the telemetry it stores. It can differ by signal: Dash0 keeps metric data points longer than spans and log records.", "topic": "Foundations"},
     {"id": "spam-filter", "name": "Spam filter", "variants": [], "definition": "A rule that drops unwanted telemetry at ingest.", "topic": "Dash0"}
   ]
 };

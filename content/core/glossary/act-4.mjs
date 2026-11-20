@@ -4,7 +4,7 @@
 export default {
   "terms": [
     {"id": "instrumentation-scope", "name": "Instrumentation scope", "variants": ["InstrumentationScope"], "definition": "The library or module that produced a piece of telemetry.", "topic": "OpenTelemetry"},
-    {"id": "log-record", "name": "Log record", "variants": ["log records"], "definition": "Timestamp, severity, body, attributes, and optional trace/span IDs.", "topic": "Logs"},
+    {"id": "log-record", "name": "Log record", "variants": ["log records"], "definition": "One log entry: Timestamp, ObservedTimestamp, severity, body, attributes, the Resource that produced it, its instrumentation scope, an optional EventName, and optional trace/span IDs.", "topic": "Logs"},
     {"id": "severity", "name": "Severity number / text", "variants": ["severity", "SeverityNumber", "SeverityText"], "definition": "OpenTelemetry's 1 to 24 severity scale and its label.", "topic": "Logs"},
     {"id": "log-body", "name": "Log body", "variants": ["Body"], "definition": "The main content of a log record, such as its message.", "topic": "Logs"},
     {"id": "observed-timestamp", "name": "ObservedTimestamp", "variants": ["observed timestamp"], "definition": "When the system observed the log record.", "topic": "Logs"},
@@ -12,9 +12,14 @@ export default {
     {"id": "structured-logging", "name": "Structured logging", "variants": ["structured log", "structured logs"], "definition": "Logs as key/value data instead of free text.", "topic": "Logs"},
     {"id": "logs-api", "name": "Logs API", "variants": [], "definition": "The OpenTelemetry API for producing log records. Application code can call it directly, or reach it through logging libraries and bridges.", "topic": "Logs"},
     {"id": "logs-bridge-api", "name": "Logs Bridge API", "variants": [], "definition": "The API logging-library appenders use to emit OpenTelemetry logs.", "topic": "Logs"},
-    {"id": "logging-bridge", "name": "Logging bridge", "variants": ["logging bridges"], "definition": "The piece that connects an existing logging framework to OpenTelemetry.", "topic": "Logs"},
+    {"id": "logging-bridge", "name": "Logging bridge", "variants": ["logging bridges", "log bridge", "log appender", "appender", "appenders"], "definition": "The piece that connects an existing logging library to OpenTelemetry, through the Logs API. Log bridge and log appender are two names for it.", "topic": "Logs"},
+    {"id": "filelog-receiver", "name": "filelog receiver", "variants": ["filelog", "file_log", "file_log receiver"], "definition": "The Collector receiver that tails and parses logs from files, a contrib component. Its type is file_log; filelog is its deprecated alias.", "topic": "Logs"},
+    {"id": "multiline", "name": "multiline", "variants": [], "definition": "A filelog receiver setting that splits a file into entries on a pattern, such as the line that starts each entry, instead of at every newline, so one entry can span several lines.", "topic": "Logs"},
+    {"id": "filelog-operator", "name": "Filelog operator", "variants": ["filelog operators"], "definition": "One step of log processing in the filelog receiver, such as parsing JSON or a timestamp. Operators are chained, each passing entries to the next; not the Dash0 filter operator.", "topic": "Logs"},
     {"id": "correlation", "name": "Correlation", "variants": [], "definition": "Linking logs, metrics and traces through shared IDs and resources.", "topic": "Logs"},
-    {"id": "related-logs", "name": "Related Logs", "variants": [], "definition": "The Dash0 tab that shows logs from the same resource and the same trace around a selected log.", "topic": "Dash0"},
+    {"id": "related-logs", "name": "Related Logs", "variants": [], "definition": "The Dash0 tab for a selected log record that lists the log records around it in time order: from the same resource, the same trace or both, within 30 minutes either side.", "topic": "Dash0"},
+    {"id": "log-sidebar", "name": "Log Sidebar", "variants": [], "definition": "The Dash0 detail panel for a selected log record: its body, attributes, span context and resource.", "topic": "Dash0"},
+    {"id": "patterns-view", "name": "Patterns view", "variants": ["log pattern", "log patterns"], "definition": "The Dash0 log view that groups similar log records into patterns, templates whose variable parts are placeholders, each with its record count and severity mix.", "topic": "Dash0"},
     {"id": "log-ai", "name": "Log AI", "variants": [], "definition": "Pattern and severity extraction for unstructured logs.", "topic": "Dash0"}
   ]
 };

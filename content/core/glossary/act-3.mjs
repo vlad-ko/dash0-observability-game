@@ -37,7 +37,10 @@ export default {
     {"id": "utilisation", "name": "Utilisation", "variants": [], "definition": "How busy a system resource was: the average time it spent servicing work.", "topic": "Metrics"},
     {"id": "saturation", "name": "Saturation", "variants": [], "definition": "How much work a system resource could not serve, so it had to wait.", "topic": "Metrics"},
     {"id": "span-metrics", "name": "Span metrics", "variants": [], "definition": "RED metrics derived from spans (the span_metrics connector; spanmetrics is its deprecated alias).", "topic": "Metrics"},
+    {"id": "asynchronous-instrument", "name": "Asynchronous instrument", "variants": ["asynchronous instruments", "observable instrument", "observable instruments"], "definition": "An instrument that reports through a callback you register, which the SDK runs only when it collects metrics. Its measurements cannot be tied to a context. APIs often name these Observable, as in CreateObservableCounter.", "topic": "Metrics"},
+    {"id": "filter-processor", "name": "Filter processor", "variants": ["filter processors"], "definition": "A Collector processor that drops spans, span events, metrics, data points or logs when any of its OTTL conditions is met.", "topic": "Collector"},
     {"id": "metric-explorer", "name": "Metric Explorer", "variants": [], "definition": "The Dash0 place to browse, filter and investigate metrics; the start of deeper analysis in the Query Builder.", "topic": "Dash0"},
-    {"id": "query-builder", "name": "Query Builder", "variants": [], "definition": "Dash0's editor for building metric queries.", "topic": "Dash0"}
+    {"id": "query-builder", "name": "Query Builder", "variants": [], "definition": "Dash0's editor for building metric queries.", "topic": "Dash0"},
+    {"id": "signalcontrol", "name": "SignalControl", "variants": [], "definition": "Dash0's rule-based pipeline that reduces the telemetry Dash0 stores: before storage, it filters, converts, samples and aggregates the signals you send.", "topic": "Dash0"}
   ]
 };

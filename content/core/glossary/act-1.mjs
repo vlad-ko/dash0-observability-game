@@ -4,6 +4,7 @@
 export default {
   "terms": [
     {"id": "sdk", "name": "SDK", "variants": ["SDKs"], "definition": "The implementation an application installs to process and export telemetry.", "topic": "OpenTelemetry"},
+    {"id": "tracer-provider", "name": "Tracer provider", "variants": ["TracerProvider", "tracer providers"], "definition": "The object that hands out tracers and, in the SDK, owns the tracing setup, such as the span processors and the sampler. An application usually creates one and registers it as the global default.", "topic": "OpenTelemetry"},
     {"id": "resource", "name": "Resource", "variants": ["resources"], "definition": "The entity producing telemetry, described by resource attributes.", "topic": "OpenTelemetry"},
     {"id": "resource-detector", "name": "Resource detector", "variants": ["resource detectors", "detectors"], "definition": "An SDK component that fills in resource attributes from the environment (host, container, cloud, Kubernetes).", "topic": "OpenTelemetry"},
     {"id": "attribute", "name": "Attribute", "variants": ["attributes"], "definition": "A key/value pair on a span, metric point, log record or resource.", "topic": "OpenTelemetry"},
@@ -13,6 +14,8 @@ export default {
     {"id": "namespace", "name": "Namespace", "variants": ["namespaces"], "definition": "A way to group resources inside one Kubernetes cluster.", "topic": "OpenTelemetry"},
     {"id": "deployment", "name": "Deployment", "variants": ["deployments", "deployment name"], "definition": "A Kubernetes object that keeps a set of pods running.", "topic": "OpenTelemetry"},
     {"id": "cluster", "name": "Cluster", "variants": ["clusters"], "definition": "The group of machines that Kubernetes manages together.", "topic": "OpenTelemetry"},
+    {"id": "node", "name": "Node", "variants": ["nodes", "Kubernetes node"], "definition": "One machine in a Kubernetes cluster, virtual or physical, that runs pods.", "topic": "OpenTelemetry"},
+    {"id": "contrib", "name": "Contrib", "variants": ["Collector Contrib", "contrib distribution"], "definition": "The OpenTelemetry Collector Contrib repository, for Collector components that do not belong in the core, and the Contrib distribution built from it.", "topic": "Collector"},
     {"id": "dash0-operator", "name": "Dash0 operator", "variants": [], "definition": "A Kubernetes operator that auto-instruments workloads and ships telemetry to Dash0.", "topic": "Dash0"}
   ]
 };
