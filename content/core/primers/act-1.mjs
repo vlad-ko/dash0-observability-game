@@ -8,14 +8,14 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "Every trace, metric and log needs to say which system it describes. In OpenTelemetry that is the job of a resource. This act is about telling your services apart, so you can find the one that is misbehaving."
+      "text": "Every trace, metric and log needs to say which system it describes. In OpenTelemetry that is the job of a resource, the description of the system that emits telemetry. This act is about telling your services apart, so you can find the one that is misbehaving."
     },
     {
       "type": "list",
       "items": [
-        "A resource is a set of attributes that describes the thing producing telemetry.",
-        "Some attributes have defaults or come from the SDK, and you can set your own.",
-        "Detectors and the Collector can fill in details from the environment, such as the host or the Kubernetes pod."
+        "A resource is a set of attributes (named key and value pairs) that describes the thing producing telemetry.",
+        "Some attributes have defaults or come from the SDK (the OpenTelemetry library your application installs), and you can set your own.",
+        "Resource detectors and the Collector (which receives and forwards telemetry) can fill in details from the environment, such as the host or the Kubernetes pod (the smallest unit Kubernetes runs)."
       ]
     },
     {
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A resource represents the entity producing telemetry, described as resource attributes. A process running in a container on Kubernetes might have a process name, a pod name, a namespace and possibly a deployment name."
+          "text": "A resource represents the entity producing telemetry, described as resource attributes. A process running in a container on Kubernetes might have a process name, a pod name, a namespace (a group of resources in one cluster) and possibly a deployment name (a Kubernetes object that keeps a set of pods running)."
         },
         {
           "type": "paragraph",
@@ -39,7 +39,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A resource is added to the tracer or meter provider when it is created. That association cannot be changed later, and all spans and metrics from that provider carry the resource."
+          "text": "A resource is added to the tracer provider or meter provider (the objects that create tracers and meters) when it is created. That association cannot be changed later, and all spans (timed operations) and metrics from that provider carry the resource."
         }
       ],
       "sources": [
@@ -71,7 +71,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "You can provide your own resource attributes in code or with the OTEL_RESOURCE_ATTRIBUTES environment variable. Where it applies, use the semantic conventions for the names. For example, deployment.environment.name holds the name of your deployment environment."
+          "text": "You can provide your own resource attributes in code or with the OTEL_RESOURCE_ATTRIBUTES environment variable. Where it applies, use the semantic conventions (the standard attribute names) for the names. For example, deployment.environment.name holds the name of your deployment environment."
         },
         {
           "type": "code",
@@ -104,7 +104,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a log agent on the host can each report a different subset, so they look like two separate resources even though they describe the same pod."
+          "text": "Different sources that describe the same system rarely carry identical resource attributes. An SDK inside a pod and a logging agent (often a Collector run on each node) can each report a different subset, so they look like two separate resources even though they describe the same pod."
         },
         {
           "type": "paragraph",
@@ -112,7 +112,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In a Collector, the Kubernetes Attributes Processor (k8sattributes) adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API to discover the pods in a cluster and records their IP addresses, pod UIDs and metadata."
+          "text": "In a Collector, the Kubernetes Attributes processor (k8sattributes in the config, a Collector component, see act 5) adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API (the cluster's interface for reading and changing its state) to discover the pods in a cluster and records their IP addresses, pod UIDs and metadata."
         }
       ],
       "sources": [
