@@ -8,7 +8,7 @@ export default {
     "finish": "You can get logs into the pipeline: an appender and OTLP for code you own, the filelog receiver for files you cannot change, wired into a logs pipeline, split with multiline and parsed with operators.",
     "steps": [
       {
-        "intro": "Two Kettle &amp; Co services log in different ways. Orders is the team's own code and prints one JSON object per line to standard output. Shipping runs a vendor's label-printer agent that nobody can change: it writes plain text lines to <code>/var/log/shipping/agent.log</code>. The platform team wants both in Dash0, and wants orders' records linked to their traces.",
+        "intro": "Two Kettle &amp; Co services log in different ways. Orders is the team's own code and prints one JSON object per line to standard output. Shipping runs a vendor's label-printer agent that nobody can change: it writes plain text lines to <code>/var/log/shipping/agent.log</code>. The platform team wants both in Dash0, and wants orders' records linked to their [[traces]].",
         "question": "How should orders' logs reach Dash0?",
         "choice": {
           "id": "col-route",
@@ -32,7 +32,7 @@ export default {
         }
       },
       {
-        "intro": "Shipping's file has to be read by the Collector. The platform team defined a <code>filelog/shipping</code> receiver and wired a <code>logs</code> pipeline to Dash0, but no shipping record arrives: the Collector would not start.",
+        "intro": "Shipping's file has to be read by the [[Collector]]. The platform team defined a <code>filelog/shipping</code> [[receiver]] and wired a <code>logs</code> [[pipeline]] to Dash0, but no shipping record arrives: the Collector would not start.",
         "question": "Fix the config so <code>filelog/shipping</code> feeds the logs pipeline, which exports to Dash0.",
         "configure": {
           "id": "col-config",
@@ -66,7 +66,7 @@ export default {
         }
       },
       {
-        "intro": "Shipping's records now arrive whole, but each one is a single long line of text with no severity number: nothing reads the <code>ERROR</code> in it. The first line of an entry looks like this: <code>2026-11-01 03:07:41 ERROR label printer offline: port 9100 refused</code>.",
+        "intro": "Shipping's records now arrive whole, but each one is a single long line of text with no [[severity number|severity]]: nothing reads the <code>ERROR</code> in it. The first line of an entry looks like this: <code>2026-11-01 03:07:41 ERROR label printer offline: port 9100 refused</code>.",
         "question": "Where do you parse the level out of the line?",
         "choice": {
           "id": "col-parse",
@@ -90,7 +90,7 @@ export default {
         }
       },
       {
-        "intro": "The notifications team never wrote a parser either. Their plain text lines reach Dash0 with no severity number, and one message repeats thousands of times with a different order number in it.",
+        "intro": "The notifications team never wrote a parser either. Their plain text lines reach Dash0 with no [[severity number|severity]], and one message repeats thousands of times with a different order number in it.",
         "question": "What does Dash0 do with those unstructured records?",
         "choice": {
           "id": "col-dash0",

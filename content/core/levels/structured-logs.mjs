@@ -9,7 +9,7 @@ export default {
     "finish": "You can read a log record by its fields: message in the Body, facts in Attributes, the source in the Resource, and the level as a number you can filter on. You keep your logger and add an appender.",
     "steps": [
       {
-        "intro": "Payments at Kettle &amp; Co declined a card, and the logs tell you. A log record is more than a line of text: the data model gives it separate fields. Here are twelve pieces of one record.",
+        "intro": "Payments at Kettle &amp; Co declined a card, and the logs tell you. A [[log record]] is more than a line of text: the data model gives it separate fields. Here are twelve pieces of one record.",
         "question": "Pick a piece, then say which field of the record it belongs in.",
         "sort": {
           "id": "sl-sort",
@@ -220,7 +220,7 @@ export default {
         }
       },
       {
-        "intro": "A teammate read about the Logs Bridge API and wants to rewrite every <code>logger.warn(...)</code> in checkout to call it directly, so that the logs reach OpenTelemetry.",
+        "intro": "A teammate read about the [[Logs Bridge API]] and wants to rewrite every <code>logger.warn(...)</code> in checkout to call it directly, so that the logs reach OpenTelemetry.",
         "question": "What do you tell them?",
         "choice": {
           "id": "sl-bridge",

@@ -8,7 +8,7 @@ export default {
     "finish": "You can tell a linked log record from an unlinked one: the ids are fields of the record, set only when the log call ran inside an active span through a bridged logger.",
     "steps": [
       {
-        "intro": "From a log, an engineer wants to jump to its trace. That works when the record carries a <code>trace_id</code> and a <code>span_id</code>, and a log call gets them only from the span that is the current span when it runs. Kettle &amp; Co logged these six records while order {{order}} was paid, with order {{other-order}} in flight at checkout. When spans nest, the innermost span that was current is the one the call ran in. Attach each record to the span it was written in, or to none.",
+        "intro": "From a log, an engineer wants to jump to its [[trace]]. That works when the record carries a <code>trace_id</code> and a <code>span_id</code>, and a log call gets them only from the [[span]] that is the current span when it runs. Kettle &amp; Co logged these six records while order {{order}} was paid, with order {{other-order}} in flight at checkout. When spans nest, the innermost span that was current is the one the call ran in. Attach each record to the span it was written in, or to none.",
         "build": {
           "id": "cor-build",
           "hint": "A record belongs to a span only if that span was the current one when the log call ran: look at the record's service, its time and its attributes, and at the span's.",
@@ -16,7 +16,7 @@ export default {
         }
       },
       {
-        "intro": "Checkout is instrumented and runs a bridged logger. Yet three records have no link.",
+        "intro": "Checkout is instrumented and runs a [[bridged logger|logging-bridge]]. Yet three records have no link.",
         "question": "Why do they have no trace link?",
         "choice": {
           "id": "cor-why",
@@ -64,7 +64,7 @@ export default {
         }
       },
       {
-        "intro": "You open the trace of order {{order}} in Dash0, select the payments span and open its <b>Related Logs &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
+        "intro": "You open the trace of order {{order}} in Dash0, select the payments span and open its <b>[[Related Logs]] &amp; Events</b> tab, left on its default. The worker's record has blank ids.",
         "question": "Is the worker's record in the list?",
         "choice": {
           "id": "cor-dash0",

@@ -8,7 +8,7 @@ export default {
     "finish": "The errors came from a deploy: inventory 3.1.0 renamed a field and orders could not read the reply. The trace ID on an error log leads to the trace, and the trace to the deploy.\n\nDash0 uses PromQL as its query language for logs, traces and metrics alike, with a Query Builder tab for each, so a filter on service.name is written the same way in all three.",
     "steps": [
       {
-        "intro": "It is 3 a.m. and orders is throwing errors. Start from the logs, follow a record to its trace, and the trace to what changed.",
+        "intro": "It is 3 a.m. and orders is throwing errors. Start from the logs, follow a record to its [[trace]], and the trace to what changed.",
         "incident": {
           "id": "the-3am-errors",
           "alert": {
