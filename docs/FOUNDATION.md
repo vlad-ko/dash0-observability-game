@@ -702,11 +702,14 @@ each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every
 The first-use rule is `createTermScope`, shared with the primer view. It records which owner drew each term, so `release(owner)` gives
 that owner's terms back; the number only goes up, so an id is never reused. Feedback draws through the same scope:
 `ctx.gloss(html, owner)` releases what `owner` drew before and returns the html with its spans drawn, and `ctx.wireTerms()` wires the
-card body, which is the bounds a definition stays inside (nothing after the signal aborts). A term already on the screen stays plain
-words in feedback, one not yet drawn becomes a term, and replacing feedback releases its terms. Widgets never call `setFeedback`
-themselves: `tell(ctx, el, tone, html, opts)` (`lib/widgets/tell.mjs`) is `setFeedback` over `ctx.gloss(html, el)` plus
-`ctx.wireTerms()`, with the feedback element as owner, and `mountSide`'s `showHint` and `succeed` draw the hint and the closing line
-the same way (`test/feedback-terms.test.mjs` checks the seam). The guide panel stays on `setFeedback`: its text is escaped model output
+card body, the box a definition must stay inside. It does nothing once the signal has aborted. A term already on the screen stays plain
+words in feedback, one not yet drawn becomes a term, and replacing feedback releases its terms; `ctx.release(owner)` does the same when
+text is emptied or hidden, and `quiet(ctx, el)` in `tell.mjs` clears a feedback region that way. The popover also keeps a card inside
+the nearest scrolling or clipping ancestor of its term, such as the sticky side column. Widgets never call `setFeedback` or
+`clearFeedback` themselves: `tell(ctx, el, tone, html, opts)`, in `lib/widgets/tell.mjs`, is `setFeedback` over `ctx.gloss(html, el)`
+plus `ctx.wireTerms()`, with the feedback element as owner. `mountSide`'s `showHint` and `succeed` draw the hint and the closing line
+the same way, and `succeed` first releases the hint's terms because the solved card hides the hints. `test/feedback-terms.test.mjs`
+checks the seam. The guide panel stays on `setFeedback`: its text is escaped model output
 and holds no span. `escapeFromHint` leaves Escape alone when it comes from a term whose card is open, so that key closes only the
 card. `test/levels-play.test.mjs` fails a run that leaves a `data-gloss` span, attribute value or text on the page, or a term inside a
 question, an action, an answer card, a label or a legend. `endSession`

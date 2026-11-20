@@ -8,7 +8,8 @@ import { makeDom, q, click } from './helpers/dom.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
 import { choiceHtml, mountChoice } from '../lib/widgets/choice.mjs';
 import { mountSide } from '../lib/widgets/help-ladder.mjs';
-import { sideColumn } from '../lib/ui/index.mjs';
+import { feedback, sideColumn } from '../lib/ui/index.mjs';
+import { quiet, tell } from '../lib/widgets/tell.mjs';
 
 const GLOSSARY = {
   terms: [
@@ -86,7 +87,8 @@ test('choice feedback: the 50/50 line replaces a wrong answer and keeps its text
   assert.equal(fb.innerHTML.includes('data-gloss'), false);
 });
 
-test('help ladder: a hint draws its term, and a closing that repeats it stays plain while the hint is on screen', () => {
+// Rewritten for #442 review Q1: the hint is hidden once solved, so the closing draws the term the hint held.
+test('help ladder: a hint draws its term, and the closing draws it too once the hint is given back on success', () => {
   const { dom, ctx } = setup();
   ctx.renderStep(`<div id="box">${sideColumn({ id: 'g1', titleHtml: 'Done', counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: '' })}</div>`);
   const side = mountSide(ctx, dom.body.querySelector('#box'), 'g1', {});
@@ -96,15 +98,50 @@ test('help ladder: a hint draws its term, and a closing that repeats it stays pl
   assert.equal(hint.innerHTML.includes('data-gloss'), false);
   side.succeed({ line: 'Done', closing: `<p>The ${g('trace', 'trace')} and the ${g('span', 'span')}.</p>` });
   const closing = dom.body.querySelector('[id="g1-win-closing"]');
-  assert.deepEqual(termsIn(closing).map((t) => t.querySelector('button').textContent), ['span'], 'trace is still in the hint');
+  assert.deepEqual(termsIn(closing).map((t) => t.querySelector('button').textContent), ['trace', 'span'], 'the hint is hidden now, so trace is a term here');
   assert.equal(closing.innerHTML.includes('data-gloss'), false);
-  assert.ok(closing.textContent.includes('The trace and'));
 });
 
-test('no widget but tell.mjs calls setFeedback: every answer line goes through the one seam', () => {
+test('help ladder: the closing is wired once drawn', () => {
+  const { dom, ctx, wired } = setup();
+  ctx.renderStep(`<div id="box">${sideColumn({ id: 'g1', titleHtml: 'Done', counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: '' })}</div>`);
+  const side = mountSide(ctx, dom.body.querySelector('#box'), 'g1', {});
+  const before = wired.length;
+  side.succeed({ line: 'Done', closing: `<p>The ${g('span', 'span')}.</p>` });
+  assert.ok(wired.length > before, 'wireTerms ran');
+  assert.deepEqual(wired.at(-1), ['span'], 'and saw the closing term');
+});
+
+function twoRegions() {
+  const s = setup();
+  s.ctx.renderStep(`<div id="a">${feedback({ id: 'fa' })}</div><div id="b">${feedback({ id: 'fb' })}</div>`);
+  return { ...s, a: q('#fa'), b: q('#fb') };
+}
+
+test('tell: two regions on one screen share the first use, and a region gives its term back when replaced', () => {
+  const { ctx, a, b } = twoRegions();
+  tell(ctx, a, 'neutral', `<p>${g('trace', 'trace')}</p>`);
+  assert.equal(termsIn(a).length, 1);
+  tell(ctx, b, 'neutral', `<p>${g('trace', 'trace')}</p>`);
+  assert.equal(termsIn(b).length, 0, 'region a holds trace, so b shows it plain');
+  tell(ctx, a, 'neutral', '<p>Nothing marked.</p>');
+  tell(ctx, b, 'neutral', `<p>${g('trace', 'trace')}</p>`);
+  assert.equal(termsIn(b).length, 1, 'a gave it back');
+});
+
+test('quiet: a cleared region gives its terms back, so a later line draws them', () => {
+  const { ctx, a, b } = twoRegions();
+  tell(ctx, a, 'neutral', `<p>${g('trace', 'trace')}</p>`);
+  quiet(ctx, a);
+  assert.equal(a.hasAttribute('hidden'), true);
+  tell(ctx, b, 'neutral', `<p>${g('trace', 'trace')}</p>`);
+  assert.equal(termsIn(b).length, 1);
+});
+
+test('no widget but tell.mjs calls setFeedback or clearFeedback: every answer line goes through the one seam', () => {
   const dir = new URL('../lib/widgets/', import.meta.url);
   const offenders = readdirSync(dir)
     .filter((f) => f.endsWith('.mjs') && f !== 'tell.mjs')
-    .filter((f) => /\bsetFeedback\(/.test(readFileSync(new URL(f, dir), 'utf8')));
+    .filter((f) => /\b(setFeedback|clearFeedback)\(/.test(readFileSync(new URL(f, dir), 'utf8')));
   assert.deepEqual(offenders, []);
 });

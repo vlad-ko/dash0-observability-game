@@ -540,7 +540,7 @@ function pageClasses(into) {
 // The glossary leak guard (#442): a marked term is a gloss span in bound text, and only the ctx draws it into a term. Any
 // span left on the page was drawn by a path that skipped the ctx; a term in a control's name or label is a button inside a
 // control or a name read twice. Checked after every click and at the end of a run, over the card body and the actions.
-const NOT_TERM_HOSTS = '.ui-question, .ui-actions, [data-pick], label, legend';
+const NOT_TERM_HOSTS = '.ui-question, .ui-actions, .ui-option, label, legend';
 
 /** The problems with the gloss markup under `roots`: `[]` when none. */
 function leakProblems(...roots) {
@@ -1419,7 +1419,7 @@ test('harness: the glossary leak guard catches each way a span or a term can rea
   assert.ok(check('<div class="ui-feedback"><div data-feedback-text>A <span data-gloss="span">span</span></div></div>').some((p) => p.includes('[data-gloss] element')), 'raw setFeedback with a span');
   assert.ok(check('<button aria-label="the <span data-gloss=&quot;x&quot;>x</span>">b</button>').some((p) => p.includes('aria-label')), 'a span in an aria-label');
   assert.ok(check('<p>&lt;span data-gloss="span"&gt;x&lt;/span&gt;</p>').some((p) => p.includes('text node')), 'a span shown as text');
-  for (const [open, close] of [['<h3 class="ui-question">', '</h3>'], ['<button data-pick="a">', '</button>'], ['<label>', '</label>'], ['<fieldset><legend>', '</legend></fieldset>']]) {
+  for (const [open, close] of [['<h3 class="ui-question">', '</h3>'], ['<button class="ui-option" data-pick="a">', '</button>'], ['<div class="ui-option" role="radio">', '</div>'], ['<label>', '</label>'], ['<fieldset><legend>', '</legend></fieldset>']]) {
     assert.ok(check(`${open}Q ${term}${close}`).some((p) => p.includes('a term sits inside')), open);
   }
   dom.actions.innerHTML = `<div class="ui-actions">${term}</div>`;
