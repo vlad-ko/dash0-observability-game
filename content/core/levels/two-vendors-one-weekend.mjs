@@ -33,7 +33,7 @@ export default {
         }
       },
       {
-        "intro": "The platform team started the change. The Collector's config now sends traces to an exporter for Dash0 only, and nobody defined that exporter, so the config is invalid. Metrics and logs still go to the old vendor. Dash0 needs an endpoint and a token: both are in environment variables, <code>DASH0_ENDPOINT</code> and <code>DASH0_AUTH_TOKEN</code>.",
+        "intro": "The platform team started the change. The Collector's config now sends traces to an exporter for Dash0 only, and nobody defined that exporter, so the config is invalid. Metrics and logs still go to the old vendor. Dash0 needs an endpoint and a [[token|auth-token]]: both are in environment variables, <code>DASH0_ENDPOINT</code> and <code>DASH0_AUTH_TOKEN</code>.",
         "question": "Fix the config so it is valid, the old vendor keeps getting traces, metrics and logs, and Dash0 gets them too, in the existing pipelines.",
         "configure": {
           "id": "tvw-config",
