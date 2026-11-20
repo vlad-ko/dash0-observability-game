@@ -690,6 +690,18 @@ fill-ins from the level's figures (`lib/content/placeholders.mjs`) and applies t
 are unchanged. The file convention, merge rules, key allowlist, editions and the step-by-step conversion are in `docs/CONTENT.md`;
 primers keep their own schema (§2.12) over the same text rules.
 
+### 2.14 Glossary terms in level text (#442)
+
+A play step's `intro` and `show` may mark glossary terms with the primer marker (`[[shown|id]]`, `[[shown]]`, §2.12). `bindLevel`
+validates the syntax and writes each marker as `<span data-gloss="id">shown</span>`, so the guide's plain-text reads
+(`lib/guide/context.mjs`) see the shown words only; no other field and nothing under `run` reads a marker yet. `createLevelContext`
+takes `glossary` and `termPops` (default `null`; `app.mjs` passes both) and `renderStep` closes the open card, draws the body through
+`glossHtml` (`lib/term-text.mjs`: the first use of each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every
+other span is plain escaped words) and wires the body. The first-use rule is `createTermScope`, shared with the primer view. `endSession`
+closes an open card, and `focusStepStart` skips a term so that opening a level does not open a definition. Whether a term exists is
+checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind (§8 of `docs/CONTENT.md`).
+Authoring rules: `docs/CONTENT.md` section 5.1.
+
 ## 3. Invariants
 
 Registry (`validateRegistry` reports all at once): act and level ids unique across all acts

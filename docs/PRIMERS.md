@@ -66,6 +66,8 @@ The checks are in `npm test`, each naming the path of the problem:
 - a marker is not closed, a closing `]]` has no opening, a marker is inside another, or the shown text is empty or starts or ends with a space;
 - a marker is in a title, a link label, a source or the placeholder note.
 
+A level's `intro` and `show` use the same marker: see docs/CONTENT.md section 5.1.
+
 Length limits count what the reader sees, not the marker: `[[signals|signal]]` counts as the 7 characters of "signals", so marking
 a term never pushes a paragraph, list item or callout over its limit.
 

@@ -65,6 +65,17 @@ Then `"{{times-mrs}} = {{product-mrs}}"` in the content shows `5 × 14 × 9 = 63
 - Every other text field is trusted HTML, checked by `checkHtml` in `lib/content/text-rules.mjs`. Allowed tags: `p b strong i em code pre br ul ol li table caption thead tbody tr th td`. Allowed attributes: `scope` on `th`, `data-wrap` on `pre`, `data-token` on `code`. Everything else is an error: links, images, scripts, `style=`, `on...=` handlers, `class=`, `id=`, and `x-`, `@` or `:` attributes. A `<` that does not start a tag (`p99 < 1s`) and a bare `&` (`Kettle & Co`) are fine; write `&amp;` if you prefer.
 - No em dash anywhere (`test/content.test.mjs` scans `content/` too), no "costs a star" (say "counts as one penalty").
 
+### 5.1 Marking glossary terms in a level (#442)
+
+A word the glossary defines (section 12) can be marked in a play step's `intro` and `show`, so the reader sees its definition in place. The marker is the one a primer uses (docs/PRIMERS.md, "Marking glossary terms"): `[[shown text|term-id]]`, or the short form `[[shown text]]`, which finds the term by name or variant.
+
+- Where: only a play step's `intro` and `show`. Any other field refuses a marker with its path (`must not contain a glossary term marker`): the question, a label, `why`, `whyNot`, `explain`, `hint`, `closing`, `finish`, titles and names. Those are drawn outside the step body, and a later phase may read them. Under `run` a marker is an error for now (`term markers are not read under run yet`).
+- Literal text: a `<pre>` or `<code>` region, `code` and a spot line's `text` are never read, so `[[ -f x ]]` and `[[1,2]]` are data.
+- The shown text holds no `<`, `>`, `&` or `{{`, and a marker is never inside a tag. The text rules judge what the reader sees: the shown words, so `<b>[[series|time-series]]</b>` is fine and `[[x]] <a>y</a>` still fails on the tag.
+- What the reader sees: the first use of each term on a screen is a dashed-underlined term with its definition on hover, focus or tap; later uses on that screen read as plain words. A screen is one `ctx.renderStep` call. Mark only the glossary's sense of a word, and only a few.
+- How it works: bind writes each marker as `<span data-gloss="term-id">shown</span>` (the id is empty for the short form). The guide and every plain-text reader see the shown words, not the term id. `renderStep` turns the first span of each term into the kit term (`lib/term-text.mjs`) and the rest into plain words. Bind never imports the glossary (section 8); `test/level-terms.test.mjs` checks every marker in every live level against it, naming the path of an id that is not a term.
+- Proving a marking change: `node tools/level-fingerprint.mjs --shown <dir>` writes the fingerprints with each span replaced by its shown words. Run it before and after and `diff -r`: a zero diff means no word changed. The plain output keeps the spans. `tools/extract-level-text.mjs` writes a marked term back as its marker.
+
 ## 6. Check your work
 
 `npm test` runs everything. The tests that matter for content: `test/level-text-content.test.mjs` (the files, the wrapper, the wiring, that the text of every live play level would pass, and that every converted run level is checked too: no prose left in its code, every `say.<name>` it reads defined), `test/content-bind.test.mjs` and `test/content-placeholders.test.mjs` (the engine), `test/content.test.mjs` (em dash, "costs a star") and `test/levels-play.test.mjs` (plays every level). A broken level fails to load with one error that names the level and lists every problem, for example:
