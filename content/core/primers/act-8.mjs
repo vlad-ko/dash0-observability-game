@@ -13,7 +13,7 @@ export default {
     {
       "type": "list",
       "items": [
-        "Dash0 dashboards can be versioned and managed as code, like source files, in the [[Perses]] format (an open dashboard format).",
+        "[[Dash0]] dashboards can be versioned and managed as code, like source files, in the [[Perses]] format (an open dashboard format).",
         "Semantic conventions give common names to operations and data, and the HTTP conventions came with a migration plan.",
         "The [[Websites Explorer]], a Dash0 view, shows frontend health.",
         "AI assistants can query Dash0 through the [[Dash0 MCP Server]] ([[MCP]] is the Model Context Protocol, a standard for AI tools to call data sources)."

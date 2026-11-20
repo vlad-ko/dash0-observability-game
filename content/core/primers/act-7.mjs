@@ -13,7 +13,7 @@ export default {
     {
       "type": "list",
       "items": [
-        "[[Alerting rules]] in [[Prometheus]], and [[check rules]] in Dash0, raise an alert when a [[PromQL]] condition holds.",
+        "[[Alerting rules]] in [[Prometheus]], and [[check rules]] in [[Dash0]], raise an alert when a [[PromQL]] condition holds.",
         "A Service Level Objective ([[SLO]]) is a target for a Service Level Indicator ([[SLI]], a measurement of how the service behaves) over a [[time window]]. It turns \"is this service reliable enough\" into a number.",
         "[[Synthetic checks]] (scripted tests that probe your service from outside) send requests to your service's URLs at regular intervals."
       ]
