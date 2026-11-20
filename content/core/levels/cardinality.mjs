@@ -16,7 +16,7 @@ export default {
             {
               "key": "sum",
               "label": "{{method}} + {{route}} + {{status}} = {{sum-mrs}}: one series per value",
-              "why": "A series is one value of every attribute together, not one value alone. A POST to one route with a 200 and a GET to the same route with a 200 are two series, so adding the counts leaves most of them out."
+              "why": "A series is one value of every [[attribute]] together, not one value alone. A POST to one route with a 200 and a GET to the same route with a 200 are two series, so adding the counts leaves most of them out."
             },
             {
               "key": "product",
@@ -41,7 +41,7 @@ export default {
         "question": "Spot the attributes whose values never stop growing.",
         "spot": {
           "id": "cdn-spot",
-          "hint": "Ask how many different values each label takes over a month, not what one value looks like.",
+          "hint": "Ask how many different values each [[label]] takes over a month, not what one value looks like.",
           "lines": [
             {
               "id": "route",

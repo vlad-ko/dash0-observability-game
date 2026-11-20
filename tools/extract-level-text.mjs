@@ -25,8 +25,8 @@ function pick(node) {
   let found = false;
   for (const [k, v] of Object.entries(node)) {
     if (IDENTITY_KEYS.includes(k)) continue;
-    if (k === MAP_KEY && isObject(v)) out[k] = { ...v };
-    else if (TEXT_KEYS.includes(k) && typeof v === 'string') out[k] = v;
+    if (k === MAP_KEY && isObject(v)) out[k] = Object.fromEntries(Object.entries(v).map(([id, s]) => [id, typeof s === 'string' ? markerText(s) : s]));
+    else if (TEXT_KEYS.includes(k) && typeof v === 'string') out[k] = markerText(v);
     else if (CONTAINER_KEYS.includes(k)) {
       const inner = pick(v);
       if (inner === undefined) continue;

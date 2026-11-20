@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeDom } from './helpers/dom.mjs';
-import { createTermScope, glossHtml } from '../lib/term-text.mjs';
+import { createTermScope, glossHtml, glossWith } from '../lib/term-text.mjs';
 
 // Names and definitions deliberately differ from the ids, so a test that read the id instead would fail.
 const GLOSSARY = {
@@ -50,4 +50,36 @@ test('createTermScope: use() escapes the words it does not draw as a term, inclu
   assert.equal(scope.use('a<b', 'nope'), 'a&lt;b');
   assert.ok(scope.use('span', 'span').includes('data-term'));
   assert.equal(scope.use('Span unit', null), 'Span unit', 'the short form resolves by name, and the term is already drawn');
+});
+
+test('glossWith shares one scope: a term the body drew stays plain in later feedback, and a new term is drawn', () => {
+  const scope = createTermScope({ glossary: GLOSSARY, prefix: 'lvterm-1' });
+  const dom = makeDom();
+  dom.body.innerHTML = glossWith(`<p>${gloss('span', 'span')}</p>`, scope, 'body');
+  dom.actions.innerHTML = glossWith(`<p>${gloss('span', 'span')} then ${gloss('trace', 'trace')}</p>`, scope, 'fb');
+  const terms = [...dom.actions.querySelectorAll('[data-term]')];
+  assert.equal(terms.length, 1);
+  assert.equal(terms[0].querySelector('button').textContent, 'trace');
+  assert.equal(terms[0].querySelector('[role="tooltip"]').id, 'lvterm-1-2');
+  for (const pop of dom.actions.querySelectorAll('[role="tooltip"]')) pop.remove();
+  assert.equal(dom.actions.querySelector('p').textContent, 'span then trace');
+});
+
+test('release: a term an owner drew can be drawn again, with a new id, and a term another owner drew stays plain', () => {
+  const scope = createTermScope({ glossary: GLOSSARY, prefix: 'lvterm-1' });
+  glossWith(`<p>${gloss('span', 'span')}</p>`, scope, 'body');
+  const first = glossWith(`<p>${gloss('trace', 'trace')}</p>`, scope, 'fb');
+  assert.ok(first.includes('id="lvterm-1-2"'));
+  assert.equal(glossWith(`<p>${gloss('trace', 'trace')}</p>`, scope, 'fb'), '<p>trace</p>', 'still drawn: plain');
+  scope.release('fb');
+  const again = glossWith(`<p>${gloss('span', 'span')} ${gloss('trace', 'trace')}</p>`, scope, 'fb');
+  assert.ok(again.includes('id="lvterm-1-3"'), again);
+  assert.equal(again.includes('lvterm-1-1'), false, 'the body keeps span');
+  assert.equal((again.match(/data-term/g) ?? []).length, 1);
+});
+
+test('glossWith returns html with no gloss span unchanged, and a non-string as it is', () => {
+  const scope = createTermScope({ glossary: GLOSSARY, prefix: 'p' });
+  assert.equal(glossWith('<p>a</p>', scope, 'x'), '<p>a</p>');
+  assert.equal(glossWith(undefined, scope, 'x'), undefined);
 });

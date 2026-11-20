@@ -450,20 +450,22 @@ test('terms: markers inside code and pre are literal text, not terms', () => {
   assert.equal(p.play.steps[0].intro, `<pre>if [[ -f a ]]; then x; fi</pre> and ${gloss('span')}`);
 });
 
-test('terms: a marker outside intro and show is refused with its path; code and spot text are literal', () => {
-  const refuse = 'must not contain a glossary term marker';
+test('terms: a marker in a label, question, bucket label, finish or name is refused with its path; code and spot text are literal', () => {
+  const refuse = 'must not contain a glossary term marker (only intro, show and answer feedback mark terms)';
   const cases = [
     ['play.steps[0].choice.choices[0].label', (t) => { t.play.steps[0].choice.choices[0].label = 'Bee [[span]]'; }],
     ['play.steps[0].question', (t) => { t.play.steps[0].question = 'Which [[span]]?'; }],
-    ['play.steps[0].choice.choices[0].why', (t) => { t.play.steps[0].choice.choices[0].why = 'A [[span]].'; }],
-    ['play.steps[1].spot.whyNot.l1', (t) => { t.play.steps[1].spot.whyNot.l1 = 'A [[span]].'; }],
+    ['play.steps[2].sort.buckets[0].label', (t) => { t.play.steps[2].sort.buckets[0].label = 'The [[span]] bucket'; }],
     ['play.finish', (t) => { t.play.finish = 'You did the [[span]] well.'; }],
     ['name', (t) => { t.name = 'The [[span]]'; }],
   ];
   for (const [path, edit] of cases) {
     const t = text();
+    t.play.steps.push({ intro: 'I3', question: 'Q3', sort: { id: 'so1', buckets: [{ id: 'k1', label: 'Kay' }], items: [{ id: 'i1', label: 'It' }] } });
+    const s = skeleton();
+    s.play.steps.push({ qid: 'p-q3', sort: { id: 'so1', buckets: [{ id: 'k1' }], items: [{ id: 'i1', bucket: 'k1' }] } });
     edit(t);
-    const { errors } = bind(t);
+    const { errors } = bind(t, s);
     assert.ok(errors.some((e) => e.startsWith(path) && e.includes(refuse)), `${path}: ${JSON.stringify(errors)}`);
   }
   const t = text();
@@ -472,6 +474,28 @@ test('terms: a marker outside intro and show is refused with its path; code and 
   const c = text();
   c.play.steps[1].spot.lines[0].code = '[[ -f a ]]';
   assert.deepEqual(bind(c).errors.filter((e) => e.includes('marker')), []);
+});
+
+test('terms: answer feedback marks terms: why, whyNot, explain, hint and closing bind to gloss spans', () => {
+  const t = text();
+  t.play.steps[0].choice.choices[0].why = 'A [[span]] is a [[trace|trace]] part.';
+  t.play.steps[1].spot.whyNot.l1 = 'Not <b>[[span]]</b>.';
+  t.play.steps[1].spot.explain = 'See [[metric]].';
+  t.play.steps[1].spot.hint = 'Try the [[span]].';
+  t.play.steps[1].spot.closing = 'The [[trace]] again.';
+  const v = only(bind(t));
+  assert.equal(v.play.steps[0].choice.choices[0].why, `A ${gloss('span')} is a ${gloss('trace', 'trace')} part.`);
+  assert.equal(v.play.steps[1].spot.whyNot.l1, `Not <b>${gloss('span')}</b>.`);
+  assert.equal(v.play.steps[1].spot.explain, `See ${gloss('metric')}.`);
+  assert.equal(v.play.steps[1].spot.hint, `Try the ${gloss('span')}.`);
+  assert.equal(v.play.steps[1].spot.closing, `The ${gloss('trace')} again.`);
+});
+
+test('terms: a marker in feedback is judged by the text rules on its shown words', () => {
+  const t = text();
+  t.play.steps[0].choice.choices[0].why = `A [[span]] ${DASH} dash.`;
+  const { errors } = bind(t);
+  assert.ok(errors.some((e) => e.startsWith('play.steps[0].choice.choices[0].why') && e.includes('em dash')), JSON.stringify(errors));
 });
 
 test('terms: a marker under run is refused until run reads them', () => {

@@ -245,6 +245,25 @@ test('placement: a definition that fits is not moved, and an earlier shift is cl
   assert.equal(a.pop.hasAttribute('style'), false, 'no empty style attribute is left behind');
 });
 
+test('placement: a scrolling ancestor of the term bounds the card, not only the body (a sticky side column)', () => {
+  const { a, fire, root, document, window } = setup();
+  Object.defineProperty(document.documentElement, 'clientWidth', { value: 1280, configurable: true });
+  Object.defineProperty(document.documentElement, 'clientHeight', { value: 800, configurable: true });
+  const column = a.wrap.parentElement;
+  window.getComputedStyle = (el) => ({ overflowX: 'visible', overflowY: el === column ? 'auto' : 'visible' });
+  root.getBoundingClientRect = () => rect(0, 0, 1280, 800);
+  column.getBoundingClientRect = () => rect(900, 0, 300, 300);
+  a.wrap.getBoundingClientRect = () => rect(1000, 250, 40, 20);
+  a.pop.getBoundingClientRect = () => rect(1000, 270, 200, 60);
+  fire(a.wrap, 'mouseenter');
+  assert.equal(a.pop.getAttribute('data-side'), 'above', 'the column ends at 300, so the card goes above the term');
+  fire(a.wrap, 'mouseleave');
+  a.wrap.getBoundingClientRect = () => rect(1150, 100, 40, 20);
+  a.pop.getBoundingClientRect = () => rect(1150, 120, 200, 60);
+  fire(a.wrap, 'mouseenter');
+  assert.equal(a.pop.style.getPropertyValue('left'), '-158px', 'right edge at the column edge 1200 - 8');
+});
+
 test('placement: with no room below inside the body it opens above', () => {
   const { a, fire, root, document } = setup();
   Object.defineProperty(document.documentElement, 'clientWidth', { value: 320, configurable: true });

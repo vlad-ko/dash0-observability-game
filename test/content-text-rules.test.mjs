@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
-import { HTML_KEYS, MAP_KEY } from '../lib/content/keys.mjs';
+import { HTML_KEYS, MAP_KEY, MARKER_KEYS } from '../lib/content/keys.mjs';
 import { checkCode, checkHtml, checkPlain, isId } from '../lib/content/text-rules.mjs';
 import { readGloss, unwrapGloss } from '../lib/content/terms.mjs';
 
@@ -52,10 +52,10 @@ function liveHtmlFields() {
     if (Array.isArray(node)) node.forEach((x, i) => walk(x, `${where}[${i}]`, key));
     else if (node && typeof node === 'object') {
       for (const [k, v] of Object.entries(node)) {
-        if (key === MAP_KEY && typeof v === 'string') out.push([`${where}.${k}`, v]);
+        if (key === MAP_KEY && typeof v === 'string') out.push([`${where}.${k}`, v, MAP_KEY]);
         else walk(v, `${where}.${k}`, k);
       }
-    } else if (typeof node === 'string' && HTML_KEYS.includes(key)) out.push([where, node]);
+    } else if (typeof node === 'string' && HTML_KEYS.includes(key)) out.push([where, node, key]);
   };
   const reg = liveRegistry();
   for (const id of reg.order) if (reg.levels[id].play) walk(reg.levels[id].play, id, '');
@@ -65,10 +65,10 @@ function liveHtmlFields() {
 test('checkHtml: the shown text of every live HTML field of every play level passes', () => {
   const fields = liveHtmlFields();
   assert.ok(fields.length > 500, `the corpus is large (${fields.length})`);
-  // A marked term is a gloss span (#442), which checkHtml refuses by design: judge the shown words, and hold the spans to intro and show.
+  // A marked term is a gloss span (#442), which checkHtml refuses by design: judge the shown words, and hold the spans to the marker keys (intro, show and answer feedback; a whyNot value is a map entry, so it carries the map key).
   const bad = fields.map(([where, s]) => [where, checkHtml(unwrapGloss(s))]).filter(([, p]) => p.length);
   assert.deepEqual(bad, []);
-  const strayed = fields.filter(([where, s]) => readGloss(s).length > 0 && !/\.(intro|show)$/.test(where)).map(([where]) => where);
+  const strayed = fields.filter(([, s, key]) => readGloss(s).length > 0 && !MARKER_KEYS.includes(key)).map(([where]) => where);
   assert.deepEqual(strayed, []);
 });
 
