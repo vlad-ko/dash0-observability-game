@@ -32,7 +32,7 @@ export default {
         }
       },
       {
-        "intro": "The span metrics from 3.7 reach your backend as <code>traces_span_metrics_calls_total</code>, a counter with the labels <code>service_name</code>, <code>span_kind</code> and <code>status_code</code>. Checkout's own requests are its SERVER spans. A success is <code>STATUS_CODE_UNSET</code> and a failure is <code>STATUS_CODE_ERROR</code>. A counter only grows, so the SLI is built from rates.",
+        "intro": "The [[span metrics]] from 3.7 reach your backend as <code>traces_span_metrics_calls_total</code>, a counter with the [[labels]] <code>service_name</code>, <code>span_kind</code> and <code>status_code</code>. Checkout's own requests are its SERVER spans. A success is <code>STATUS_CODE_UNSET</code> and a failure is <code>STATUS_CODE_ERROR</code>. A counter only grows, so the SLI is built from rates.",
         "question": "Write the checkout SLI over the last 5 minutes: the rate of good server requests divided by the rate of all of them.",
         "query": {
           "id": "sl-sli-query",
