@@ -8,14 +8,14 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "A metric is a measurement of a service captured at runtime. Metrics give you statistics in aggregate, where traces show single requests. This act covers choosing the right instrument (the thing that records a metric, explained below), reading metrics and keeping them manageable."
+      "text": "A metric is a measurement of a service captured at runtime. Metrics give you statistics in aggregate, where traces show single requests. This act covers choosing the right [[instrument]] (the thing that records a metric, explained below), reading metrics and keeping them manageable."
     },
     {
       "type": "list",
       "items": [
         "Each metric instrument has a kind, and the kind decides what the numbers mean.",
-        "Attributes make a metric useful, and too many unique combinations make it costly to keep.",
-        "In Dash0 you explore metrics in the Metric Explorer and query them with PromQL (the query language of Prometheus, the open-source metrics system)."
+        "[[Attributes]] make a metric useful, and too many unique combinations make it costly to keep.",
+        "In Dash0 you explore metrics in the [[Metric Explorer]] and query them with [[PromQL]] (the query language of Prometheus, the open-source metrics system)."
       ]
     },
     {
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In OpenTelemetry, measurements are captured by metric instruments. An instrument has a name, a kind, and an optional unit and description."
+          "text": "In OpenTelemetry, measurements are captured by metric [[instruments]]. An instrument has a name, a kind, and an optional unit and description."
         },
         {
           "type": "list",
@@ -39,12 +39,12 @@ export default {
             "Counter: a value that accumulates over time, like the odometer of a car. It only ever goes up.",
             "UpDownCounter: a value that accumulates over time but can also go down again.",
             "Gauge: measures a current value at the time it is read, like the fuel gauge in a vehicle.",
-            "Histogram: combines many values into bucket counts in the SDK, before export. A good choice if you are interested in value statistics."
+            "[[Histogram]]: combines many values into bucket counts in the SDK, before export. A good choice if you are interested in value statistics."
           ]
         },
         {
           "type": "paragraph",
-          "text": "Counter, UpDownCounter and Gauge also have observable (asynchronous) forms, which are read once for each export. An aggregation combines many measurements into statistics about a time window. Each instrument has a default aggregation."
+          "text": "Counter, UpDownCounter and Gauge also have observable (asynchronous) forms, which are read once for each export. An [[aggregation]] combines many measurements into statistics about a [[time window]]. Each instrument has a default aggregation."
         }
       ],
       "sources": [
@@ -62,11 +62,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Sums (running totals) and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an aggregation temporality, which is either delta or cumulative. It tells you how the value was calculated."
+          "text": "Sums (running totals) and histograms in OTLP (the OpenTelemetry Protocol, see act 5) carry an [[aggregation temporality]], which is either delta or cumulative. It tells you how the value was calculated."
         },
         {
           "type": "paragraph",
-          "text": "With delta temporality, the time windows of a time series (the points reported for one metric and one attribute combination) do not overlap. With cumulative temporality, each point reports the full sum since a start time, which is often close to the start of the process or application."
+          "text": "With delta temporality, the [[time windows]] of a [[time series]] (the points reported for one metric and one attribute combination) do not overlap. With cumulative temporality, each point reports the full sum since a start time, which is often close to the start of the process or application."
         },
         {
           "type": "paragraph",
@@ -92,7 +92,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A histogram data point (one reported value for a metric and one attribute combination, over one time window) sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
+          "text": "A [[histogram]] [[data point]] (one reported value for a metric and one attribute combination, over one time window) sums up many recorded measurements in a compact form. It groups them into buckets and carries an overall count and a sum. It can also carry the smallest and the largest value. In an explicit histogram, each bucket has boundaries and a count of the observations that fell into it."
         },
         {
           "type": "paragraph",
@@ -100,11 +100,11 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "A quantile is a value from the observations, picked by rank after sorting them from smallest to largest. You name it with a number between 0 and 1. The 0.5-quantile is known as the median. The 0.95-quantile is also called the 95th percentile."
+          "text": "A [[quantile]] is a value from the observations, picked by rank after sorting them from smallest to largest. You name it with a number between 0 and 1. The 0.5-quantile is known as the median. The 0.95-quantile is also called the 95th percentile."
         },
         {
           "type": "paragraph",
-          "text": "In Prometheus, histograms expose bucketed observation counts, and the quantile is calculated from the buckets on the Prometheus server with the histogram_quantile() function (a PromQL function that works out a quantile from the buckets). Summaries (a Prometheus metric type) instead calculate their quantiles inside the instrumented program, and you cannot aggregate those quantiles."
+          "text": "In [[Prometheus]], histograms expose bucketed observation counts, and the quantile is calculated from the buckets on the Prometheus server with the [[histogram_quantile()]] function (a [[PromQL]] function that works out a quantile from the buckets). [[Summaries]] (a Prometheus metric type) instead calculate their quantiles inside the instrumented program, and you cannot aggregate those quantiles."
         }
       ],
       "sources": [
@@ -128,19 +128,19 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Dash0, the Metric Explorer sidebar shows a live data preview with the underlying PromQL query of the selected metric. These are three PromQL functions from the Prometheus documentation."
+          "text": "In Dash0, the [[Metric Explorer]] sidebar shows a live data preview with the underlying [[PromQL]] query of the selected metric. These are three PromQL functions from the Prometheus documentation."
         },
         {
           "type": "list",
           "items": [
-            "rate(): the average increase per second of a time series, over the time range you give it.",
-            "increase(): how much a time series grew over the time range you give it.",
-            "histogram_quantile(): works out a quantile from a classic (fixed-bucket) or native (exponential) histogram."
+            "[[rate()]]: the average increase per second of a [[time series]], over the time range you give it.",
+            "[[increase()]]: how much a time series grew over the time range you give it.",
+            "[[histogram_quantile()]]: works out a quantile from a classic (fixed-bucket) or native (exponential) histogram."
           ]
         },
         {
           "type": "paragraph",
-          "text": "When a counter starts over, for example because its scrape target (the endpoint Prometheus reads) restarted, rate() and increase() adjust for it. Each bucket series of a classic histogram has a label (Prometheus's word for an attribute) called le, which holds the bucket's upper bound. The bound itself is included in the bucket."
+          "text": "When a counter starts over, for example because its [[scrape target]] (the endpoint Prometheus reads) restarted, rate() and increase() adjust for it. Each bucket series of a classic histogram has a [[label]] (Prometheus's word for an attribute) called [[le]], which holds the bucket's upper bound. The bound itself is included in the bucket."
         },
         {
           "type": "paragraph",
@@ -174,7 +174,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The cardinality of a metric is the number of time series (unique attribute combinations) reported for it. The SDK keeps a separate data point in memory for each combination, so cardinality drives the memory cost of metrics."
+          "text": "The [[cardinality]] of a metric is the number of [[time series]] (unique attribute combinations) reported for it. The SDK keeps a separate [[data point]] in memory for each combination, so cardinality drives the memory cost of metrics."
         },
         {
           "type": "paragraph",
@@ -182,7 +182,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "When the limit is reached, further combinations are folded into a single overflow data point marked otel.metric.overflow=true. The overall total stays correct, but a query that filters or groups by an attribute on that metric can undercount."
+          "text": "When the limit is reached, further combinations are folded into a single [[overflow data point]] marked otel.metric.overflow=true. The overall total stays correct, but a query that filters or groups by an attribute on that metric can undercount."
         }
       ],
       "sources": [
@@ -200,7 +200,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "An exemplar is a recorded value that associates OpenTelemetry context with one recorded measurement. One use case is to link traces with metrics."
+          "text": "An [[exemplar]] is a recorded value that associates OpenTelemetry context with one recorded measurement. One use case is to link traces with metrics."
         },
         {
           "type": "paragraph",
@@ -222,11 +222,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "RED stands for the three core measures of a request-driven service. Rate is requests per second, Errors is the error percentage, and Duration is the latency distribution."
+          "text": "[[RED]] stands for the three core measures of a request-driven service. Rate is requests per second, Errors is the error percentage, and Duration is the latency distribution."
         },
         {
           "type": "paragraph",
-          "text": "The USE method is a way to analyse the performance of any system. It gives you a checklist, and it starts from questions instead of from the metrics you happen to have. The checks are utilisation, saturation and errors."
+          "text": "The [[USE]] method is a way to analyse the performance of any system. It gives you a checklist, and it starts from questions instead of from the metrics you happen to have. The checks are [[utilisation]], [[saturation]] and errors."
         },
         {
           "type": "paragraph",
@@ -254,15 +254,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "The Metric Explorer lets you browse, filter and investigate the metrics across your services and infrastructure. It is the starting point for deeper analysis in the Query Builder."
+          "text": "The [[Metric Explorer]] lets you browse, filter and investigate the metrics across your services and infrastructure. It is the starting point for deeper analysis in the [[Query Builder]]."
         },
         {
           "type": "paragraph",
-          "text": "Dash0 supports all OpenTelemetry metric data model types (the kinds of metric OpenTelemetry defines): Sum, Gauge, Histogram and Exponential Histogram, plus the legacy Summary type from Prometheus. A Sum can be monotonic (it only goes up), produced by a Counter, or non-monotonic, produced by an UpDownCounter."
+          "text": "Dash0 supports all OpenTelemetry [[metric data model]] types (the kinds of metric OpenTelemetry defines): Sum, Gauge, Histogram and Exponential Histogram, plus the [[legacy Summary]] type from Prometheus. A Sum can be [[monotonic]] (it only goes up), produced by a Counter, or non-monotonic, produced by an UpDownCounter."
         },
         {
           "type": "paragraph",
-          "text": "Selecting a metric opens a sidebar with a description, a live data preview with the underlying PromQL query, and its attributes and associated resources."
+          "text": "Selecting a metric opens a sidebar with a description, a live data preview with the underlying [[PromQL]] query, and its attributes and associated resources."
         }
       ],
       "sources": [
