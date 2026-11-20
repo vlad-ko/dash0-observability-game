@@ -338,7 +338,7 @@ test('Sort it: "keep the buckets balanced" wins a spec on at most 1 shuffle in 1
 
 // ---- answer pools (#390) ----
 
-/** Two buckets; the first two items of each are plain, bucket a's third to fifth carry <code>. Shows two of each. */
+/** Two buckets; the first two items of each are plain, bucket a's third to fifth carry <code>. Five items a bucket, shows two of each. */
 function codePool() {
   const item = (id, bucket, label) => ({ id, label, bucket, why: `${id} belongs in ${bucket}.` });
   return {
@@ -347,7 +347,7 @@ function codePool() {
     buckets: [{ id: 'a', label: 'Bucket A' }, { id: 'b', label: 'Bucket B' }],
     items: [
       item('a1', 'a', 'Plain one'), item('a2', 'a', 'Plain two'), item('a3', 'a', '<code>three</code>'), item('a4', 'a', '<code>four</code>'), item('a5', 'a', '<code>five</code>'),
-      item('b1', 'b', 'Plain six'), item('b2', 'b', 'Plain seven'), item('b3', 'b', 'Plain eight'),
+      item('b1', 'b', 'Plain six'), item('b2', 'b', 'Plain seven'), item('b3', 'b', 'Plain eight'), item('b4', 'b', 'Plain nine'), item('b5', 'b', 'Plain ten'),
     ],
   };
 }
@@ -373,7 +373,7 @@ test('T5 a tell only some boards have is caught: the first-items board is clean,
 
 test('every rule runs on every board of a pool: the fixture pool expands to all its boards', async () => {
   const boards = (await allSortSpecs(codeLevel())).filter((s) => s.level === 'code-fixture');
-  assert.equal(boards.length, 10 * 3); // C(5,2) * C(3,2)
+  assert.equal(boards.length, 10 * 10); // C(5,2) * C(5,2)
   for (const { spec } of boards) assert.equal(spec.items.length, 4);
 });
 

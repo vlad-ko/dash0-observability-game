@@ -77,34 +77,41 @@ test('P3 validateChoicePool: a pool needs a right answer and enough wrong ones',
   assert.ok(validateChoicePool(poolOf(5, 1, 3)).length > 0);
 });
 
-test('P3 validateChoicePool: exposure parity, W <= 2*R*(draw-1), holds at the boundary and fails past it', () => {
+test('P3 validateChoicePool: exposure parity, R*(draw-1) <= W <= 2*R*(draw-1), holds at both boundaries and fails past each', () => {
   assert.deepEqual(validateChoicePool(poolOf(1, 4, 3)), []);
-  assert.match(validateChoicePool(poolOf(1, 5, 3)).join('\n'), /exposure|right answers/);
+  assert.match(validateChoicePool(poolOf(1, 5, 3)).join('\n'), /exposure.*at most 4/);
   assert.deepEqual(validateChoicePool(poolOf(3, 12, 3)), []);
-  assert.match(validateChoicePool(poolOf(3, 13, 3)).join('\n'), /exposure|right answers/);
+  assert.match(validateChoicePool(poolOf(3, 13, 3)).join('\n'), /exposure.*at most 12/);
+  // The lower bound: a wrong answer shown less often than a right one lets "the one not seen before" win.
+  assert.deepEqual(validateChoicePool(poolOf(2, 4, 3)), []);
+  assert.deepEqual(validateChoicePool(poolOf(3, 6, 3)), []);
+  assert.deepEqual(validateChoicePool(poolOf(3, 9, 4)), []);
+  assert.match(validateChoicePool(poolOf(3, 5, 3)).join('\n'), /exposure.*at least 6/);
+  assert.match(validateChoicePool(poolOf(3, 8, 4)).join('\n'), /exposure.*at least 9/);
+  assert.match(validateChoicePool(poolOf(8, 2, 3)).join('\n'), /exposure.*at least 16/);
 });
 
 test('P3 validateChoicePool: from 4 shown, at most draw-3 wrongs carry keep so the 50/50 always has two to remove', () => {
-  assert.deepEqual(validateChoicePool(poolOf(3, 8, 4, 1)), []);
-  assert.ok(validateChoicePool(poolOf(3, 8, 4, 2)).length > 0);
+  assert.deepEqual(validateChoicePool(poolOf(3, 9, 4, 1)), []);
+  assert.ok(validateChoicePool(poolOf(3, 9, 4, 2)).length > 0);
   // Below four shown there is no 50/50, so keep is not limited by it.
-  assert.deepEqual(validateChoicePool(poolOf(3, 5, 3, 2)), []);
+  assert.deepEqual(validateChoicePool(poolOf(3, 6, 3, 2)), []);
 });
 
 test('P3 validateChoicePool: every right is judged with the wrongs, not only the first', () => {
-  const noWhy = poolOf(3, 5, 3);
+  const noWhy = poolOf(3, 6, 3);
   delete noWhy.choices[2].why; // r2 has no why
   assert.ok(validateChoicePool(noWhy).some((p) => /r2/.test(p)), 'a right after the first');
-  const keepRight = poolOf(3, 5, 3);
+  const keepRight = poolOf(3, 6, 3);
   keepRight.choices[1].keep = true;
   assert.ok(validateChoicePool(keepRight).some((p) => /r1/.test(p)), 'keep on a right');
 });
 
 test('P3 validateChoicePool: keys are unique across the whole pool, and so are the plain labels', () => {
-  const twin = poolOf(3, 5, 3);
+  const twin = poolOf(3, 6, 3);
   twin.choices[1].key = twin.choices[0].key; // two rights share a key, which no single board holds together
   assert.ok(validateChoicePool(twin).some((p) => /unique/.test(p)));
-  const same = poolOf(3, 5, 3);
+  const same = poolOf(3, 6, 3);
   same.choices[4].label = `<b>${same.choices[3].label}</b>`;
   assert.ok(validateChoicePool(same).some((p) => /same label/.test(p)));
 });
@@ -120,7 +127,7 @@ test('P3 validateChoicePool: never throws on odd input', () => {
 
 test('P4 drawSortBoard: draw[b] items from each bucket, drawn through the shuffle, shown in content order', () => {
   assert.deepEqual(ids(drawSortBoard(SP, IDENT)), ['a1', 'b1', 'a2', 'b2', 'b3']);
-  assert.deepEqual(ids(drawSortBoard(SP, REV)), ['b2', 'b3', 'a4', 'b4', 'a5']);
+  assert.deepEqual(ids(drawSortBoard(SP, REV)), ['a4', 'a5', 'b5', 'b6', 'b7']);
   const board = drawSortBoard(SP, IDENT);
   assert.deepEqual(board.buckets, SP.buckets);
   assert.equal(Object.hasOwn(board, 'draw'), false);
@@ -146,9 +153,30 @@ test('P5 validateSortPool: draw names exactly the buckets, each a whole number f
   assert.ok(bad({ a: 0, b: 3 }).length > 0);
   assert.ok(bad({ a: 6, b: 3 }).length > 0);
   assert.ok(bad({ a: 1.5, b: 3 }).length > 0);
-  assert.match(bad({ a: 5, b: 4 }), /not a pool/);
+  assert.match(bad({ a: 5, b: 7 }), /not a pool/);
   assert.ok(bad(3).length > 0);
   assert.ok(bad(undefined).length > 0);
+});
+
+/** The fixture sort with `a` items in bucket a and `b` in bucket b, showing `draw`. */
+function sortPool(n, draw) {
+  const items = [];
+  for (const b of ['a', 'b']) for (let i = 1; i <= n[b]; i++) items.push({ id: `${b}${i}`, label: `Item ${b}${i}`, bucket: b, why: `${b}${i} belongs in ${b}.` });
+  return { ...sp(), draw, items };
+}
+
+test('P5 validateSortPool: every bucket must rotate, so a bucket shown whole cannot tell the player its items', () => {
+  assert.deepEqual(validateSortPool(sortPool({ a: 5, b: 7 }, { a: 2, b: 3 })), []);
+  assert.match(validateSortPool(sortPool({ a: 3, b: 12 }, { a: 3, b: 3 })).join('\n'), /bucket "a".*never rotates/);
+  assert.match(validateSortPool(sortPool({ a: 6, b: 6 }, { a: 6, b: 3 })).join('\n'), /bucket "a".*never rotates/);
+});
+
+test('P5 validateSortPool: the buckets show about the same share of their items, within 15% of the largest share', () => {
+  const problems = (n, draw) => validateSortPool(sortPool(n, draw)).join('\n');
+  assert.deepEqual(validateSortPool(sortPool({ a: 4, b: 20 }, { a: 2, b: 9 })), [], '0.5 and 0.45');
+  assert.match(problems({ a: 4, b: 5 }, { a: 2, b: 2 }), /share/, '0.5 and 0.4 is a fifth less');
+  assert.match(problems({ a: 3, b: 12 }, { a: 2, b: 3 }), /share/);
+  assert.match(problems({ a: 5, b: 6 }, { a: 4, b: 2 }), /share/);
 });
 
 test('P5 validateSortPool: every pool item is judged like a sort item', () => {
@@ -168,8 +196,8 @@ test('P5 validateSortPool: never throws on odd input', () => {
 
 test('sortBoards: every board of a small pool once; a big pool gets the limit of seeded boards and the identity board', () => {
   const all = sortBoards(SP);
-  assert.equal(all.length, 10 * 4); // C(5,2) * C(4,3)
-  assert.equal(new Set(all.map((b) => ids(b).join())).size, 40);
+  assert.equal(all.length, 10 * 35); // C(5,2) * C(7,3)
+  assert.equal(new Set(all.map((b) => ids(b).join())).size, 350);
   for (const b of all) assert.deepEqual(b.items.filter((i) => i.bucket === 'a').length, 2);
   const limited = sortBoards(SP, { limit: 5 });
   assert.equal(limited.length, 6);

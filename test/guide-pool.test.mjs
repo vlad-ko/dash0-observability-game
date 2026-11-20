@@ -85,6 +85,15 @@ test('G2 a valid shown: the model is told exactly that board, and the answer is 
   for (const c of CP.choices.filter((x) => !['r2', 'w3', 'w5'].includes(x.key))) assert.ok(!calls[0].system.includes(c.label), `${c.key} is not on the board`);
 });
 
+test('G2 the endpoint reads a board without counting its rights: a board of only wrongs or only rights is still answered', async () => {
+  for (const [stepId, shown] of [['cp', ['w1', 'w2', 'w3']], ['cp', ['r1', 'r2', 'r3']], ['sp', ['a1', 'a2', 'a3', 'a4', 'a5']]]) {
+    const { guide, calls } = setup();
+    const res = await ask(guide, { stepId, shown });
+    assert.equal(res.status, 200, `${stepId} ${shown}`);
+    assert.equal(calls.length, 1, `${stepId} ${shown}`);
+  }
+});
+
 test('G2 a pooled sort is told its drawn items, and an over-sized or foreign shown is refused', async () => {
   const board = drawSortBoard(sortWithHints(), IDENT);
   const shown = board.items.map((i) => i.id);

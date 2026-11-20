@@ -215,7 +215,7 @@ const ANSWERS = {
   // A pooled choice lists every right answer of its pool; a pooled sort every item of its pool (#390).
   'pool-fixture': [
     'choice cp: r1|r2|r3',
-    'sort sp: a1=a b1=b a2=a b2=b a3=a b3=b a4=a b4=b a5=a',
+    'sort sp: a1=a b1=b a2=a b2=b a3=a b3=b a4=a b4=b a5=a b5=b b6=b b7=b',
     'choice cf: r1|r2|r3',
   ],
 };

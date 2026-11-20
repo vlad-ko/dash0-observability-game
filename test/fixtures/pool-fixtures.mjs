@@ -44,7 +44,7 @@ export const cp = () => ({
 });
 export const CP = deepFreeze(cp());
 
-/** A pool for the 50/50: shows four, three rights, eight wrongs, one near-miss that the 50/50 keeps. */
+/** A pool for the 50/50: shows four, three rights, nine wrongs (the fewest exposure parity allows), one near-miss that the 50/50 keeps. */
 export const fiftyPool = () => ({
   id: 'cf',
   draw: 4,
@@ -60,17 +60,18 @@ export const fiftyPool = () => ({
     pick('r3', WORDS[8], true),
     pick('w7', WORDS[9]),
     pick('w8', WORDS[10]),
+    pick('w9', WORDS[11]),
   ],
 });
 
 const item = (id, bucket) => ({ id, label: `Item ${id}`, bucket, why: `${id} belongs in ${bucket}.` });
 
-/** Two buckets, nine items (five in a, four in b); shows two from a and three from b. */
+/** Two buckets, twelve items (five in a, seven in b); shows two from a and three from b, so each bucket shows about 0.4 of its items. */
 export const sp = () => ({
   id: 'sp',
   draw: { a: 2, b: 3 },
   buckets: [{ id: 'a', label: 'Bucket A' }, { id: 'b', label: 'Bucket B' }],
-  items: [item('a1', 'a'), item('b1', 'b'), item('a2', 'a'), item('b2', 'b'), item('a3', 'a'), item('b3', 'b'), item('a4', 'a'), item('b4', 'b'), item('a5', 'a')],
+  items: [item('a1', 'a'), item('b1', 'b'), item('a2', 'a'), item('b2', 'b'), item('a3', 'a'), item('b3', 'b'), item('a4', 'a'), item('b4', 'b'), item('a5', 'a'), item('b5', 'b'), item('b6', 'b'), item('b7', 'b')],
 });
 export const SP = deepFreeze(sp());
 

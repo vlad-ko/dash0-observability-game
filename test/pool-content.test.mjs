@@ -14,7 +14,20 @@ import { cp, fiftyPool, poolFixture } from './fixtures/pool-fixtures.mjs';
 
 const plain = (html) => String(html).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 /** A line that points at a position or at its siblings, which is false on a board with other siblings. */
-const POSITION = /\b(the (first|second|third|last) (option|answer|choice|item)|the other (two|three|ones|options|answers|choices)|both (of the )?others|neither of the others|options? above)\b/i;
+const POSITION = new RegExp(
+  `\\b(${[
+    'the (first|second|third|fourth|fifth|last) (option|answer|choice|item)s?',
+    'the other (one|two|three|ones|options|answers|choices|items)',
+    'the others',
+    '(the )?(rest|remaining) (of the )?(options|answers|choices|items)',
+    'both (of the )?others?',
+    'both other (options|answers|choices|items)',
+    'neither of (the others|these|the two)',
+    'of the two',
+    '(option|answer|choice|item)s? (above|below)',
+  ].join('|')})\\b`,
+  'i',
+);
 /** A label this long (plain characters) is quotable: an intro that repeats it hands that answer to the player. */
 const QUOTABLE = 12;
 /** Boards of a sort pool the board check samples. */
@@ -23,7 +36,7 @@ const SORT_SAMPLE = 200;
 /** The pooled steps of `play` as `{id, kind, spec, step}`: a choice or a sort that states `draw`. */
 function pooledSteps(play) {
   return (play?.steps ?? []).flatMap((step) =>
-    ['choice', 'sort'].filter((kind) => step[kind]?.draw !== undefined).map((kind) => ({ id: step[kind].id, kind, spec: step[kind], step })),
+    ['choice', 'sort'].filter((kind) => step[kind]?.draw !== undefined).map((kind) => ({ id: step[kind].id, kind, spec: step[kind], step, play })),
   );
 }
 /** Every line of text a pool's entries carry: labels, whys and whyNots. */
@@ -49,10 +62,29 @@ function boardProblems(p) {
 }
 /** C2: no line points at a position or at its siblings. */
 const positionProblems = (p) => poolText(p).filter((t) => POSITION.test(plain(t))).map((t) => `${p.id}: "${plain(t)}" refers to its siblings`);
-/** C3: the step's own text quotes no quotable label. */
+/** The plain, lower-case text of a step's own lines that a player reads around the question. */
+const stepLines = (step) => [step.intro, step.show, step.question, step.code].filter((t) => typeof t === 'string').map((t) => plain(t).toLowerCase());
+/**
+ * C3: the step's own text quotes no quotable label, and no other step's text or the finish text quotes a quotable
+ * right label: a right answer is on only some boards, so a line that names it is true only on those.
+ */
 function quoteProblems(p) {
-  const around = [p.step.intro, p.step.show, p.step.question, p.step.code, p.spec.hint].filter((t) => typeof t === 'string').map((t) => plain(t).toLowerCase());
-  return poolLabels(p).map(plain).filter((l) => l.length >= QUOTABLE && around.some((t) => t.includes(l.toLowerCase()))).map((l) => `${p.id}: the step's text quotes "${l}"`);
+  const around = [...stepLines(p.step), ...(typeof p.spec.hint === 'string' ? [plain(p.spec.hint).toLowerCase()] : [])];
+  const labelsIn = (labels, texts) => labels.map(plain).filter((l) => l.length >= QUOTABLE && texts.some((t) => t.includes(l.toLowerCase())));
+  const own = labelsIn(poolLabels(p), around).map((l) => `${p.id}: the step's text quotes "${l}"`);
+  const rights = (p.kind === 'choice' ? p.spec.choices : p.spec.items).filter((x) => x.right).map((x) => x.label);
+  const later = [...p.play.steps.filter((s) => s !== p.step).flatMap(stepLines), ...(typeof p.play.finish === 'string' ? [plain(p.play.finish).toLowerCase()] : [])];
+  return [...own, ...labelsIn(rights, later).map((l) => `${p.id}: another step or the finish text quotes the right answer "${l}"`)];
+}
+/** C5: no pooled why or whyNot quotes another entry's label, which is only on some boards. */
+function crossQuoteProblems(p) {
+  const entries = p.kind === 'choice' ? p.spec.choices : p.spec.items;
+  return entries.flatMap((x) =>
+    entries
+      .filter((y) => y !== x && plain(y.label).length >= QUOTABLE)
+      .filter((y) => [x.why, ...Object.values(x.whyNot ?? {})].filter((t) => typeof t === 'string').some((t) => plain(t).toLowerCase().includes(plain(y.label).toLowerCase())))
+      .map((y) => `${p.id}: the why of "${plain(x.label)}" quotes "${plain(y.label)}"`),
+  );
 }
 /** C4: plain labels are unique within the pool. */
 function labelProblems(p) {
@@ -60,7 +92,7 @@ function labelProblems(p) {
   return labels.filter((l, i) => labels.indexOf(l) !== i).map((l) => `${p.id}: label "${l}" appears twice`);
 }
 
-const CHECKS = { 'C1 boards': boardProblems, 'C2 position': positionProblems, 'C3 quotes': quoteProblems, 'C4 labels': labelProblems };
+const CHECKS = { 'C1 boards': boardProblems, 'C2 position': positionProblems, 'C3 quotes': quoteProblems, 'C4 labels': labelProblems, 'C5 cross-quotes': crossQuoteProblems };
 
 const live = Object.values(liveRegistry().levels).flatMap((l) => pooledSteps(l.play).map((p) => ({ ...p, level: l.id })));
 const good = pooledSteps(poolFixture().play);
@@ -71,11 +103,23 @@ const withChoice = (edit) => {
   edit(pool);
   return pooledSteps(poolFixture({ choice: pool }).play).filter((p) => p.id === 'cp');
 };
+/** The fixture's choice step `cp` with the play edited, so a later step or the finish text can carry the fault. */
+const withPlay = (edit) => {
+  const level = poolFixture();
+  edit(level.play);
+  return pooledSteps(level.play).filter((p) => p.id === 'cp');
+};
+const RIGHT_LABEL = cp().choices.find((c) => c.right).label;
 const BAD = {
   'C1 boards': pooledSteps(poolFixture({ fifty: (() => { const f = fiftyPool(); for (const c of f.choices) if (['w1', 'w2', 'w3'].includes(c.key)) c.keep = true; return f; })() }).play).filter((p) => p.id === 'cf'),
   'C2 position': withChoice((pool) => { pool.choices[0].why = 'Unlike the other two options, this one does not hold.'; }),
-  'C3 quotes': pooledSteps(poolFixture().play).filter((p) => p.id === 'cp').map((p) => ({ ...p, step: { ...p.step, intro: `Think about ${p.spec.choices[0].label} first.` } })),
+  'C3 quotes': [
+    ...pooledSteps(poolFixture().play).filter((p) => p.id === 'cp').map((p) => ({ ...p, step: { ...p.step, intro: `Think about ${p.spec.choices[0].label} first.` } })),
+    ...withPlay((play) => { play.steps[1].question = `Is it ${RIGHT_LABEL}?`; }),
+    ...withPlay((play) => { play.finish = `You knew that ${RIGHT_LABEL} holds.`; }),
+  ],
   'C4 labels': withChoice((pool) => { pool.choices[1].label = `<b>${pool.choices[0].label}</b>`; }),
+  'C5 cross-quotes': withChoice((pool) => { pool.choices[0].why = `Not like ${pool.choices[1].label}.`; }),
 };
 
 for (const [name, check] of Object.entries(CHECKS)) {
@@ -91,8 +135,13 @@ for (const [name, check] of Object.entries(CHECKS)) {
 }
 
 test('C2 the position rule catches the phrasings it names, in any case, and leaves ordinary text alone', () => {
-  for (const text of ['Unlike the other two options, it holds.', 'Both of the others fail.', 'Neither of the others holds.', 'See the options above.', 'It is the LAST answer.']) {
-    assert.ok(POSITION.test(text), text);
+  const caught = [
+    'Unlike the other two options, it holds.', 'Both of the others fail.', 'Neither of the others holds.', 'See the options above.', 'It is the LAST answer.',
+    'Unlike the others, it holds.', 'It is the other one that fails.', 'The rest of the options fail.', 'The remaining answers fail.', 'It is one of the two.',
+    'Neither of these holds.', 'See the options below.', 'Both other answers fail.', 'It is the fourth option.',
+  ];
+  for (const text of caught) assert.ok(POSITION.test(text), text);
+  for (const text of ['A trace holds timing.', 'Other signals do not.', 'The last span ends the trace.', 'The other service is idle.', 'Two of the spans are slow.']) {
+    assert.equal(POSITION.test(text), false, text);
   }
-  for (const text of ['A trace holds timing.', 'Other signals do not.', 'The last span ends the trace.']) assert.equal(POSITION.test(text), false, text);
 });
