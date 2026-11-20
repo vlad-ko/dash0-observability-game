@@ -13,9 +13,9 @@ export default {
     {
       "type": "list",
       "items": [
-        "Head sampling decides at the start of a trace, as early as possible.",
-        "Tail sampling decides after the whole trace is in, based on specific criteria, and is harder to run.",
-        "Each unique combination of attribute values on a metric is a separate time series, and that count is a cost of its own."
+        "Head sampling decides as early as possible, without looking at the whole trace.",
+        "Tail sampling decides once all or most of the spans in the trace are in, based on specific criteria. It is harder to run.",
+        "Each unique combination of attribute values on a metric is a separate time series (one stream of points), and that count is a cost of its own."
       ]
     },
     {
@@ -89,7 +89,8 @@ export default {
           "items": [
             "It can be difficult to implement.",
             "It can be difficult to operate.",
-            "The components that implement it must be systems that keep state, holding spans until the trace is complete, and that can accept and store a large amount of data.",
+            "The components that implement it must keep state, for example by holding spans while they wait to decide.",
+        "They must also be able to accept and store a large amount of data.",
             "Tail samplers often end up vendor-specific."
           ]
         }
@@ -113,7 +114,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The Prometheus guideline is that the vast majority of your metrics should have no labels (attributes, in Prometheus's word). If you are unsure, start with no labels and add more over time as concrete use cases arise."
+          "text": "The Prometheus guideline is that the vast majority of your metrics should have no labels (Prometheus's word for an attribute). If you are unsure, start with no labels and add more over time as concrete use cases arise."
         },
         {
           "type": "paragraph",

@@ -14,8 +14,8 @@ export default {
       "type": "list",
       "items": [
         "Alerting rules in Prometheus, and check rules in Dash0, raise an alert when a PromQL condition holds.",
-        "A Service Level Objective (SLO), a target for a reliability measure over a time window, turns \"is this service reliable enough\" into a number.",
-        "Synthetic checks (scripted tests that probe your service from outside) send requests to your endpoints at regular intervals."
+        "A Service Level Objective (SLO) is a target for a Service Level Indicator (SLI, a measurement of how the service behaves) over a time window. It turns \"is this service reliable enough\" into a number.",
+        "Synthetic checks (scripted tests that probe your service from outside) send requests to your service's URLs at regular intervals."
       ]
     },
     {
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Prometheus, alerting rules let you define alert conditions based on PromQL expressions and send notifications about firing alerts (alerts whose condition is true right now) to an external service."
+          "text": "In Prometheus, alerting rules let you define alert conditions based on PromQL expressions and send notifications about firing alerts (alerts whose condition has held for the rule's wait time) to an external service."
         },
         {
           "type": "list",
@@ -42,14 +42,24 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Another layer is needed on top of the rules to add summarization (grouping related alerts), notification rate limiting, silencing (muting an alert's notifications for a set time) and alert dependencies (holding back one alert while a related one is already firing). In Prometheus, a separate component called Alertmanager provides it."
+          "text": "Another layer is needed on top of the rules. In Prometheus, a separate component called Alertmanager provides it. It handles grouping related alerts, notification rate limiting and silencing (muting alerts for a set time)."
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, check rules (the Prometheus-compatible form of alerting rules) continuously evaluate PromQL expressions against your telemetry data and trigger alerts when values cross defined thresholds."
+          "text": "Alertmanager also does alert dependencies, called inhibition. It holds back the notifications of one alert while a related alert is already firing."
+        },
+        {
+          "type": "paragraph",
+          "text": "In Dash0, check rules continuously evaluate PromQL expressions against your telemetry data. They trigger alerts when values cross defined thresholds."
         }
       ],
       "sources": [
+        {
+          "kind": "article",
+          "label": "Prometheus: Alertmanager",
+          "url": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+          "audience": "public"
+        },
         {
           "kind": "article",
           "label": "Prometheus: Alerting rules",
@@ -70,7 +80,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Reliability answers the question: is the service doing what users expect it to be doing? A Service Level Indicator (SLI) represents a measurement of a service's behaviour. A Service Level Objective (SLO) is a target for an SLI over a time window, for example 99.9% over 30 days."
+          "text": "Reliability answers the question: is the service doing what users expect it to be doing? A Service Level Indicator (SLI) represents a measurement of a service's behaviour. A Service Level Objective (SLO) is a target for an SLI over a time window, for example 99.9% over a rolling 28-day window, which is the window Dash0 uses."
         },
         {
           "type": "paragraph",
@@ -78,7 +88,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Dash0 shows SLO gauges (dials), error budget charts (the remaining budget over time) and burn-rate views (how fast the budget is being spent) instead of a simple pass or fail. Every SLO also emits metrics, which you can chart on dashboards, query, and build check rules on."
+          "text": "Dash0 shows SLO gauges, error budget burndown charts and burn-rate views instead of a simple pass or fail. An SLO gauge is a dial, not the Gauge instrument from the metrics act. A burndown chart shows the remaining budget over time. A burn-rate view shows how fast the budget is being spent. Every SLO also emits metrics, which you can chart on dashboards, query, and build check rules on."
         }
       ],
       "sources": [
@@ -102,11 +112,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Synthetic checks are automated, scripted tests that verify the availability and performance of your websites and APIs. They simulate requests to your endpoints at regular intervals, so issues get caught early."
+          "text": "Synthetic checks are automated, scripted tests that verify the availability and performance of your websites and APIs. They simulate requests to your service's URLs at regular intervals, so issues get caught early."
         },
         {
           "type": "paragraph",
-          "text": "Each check validates one endpoint's availability, response time and correctness through assertions (conditions the response must meet), and collects latency, status code and error on every run. In Dash0, checks run from Dash0-operated public regions or from private locations (places inside your own network)."
+          "text": "Each check validates one URL's availability, response time and correctness through assertions (conditions the response must meet), and collects latency, status code and error on every run. In Dash0, checks run from Dash0-operated public regions or from private locations (places inside your own network)."
         }
       ],
       "sources": [
@@ -114,6 +124,12 @@ export default {
           "kind": "docs",
           "label": "Dash0 docs: Synthetic monitoring",
           "url": "https://www.dash0.com/docs/dash0/monitoring/synthetics/synthetic-monitoring",
+          "audience": "public"
+        },
+        {
+          "kind": "docs",
+          "label": "Dash0 docs: Run checks from private locations",
+          "url": "https://www.dash0.com/docs/dash0/monitoring/synthetics/private-locations",
           "audience": "public"
         }
       ]
