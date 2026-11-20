@@ -271,7 +271,14 @@ imports and fails if `.vercelignore` would drop one.
 `GET /api/guide`: `200 {v:1, configured}`, `Cache-Control: no-store`; configured is `ANTHROPIC_API_KEY` set to a
 non-empty string. `POST /api/guide`: `application/json`, at most 2048 bytes, body exactly
 `{v:1, levelId, stepId, question}` (`question` trimmed, 1 to 300 characters, no control characters; any other
-field, such as the player's current pick, is `400 body`: a pick would make the guide a yes/no oracle). The step
+field, such as the player's current pick, is `400 body`: a pick would make the guide a yes/no oracle), plus
+`shown` for a pooled step only (#390, docs/CONTENT.md section 10): the list of keys (a choice) or item ids (a sort)
+that this showing's board holds, at most 12 strings. A pooled step is a choice or sort whose logic states `draw`; each
+showing draws a board, so the server cannot know it unless told. A pooled step without a valid `shown`, and a fixed step
+with one, is `400 shown`. `shown` is valid when every entry is a different member of the pool and the total is the size
+of a board (`boardOf` in `lib/pool.mjs`); the server never counts right answers or items per bucket, so a refusal
+says nothing about the answer. The model is told that board only (`stepContext` refuses a whole pool), while the
+reply filter withholds every right answer of the pool, drawn or not. The step
 must be a `play` step the guide may speak on (`guideAllowed`) with a trustworthy token set (`answerTokens(type,
 spec, step)` not null); otherwise it is refused before any model call. One call to
 `POST https://api.anthropic.com/v1/messages` (model `claude-haiku-5-5`, `max_tokens` 300, 8 s timeout,
@@ -282,7 +289,7 @@ says that text states the answer (cut first, so the filter sees exactly what wou
 |---|---|---|
 | 200 | `{ok:true, hint}` | answered |
 | 200 | `{ok:false, error:'withheld'}` | the filter tripped; the reply is never sent |
-| 400 | `{ok:false, error:'bad-request', field}` | bad JSON, version, id, question or extra field |
+| 400 | `{ok:false, error:'bad-request', field}` | bad JSON, version, id, question, `shown` or extra field |
 | 403 | `{error:'forbidden'}` | `Origin` present and its host differs from the request host |
 | 404 | `{error:'unknown-step'}` | run level, unknown level or step id |
 | 404 | `{error:'unavailable'}` | step not allowed, or no trustworthy token set |
@@ -309,7 +316,7 @@ server.
 
 The panel (#17 P4). `lib/guide/client.mjs` asks `GET /api/guide` once per page through the injected `fetch`
 (`createGame` dep `fetch`, from `main.mjs`) and caches it; unknown, failed or `v` other than 1 means off, and a level
-opened before the answer arrives has no panel. `ask(levelId, stepId, question, signal)` never throws and resolves to
+opened before the answer arrives has no panel. `ask(levelId, stepId, question, signal, shown)` (`shown` only for a pooled step, #390; `runPlay` passes the board it drew) never throws and resolves to
 `{kind}`: `ok` (hint), `withheld`, `rate-limited` (retryAfterS), `unavailable` (404, 503), `upstream` (502), `rejected`
 (400, 413), `failed`, `aborted`. `ctx.guide` is `{configured, ask}` or null. When `ctx.guide.configured` and
 `guideAllowed(type, spec)`, `runPlay` mounts `lib/guide/panel.mjs` after `type.mount`: into the side column's empty

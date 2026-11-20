@@ -4,14 +4,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTS } from '../levels/index.mjs';
+import { drawSortBoard, sortBoards } from '../lib/pool.mjs';
+import { runPlay, validatePlay } from '../lib/play.mjs';
+import { buildRegistry } from '../lib/registry.mjs';
+import { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
+import { IDENT, sp } from './fixtures/pool-fixtures.mjs';
 
 // One wrong placement still earns 4 stars (lib/scoring.mjs), so a blind rule must cost at least two.
 const MIN_WRONG = 2;
+// An answer pool (#390) is checked on its boards: every one when there are this many or fewer, else this many drawn at
+// random (seeded) plus the first-items board. A tell that only some boards have is still a tell the player can meet.
+const BOARD_LIMIT = 5000;
 
 const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ');
 
-/** Every Sort it spec, as { level, spec }, from declarative (play.steps) and hand-written (CONTENT.steps) levels. */
-async function allSortSpecs() {
+/** Every Sort it spec as written, as { level, spec } (a pool is one entry), from declarative (play.steps) and hand-written (CONTENT.steps) levels. `fixtures` (built registry levels) are read as well. */
+async function allSortSources(fixtures = []) {
   const out = [];
   for (const act of ACTS) {
     for (const level of [...act.levels, ...(act.boss ? [act.boss] : [])]) {
@@ -20,7 +28,15 @@ async function allSortSpecs() {
       for (const s of steps) if (s.sort) out.push({ level: level.id, spec: s.sort });
     }
   }
+  for (const level of fixtures) for (const s of level.play?.steps ?? []) if (s.sort) out.push({ level: level.id, spec: s.sort });
   return out;
+}
+
+/** Every board a Sort it can show, as { level, spec }: a fixed spec is its own board, a pool is expanded to its boards. Every rule runs on all of them. */
+async function allSortSpecs(fixtures = []) {
+  return (await allSortSources(fixtures)).flatMap(({ level, spec }) =>
+    spec.draw === undefined ? [{ level, spec }] : sortBoards(spec, { limit: BOARD_LIMIT, rng: rng(1) }).map((board) => ({ level, spec: board })),
+  );
 }
 
 /** How many items a rule places in the wrong bucket; `pick(item, i)` returns a bucket id. */
@@ -194,12 +210,17 @@ function rng(seed) {
   };
 }
 
-/** Shuffles of the spec on which "put it in the emptier bucket" sorts everything right (ties to a random bucket). */
-function balancedWins(spec, runs) {
+/**
+ * Shuffles of the spec on which "put it in the emptier bucket" sorts everything right (ties to a random bucket). A
+ * pool draws a fresh board for every shuffle, as the game does; `boards` (a Set) collects the boards drawn.
+ */
+function balancedWins(spec, runs, boards = new Set()) {
   let wins = 0;
   for (let seed = 1; seed <= runs; seed++) {
     const rand = rng(seed);
-    const items = [...spec.items].sort(() => rand() - 0.5);
+    const drawn = spec.draw === undefined ? spec : drawSortBoard(spec, (list) => [...list].sort(() => rand() - 0.5));
+    boards.add(drawn.items.map((it) => it.id).join());
+    const items = [...drawn.items].sort(() => rand() - 0.5);
     const counts = Object.fromEntries(spec.buckets.map((b) => [b.id, 0]));
     let bad = 0;
     for (const it of items) {
@@ -308,8 +329,59 @@ test('Sort it: "questions with the same opening word go in one bucket" never ear
 
 test('Sort it: "keep the buckets balanced" wins a spec on at most 1 shuffle in 10', async () => {
   const runs = 200;
-  for (const { level, spec } of await allSortSpecs()) {
+  // The specs as written: a pool draws a fresh board for each shuffle, so it is not expanded here.
+  for (const { level, spec } of await allSortSources()) {
     const wins = balancedWins(spec, runs);
     assert.equal(wins <= runs / 10, true, `${level} ${spec.id}: balancing sorts it right on ${wins} of ${runs} shuffles`);
   }
+});
+
+// ---- answer pools (#390) ----
+
+/** Two buckets; the first two items of each are plain, bucket a's third to fifth carry <code>. Five items a bucket, shows two of each. */
+function codePool() {
+  const item = (id, bucket, label) => ({ id, label, bucket, why: `${id} belongs in ${bucket}.` });
+  return {
+    id: 'code-pool',
+    draw: { a: 2, b: 2 },
+    buckets: [{ id: 'a', label: 'Bucket A' }, { id: 'b', label: 'Bucket B' }],
+    items: [
+      item('a1', 'a', 'Plain one'), item('a2', 'a', 'Plain two'), item('a3', 'a', '<code>three</code>'), item('a4', 'a', '<code>four</code>'), item('a5', 'a', '<code>five</code>'),
+      item('b1', 'b', 'Plain six'), item('b2', 'b', 'Plain seven'), item('b3', 'b', 'Plain eight'), item('b4', 'b', 'Plain nine'), item('b5', 'b', 'Plain ten'),
+    ],
+  };
+}
+const codeLevel = () =>
+  Object.values(
+    buildRegistry(
+      [{ id: 'a', no: 0, levels: [{ id: 'code-fixture', no: '0.3', name: 'Code', icon: '*', rewardTitle: 'Code', cards: ['fixture-card'], play: { steps: [{ intro: 'Sort.', question: 'Sort them.', sort: codePool() }], finish: 'You sorted the pool.' } }], boss: null }],
+      { deck: [FIXTURE_CARD], nodeIds: [], play: { validatePlay, runPlay } },
+    ).levels,
+  );
+const fewestByCode = (spec) => Math.min(byCode(spec, 0), byCode(spec, 1));
+
+test('T5 a tell only some boards have is caught: the first-items board is clean, another board is flagged by the <code> rule', async () => {
+  const identity = drawSortBoard(codePool(), IDENT);
+  assert.ok(fewestByCode(identity) >= MIN_WRONG, 'the first-items board has no code tell');
+  const boards = (await allSortSpecs(codeLevel())).filter((s) => s.level === 'code-fixture');
+  assert.ok(boards.length > 1, `${boards.length} boards`);
+  const flagged = boards.filter(({ spec }) => fewestByCode(spec) < MIN_WRONG);
+  assert.ok(flagged.length > 0, 'some board lets <code> alone sort it');
+  // A board of two plain items per bucket stays clean, so the flag is the board's, not the pool's.
+  assert.ok(boards.some(({ spec }) => fewestByCode(spec) >= MIN_WRONG));
+});
+
+test('every rule runs on every board of a pool: the fixture pool expands to all its boards', async () => {
+  const boards = (await allSortSpecs(codeLevel())).filter((s) => s.level === 'code-fixture');
+  assert.equal(boards.length, 10 * 10); // C(5,2) * C(5,2)
+  for (const { spec } of boards) assert.equal(spec.items.length, 4);
+});
+
+test('balance draws a fresh board for each shuffle of a pool', () => {
+  const boards = new Set();
+  balancedWins(sp(), 30, boards);
+  assert.ok(boards.size > 1, `${boards.size} distinct boards in 30 shuffles`);
+  const fixed = new Set();
+  balancedWins({ ...sp(), draw: undefined }, 5, fixed);
+  assert.equal(fixed.size, 1);
 });

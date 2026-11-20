@@ -4,39 +4,68 @@
 // "because ..." tail. Questions come from the live registry and from the answer tables the
 // hand-written levels export in CONTENT, so a level that passes its options to choiceHtml from a
 // module-level array is covered too.
+//
+// An answer pool (#390) is a question with a `draw`: it lists more answers than one showing uses, so a rule is scored
+// over every board the pool can make (lib/pool.mjs choiceBoards), each board equally likely, and chance is 1 over the
+// number of answers shown.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { liveRegistry } from '../app.mjs';
 import { ACTS } from '../levels/index.mjs';
+import { choiceBoards } from '../lib/pool.mjs';
+import { runPlay, validatePlay } from '../lib/play.mjs';
+import { buildRegistry } from '../lib/registry.mjs';
+import { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
+import { cp, fiftyPool, pick, poolFixture } from './fixtures/pool-fixtures.mjs';
 
 const plain = (html) => String(html).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ');
-const isQuestion = (v) =>
-  Array.isArray(v) && v.length >= 2 && v.every((c) => c && typeof c === 'object' && typeof c.label === 'string') && v.filter((c) => c.right).length === 1;
+const isLabelled = (v) => Array.isArray(v) && v.length >= 2 && v.every((c) => c && typeof c === 'object' && typeof c.label === 'string');
+const isQuestion = (v) => isLabelled(v) && v.filter((c) => c.right).length === 1;
+/** A pooled question: labelled options, at least one right, and the whole number of them one showing draws. */
+const isPool = (v, o) => isLabelled(v) && Number.isInteger(o.draw) && v.some((c) => c.right);
 
-/** Every choice question as { level, choices }: any array of labelled options with exactly one right one. */
-async function allQuestions() {
+/**
+ * Every choice question as { level, choices } (a pool also has `draw`): any array of labelled options with exactly one
+ * right one, or a pool. `fixtures` (built registry levels) are read as well, after the live ones.
+ */
+async function allQuestions(fixtures = []) {
   const out = [];
   const seen = new Set();
+  const read = (id, roots) => {
+    const walk = (o) => {
+      if (!o || typeof o !== 'object' || seen.has(o)) return;
+      seen.add(o);
+      for (const [k, v] of Object.entries(o)) {
+        const pool = k === 'choices' && isPool(v, o);
+        if (k === 'choices' && (isQuestion(v) || pool)) {
+          const key = `${id}|${v.map((c) => c.label).join('|')}`; // the registry holds frozen copies of CONTENT
+          if (!seen.has(key)) out.push({ level: id, choices: v, ...(pool ? { draw: o.draw } : {}) });
+          seen.add(key);
+        }
+        else walk(v);
+      }
+    };
+    for (const root of roots) walk(root);
+  };
   for (const act of ACTS) {
     for (const level of [...act.levels, ...(act.boss ? [act.boss] : [])]) {
       const mod = await import(`../levels/${level.id}.mjs`);
-      const walk = (o) => {
-        if (!o || typeof o !== 'object' || seen.has(o)) return;
-        seen.add(o);
-        for (const [k, v] of Object.entries(o)) {
-          if (k === 'choices' && isQuestion(v)) {
-            const key = `${level.id}|${v.map((c) => c.label).join('|')}`; // the registry holds frozen copies of CONTENT
-            if (!seen.has(key)) out.push({ level: level.id, choices: v });
-            seen.add(key);
-          }
-          else walk(v);
-        }
-      };
-      walk(mod.CONTENT);
-      walk(mod.default.play);
+      read(level.id, [mod.CONTENT, mod.default.play]);
     }
   }
+  for (const level of fixtures) read(level.id, [level.play]);
   return out;
 }
+
+/** The registry levels of the pooled fixture level. */
+const fixtureLevels = (levelOpts) =>
+  Object.values(
+    buildRegistry([{ id: 'a', no: 0, levels: [poolFixture(levelOpts)], boss: null }], { deck: [FIXTURE_CARD], nodeIds: [], play: { validatePlay, runPlay } }).levels,
+  );
+/** How many answers one showing of `q` shows. */
+const shownOf = (q) => q.draw ?? q.choices.length;
+/** The boards (lists of choices) one showing of `q` may be, each equally likely: the question itself when it is fixed. */
+const boardsOf = (q) => (q.draw === undefined ? [q.choices] : choiceBoards({ draw: q.draw, choices: q.choices }).map((b) => b.choices));
 
 // Code formatting is read off the raw label, before plain() strips the tags.
 const CODE = /<code>|`/;
@@ -71,42 +100,63 @@ const STRATEGIES = {
   },
 };
 
-/** Expected first-try score of a strategy over the questions. */
+/** Expected first-try score of a strategy on one board: 1 over the number it marks when the right answer is marked, else 0. */
+function boardScore(choices, mark) {
+  const labels = choices.map((c) => plain(c.label));
+  let m = mark(labels, choices.map((c) => c.label));
+  if (!m.some(Boolean)) m = m.map(() => true);
+  const right = choices.findIndex((c) => c.right);
+  return m[right] ? 1 / m.filter(Boolean).length : 0;
+}
+
+/** Expected first-try score of a strategy over the questions; a pool scores the mean over its boards. */
 const score = (qs, mark) =>
   qs.reduce((sum, q) => {
-    const labels = q.choices.map((c) => plain(c.label));
-    let m = mark(labels, q.choices.map((c) => c.label));
-    if (!m.some(Boolean)) m = m.map(() => true);
-    const right = q.choices.findIndex((c) => c.right);
-    return sum + (m[right] ? 1 / m.filter(Boolean).length : 0);
+    const boards = boardsOf(q);
+    return sum + boards.reduce((s, board) => s + boardScore(board, mark), 0) / boards.length;
   }, 0);
 
 const BAND = 3; // points a blind rule may sit above or below chance: a rule far below is the same tell, read backwards
 
-test('no blind option-shape rule strays from chance by more than a few points, either way', async () => {
-  const qs = await allQuestions();
-  assert.ok(qs.length >= 77, `found ${qs.length} questions`);
-  const chance = qs.reduce((s, q) => s + 1 / q.choices.length, 0);
-  const off = Object.entries(STRATEGIES)
+/** The strategies whose score over `qs` is further from chance than the band, as report lines. */
+function strayed(qs) {
+  const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
+  return Object.entries(STRATEGIES)
     .map(([name, mark]) => [name, score(qs, mark)])
     .filter(([, got]) => Math.abs(got - chance) > BAND)
     .map(([name, got]) => `${name}: ${got.toFixed(1)} of ${qs.length} first try (chance ${chance.toFixed(1)}, band ${(chance - BAND).toFixed(1)} to ${(chance + BAND).toFixed(1)})`);
+}
+
+test('no blind option-shape rule strays from chance by more than a few points, either way', async () => {
+  const qs = await allQuestions();
+  assert.ok(qs.length >= 77, `found ${qs.length} questions`);
+  const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
   if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
-  assert.deepEqual(off, []);
+  assert.deepEqual(strayed(qs), []);
 });
 
-test('the right option is not concentrated at one length rank: shortest, middle and longest each hold at most 45% of the three-option questions', async () => {
-  const qs = (await allQuestions()).filter((q) => q.choices.length === 3);
+/** The three-option boards of the questions, each as { choices, share }: a fixed question is one board, a pool shares one over its boards. */
+const threeOptionBoards = (qs) =>
+  qs.filter((q) => shownOf(q) === 3).flatMap((q) => boardsOf(q).map((choices, _i, all) => ({ choices, share: 1 / all.length })));
+
+/** The share of the three-option questions whose right answer is the shortest, the middle and the longest, as { shortest, middle, longest, total }. */
+function lengthRanks(qs) {
+  const boards = threeOptionBoards(qs);
   const rank = { shortest: 0, middle: 0, longest: 0 };
-  for (const q of qs) {
-    const lens = q.choices.map((c) => plain(c.label).length);
-    const mine = lens[q.choices.findIndex((c) => c.right)];
-    if (mine <= Math.min(...lens)) rank.shortest++;
-    else if (mine >= Math.max(...lens)) rank.longest++;
-    else rank.middle++;
+  for (const { choices, share } of boards) {
+    const lens = choices.map((c) => plain(c.label).length);
+    const mine = lens[choices.findIndex((c) => c.right)];
+    if (mine <= Math.min(...lens)) rank.shortest += share;
+    else if (mine >= Math.max(...lens)) rank.longest += share;
+    else rank.middle += share;
   }
-  if (process.env.TELLS) console.log(`TELLS ranks ${JSON.stringify(rank)} of ${qs.length}`);
-  for (const [name, n] of Object.entries(rank)) assert.ok(n <= 0.45 * qs.length, `${name}: ${n} of ${qs.length} three-option questions`);
+  return { ...rank, total: boards.reduce((s, b) => s + b.share, 0) };
+}
+
+test('the right option is not concentrated at one length rank: shortest, middle and longest each hold at most 45% of the three-option questions', async () => {
+  const { total, ...rank } = lengthRanks(await allQuestions());
+  if (process.env.TELLS) console.log(`TELLS ranks ${JSON.stringify(rank)} of ${total}`);
+  for (const [name, n] of Object.entries(rank)) assert.ok(n <= 0.45 * total, `${name}: ${n.toFixed(2)} of ${total.toFixed(2)} three-option questions`);
 });
 
 /** Every incident board's hypotheses, as { level, hypotheses }, from the live registry. */
@@ -147,4 +197,60 @@ test('the scorer has teeth: a question whose right option is the longest and has
   const qs = [{ choices: [{ label: 'a' }, { label: 'b' }, { label: 'a much longer right option', right: true }] }];
   assert.equal(score(qs, STRATEGIES.longest), 1);
   assert.equal(score(qs, STRATEGIES.longestNoTail), 1);
+});
+
+// ---- answer pools (#390) ----
+
+/** A pooled question whose every right answer is `extra` characters longer than every wrong one. */
+function longRights(extra) {
+  const q = cp();
+  for (const c of q.choices) c.label = c.right ? `${c.label}${'x'.repeat(extra)}` : c.label;
+  return { level: 'fixture', draw: q.draw, choices: q.choices };
+}
+
+test('T1 a pool whose right answers are the longest is caught: the longest rule scores 1 and the band flags it', () => {
+  const qs = Array.from({ length: 10 }, () => longRights(12));
+  assert.equal(score(qs, STRATEGIES.longest), 10);
+  assert.ok(strayed(qs).some((line) => /^longest: 10\.0 of 10 first try/.test(line)), strayed(qs).join('\n'));
+});
+
+test('T1 a pool of equal-length answers scores exactly chance on every rule, and a fixed question is unchanged', () => {
+  const clean = [{ level: 'fixture', draw: 3, choices: cp().choices }, { level: 'fixture', draw: 4, choices: fiftyPool().choices }];
+  for (const [name, mark] of Object.entries(STRATEGIES)) assert.ok(Math.abs(score(clean, mark) - (1 / 3 + 1 / 4)) < 1e-9, name);
+  const fixed = [{ choices: [{ label: 'a' }, { label: 'b' }, { label: 'a much longer right option', right: true }] }];
+  assert.equal(score(fixed, STRATEGIES.shortest), 0);
+});
+
+test('T2 every live pooled question stays within 0.15 of chance on every rule', async () => {
+  const pooled = (await allQuestions()).filter((q) => q.draw !== undefined);
+  for (const q of pooled) {
+    for (const [name, mark] of Object.entries(STRATEGIES)) {
+      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= 0.15, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
+    }
+  }
+  // The same bound has teeth: a pool whose right answers are longer is outside it.
+  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > 0.15);
+});
+
+test('T3 every pooled step is found as a question: the live registry, and the fixture level', async () => {
+  const live = Object.values(liveRegistry().levels).flatMap((l) => (l.play?.steps ?? []).filter((s) => s.choice?.draw !== undefined));
+  assert.equal((await allQuestions()).filter((q) => q.draw !== undefined).length, live.length);
+  const levels = fixtureLevels();
+  const stepCount = levels.flatMap((l) => l.play.steps).filter((s) => s.choice?.draw !== undefined).length;
+  assert.equal(stepCount, 2);
+  const found = (await allQuestions(levels)).filter((q) => q.level === 'pool-fixture');
+  assert.equal(found.length, stepCount);
+  assert.ok(found.every((q) => Number.isInteger(q.draw)));
+});
+
+test('T4 no pooled question has more boards than the scorer can walk', async () => {
+  const pooled = [...(await allQuestions()), ...(await allQuestions(fixtureLevels()))].filter((q) => q.draw !== undefined);
+  for (const q of pooled) assert.ok(boardsOf(q).length <= 20000, `${q.level}: ${boardsOf(q).length} boards`);
+});
+
+test('a pool counts in the length ranks by shares: a pool whose right answer is always the longest holds a full share at longest', () => {
+  const ranks = lengthRanks([longRights(12)]);
+  assert.ok(Math.abs(ranks.total - 1) < 1e-9);
+  assert.ok(Math.abs(ranks.longest - 1) < 1e-9);
+  assert.ok(Math.abs(lengthRanks([{ level: 'fixture', draw: 3, choices: [pick('r', 'one', true), ...Array.from({ length: 5 }, (_, i) => pick(`w${i}`, `w${i}${'y'.repeat(i)}`))] }]).total - 1) < 1e-9);
 });

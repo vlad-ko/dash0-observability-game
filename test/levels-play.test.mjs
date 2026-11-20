@@ -34,6 +34,8 @@ import { stepsOf } from './helpers/step-drivers.mjs';
 import { clickFrameOf, frameOf, recordFrames } from './helpers/snapshot.mjs';
 import fixtureLevel, { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
 import { playFixture } from './fixtures/play-level.mjs';
+import { poolFixture } from './fixtures/pool-fixtures.mjs';
+import { drawChoiceBoard, drawSortBoard } from '../lib/pool.mjs';
 import * as V from './fixtures/variant-levels.mjs';
 
 const NOW = 1767225600000;
@@ -1225,8 +1227,18 @@ test('a converted run level plays every screen, happy and sloppy, with the words
 function derivedDriver(level) {
   const steps = stepsOf(level);
   const advance = (i) => `#${level.play.prefix ?? level.id}-${i === steps.length - 1 ? 'finish' : 'next'}`;
+  // A pooled step (#390) shows the board the identity shuffle draws, and only it: the screen is checked against a board
+  // drawn here, not against what the driver clicks, so a driver that read the whole pool would be caught.
+  const identity = (list) => [...list];
+  const shownOnScreen = (spec) => {
+    if (spec.draw === undefined) return;
+    const rendered = (spec.choices ? qa('[data-pick]').map((b) => b.dataset.pick) : qa('[data-item]').map((b) => b.dataset.item)).sort();
+    const board = spec.choices ? drawChoiceBoard(spec, identity).choices.map((c) => c.key) : drawSortBoard(spec, identity).items.map((it) => it.id);
+    assert.deepEqual(rendered, board.sort(), `${spec.id}: the screen shows the drawn board`);
+  };
   const run = (slipAt = -1) => () =>
     steps.forEach(({ driver, spec }, i) => {
+      shownOnScreen(spec);
       if (i === slipAt) for (const sel of driver.slips(spec)[0].clicks) click(sel);
       for (const sel of driver.solve(spec)) click(sel);
       click(advance(i));
@@ -1302,7 +1314,7 @@ test('#371 the 50/50 run: every level still finishes, one penalty per 50/50 used
 const PLAY_LEVELS = [
   ...Object.values(LIVE.levels).filter((l) => l.play && !DRIVERS[l.id]),
   ...Object.values(
-    buildRegistry([{ id: 'play-act', no: 0, levels: [playFixture()], boss: null }], {
+    buildRegistry([{ id: 'play-act', no: 0, levels: [playFixture(), poolFixture()], boss: null }], {
       deck: [FIXTURE_CARD], nodeIds: [], play: { validatePlay, runPlay },
     }).levels,
   ),
