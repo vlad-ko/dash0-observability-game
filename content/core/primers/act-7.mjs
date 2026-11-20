@@ -13,9 +13,9 @@ export default {
     {
       "type": "list",
       "items": [
-        "Prometheus alerting rules and Dash0 check rules define alert conditions in PromQL.",
-        "A Service Level Objective turns \"is this service reliable enough\" into a number.",
-        "Synthetic checks send requests to your endpoints at regular intervals."
+        "Alerting rules in Prometheus, and check rules in Dash0, raise an alert when a PromQL condition holds.",
+        "A Service Level Objective (SLO), a target for a reliability measure over a time window, turns \"is this service reliable enough\" into a number.",
+        "Synthetic checks (scripted tests that probe your service from outside) send requests to your endpoints at regular intervals."
       ]
     },
     {
@@ -31,22 +31,22 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "In Prometheus, alerting rules let you define alert conditions based on PromQL expressions and send notifications about firing alerts to an external service."
+          "text": "In Prometheus, alerting rules let you define alert conditions based on PromQL expressions and send notifications about firing alerts (alerts whose condition is true right now) to an external service."
         },
         {
           "type": "list",
           "items": [
-            "The labels clause attaches a set of additional labels to the alert.",
-            "The annotations clause stores longer additional information, such as alert descriptions or runbook links."
+            "The labels clause attaches extra labels (Prometheus's word for attributes) to the alert.",
+            "The annotations clause stores longer notes, such as alert descriptions or runbook links (a runbook is the team's written steps for handling the alert)."
           ]
         },
         {
           "type": "paragraph",
-          "text": "Another layer is needed to add summarization, notification rate limiting, silencing and alert dependencies on top of the rules."
+          "text": "Another layer is needed on top of the rules to add summarization (grouping related alerts), notification rate limiting, silencing (muting an alert's notifications for a set time) and alert dependencies (holding back one alert while a related one is already firing). In Prometheus, a separate component called Alertmanager provides it."
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, check rules continuously evaluate PromQL expressions against your telemetry data and trigger alerts when values cross defined thresholds."
+          "text": "In Dash0, check rules (the Prometheus-compatible form of alerting rules) continuously evaluate PromQL expressions against your telemetry data and trigger alerts when values cross defined thresholds."
         }
       ],
       "sources": [
@@ -70,15 +70,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Reliability answers the question: is the service doing what users expect it to be doing? A Service Level Indicator (SLI) represents a measurement of a service's behaviour. A Service Level Objective (SLO) is how reliability is communicated to an organization or to other teams."
+          "text": "Reliability answers the question: is the service doing what users expect it to be doing? A Service Level Indicator (SLI) represents a measurement of a service's behaviour. A Service Level Objective (SLO) is a target for an SLI over a time window, for example 99.9% over 30 days."
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, an SLO is built on the same evaluation engine as a check rule, but it answers a different question. It tracks an error budget over a time window and tells you how fast that budget is being consumed."
+          "text": "In Dash0, an SLO is built on the same evaluation as a check rule, but it answers a different question. It tracks an error budget (the share of failures the SLO allows) over a time window and tells you how fast that budget is being consumed."
         },
         {
           "type": "paragraph",
-          "text": "Dash0 shows SLO gauges, error budget burndown charts and burn-rate views instead of a simple pass or fail. Every SLO also emits metrics, which you can chart on dashboards, query, and build check rules on."
+          "text": "Dash0 shows SLO gauges (dials), error budget charts (the remaining budget over time) and burn-rate views (how fast the budget is being spent) instead of a simple pass or fail. Every SLO also emits metrics, which you can chart on dashboards, query, and build check rules on."
         }
       ],
       "sources": [
@@ -106,7 +106,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Each check validates one endpoint's availability, response time and correctness through assertions, and collects latency, status code and error on every run. In Dash0, checks run from Dash0-operated public regions or from private locations in your network."
+          "text": "Each check validates one endpoint's availability, response time and correctness through assertions (conditions the response must meet), and collects latency, status code and error on every run. In Dash0, checks run from Dash0-operated public regions or from private locations (places inside your own network)."
         }
       ],
       "sources": [
