@@ -53,9 +53,9 @@ export default {
             "pay-0914-45": "This point is on the spike and its exemplar field says none. A high value does not bring an exemplar with it, so there is no trace to jump to from this point.",
             "pay-0915-15": "The spike is over and the field says none: no exemplar, so no link from this point.",
             "refund-batch": "A job started by a scheduler, not by a request, and its point says none: no exemplar, so no link.",
-            "pay-label": "The trace ID and span id here are labels of the series, not an exemplar: a label makes a series of its own for every value, and an exemplar sits beside the point, in its own field. This point's field says none."
+            "pay-label": "The trace ID and span id here are [[labels]] of the series, not an exemplar: a label makes a series of its own for every value, and an exemplar sits beside the point, in its own field. This point's field says none."
           },
-          "explain": "Three points carry exemplars. Each exemplar is one measurement recorded in that window, with its value, the <code>trace_id</code> and the <code>span_id</code> of the span it was recorded in, and a point can carry more than one: two of the spike points carry two and three. The value is one measurement, not the point's sum, and an exemplar can sit on an ordinary point as well as on the spike: the point at 09:14:15 has one, and the spike point at 09:14:45, with ten charges and a 7.35s slowest one, has none. The trace ID and span id in series labels do not link anything, and the scheduled job has no exemplar either."
+          "explain": "Three points carry exemplars. Each exemplar is one measurement recorded in that window, with its value, the <code>trace_id</code> and the <code>span_id</code> of the span it was recorded in, and a point can carry more than one: two of the spike points carry two and three. The value is one measurement, not the point's sum, and an exemplar can sit on an ordinary point as well as on the spike: the point at 09:14:15 has one, and the spike point at 09:14:45, with ten charges and a 7.35s slowest one, has none. The trace ID and span id in series [[labels]] do not link anything, and the scheduled job has no exemplar either."
         }
       },
       {

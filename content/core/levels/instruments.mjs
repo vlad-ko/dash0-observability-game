@@ -8,7 +8,7 @@ export default {
     "finish": "You can pick the instrument by what the number means, and you know a count belongs in a Counter, not a Gauge.",
     "steps": [
       {
-        "intro": "Metrics start in code, with an instrument you pick. Each one tells the SDK what a number means: whether it only goes up, whether you add it up across pods, whether it is a reading, or one of many values. Kettle & Co's dashboards need eight of them.",
+        "intro": "Metrics start in code, with an [[instrument]] you pick. Each one tells the SDK what a number means: whether it only goes up, whether you add it up across pods, whether it is a reading, or one of many values. Kettle & Co's dashboards need eight of them.",
         "question": "Pick a measurement, then say which instrument fits it.",
         "sort": {
           "id": "instr-sort",
@@ -64,7 +64,7 @@ export default {
             {
               "id": "checkout-duration",
               "label": "How long each checkout request took",
-              "why": "Many separate values where the spread matters, such as the slowest 1%. A Histogram keeps that spread.",
+              "why": "Many separate values where the spread matters, such as the slowest 1%. A [[Histogram]] keeps that spread.",
               "whyNot": {
                 "counter": "A counter can only add up. It would give a total of the time, with no way to see the slowest 1%.",
                 "up-down-counter": "An UpDownCounter keeps a running sum. A total of durations says nothing about how the slow ones are spread.",
@@ -104,7 +104,7 @@ export default {
             {
               "id": "response-bytes",
               "label": "Size of each response, in bytes",
-              "why": "Many separate values where the spread matters, such as the largest responses. A Histogram keeps that spread.",
+              "why": "Many separate values where the spread matters, such as the largest responses. A [[Histogram]] keeps that spread.",
               "whyNot": {
                 "counter": "A counter only adds up. A total of bytes would hide how big the largest responses are.",
                 "up-down-counter": "An UpDownCounter keeps a running sum. Adding sizes up would lose the difference between small and large responses.",
@@ -147,12 +147,12 @@ export default {
             {
               "key": "same-data",
               "label": "Nothing: a running total is the same data whichever instrument you pick",
-              "why": "The instrument decides the kind of data point. A Gauge point is a sampled value, while a Counter produces a monotonic Sum with a start time, and backends treat the two differently."
+              "why": "The instrument decides the kind of [[data point]]. A Gauge point is a sampled value, while a Counter produces a [[monotonic]] [[Sum]] with a start time, and backends treat the two differently."
             },
             {
               "key": "sampled-not-sum",
               "label": "The meaning: the backend sees sampled values, and rate math built for counts does not apply",
-              "why": "A gauge point is a sampled value with no aggregation semantic. A monotonic Sum also carries a start time, which lets a backend compute a rate that notices restarts, and a sum can be added across series. Report orders with a Counter and call <code>add(1)</code> per order."
+              "why": "A gauge point is a sampled value with no aggregation semantic. A [[monotonic]] [[Sum]] also carries a start time, which lets a backend compute a rate that notices restarts, and a sum can be added across series. Report orders with a Counter and call <code>add(1)</code> per order."
             },
             {
               "key": "lost-between",
