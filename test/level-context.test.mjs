@@ -403,7 +403,7 @@ test('renderStep draws each term once per screen, wires the body, and never glos
   const glossary = { terms: [{ id: 'span', name: 'Span unit', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' }] };
   const dom = makeDom();
   const calls = [];
-  const termPops = { wire: (root) => calls.push(['wire', root]), closeAll: () => calls.push(['closeAll']) };
+  const termPops = { wire: (root) => calls.push(['wire', root === dom.body]), closeAll: () => calls.push(['closeAll']) };
   const ctx = createLevelContext({
     level: LEVEL_A, ovBody: dom.body, ovActions: dom.actions, now: () => NOW, shuffle: (a) => a, reduceMotion: true,
     onFinish: () => {}, signal: new AbortController().signal, reportError: () => {}, glossary, termPops,
@@ -416,7 +416,7 @@ test('renderStep draws each term once per screen, wires the body, and never glos
   ctx.renderStep(`<p>${g('span')}</p>`);
   assert.equal(dom.body.querySelectorAll('[data-term]').length, 1, 'a new screen is a new scope');
   assert.equal(dom.body.querySelector('[role="tooltip"]').id, 'lvterm-2-1');
-  assert.deepEqual(calls, [['closeAll'], ['wire', dom.body], ['closeAll'], ['wire', dom.body]]);
+  assert.deepEqual(calls, [['closeAll'], ['wire', true], ['closeAll'], ['wire', true]]);
 });
 
 test('renderStep without a glossary or term popovers reads a marked term as plain words', () => {

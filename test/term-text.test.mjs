@@ -14,7 +14,7 @@ const GLOSSARY = {
 const gloss = (shown, ref = '') => `<span data-gloss="${ref}">${shown}</span>`;
 
 test('glossHtml: the first resolved use of each term on a screen is a term, the rest and the unknown are plain words', () => {
-  const html = `<p>A ${gloss('span', 'span')} and ${gloss('Span')} and ${gloss('x', 'nope')} and ${gloss('traces', 'trace')}</p>`;
+  const html = `<p>A ${gloss('span', 'span')} and ${gloss('Span unit')} and ${gloss('x', 'nope')} and ${gloss('traces', 'trace')}</p>`;
   const dom = makeDom();
   dom.body.innerHTML = glossHtml(html, { glossary: GLOSSARY, prefix: 'lvterm-1' });
   const terms = [...dom.body.querySelectorAll('[data-term]')];
@@ -27,7 +27,7 @@ test('glossHtml: the first resolved use of each term on a screen is a term, the 
   assert.equal(terms[1].querySelector('button').textContent, 'traces');
   assert.equal(terms[1].querySelector('[role="tooltip"]').id, 'lvterm-1-2');
   for (const pop of dom.body.querySelectorAll('[role="tooltip"]')) pop.remove();
-  assert.equal(dom.body.querySelector('p').textContent, 'A span and Span and x and traces');
+  assert.equal(dom.body.querySelector('p').textContent, 'A span and Span unit and x and traces');
   assert.equal(dom.body.innerHTML.includes('data-gloss'), false);
 });
 
