@@ -95,7 +95,7 @@ export default {
         }
       },
       {
-        "intro": "The same [[gateway]] computes request and error rates from spans with one <code>span_metrics</code> connector, and a metrics pipeline sends them to the dashboards. Since the <code>tail_sampling</code> processor went in, the dashboards are wrong: the request rate fell to a tenth and the error ratio jumped. It also counts spans with a <code>count</code> connector. Here are the gateway's pipelines, one field of one pipeline per line, each pipeline named for where it sends; the definitions of the components are not shown.",
+        "intro": "The same gateway computes request and error rates from spans with one <code>span_metrics</code> connector, and a metrics pipeline sends them to the dashboards. Since the <code>tail_sampling</code> processor went in, the dashboards are wrong: the request rate fell to a tenth and the error ratio jumped. It also counts spans with a <code>count</code> connector. Here are the gateway's pipelines, one field of one pipeline per line, each pipeline named for where it sends; the definitions of the components are not shown.",
         "question": "Spot the two lines that together make the span_metrics connector count the wrong spans.",
         "spot": {
           "id": "ts-spot",

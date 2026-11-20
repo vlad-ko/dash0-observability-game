@@ -8,7 +8,7 @@ export default {
     "finish": "You know head sampling decides once, at the root, and that every other service must follow the parent's sampled flag (ParentBased): a child that decides on its own leaves traces with holes. It cannot keep the errors, because it never sees the whole trace.",
     "steps": [
       {
-        "intro": "<p>Kettle &amp; Co's checkout makes {{traces}} traces a second through three services: <code>storefront</code> is the root, then <code>checkout</code> and <code>payments</code>. A trace is {{whole}} spans ({{s-storefront}} in storefront, {{s-checkout}} in checkout, {{s-payments}} in payments), so keeping everything is {{traces}} × {{whole}} = {{full}} spans a second, and the [[backend]] takes {{cap}} spans a second.</p><p>Head sampling decides when the [[root span]] starts, from the [[trace ID]] and a ratio, and passes the decision to the children in the sampled flag of the <code>traceparent</code> header.</p><p>Storefront is already set to <code>{{sampler}}=parentbased_traceidratio</code> and <code>{{arg}}=0.1</code>: {{ten}} traces a second, {{storefront}} spans, which leaves {{kids-cap}} of the {{cap}} for checkout and payments.</p><p>The numbers on this page are worked out from these figures. The game does not run a real sampler.</p>",
+        "intro": "<p>Kettle &amp; Co's checkout makes {{traces}} traces a second through three services: <code>storefront</code> is the root, then <code>checkout</code> and <code>payments</code>. A trace is {{whole}} spans ({{s-storefront}} in storefront, {{s-checkout}} in checkout, {{s-payments}} in payments), so keeping everything is {{traces}} × {{whole}} = {{full}} spans a second, and the backend takes {{cap}} spans a second.</p><p>Head sampling decides when the [[root span]] starts, from the [[trace ID]] and a ratio, and passes the decision to the children in the sampled flag of the <code>traceparent</code> header.</p><p>Storefront is already set to <code>{{sampler}}=parentbased_traceidratio</code> and <code>{{arg}}=0.1</code>: {{ten}} traces a second, {{storefront}} spans, which leaves {{kids-cap}} of the {{cap}} for checkout and payments.</p><p>The numbers on this page are worked out from these figures. The game does not run a real sampler.</p>",
         "question": "Pick the sampler setting of checkout and of payments: keep what the team needs and stay within the budget.",
         "tradeoff": {
           "id": "hs-plan",
@@ -78,7 +78,7 @@ export default {
         }
       },
       {
-        "intro": "A teammate sets <code>OTEL_TRACES_SAMPLER=always_on</code> on checkout and payments \"so we never lose a span\", and leaves storefront on <code>parentbased_traceidratio</code>. Now checkout and payments spans turn up in the [[backend]] with no storefront span above them.",
+        "intro": "A teammate sets <code>OTEL_TRACES_SAMPLER=always_on</code> on checkout and payments \"so we never lose a span\", and leaves storefront on <code>parentbased_traceidratio</code>. Now checkout and payments spans turn up in the backend with no storefront span above them.",
         "question": "Why do the traces have holes?",
         "choice": {
           "id": "hs-why",

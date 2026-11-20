@@ -8,7 +8,7 @@ export default {
     "finish": "You know what each pricing model counts: hosts, bytes or signals. Volume, cardinality and retention drive the bill, sampling is the lever on volume, and the model decides whether size or count is the thing to cut.",
     "steps": [
       {
-        "intro": "Kettle & Co is choosing where to send its [[telemetry]], and the price lists differ in what they count. Whatever the meter counts is what you optimise, so the first thing to find out is what that is. Three drivers sit behind every model: how much you send (volume), how many [[series|time-series]] your metrics make (cardinality) and how long you keep it (retention). [[Sampling]] is the lever on volume. The first vendor charges a flat amount for each <b>host</b> that sends telemetry.",
+        "intro": "Kettle & Co is choosing where to send its telemetry, and the price lists differ in what they count. Whatever the meter counts is what you optimise, so the first thing to find out is what that is. Three drivers sit behind every model: how much you send (volume), how many [[series|time-series]] your metrics make (cardinality) and how long you keep it (retention). [[Sampling]] is the lever on volume. The first vendor charges a flat amount for each <b>host</b> that sends telemetry.",
         "question": "Under per-host pricing, which change lowers the bill?",
         "choice": {
           "id": "wcm-host",
