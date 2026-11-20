@@ -41,6 +41,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Deployment**: A Kubernetes object that keeps a set of pods running. (Act 1)
 - **Cluster**: The group of machines that Kubernetes manages together. (Act 1)
 - **Instrumentation**: Code that emits telemetry. Auto (zero-code) instrumentation is injected (agents, operator); manual instrumentation is written by you. (Act 2)
+- **Instrumentation agent**: A library attached to the application at start-up that adds instrumentation without code changes, such as the OpenTelemetry Java agent. Not a Collector agent. (Act 2)
 - **Instrumentation scope**: The library or module that produced a piece of telemetry. (Act 4)
 - **OTLP**: The OpenTelemetry Protocol; gRPC (port 4317) or HTTP/protobuf (port 4318). (Act 5)
 - **gRPC**: A binary remote-call protocol over HTTP/2. One of the transports OTLP supports, on port 4317. (Act 5)
@@ -86,7 +87,11 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 ## Metrics
 
 - **Instrument**: Counter, UpDownCounter, Gauge, Histogram (sync) and their observable (async) forms. (Act 3)
-- **Data point**: One measurement of a metric at a time with its attributes. (Act 3)
+- **Data point**: One reported value of a metric for one attribute set over one time window; it sums up the measurements recorded in that window. (Act 3)
+- **Metric**: A named stream of data points that describes how something changes over time, such as request count or memory in use. (Act 3)
+- **Bucket**: A range of values in a histogram, with a count of the observations that fell inside it; upper bounds are inclusive and lower bounds exclusive. (Act 3)
+- **Sum**: The OpenTelemetry metric type that adds up measurements. It is either monotonic or not, and either cumulative or delta. (Act 3)
+- **System resource**: A physical part of a server that does work: CPU, memory, network interfaces or storage. Not the OpenTelemetry Resource. (Act 3)
 - **Time series**: The stream of points for one metric and attribute combination. (Act 3)
 - **Temporality**: Cumulative (total since start) or delta (change since last report). (Act 3)
 - **Histogram**: Counts of values in buckets; exponential histograms pick buckets automatically. (Act 3)
@@ -110,9 +115,9 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **le**: The label that holds the upper bound of a histogram bucket. (Act 3)
 - **Scrape target**: The endpoint Prometheus reads metrics from. (Act 3)
 - **RED**: Rate, Errors, Duration, for request-driven services. (Act 3)
-- **USE**: Utilisation, Saturation, Errors, for resources. (Act 3)
-- **Utilisation**: How busy a resource was: the average time it spent servicing work. (Act 3)
-- **Saturation**: How much work a resource could not serve, so that it had to wait. (Act 3)
+- **USE**: Utilisation, Saturation, Errors, checked for every system resource, such as CPU, memory, network and disk. (Act 3)
+- **Utilisation**: How busy a system resource was: the average time it spent servicing work. (Act 3)
+- **Saturation**: How much work a system resource could not serve, so that it had to wait. (Act 3)
 - **Span metrics**: RED metrics derived from spans (the span_metrics connector; spanmetrics is its deprecated alias). (Act 3)
 
 ## Logs
@@ -135,7 +140,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **service section**: The top-level key in a Collector config that lists the pipelines. (Act 5)
 - **Connector**: A component that is an exporter in one pipeline and a receiver in another (for example span_metrics, whose deprecated alias is spanmetrics). (Act 5)
 - **Extension**: A non-pipeline capability (health check, auth, storage). (Act 5)
-- **Agent**: A Collector run on each node. (Act 5)
+- **Agent**: A Collector run alongside the application or on the same host, for example as a sidecar or DaemonSet. (Act 5)
 - **Gateway**: A central tier of Collectors that receives telemetry from the rest. (Act 5)
 - **OTTL**: The OpenTelemetry Transformation Language, used in transform and filter processors. (Act 5)
 - **Distribution**: A packaged Collector build (core, contrib, vendor, or custom via the OpenTelemetry Collector Builder, OCB). (Act 5)

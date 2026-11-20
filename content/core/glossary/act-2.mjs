@@ -4,6 +4,7 @@
 export default {
   "terms": [
     {"id": "instrumentation", "name": "Instrumentation", "variants": ["instrumentations", "auto-instrumentation", "zero-code instrumentation"], "definition": "Code that emits telemetry. Auto (zero-code) instrumentation is injected (agents, operator); manual instrumentation is written by you.", "topic": "OpenTelemetry"},
+    {"id": "instrumentation-agent", "name": "Instrumentation agent", "variants": ["Java agent"], "definition": "A library attached to the application at start-up that adds instrumentation without code changes, such as the OpenTelemetry Java agent. Not a Collector agent.", "topic": "OpenTelemetry"},
     {"id": "trace", "name": "Trace", "variants": ["traces"], "definition": "All spans sharing one trace ID; one request's path through the system.", "topic": "Traces"},
     {"id": "span", "name": "Span", "variants": ["spans"], "definition": "One timed operation with a name, kind, start and end, attributes, status, events and links.", "topic": "Traces"},
     {"id": "trace-id", "name": "Trace ID", "variants": ["TraceId"], "definition": "The ID that every span in one request shares.", "topic": "Traces"},
