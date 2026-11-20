@@ -8,7 +8,7 @@ export default {
     "finish": "You can tell a rule that pages for the right reason: alert on the rate of a counter, not its total, on symptoms users feel, and give the condition a for duration so one bad minute does not page.",
     "steps": [
       {
-        "intro": "Kettle &amp; Co's on-call engineer was paged all night, mostly for nothing. These are the team's Prometheus alerting rules, one per line: the alert's name, the PromQL expression that makes it fire, and <code>for</code>, how long the expression must stay true before it pages.",
+        "intro": "Kettle &amp; Co's on-call engineer was paged all night, mostly for nothing. These are the team's Prometheus [[alerting rules]], one per line: the alert's name, the [[PromQL]] expression that makes it fire, and <code>for</code>, how long the expression must stay true before it pages.",
         "question": "Spot the rules that page badly: for something no user feels, without end, or on and off.",
         "spot": {
           "id": "ga-spot",
