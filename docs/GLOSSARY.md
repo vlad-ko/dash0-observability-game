@@ -128,6 +128,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **ObservedTimestamp**: When the system observed the log record. (Act 4)
 - **EventName**: A name that says what kind of event a log record describes. (Act 4)
 - **Structured logging**: Logs as key/value data instead of free text. (Act 4)
+- **Logs API**: The OpenTelemetry API for producing log records. Application code can call it directly, or reach it through logging libraries and bridges. (Act 4)
 - **Logs Bridge API**: The API logging-library appenders use to emit OpenTelemetry logs. (Act 4)
 - **Logging bridge**: The piece that connects an existing logging framework to OpenTelemetry. (Act 4)
 - **Correlation**: Linking logs, metrics and traces through shared IDs and resources. (Act 4)

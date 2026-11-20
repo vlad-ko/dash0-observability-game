@@ -22,7 +22,7 @@ const fileHas = (files, re) => validateGlossaryFiles(files, { actIds }).some((p)
 test('the shipped glossary files validate against the live registry acts', () => {
   assert.deepEqual(validateGlossaryFiles(GLOSSARY_FILES, { actIds }), []);
   assert.deepEqual(problems(GLOSSARY), []);
-  assert.equal(GLOSSARY.terms.length, 174);
+  assert.equal(GLOSSARY.terms.length, 175);
 });
 
 test('every glossary file is strict JSON with no duplicate keys, named general or after an act, and equals what the import gives', () => {
