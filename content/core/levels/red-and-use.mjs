@@ -21,12 +21,12 @@ export default {
             {
               "key": "swapped",
               "label": "USE for each service: Utilisation, Saturation, Errors. RED for each resource, such as a CPU or a disk: Rate, Errors, Duration",
-              "why": "Swapped. A CPU or a disk has no request to count the rate or duration of, and a service is not \"busy\" the way a resource is. [[RED]] reads requests, [[USE]] reads resources."
+              "why": "Swapped. A CPU or a disk has no request to count the rate or duration of, and a service is not \"busy\" the way a resource is. RED reads requests, USE reads resources."
             },
             {
               "key": "red-everything",
               "label": "RED for everything: Rate, Errors, Duration fit a service, a CPU or a disk alike, as every component takes requests",
-              "why": "[[RED]] came out of microservices, because the [[USE]] method does not fit a service. The reverse holds too: a CPU, disk or interface is checked by how busy it is and how much work queues for it, which RED does not ask."
+              "why": "RED came out of microservices, because the USE method does not fit a service. The reverse holds too: a CPU, disk or interface is checked by how busy it is and how much work queues for it, which RED does not ask."
             }
           ]
         }

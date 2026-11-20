@@ -41,7 +41,7 @@ export default {
         }
       },
       {
-        "intro": "The same histogram has one <code>_bucket</code> series per boundary, each with an <code>le</code> (less or equal) [[label]], and each counts the observations up to that boundary. <code>histogram_quantile(0.99, ...)</code> estimates the [[99th percentile|quantile]] from the rates of those series. Take the rate first, then sum by <code>le</code>, because percentiles cannot be averaged but buckets can be added.",
+        "intro": "The same histogram has one <code>_bucket</code> series per boundary, each with an <code>le</code> (less or equal) [[label]], and each counts the observations up to that boundary. <code>histogram_quantile(0.99, ...)</code> estimates the 99th percentile from the rates of those series. Take the rate first, then sum by <code>le</code>, because percentiles cannot be averaged but buckets can be added.",
         "question": "Write a query for the p99 duration of /pay over the last 5 minutes.",
         "query": {
           "id": "hist-p99",
