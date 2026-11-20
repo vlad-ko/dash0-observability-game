@@ -111,7 +111,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "[[OpenTelemetry]] is an open source observability framework and toolkit for generating, collecting and exporting [[telemetry]] data such as traces, metrics and logs. Storing and visualizing that data is intentionally left to other tools."
+          "text": "[[OpenTelemetry]] is an open source observability framework and toolkit for generating, collecting and exporting [[telemetry]] data such as traces, metrics and logs. Storing and visualising that data is intentionally left to other tools."
         },
         {
           "type": "paragraph",

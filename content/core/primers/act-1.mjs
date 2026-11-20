@@ -35,7 +35,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In your [[observability backend]], you can use resource information to investigate behavior. If your data shows latency, you can narrow it down to a specific container, pod or Kubernetes deployment."
+          "text": "In your [[observability backend]], you can use resource information to investigate behaviour. If your data shows latency, you can narrow it down to a specific container, pod or Kubernetes deployment."
         },
         {
           "type": "paragraph",

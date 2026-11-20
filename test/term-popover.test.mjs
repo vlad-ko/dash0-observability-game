@@ -66,6 +66,16 @@ test('a click opens it when nothing else did, and it stays after the pointer lea
   assert.equal(isOpen(a), false);
 });
 
+test('moving focus away unpins a card a click opened', () => {
+  const { a, fire, isOpen } = setup();
+  fire(a.button, 'focus');
+  fire(a.button, 'click');
+  fire(a.wrap, 'mouseleave');
+  assert.equal(isOpen(a), true, 'control: pinned, so it outlives the pointer and still has focus');
+  fire(a.button, 'blur', { relatedTarget: null });
+  assert.equal(isOpen(a), false);
+});
+
 test('a click while hovering keeps it open past the pointer leaving, instead of toggling it shut', () => {
   const { a, fire, isOpen } = setup();
   fire(a.wrap, 'mouseenter');
@@ -75,13 +85,30 @@ test('a click while hovering keeps it open past the pointer leaving, instead of 
   assert.equal(isOpen(a), true);
 });
 
-test('Escape closes an open definition and returns focus to the term', () => {
+test('Escape closes a definition opened by focus and returns focus to the term', () => {
   const { a, fire, isOpen, focused, outside } = setup();
-  fire(a.wrap, 'mouseenter');
+  fire(a.button, 'focus');
   const e = fire(outside, 'keydown', { key: 'Escape' });
   assert.equal(isOpen(a), false);
   assert.equal(e.defaultPrevented, true);
   assert.ok(focused.at(-1) === a.button, 'focus went to the term button');
+});
+
+test('Escape closes a definition a click pinned and returns focus to the term', () => {
+  const { a, fire, isOpen, focused, outside } = setup();
+  fire(a.button, 'click');
+  fire(outside, 'keydown', { key: 'Escape' });
+  assert.equal(isOpen(a), false);
+  assert.ok(focused.at(-1) === a.button);
+});
+
+test('Escape closes a definition only hover opened and leaves focus where it was', () => {
+  const { a, fire, isOpen, focused, outside } = setup();
+  fire(a.wrap, 'mouseenter');
+  const e = fire(outside, 'keydown', { key: 'Escape' });
+  assert.equal(isOpen(a), false);
+  assert.equal(e.defaultPrevented, true, 'still swallowed, so the primer stays open');
+  assert.equal(focused.length, 0, 'the term did not take focus');
 });
 
 test('focus going back to the term after Escape does not open it again', () => {
@@ -120,6 +147,26 @@ test('a click outside closes it; a click inside the definition does not', () => 
   fire(a.pop, 'click');
   assert.equal(isOpen(a), true);
   fire(outside, 'click');
+  assert.equal(isOpen(a), false);
+});
+
+test('a pointerdown outside closes it (iOS sends no click for a tap on plain text); inside the card or on the term it does not', () => {
+  const { a, fire, isOpen, outside } = setup();
+  fire(a.button, 'click');
+  fire(a.pop, 'pointerdown');
+  fire(a.button, 'pointerdown');
+  assert.equal(isOpen(a), true);
+  fire(outside, 'pointerdown');
+  assert.equal(isOpen(a), false);
+});
+
+test('a pointerdown then click on the term toggles it once, as before', () => {
+  const { a, fire, isOpen } = setup();
+  fire(a.button, 'pointerdown');
+  fire(a.button, 'click');
+  assert.equal(isOpen(a), true);
+  fire(a.button, 'pointerdown');
+  fire(a.button, 'click');
   assert.equal(isOpen(a), false);
 });
 
@@ -195,6 +242,7 @@ test('placement: a definition that fits is not moved, and an earlier shift is cl
   a.pop.getBoundingClientRect = () => rect(250, 120, 60, 60);
   fire(a.wrap, 'mouseenter');
   assert.equal(a.pop.style.getPropertyValue('left'), '');
+  assert.equal(a.pop.hasAttribute('style'), false, 'no empty style attribute is left behind');
 });
 
 test('placement: with no room below inside the body it opens above', () => {

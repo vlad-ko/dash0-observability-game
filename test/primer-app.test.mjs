@@ -111,6 +111,30 @@ test('terms: closing the primer closes an open definition, so a later Escape rea
   assert.equal(fire(dom, dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
 });
 
+test('terms: going from the pop-up into the zone closes a pinned definition, so the next Escape is not swallowed', () => {
+  const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
+  game.openPrimer('a0');
+  const popup = dom.document.querySelector('#primer-body [data-term]');
+  fire(dom, popup.querySelector('button'), 'click');
+  const pop = popup.querySelector('[role="tooltip"]');
+  assert.equal(pop.hasAttribute('hidden'), false, 'control: the click pinned it');
+  game.primerProceed();
+  assert.equal(pop.hasAttribute('hidden'), true);
+  assert.equal(fire(dom, dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
+});
+
+test('terms: leaving the pop-up forward to a level closes a pinned definition, so the next Escape is not swallowed', () => {
+  const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
+  game.openPrimer('a0', { then: 'x' });
+  const popup = dom.document.querySelector('#primer-body [data-term]');
+  fire(dom, popup.querySelector('button'), 'click');
+  const pop = popup.querySelector('[role="tooltip"]');
+  assert.equal(pop.hasAttribute('hidden'), false, 'control: the click pinned it');
+  game.primerFamiliar();
+  assert.equal(pop.hasAttribute('hidden'), true);
+  assert.equal(fire(dom, dom.document.body, 'keydown', { key: 'Escape' }).defaultPrevented, false);
+});
+
 test('terms: moving to another chapter draws it afresh and forgets the open definition', () => {
   const { game, dom } = setup({ primers: [TERMED], glossary: GLOSSARY });
   game.openPrimer('a0');

@@ -343,7 +343,7 @@ const outputs = () => CASES.flatMap(([, t, h, plain]) => [t?.('x'), h?.('<i>x</i
 test('term: a button described by a hidden tooltip, in one wrapper; a bad id or empty text throws', () => {
   assert.equal(term({ id: 't-1', text: 'span', name: 'Span', definition: 'One unit of work.' }),
     '<span class="ui-term" data-term><button type="button" class="ui-term-btn" aria-describedby="t-1">span</button>' +
-    '<span class="ui-term-pop" id="t-1" role="tooltip" hidden><b class="ui-term-name">Span</b> One unit of work.</span></span>');
+    '<span class="ui-term-pop" id="t-1" role="tooltip" hidden><b class="ui-term-name">Span</b>: One unit of work.</span></span>');
   assert.throws(() => term({ id: '1 bad', text: 'a', name: 'b', definition: 'c' }), /term/);
   assert.throws(() => term({ id: 'ok', text: ' ', name: 'b', definition: 'c' }), /term/);
   assert.throws(() => term({ id: 'ok', text: 'a', name: 'b', definition: '' }), /term/);

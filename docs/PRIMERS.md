@@ -46,12 +46,13 @@ opens a small card with the term's name and definition. Escape or a tap elsewher
 
 Write the marker around the words as they appear in the sentence:
 
-- `[[shown text|term-id]]` marks the term with that glossary id. The reader sees only the shown text, so it can be a plural or any
-  wording: `[[spans|span]]`.
+- `[[shown text|term-id]]` marks the term with that glossary id: the `id` of a term in `content/core/glossary/`, for example
+  `[[status|span-status]]`. An id the glossary does not have fails `npm test`. The reader sees only the shown text, so it can be a
+  plural or any wording: `[[spans|span]]`.
 - `[[shown text]]` is the short form. It finds the term by name or variant, ignoring case: `[[Signals]]` finds the term whose name
   or variants include "signals". Use the long form when the sentence's words are not a name or variant.
 
-Where: in a paragraph, a list item or a callout. Not in a title, a link label or a source, and a code block is never read for
+Where: in a paragraph, a list item or a callout. Not in a title, a link label, a source or the placeholder note, and a code block is never read for
 markers (so `[[ -f file ]]` in a shell sample is fine).
 
 What gets underlined: the first marked use of each term in a chapter, and separately the first in the overview. Later markers of the
@@ -63,7 +64,7 @@ The checks are in `npm test`, each naming the path of the problem:
 
 - the id names no term in the glossary, or a short form matches no name or variant;
 - a marker is not closed, a closing `]]` has no opening, a marker is inside another, or the shown text is empty or starts or ends with a space;
-- a marker is in a title, a link label or a source.
+- a marker is in a title, a link label, a source or the placeholder note.
 
 Length limits count what the reader sees, not the marker: `[[signals|signal]]` counts as the 7 characters of "signals", so marking
 a term never pushes a paragraph, list item or callout over its limit.
