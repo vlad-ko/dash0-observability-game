@@ -419,3 +419,88 @@ test('bindRunLevel: every run(ctx) of one level gets its own copy of the words',
   assert.equal(seen[1].sortIntro, 'Sort 2 things.');
   assert.equal(seen[1].sort.items.length, 2);
 });
+
+// ---- glossary term markers (#442, docs/CONTENT.md "Marking glossary terms in a level") ----
+
+const withStep = (patch) => {
+  const t = text();
+  Object.assign(t.play.steps[0], patch);
+  return t;
+};
+const gloss = (shown, ref = '') => `<span data-gloss="${ref}">${shown}</span>`;
+const AT_INTRO = 'play.steps[0].intro';
+
+test('terms: a marker in an intro becomes a gloss span, and the fill-ins around it still fill', () => {
+  const v = only(bind(withStep({ intro: 'One <b>[[series|time-series]]</b> per {{n}} [[metric]]' })));
+  assert.equal(v.play.steps[0].intro, `One <b>${gloss('series', 'time-series')}</b> per 7 ${gloss('metric')}`);
+  assert.equal(v.play.steps[0].question, 'Q?');
+});
+
+test('terms: a marker in a show is read like one in an intro', () => {
+  const t = text();
+  t.play.steps[1].show = 'See [[span]].';
+  const v = only(bind(t));
+  assert.equal(v.play.steps[1].show, `See ${gloss('span')}.`);
+});
+
+test('terms: markers inside code and pre are literal text, not terms', () => {
+  const v = only(bind(withStep({ intro: 'Run <code>[[ -f x ]]</code> then [[span]]' })));
+  assert.equal(v.play.steps[0].intro, `Run <code>[[ -f x ]]</code> then ${gloss('span')}`);
+  const p = only(bind(withStep({ intro: '<pre>if [[ -f a ]]; then x; fi</pre> and [[span]]' })));
+  assert.equal(p.play.steps[0].intro, `<pre>if [[ -f a ]]; then x; fi</pre> and ${gloss('span')}`);
+});
+
+test('terms: a marker outside intro and show is refused with its path; code and spot text are literal', () => {
+  const refuse = 'must not contain a glossary term marker';
+  const cases = [
+    ['play.steps[0].choice.choices[0].label', (t) => { t.play.steps[0].choice.choices[0].label = 'Bee [[span]]'; }],
+    ['play.steps[0].question', (t) => { t.play.steps[0].question = 'Which [[span]]?'; }],
+    ['play.steps[0].choice.choices[0].why', (t) => { t.play.steps[0].choice.choices[0].why = 'A [[span]].'; }],
+    ['play.steps[1].spot.whyNot.l1', (t) => { t.play.steps[1].spot.whyNot.l1 = 'A [[span]].'; }],
+    ['play.finish', (t) => { t.play.finish = 'You did the [[span]] well.'; }],
+    ['name', (t) => { t.name = 'The [[span]]'; }],
+  ];
+  for (const [path, edit] of cases) {
+    const t = text();
+    edit(t);
+    const { errors } = bind(t);
+    assert.ok(errors.some((e) => e.startsWith(path) && e.includes(refuse)), `${path}: ${JSON.stringify(errors)}`);
+  }
+  const t = text();
+  t.play.steps[1].spot.lines[0].text = 'log [[1,2]]';
+  assert.deepEqual(bind(t).errors, []);
+  const c = text();
+  c.play.steps[1].spot.lines[0].code = '[[ -f a ]]';
+  assert.deepEqual(bind(c).errors.filter((e) => e.includes('marker')), []);
+});
+
+test('terms: a marker under run is refused until run reads them', () => {
+  const t = runText();
+  t.run.sortIntro = 'Sort {{n}} [[span]].';
+  const { errors } = bindRun(t);
+  assert.ok(errors.some((e) => e.startsWith('run.sortIntro') && e.includes('not read under run yet')), JSON.stringify(errors));
+});
+
+test('terms: broken markers are one error each at the field', () => {
+  for (const intro of ['[[a', 'a]]', '[[ a|span]]', '[[<b>x</b>|span]]', '[[a &amp; b|span]]', '[[{{n}}|span]]', '[[a|Not An Id]]', '{{[[n]]}}']) {
+    const { errors } = bind(withStep({ intro }));
+    assert.equal(errors.length, 1, `${intro}: ${JSON.stringify(errors)}`);
+    assert.ok(errors[0].startsWith(AT_INTRO), errors[0]);
+  }
+});
+
+test('terms: a fill-in that wraps a marker is refused', () => {
+  const { errors } = bind(withStep({ intro: '{{[[n]]}}' }));
+  assert.deepEqual(errors, [`${AT_INTRO}: a fill-in must not wrap a term marker`]);
+});
+
+test('terms: a marker inside a tag is refused by the tag scan', () => {
+  const { errors } = bind(withStep({ intro: '<th scope="[[col]]">a</th>' }));
+  assert.deepEqual(errors, [`${AT_INTRO}: a term marker must not be inside a tag`]);
+});
+
+test('terms: the HTML rules judge the shown text, not the span', () => {
+  const bad = bind(withStep({ intro: '[[x|span]] <a>y</a>' }));
+  assert.ok(bad.errors.some((e) => e.includes('must not contain the tag <a>')), JSON.stringify(bad.errors));
+  assert.deepEqual(bind(withStep({ intro: '<b>[[series|time-series]]</b>' })).errors, []);
+});

@@ -11,7 +11,7 @@ export default {
       {
         "intro": "On a call, a customer asks: \"We only want to keep the traces that have an error. Can a filter in our Collector do that?\" The presenter answers: \"Yes. Add a filter processor that drops every span whose status is not Error. What reaches the backend is exactly your traces with errors.\"",
         "question": "Does the presenter's answer hold?",
-        "show": "<p>Here is one failed checkout trace as it reaches the Collector, before the filter:</p><table><caption>One failed checkout trace, {{spans}} spans</caption><thead><tr><th scope=\"col\">Span</th><th scope=\"col\">Service</th><th scope=\"col\">Status</th></tr></thead><tbody>{{rows}}</tbody></table>",
+        "show": "<p>Here is one failed checkout [[trace]] as it reaches the Collector, before the filter:</p><table><caption>One failed checkout trace, {{spans}} spans</caption><thead><tr><th scope=\"col\">Span</th><th scope=\"col\">Service</th><th scope=\"col\">Status</th></tr></thead><tbody>{{rows}}</tbody></table>",
         "choice": {
           "id": "fos-verdict",
           "choices": [
