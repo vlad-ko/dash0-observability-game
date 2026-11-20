@@ -9,7 +9,7 @@ export default {
     "finish": "You know the order in a pipeline is the processing order, per pipeline: memory_limiter first, drops and context readers before batch, batch late.",
     "steps": [
       {
-        "intro": "The Collector now has a pipeline for every team. The processors in a pipeline run in the order they are listed, and every pipeline has its own list. The infra team pasted the same processors into eight of them, and the Collector still runs out of memory on some.",
+        "intro": "The [[Collector]] now has a [[pipeline]] for every team. The [[processors]] in a pipeline run in the order they are listed, and every pipeline has its own list. The infra team pasted the same processors into eight of them, and the Collector still runs out of memory on some.",
         "question": "Spot the pipelines whose processors are in the wrong order.",
         "spot": {
           "id": "order-spot",

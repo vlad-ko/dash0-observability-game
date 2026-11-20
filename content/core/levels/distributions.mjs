@@ -9,7 +9,7 @@ export default {
     "finish": "You know a Collector can only run what is compiled into it: check the manifest, and when no distribution has your component, build your own with OCB.",
     "steps": [
       {
-        "intro": "The project publishes pre-built Collector <b>distributions</b>: core, contrib, k8s, otlp and one for eBPF profiling. A distribution is a fixed set of components compiled into one binary, listed in its <code>manifest.yaml</code>. The platform team copied a config that uses <code>k8sattributes</code> from a cluster running contrib and deployed it on a laptop with the core distribution.",
+        "intro": "The project publishes pre-built [[Collector]] <b>distributions</b>: core, contrib, k8s, otlp and one for eBPF profiling. A distribution is a fixed set of components compiled into one binary, listed in its <code>manifest.yaml</code>. The platform team copied a config that uses <code>k8sattributes</code> from a [[cluster]] running contrib and deployed it on a laptop with the core distribution.",
         "question": "What happens?",
         "choice": {
           "id": "dist-unknown",
@@ -33,7 +33,7 @@ export default {
         }
       },
       {
-        "intro": "Not every component is in every distribution. The Distributions row on a component's page, and the manifests, say where it ships. Sort these into the pre-built distributions that ship them. (The core list has grown over time, so the manifest is the thing to read, not a copy.)",
+        "intro": "Not every component is in every [[distribution]]. The Distributions row on a component's page, and the manifests, say where it ships. Sort these into the pre-built distributions that ship them. (The core list has grown over time, so the manifest is the thing to read, not a copy.)",
         "question": "Which distributions ship each component?",
         "sort": {
           "id": "dist-sort",
@@ -150,7 +150,7 @@ export default {
         }
       },
       {
-        "intro": "Your team also wrote <code>acme_scrubber</code>, a processor that masks card numbers, and wants it in the Collector.",
+        "intro": "Your team also wrote <code>acme_scrubber</code>, a [[processor]] that masks card numbers, and wants it in the Collector.",
         "question": "How do you get a Collector that contains it?",
         "choice": {
           "id": "dist-build",

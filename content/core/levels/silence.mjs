@@ -8,7 +8,7 @@ export default {
     "finish": "The silence came from Collector pods that kept restarting: a rename left the pipelines pointing at an exporter that was no longer defined, and the error was in the pod log. An id a pipeline lists must be defined, or the Collector will not start; the config can be checked before a rollout with the Collector's validate command.",
     "steps": [
       {
-        "intro": "The eu-west cluster has gone quiet: no traces, metrics or logs since 14:02. Find out why it went quiet.",
+        "intro": "The eu-west [[cluster]] has gone quiet: no traces, metrics or logs since 14:02. Find out why it went quiet.",
         "incident": {
           "id": "silence",
           "alert": {

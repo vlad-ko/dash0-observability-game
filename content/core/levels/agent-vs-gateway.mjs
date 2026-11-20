@@ -8,7 +8,7 @@ export default {
     "finish": "You know an agent runs beside the workload and a gateway is a standalone service, and that tail sampling needs every span of a trace in one Collector: a load_balancing exporter routing by traceID in front of the gateways.",
     "steps": [
       {
-        "intro": "Kettle &amp; Co now runs a Collector on every node, and the platform team wants a central place for heavier work such as sampling. The Collector docs call the two shapes agent and gateway.",
+        "intro": "Kettle &amp; Co now runs a Collector on every node, and the platform team wants a central place for heavier work such as [[sampling]]. The Collector docs call the two shapes agent and gateway.",
         "question": "Which of these is the gateway pattern?",
         "choice": {
           "id": "agw-pattern",
@@ -32,7 +32,7 @@ export default {
         }
       },
       {
-        "intro": "The gateway is a <code>Deployment</code> with three replicas behind a Kubernetes Service that spreads requests across them. The team turns on the <code>tail_sampling</code> processor there to keep slow and failed traces. Then the replicas disagree: one keeps its half of a trace and another drops its half.",
+        "intro": "The gateway is a <code>Deployment</code> with three replicas behind a [[Kubernetes]] Service that spreads requests across them. The team turns on the <code>tail_sampling</code> [[processor]] there to keep slow and failed traces. Then the replicas disagree: one keeps its half of a trace and another drops its half.",
         "question": "Why?",
         "choice": {
           "id": "agw-why",
@@ -56,7 +56,7 @@ export default {
         }
       },
       {
-        "intro": "The platform team's answer is two tiers: the agents route, and the gateway replicas, behind a headless Service, sample. This is an agent's config. Its traces pipeline names a <code>load_balancing</code> exporter that nobody defined, so it will not start.",
+        "intro": "The platform team's answer is two tiers: the [[agents]] route, and the [[gateway]] replicas, behind a headless Service, sample. This is an agent's config. Its traces [[pipeline]] names a <code>load_balancing</code> [[exporter]] that nobody defined, so it will not start.",
         "question": "Fix the agent config so every name its pipelines list is defined, and traces go through the <code>load_balancing</code> exporter. Metrics keep going straight to the gateway.",
         "configure": {
           "id": "agw-config",
@@ -65,7 +65,7 @@ export default {
         }
       },
       {
-        "intro": "The agents send traces through <code>load_balancing</code> now. A teammate asks what the exporter should route by so that the gateway's tail sampling sees whole traces.",
+        "intro": "The agents send traces through <code>load_balancing</code> now. A teammate asks what the exporter should route by so that the gateway's [[tail sampling]] sees whole traces.",
         "question": "Which routing key?",
         "choice": {
           "id": "agw-key",
