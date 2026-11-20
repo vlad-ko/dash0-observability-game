@@ -349,7 +349,7 @@ test('run: a slot inside a tag is an error, even in an allowed attribute', () =>
   const t = runText();
   t.run.sentTo = '<code data-token="{{where}}">x</code>';
   const { errors } = bindRun(t);
-  assert.ok(errors.some((e) => e.startsWith('run.sentTo ') && /slot/.test(e) && /inside a tag/.test(e)), errors.join('\n'));
+  assert.ok(errors.some((e) => e.startsWith('run.sentTo: ') && /slot/.test(e) && /inside a tag/.test(e)), errors.join('\n'));
   const gt = runText();
   gt.run.sentTo = '<code data-token="a>b {{where}}">x</code>';
   assert.ok(bindRun(gt).errors.some((e) => /inside a tag/.test(e)), 'a > inside a quoted value does not end the tag');
@@ -451,7 +451,7 @@ test('terms: markers inside code and pre are literal text, not terms', () => {
 });
 
 test('terms: a marker in a label, question, bucket label, finish or name is refused with its path; code and spot text are literal', () => {
-  const refuse = 'must not contain a glossary term marker (only intro, show and answer feedback mark terms)';
+  const refuse = 'must not contain a glossary term marker (only intro, show, answer feedback and the run entries a level lists in TERMS mark terms)';
   const cases = [
     ['play.steps[0].choice.choices[0].label', (t) => { t.play.steps[0].choice.choices[0].label = 'Bee [[span]]'; }],
     ['play.steps[0].question', (t) => { t.play.steps[0].question = 'Which [[span]]?'; }],
@@ -501,7 +501,7 @@ test('terms: a marker in feedback is judged by the text rules on its shown words
 // Rewritten for phase 4: this test said a marker under run is refused "until run reads them"; run now reads them in the
 // entries the logic lists, so the refusal moves to the entries it does not list (the tests below).
 const RUN_OPTS = (terms) => ({ vars: { n: 2 }, slots: ['where'], terms });
-const NOT_LISTED = 'term markers are read under run only in the entries the logic lists in terms';
+const NOT_LISTED = 'term markers are read under run only in the entries the level lists in TERMS';
 
 test('terms: a listed run entry turns a marker into a gloss span, in the long and the short form', () => {
   const t = runText();
@@ -554,7 +554,24 @@ test('terms: a listed run entry is judged on its shown words and a broken marker
   assert.ok(errors.some((e) => e.startsWith('run.sortIntro') && e.includes('em dash')), JSON.stringify(errors));
   const u = runText();
   u.run.sortIntro = 'A [[<b>x</b>|span]].';
-  assert.ok(bindRun(u, runSkeleton(), RUN_OPTS(['sortIntro'])).errors.some((e) => e.startsWith('run.sortIntro:')));
+  const broken = bindRun(u, runSkeleton(), RUN_OPTS(['sortIntro'])).errors;
+  assert.ok(broken.includes('run.sortIntro: the shown text of a term marker must not hold <, >, & or {{'), JSON.stringify(broken));
+  assert.ok(!broken.some((e) => e.includes(NOT_LISTED)), 'a listed entry is never reported as unlisted');
+});
+
+test('terms: a marker-like text inside code in an unlisted run entry is literal, not an error', () => {
+  const t = runText();
+  t.run.sentTo = 'Run <code>[[ -f x ]]</code> in {{where}}.';
+  assert.deepEqual(bindRun(t, runSkeleton(), RUN_OPTS([])).errors, []);
+});
+
+test('terms: terms must not name an id or a logic-only key', () => {
+  const t = runText();
+  for (const name of ['id', 'key', 'right']) {
+    t.run[name] = 'text';
+    const { errors } = bindRun(t, runSkeleton(), RUN_OPTS([name]));
+    assert.ok(errors.includes(`terms: "${name}" is an id or a logic-only key, never prose`), `${name}: ${JSON.stringify(errors)}`);
+  }
 });
 
 test('terms: broken markers are one error each at the field', () => {

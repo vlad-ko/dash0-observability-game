@@ -144,7 +144,7 @@ async function levelsWithTerms() {
   return out;
 }
 
-test('every run level that lists TERMS has markers that resolve against the glossary, and draws feedback through tell', async () => {
+test('every run level that lists TERMS has markers that resolve against the glossary, and does not call setFeedback', async () => {
   const levels = await levelsWithTerms();
   assert.ok(levels.some((l) => l.id === 'monitoring-vs-observability' && l.terms.length > 0), 'the proof level lists its prose');
   let markers = 0;
