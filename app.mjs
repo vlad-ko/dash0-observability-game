@@ -25,6 +25,7 @@ import { howToView } from './lib/how-to-play.mjs';
 import { buildPrimers, firstUnread, primerEyebrow as eyebrowOf, primerStatus, primerTile as tileOf, primerView as viewOf, primerZoneView as zoneViewOf } from './lib/primer.mjs';
 import { PRIMER_KEY, readPrimers, recordPrimer } from './lib/primer-prefs.mjs';
 import { primerBodyHtml, primerZoneHtml } from './lib/primer-view.mjs';
+import { createTermPopovers } from './lib/term-popover.mjs';
 import { createGuideClient } from './lib/guide/client.mjs';
 import { createAccountClient } from './lib/account/client.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
@@ -157,6 +158,7 @@ const FOCUS_FRAMES = 10; // focusSoon waits at most this many frames for its tar
  * null; lib/globe-render.mjs mountGlobe in the browser), globeMap? ({ACT_REGIONS,
  * LEVEL_COUNTRY, COUNTRY_NAMES, actOf}), dots?, comingSoon? (acts shown but not playable, hub/coming-soon.mjs), now?, rand?, reduceMotion? (() → boolean), reportError?,
  * primers? (the act primers, content/core/primers; none by default, main.mjs passes PRIMERS; an invalid one has no tile and is reported once),
+ * glossary? (the joined glossary, content/core/glossary; main.mjs passes GLOSSARY. The primers' term markers (#429) must name its terms, else the primer is invalid; the primer shows each term's definition in place. Default null: markers are only syntax-checked and read as plain words),
  * fetch? (the page's fetch: asks GET /api/guide once at init whether the guide is on; without it there is no guide), telemetry? (lib/telemetry.mjs facade; completions emit a level.complete span), setTimeout?, clearTimeout?, debug? (boolean, ?mode=debug: every level opens, nothing is saved) }. Without `globe` the hub shows the globe's text fallback.
  */
 export function createGame(deps) {
@@ -182,6 +184,7 @@ export function createGame(deps) {
     rendered = (el) => typeof el.getClientRects !== 'function' || el.getClientRects().length > 0,
     debug = false,
     primers = [],
+    glossary = null,
     telemetry = null,
     play = null, // lib/play-telemetry.mjs (docs/GAME-EVENTS.md): the owner's play events, never the player's lab
     fetch: request = null,
@@ -236,9 +239,11 @@ export function createGame(deps) {
   const NO_HOW_TO = Object.freeze({ topics: Object.freeze([]) });
   // Act primers (#389): built once, the valid ones by act; a broken one has no tile and is reported once. seenPrimers is the
   // acts whose primer opened this visit (it pops by itself at most once), also when storage is blocked or in debug.
-  const primerBuild = buildPrimers(primers, registry);
+  const primerBuild = buildPrimers(primers, registry, glossary);
   if (primerBuild.errors.length > 0) report(new Error(`act primers: ${primerBuild.errors.join('; ')}`));
   const seenPrimers = new Set();
+  // The definitions of the glossary terms a primer marks (#429): wired after each draw, closed when the primer closes.
+  const termPops = createTermPopovers({ document: doc });
 
   return {
     debug: debug === true,
@@ -1167,7 +1172,8 @@ export function createGame(deps) {
       const view = this.primerCurrent();
       const body = doc.getElementById('primer-body');
       if (view === null || !body) return;
-      body.innerHTML = primerBodyHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true });
+      body.innerHTML = primerBodyHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true, glossary });
+      termPops.wire(body);
       body.scrollTop = 0;
     },
     showPrimerScreen(screen) {
@@ -1180,7 +1186,8 @@ export function createGame(deps) {
       const view = this.primerZoneCurrent();
       const body = doc.getElementById('primer-zone-body');
       if (view === null || !body) return;
-      body.innerHTML = primerZoneHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true });
+      body.innerHTML = primerZoneHtml(view, { draft: this.primerFor(this.primerActId).placeholder === true, glossary });
+      termPops.wire(body);
       for (const c of view.chapters) {
         const el = doc.getElementById(`primer-go-${c.index}`);
         if (el) el.onclick = () => this.primerGo(c.index);
@@ -1196,6 +1203,7 @@ export function createGame(deps) {
     },
     // Into the zone at chapter `screen`: the pop-up (if open) closes, the hub is covered so the globe is freed.
     enterPrimerZone(screen) {
+      termPops.closeAll();
       this.primerOpen = false;
       this.primerZoneOpen = true;
       this.hideGlobe();
@@ -1222,6 +1230,7 @@ export function createGame(deps) {
     },
     // Leave forward: start the pending level (if any); otherwise the map shows again and focus goes back to the opener.
     leavePrimer() {
+      termPops.closeAll();
       const then = this.primerThen;
       const from = this.primerFrom;
       const wasZone = this.primerZoneOpen;
@@ -1277,6 +1286,7 @@ export function createGame(deps) {
     // The close button, the zone's back arrow and Escape: the pending level is dropped, focus returns to the opener.
     closePrimer() {
       if (!this.primerOpen && !this.primerZoneOpen) return;
+      termPops.closeAll();
       const then = this.primerThen;
       const wasZone = this.primerZoneOpen;
       this.primerOpen = false;

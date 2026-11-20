@@ -383,6 +383,29 @@
 .ui-fold-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .ui-fold-body { padding: 0 var(--space-3) var(--space-3); min-width: 0; }
 
+/* ---------- Term (term.mjs) ---------- */
+/* A glossary term inside running text (#429): a button drawn as the surrounding text with a dashed underline, and its
+   definition in a small card under it (above it when lib/term-popover.mjs finds no room below). The card is absolutely
+   placed from the term; the script only nudges it sideways (left) and caps its width so it never leaves the body, which
+   keeps it whole at 320px. It carries no shadow: the kit has none, a border and the raised surface set it apart. */
+.ui-term { position: relative; display: inline-block; }
+.ui-term-btn {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: help; text-align: inherit;
+  text-decoration: underline dashed; text-decoration-color: var(--color-text-muted); text-underline-offset: 3px;
+}
+.ui-term-btn:hover { text-decoration-color: var(--color-accent); }
+.ui-term-pop {
+  position: absolute; z-index: 20; left: 0; top: 100%;
+  inline-size: max-content; max-inline-size: min(20rem, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-2) var(--space-3); background: var(--color-surface-2); color: var(--color-text);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  font-size: var(--text-sm); font-weight: var(--weight-regular); font-style: normal; line-height: 1.45; text-align: start;
+  white-space: normal; overflow-wrap: anywhere;
+}
+.ui-term-pop[hidden] { display: none; }
+.ui-term-pop[data-side="above"] { top: auto; bottom: 100%; }
+.ui-term-name { display: block; font-weight: var(--weight-semibold); }
+
 /* ---------- Form fields (field.mjs) ---------- */
 .ui-field { display: grid; gap: 6px; }
 .ui-field-label { min-width: 0; font-size: var(--text-md); font-weight: var(--weight-semibold); overflow-wrap: anywhere; /* a long key or code name wraps at 320px */ }
@@ -527,7 +550,7 @@
 
 /* ---------- One rule each: hover, focus, disabled ---------- */
 .ui-btn--ghost:hover:not(:disabled), .ui-option:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--color-text-muted); }
-.ui-btn:focus-visible, .ui-option:focus-visible, .ui-fold-summary:focus-visible, .ui-fold-title:focus-visible, .ui-input:focus-visible, .ui-check-input:focus-visible, .ui-option-input:focus-visible {
+.ui-btn:focus-visible, .ui-option:focus-visible, .ui-fold-summary:focus-visible, .ui-fold-title:focus-visible, .ui-term-btn:focus-visible, .ui-input:focus-visible, .ui-check-input:focus-visible, .ui-option-input:focus-visible {
   outline: 2px solid var(--color-focus); outline-offset: 2px;
 }
 .ui-btn:disabled {

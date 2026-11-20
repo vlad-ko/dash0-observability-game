@@ -666,6 +666,19 @@ data, validator and saved state (phase 1a) and the hub tile and pop-up (phase 1b
   already familiar with the topic", or the last chapter's button). The close button and Escape close it, drop the waiting level and
   return focus to the opener. Opening records `seen`, "already familiar" `skipped`, Next the chapter just left `read`, Back nothing;
   `?mode=debug` writes nothing and `?mode=reset` clears the key. It never gates a level.
+- Glossary terms (#429, authoring: `docs/PRIMERS.md` "Marking glossary terms"): paragraph, list item and callout text may mark a
+  term with `[[shown text|term-id]]` or `[[shown text]]` (the short form resolves a glossary name or variant, case-insensitively).
+  `lib/content/terms.mjs` (pure) reads the marker (`parseTerms`, `shownText`, `hasMarker`) and resolves it (`termLookup`).
+  `validatePrimer(p, {actIds, glossary})`, `validatePrimers` and `buildPrimers(list, registry, glossary)` take the joined
+  glossary: every marker must name one of its terms, a marker must be closed, not nested and have shown text, and a title, link
+  label or source carries none (code is never read for markers). Without a glossary only the syntax is judged. A length limit
+  counts the shown text, so a marker never costs characters. `primerBodyHtml(view, {draft, glossary})` and `primerZoneHtml` draw
+  the first marked use of each term id per screen (so per chapter, and for the overview) as the kit `term` helper and later
+  uses, an unresolved marker and every marker without a glossary as the shown text. The WAI-ARIA tooltip pattern: a `<button>` described (`aria-describedby`) by a
+  `role="tooltip"` card that is always in the DOM and `hidden`; `lib/term-popover.mjs` opens it on hover, focus and click or tap,
+  closes it on Escape (focus back to the term, the Escape stops there so the primer stays open), on a click outside and when
+  another opens, and keeps it inside the body at 320px with CSSOM. `createGame` takes `glossary` (default `null`; `main.mjs`
+  passes `GLOSSARY`), wires each drawn body and closes the open card when the primer closes.
 
 ### 2.13 Level content apart from level logic (#391)
 

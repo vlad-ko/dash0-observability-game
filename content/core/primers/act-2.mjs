@@ -8,14 +8,14 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "A trace is the path of one request through your application. This act teaches you to read that path, to pass it between services, and to decide what to record along the way."
+      "text": "A [[trace]] is the path of one request through your application. This act teaches you to read that path, to pass it between services, and to decide what to record along the way."
     },
     {
       "type": "list",
       "items": [
-        "Spans are the timed units of work, and together they make a trace.",
-        "Span kind and status say what role a span played and how it ended.",
-        "Context propagation (passing the trace and span IDs on to the next service) joins spans from different services into one trace."
+        "[[Spans]] are the timed units of work, and together they make a trace.",
+        "[[Span kind]] and [[status|span-status]] say what role a span played and how it ended.",
+        "[[Context propagation]] (passing the trace and span IDs on to the next service) joins spans from different services into one trace."
       ]
     },
     {
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span represents a unit of work or operation. Spans are the building blocks of traces. A span has a name, a parent span ID (empty for root spans, which have no parent), start and end timestamps, a span context made of the trace ID (shared by every span in the request), the span ID (this span's own), trace flags (whether the trace is sampled) and trace state (vendor-specific data), attributes, events, links and a status."
+          "text": "A [[span]] represents a unit of work or operation. Spans are the building blocks of [[traces]]. A span has a name, a parent span ID (empty for [[root spans]], which have no parent), start and end timestamps, a [[span context]] made of the [[trace ID]] (shared by every span in the request), the span ID (this span's own), [[trace flags]] (whether the trace is sampled) and [[trace state]] (vendor-specific data), attributes, events, links and a status."
         },
         {
           "type": "paragraph",
@@ -39,7 +39,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, the Trace View shows a single trace with all its spans and their relationships."
+          "text": "In [[Dash0]], the [[Trace View]] shows a single trace with all its spans and their relationships."
         }
       ],
       "sources": [
@@ -63,12 +63,12 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "When a span is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The span kind gives the tracing backend a hint about how to assemble the trace. If it is not provided, the kind is assumed to be INTERNAL."
+          "text": "When a [[span]] is created, it is one of CLIENT, SERVER, INTERNAL, PRODUCER or CONSUMER. The [[span kind]] gives the [[tracing backend]] a hint about how to assemble the trace. If it is not provided, the kind is assumed to be INTERNAL."
         },
         {
           "type": "list",
           "items": [
-            "CLIENT: an outgoing remote call that waits for its reply (synchronous), such as an outgoing HTTP request or a database call.",
+            "CLIENT: an outgoing remote call that waits for its reply ([[synchronous]]), such as an outgoing HTTP request or a database call.",
             "SERVER: a synchronous incoming remote call, such as an incoming HTTP request.",
             "INTERNAL: an operation that stays inside one running program.",
             "PRODUCER: the creation of a job that may be processed later.",
@@ -77,7 +77,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "Each span also has a status: Unset, Error or Ok. The default is Unset, which means the operation completed without an error. Error means some error occurred in the operation. Ok means the developer explicitly marked the span as successful."
+          "text": "Each span also has a [[status|span-status]]: Unset, Error or Ok. The default is Unset, which means the operation completed without an error. Error means some error occurred in the operation. Ok means the developer explicitly marked the span as successful."
         }
       ],
       "sources": [
@@ -95,15 +95,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Context propagation is the concept that enables distributed tracing. When Service A calls Service B, Service A includes a trace ID and a span ID as part of the context. Service B uses them to create a span in the same trace, with the span from Service A as its parent."
+          "text": "[[Context propagation]] is the concept that enables distributed tracing. When Service A calls Service B, Service A includes a [[trace ID]] and a [[span ID]] as part of the [[context]]. Service B uses them to create a span in the same trace, with the span from Service A as its parent."
         },
         {
           "type": "paragraph",
-          "text": "Propagation moves the context between services and processes, and is usually handled by instrumentation libraries (code that emits telemetry). The default propagator, the code that writes and reads the trace headers, uses the W3C Trace Context standard (the traceparent and tracestate headers)."
+          "text": "Propagation moves the context between services and processes, and is usually handled by [[instrumentation]] libraries (code that emits telemetry). The default [[propagator]], the code that writes and reads the trace headers, uses the [[W3C Trace Context]] standard (the traceparent and tracestate headers)."
         },
         {
           "type": "paragraph",
-          "text": "Baggage is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is a separate store, kept apart from the attributes on spans, metrics and logs."
+          "text": "[[Baggage]] is contextual information that resides next to context. It is a key-value store that lets you pass data across services. It is a separate store, kept apart from the attributes on spans, metrics and logs."
         }
       ],
       "sources": [
@@ -127,15 +127,15 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A span event is a timestamped note inside a span, used for a meaningful, single point in time. When deciding between an event and an attribute, ask whether a specific timestamp is meaningful."
+          "text": "A [[span event]] is a timestamped note inside a span, used for a meaningful, single point in time. When deciding between an event and an attribute, ask whether a specific timestamp is meaningful."
         },
         {
           "type": "paragraph",
-          "text": "Span links associate one span with one or more other spans, implying a causal relationship. They are useful when the next operation runs later (asynchronous) and you cannot predict when it will start."
+          "text": "[[Span links]] associate one span with one or more other spans, implying a causal relationship. They are useful when the next operation runs later ([[asynchronous]]) and you cannot predict when it will start."
         },
         {
           "type": "paragraph",
-          "text": "Zero-code instrumentation adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent (a library loaded into the application at start-up). It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need manual instrumentation."
+          "text": "[[Zero-code instrumentation]] adds the OpenTelemetry API and SDK to your application without writing code, typically as an agent (a library loaded into the application at start-up). It instruments the libraries you use, such as requests, database calls and message queues. It does not typically instrument your own application code. For that you need manual instrumentation."
         }
       ],
       "sources": [

@@ -8,13 +8,13 @@ export default {
   "overview": [
     {
       "type": "paragraph",
-      "text": "You are the new on-call engineer. Before the first page, this act gives you the words the rest of the game uses: what observability is, what the main signals (kinds of telemetry, the data a system emits about itself) are, and why OpenTelemetry (the shared, vendor-neutral telemetry toolkit) exists. Dash0 is the observability platform this game teaches alongside OpenTelemetry."
+      "text": "You are the new on-call engineer. Before the first page, this act gives you the words the rest of the game uses: what [[observability]] is, what the main [[signals]] (kinds of telemetry, the data a system emits about itself) are, and why [[OpenTelemetry]] (the shared, vendor-neutral telemetry toolkit) exists. [[Dash0]] is the observability platform this game teaches alongside OpenTelemetry."
     },
     {
       "type": "list",
       "items": [
         "Observability is the ability to understand what is going on inside a system from its outputs, so you can ask questions about problems nobody predicted.",
-        "The main signals are traces, metrics and logs, with profiles emerging as a fourth. Each answers a different kind of question.",
+        "The main signals are traces, metrics and logs, with [[profiles]] emerging as a fourth. Each answers a different kind of question.",
         "OpenTelemetry is the shared, vendor-neutral way to generate, collect and export that telemetry."
       ]
     },
@@ -31,7 +31,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "Observability is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analyzing telemetry data such as traces, metrics and logs."
+          "text": "[[Observability]] is the ability to understand the internal state of a system by examining its outputs. In software, that usually means analyzing [[telemetry]] data such as traces, metrics and logs."
         },
         {
           "type": "paragraph",
@@ -64,7 +64,7 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "A signal is a kind of telemetry: a system output that describes what the operating system and applications are doing. Traces, metrics and logs are the main ones. Profiles are emerging as a fourth, and are still experimental in OpenTelemetry (it calls this stage Alpha)."
+          "text": "A [[signal]] is a kind of [[telemetry]]: a system output that describes what the operating system and applications are doing. Traces, metrics and logs are the main ones. [[Profiles]] are emerging as a fourth, and are still experimental in OpenTelemetry (it calls this stage Alpha)."
         },
         {
           "type": "list",
@@ -81,7 +81,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In Dash0, the Trace View shows a single trace with all its spans (timed operations) and their relationships."
+          "text": "In [[Dash0]], the [[Trace View]] shows a single trace with all its spans (timed operations) and their relationships."
         }
       ],
       "sources": [
@@ -111,11 +111,11 @@ export default {
       "blocks": [
         {
           "type": "paragraph",
-          "text": "OpenTelemetry is an open source observability framework and toolkit for generating, collecting and exporting telemetry data such as traces, metrics and logs. Storing and visualizing that data is intentionally left to other tools."
+          "text": "[[OpenTelemetry]] is an open source observability framework and toolkit for generating, collecting and exporting [[telemetry]] data such as traces, metrics and logs. Storing and visualising that data is intentionally left to other tools."
         },
         {
           "type": "paragraph",
-          "text": "It is vendor-neutral and tool-agnostic, so it can be used with a broad variety of observability backends. It follows two principles: you own the data that you generate, and there is no vendor lock-in. You only have to learn a single set of APIs (the calls your code makes to record telemetry) and conventions (the agreed attribute names)."
+          "text": "It is vendor-neutral and tool-agnostic, so it can be used with a broad variety of [[observability backends|backend]]. It follows two principles: you own the data that you generate, and there is no vendor lock-in. You only have to learn a single set of [[APIs]] (the calls your code makes to record telemetry) and conventions (the agreed attribute names)."
         }
       ],
       "sources": [
