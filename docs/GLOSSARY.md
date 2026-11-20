@@ -25,7 +25,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Profile**: A recording of resource use at the code level. The newest, still emerging signal. (Act 0)
 - **Backend**: The tool that stores and shows telemetry. (Act 0)
 - **Cardinality**: The number of unique values (or label combinations) a field has; for metrics, the number of time series. (Act 3)
-- **Retention**: How long a backend keeps the telemetry it stores. It can differ by signal: Dash0 keeps metric data points longer than spans and log records. (Act 6)
+- **Retention**: How long a backend keeps the telemetry it stores. It can differ by signal. (Act 6)
 - **Origin**: The scheme, host name and port of a URL. Two URLs have the same origin only when all three match. (Act 8)
 - **CORS**: Cross-Origin Resource Sharing: HTTP headers, such as Access-Control-Allow-Origin, with which a server lets the browser give a page from another origin its responses. (Act 8)
 - **Preflight request**: An OPTIONS request the browser sends before some cross-origin requests, to ask the server whether their method and headers are allowed. Simple requests skip it. (Act 8)
@@ -61,11 +61,11 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Processor**: A component that transforms telemetry (in the SDK or the Collector). (Act 5)
 - **Receiver**: A component that accepts telemetry (in the SDK or the Collector). (Act 5)
 - **DaemonSet**: A Kubernetes object that runs a copy of a pod on every eligible node. A common way to run a Collector as an agent, one per node. (Act 5)
-- **Sidecar**: A second container that runs next to the main application container in the same pod. A Collector run this way is an agent; a service mesh proxy run this way is a mesh sidecar. (Act 5)
+- **Sidecar**: A second container that runs next to the main application container in the same pod. A Collector run this way is an agent; a service mesh proxy run this way is a mesh proxy. (Act 5)
 - **Kubernetes Service**: A Kubernetes object that exposes an application running in one or more pods on the network. A headless Service has no cluster IP and no load balancing: DNS returns the pods' own IPs. (Act 5)
 - **Semantic conventions**: Standard attribute names and meanings, such as http.request.method, db.system.name and service.name. They are versioned. (Act 8)
 - **Stability opt-in**: The setting OTEL_SEMCONV_STABILITY_OPT_IN. The value http/dup sends the old and the stable names; http sends only the stable names. (Act 8)
-- **Stable**: Ready for general use: from then on, breaking changes are allowed only in special circumstances. Becoming stable can itself break names; the stable HTTP semantic conventions renamed many attributes. (Act 8)
+- **Stable**: Ready for general use: from then on, breaking changes are allowed only in special circumstances. Reaching this status can itself break names; the stable HTTP semantic conventions renamed many attributes. (Act 8)
 - **Opt-in**: Off until you turn it on. For the stable HTTP semantic conventions the opt-in is OTEL_SEMCONV_STABILITY_OPT_IN; without it, an updated instrumentation keeps emitting its old names. (Act 8)
 - **ForceFlush**: A provider call that exports at once every span not yet exported. The SDK spec says to call it only when it is truly necessary, such as on FaaS platforms that may suspend the process after an invocation. (Act 9)
 
@@ -98,7 +98,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Probabilistic sampler**: Sampling that keeps a set percentage of traces, decided from the trace ID, as in the Collector's probabilistic_sampler processor or the probabilistic policy of tail_sampling. (Act 6)
 - **Orphan span**: A span whose parent ID names a span that was never received, so the trace shows it as a root although it has a parent. (Act 9)
 - **Mesh sidecar**: A proxy that a service mesh runs next to each service and that forwards its calls; not the same thing as a Collector run as a sidecar (see Agent). (Act 9)
-- **Creation context**: The context a producer attaches to a message so that consumer spans can be correlated with the producer. A consumer span that handles a batch links to each message's creation context. (Act 9)
+- **Creation context**: The context a producer attaches to a message so that consumer spans can be correlated with the producer. A consumer span that handles a batch links to the context each message carries. (Act 9)
 
 ## Metrics
 
@@ -135,7 +135,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Utilisation**: How busy a system resource was: the average time it spent servicing work. (Act 3)
 - **Saturation**: How much work a system resource could not serve, so it had to wait. (Act 3)
 - **Span metrics**: RED metrics derived from spans (the span_metrics connector; spanmetrics is its deprecated alias). (Act 3)
-- **Asynchronous instrument**: An instrument that reports through a callback you register, which the SDK runs only when it collects metrics. Its measurements cannot be tied to a context. APIs often name these Observable, as in CreateObservableCounter. (Act 3)
+- **Asynchronous instrument**: An instrument that reports through a callback you register, run only when the SDK collects metrics. Its measurements cannot be tied to a context. (Act 3)
 
 ## Logs
 
@@ -157,7 +157,8 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 
 - **Contrib**: The OpenTelemetry Collector Contrib repository, for Collector components that do not belong in the core, and the Contrib distribution built from it. (Act 1)
 - **Filter processor**: A Collector processor that drops spans, span events, metrics, data points or logs when any of its OTTL conditions is met. (Act 3)
-- **Collector**: A program that receives, processes and exports telemetry. It can run alongside the application or on the same host as an agent, or in a central tier as a gateway. (Act 5)
+- **Transform processor**: A Collector processor that changes telemetry with OTTL statements, run in the order the configuration gives for each signal. (Act 4)
+- **Collector**: A program that receives, processes and exports telemetry. It can run as an agent on the same host as the application, or as a gateway in a central tier. (Act 5)
 - **Component id**: The type, then an optional slash and name (type/name). (Act 5)
 - **Pipeline**: Receivers, then processors, then exporters, per signal, declared under service.pipelines. (Act 5)
 - **service section**: The top-level key in a Collector config that lists the pipelines. (Act 5)
@@ -169,10 +170,9 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Distribution**: A packaged Collector build (core, contrib, vendor, or custom via the OpenTelemetry Collector Builder, OCB). (Act 5)
 - **OpAMP**: A protocol for remotely managing agents and Collectors. (Act 5)
 - **OCB**: The OpenTelemetry Collector Builder: a tool that builds your own Collector distribution, a binary with only the components you choose. (Act 5)
-- **Transform processor**: A Collector processor that changes telemetry with OTTL statements, run in the order the configuration gives for each signal. (Act 5)
 - **Batch processor**: A Collector processor that groups spans, metrics or logs into batches, which compress better and need fewer outgoing connections. It goes after memory_limiter and any sampling. (Act 5)
 - **memory_limiter**: A Collector processor that checks memory use and, past its limits, refuses data so the Collector does not run out of memory. Best placed first in each pipeline. (Act 5)
-- **Backpressure**: Making a sender slow down or retry when the next component cannot take more data. When memory_limiter refuses data, receivers can retry it and apply backpressure to their own sources. (Act 5)
+- **Backpressure**: Making a sender slow down or retry when the next component cannot take more data. When memory_limiter refuses data, receivers can retry it and slow their own sources down. (Act 5)
 - **Routing key**: The load_balancing exporter setting that picks which Collector gets each piece of telemetry, such as traceID, so every span of one trace reaches the same one. (Act 5)
 - **eBPF profiler**: OpenTelemetry's whole-system profiler for Linux, built on eBPF, that profiles every process on a host across languages. Its own Collector distribution runs it as a node agent. (Act 5)
 
@@ -203,6 +203,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Query Builder**: Dash0's editor for building metric queries. (Act 3)
 - **SignalControl**: Dash0's rule-based pipeline that reduces the telemetry Dash0 stores: before storage, it filters, converts, samples and aggregates the signals you send. (Act 3)
 - **Related Logs**: The Dash0 tab for a selected log record that lists the log records around it in time order: from the same resource, the same trace or both, within 30 minutes either side. (Act 4)
+- **Related Logs & Events**: The Span Sidebar tab that lists log records and span events for the selected span in time order. It shows the same trace by default, and can switch to the same resource, both, or only the span. (Act 4)
 - **Log Sidebar**: The Dash0 detail panel for a selected log record: its body, attributes, span context and resource. (Act 4)
 - **Patterns view**: The Dash0 log view that groups similar log records into patterns, templates whose variable parts are placeholders, each with its record count and severity mix. (Act 4)
 - **Log AI**: Pattern and severity extraction for unstructured logs. (Act 4)
@@ -228,7 +229,6 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Dash0 monitoring resource**: The Kubernetes resource, of kind Dash0Monitoring, that turns on Dash0 monitoring for its namespace. The Dash0 operator picks up dashboard and other Dash0 resources only in such namespaces. (Act 8)
 - **Trace Explorer**: The Dash0 page for finding traces: you filter the spans by attribute, then open a trace. (Act 9)
 - **Span Sidebar**: The Dash0 detail panel that opens when you select a span. (Act 9)
-- **Related Logs & Events**: The Span Sidebar tab that lists log records and span events for the selected span in time order. It shows the same trace by default, and can switch to the same resource, both, or only the span. (Act 9)
 - **Log Explorer**: Dash0's page for finding logs. (Act 9)
 - **Auth token**: The key a user or a service presents to Dash0's APIs, for example to send telemetry to Dash0. (Act 9)
 - **Dataset**: A part of one organisation in Dash0 that keeps its own observability data apart, for example one for production and one for test. (Act 9)

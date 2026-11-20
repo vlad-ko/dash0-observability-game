@@ -11,7 +11,7 @@ export default {
     {"id": "backend", "name": "Backend", "variants": ["backends", "observability backend", "tracing backend"], "definition": "The tool that stores and shows telemetry.", "topic": "Foundations"},
     {"id": "opentelemetry", "name": "OpenTelemetry (OTel)", "variants": ["OpenTelemetry", "OTel"], "definition": "A CNCF project defining vendor-neutral APIs, SDKs, a wire protocol and a Collector for telemetry.", "topic": "OpenTelemetry"},
     {"id": "api", "name": "API", "variants": ["APIs"], "definition": "The interfaces libraries call to emit telemetry; a no-op without an SDK.", "topic": "OpenTelemetry"},
-    {"id": "batch-span-processor", "name": "Batch span processor", "variants": ["batch span processors", "batching processor"], "definition": "The SDK span processor that queues finished spans and exports them in batches: after a delay, 5 seconds by default, when enough spans are queued, or on ForceFlush. Not the Collector's batch processor.", "topic": "OpenTelemetry"},
+    {"id": "batch-span-processor", "name": "Batch span processor", "variants": ["batch span processors"], "definition": "The SDK span processor that queues finished spans and exports them in batches: after a delay, 5 seconds by default, when enough spans are queued, or on ForceFlush. Not the Collector's batch processor.", "topic": "OpenTelemetry"},
     {"id": "dash0", "name": "Dash0", "variants": [], "definition": "An OpenTelemetry-native observability platform for traces, metrics, logs and more.", "topic": "Dash0"},
     {"id": "trace-view", "name": "Trace View", "variants": [], "definition": "The Dash0 view of one trace with all its spans and their relationships.", "topic": "Dash0"}
   ]
