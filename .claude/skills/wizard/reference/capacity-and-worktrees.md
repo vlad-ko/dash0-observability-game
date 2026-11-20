@@ -188,7 +188,7 @@ unforced worktree removal (re-classified immediately before removal, since anoth
 locked or edited it in the gap), prune, `-d` on merged branches, dropping orphan schemas — and
 never touches a modified file, never forces, never acts on a read that failed. The user reviews
 the report before apply runs. Honest rung: a check script a session can decline to run; the
-structural rung is an opt-in stop hook.
+structural rung is an opt-in stop hook. In this repo the check/apply script is `tools/homeostasis`.
 
 ## Working from a fresh main
 
