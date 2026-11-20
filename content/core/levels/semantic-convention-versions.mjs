@@ -9,7 +9,7 @@ export default {
     "finish": "Semantic convention names change as they go stable. Send both names with http/dup, move every query, dashboard and alert to the stable names, then set the opt-in to http.",
     "steps": [
       {
-        "intro": "OpenTelemetry's HTTP semantic conventions went stable with new names: <code>http.user_agent</code> became <code>user_agent.original</code>. Kettle &amp; Co's checkout upgraded its instrumentation and set <code>OTEL_SEMCONV_STABILITY_OPT_IN</code> to <code>http/dup</code>, so its HTTP spans carry the old and the stable names side by side. Next week the team sets it to <code>http</code>, which sends the stable names only. Here are eight attributes from one checkout server span. Each line is one attribute, as key=value.",
+        "intro": "OpenTelemetry's HTTP [[semantic conventions]] went [[stable]] with new names: <code>http.user_agent</code> became <code>user_agent.original</code>. Kettle &amp; Co's checkout upgraded its instrumentation and set <code>OTEL_SEMCONV_STABILITY_OPT_IN</code> to <code>http/dup</code>, so its HTTP spans carry the old and the stable names side by side. Next week the team sets it to <code>http</code>, which sends the stable names only. Here are eight attributes from one checkout server span. Each line is one attribute, as key=value.",
         "question": "Spot the attributes that stop arriving once the opt-in is set to http.",
         "spot": {
           "id": "scv-spot",
@@ -58,7 +58,7 @@ export default {
         }
       },
       {
-        "intro": "The team is ready to set the opt-in to <code>http</code>. Of the eight attributes you just read, 3 are old names that <code>http/dup</code> sends alongside the stable ones.",
+        "intro": "The team is ready to set the [[opt-in]] to <code>http</code>. Of the eight attributes you just read, 3 are old names that <code>http/dup</code> sends alongside the stable ones.",
         "question": "What has to happen first?",
         "choice": {
           "id": "scv-switch",
