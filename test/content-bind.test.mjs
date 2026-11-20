@@ -498,11 +498,63 @@ test('terms: a marker in feedback is judged by the text rules on its shown words
   assert.ok(errors.some((e) => e.startsWith('play.steps[0].choice.choices[0].why') && e.includes('em dash')), JSON.stringify(errors));
 });
 
-test('terms: a marker under run is refused until run reads them', () => {
+// Rewritten for phase 4: this test said a marker under run is refused "until run reads them"; run now reads them in the
+// entries the logic lists, so the refusal moves to the entries it does not list (the tests below).
+const RUN_OPTS = (terms) => ({ vars: { n: 2 }, slots: ['where'], terms });
+const NOT_LISTED = 'term markers are read under run only in the entries the logic lists in terms';
+
+test('terms: a listed run entry turns a marker into a gloss span, in the long and the short form', () => {
   const t = runText();
-  t.run.sortIntro = 'Sort {{n}} [[span]].';
-  const { errors } = bindRun(t);
-  assert.ok(errors.some((e) => e.startsWith('run.sortIntro') && e.includes('not read under run yet')), JSON.stringify(errors));
+  t.run.sortIntro = 'Sort {{n}} [[spans|span]] and a [[trace]], then {{where}}.';
+  const { value, errors } = bindRun(t, runSkeleton(), RUN_OPTS(['sortIntro']));
+  assert.deepEqual(errors, []);
+  assert.equal(value.run.sortIntro, `Sort 2 ${gloss('spans', 'span')} and a ${gloss('trace')}, then {{where}}.`);
+});
+
+test('terms: a marker in a run entry the logic does not list is refused with the entry path', () => {
+  const t = runText();
+  t.run.sentTo = '{{where}} saw a [[span]].';
+  for (const terms of [undefined, [], ['sortIntro']]) {
+    const { errors } = bindRun(t, runSkeleton(), RUN_OPTS(terms));
+    assert.ok(errors.some((e) => e === `run.sentTo: ${NOT_LISTED}`), `${terms}: ${JSON.stringify(errors)}`);
+  }
+});
+
+test('terms: a marker below the top of run is refused even when its entry is listed', () => {
+  const t = runText();
+  t.run.picks[0].says = 'No, a [[span]].';
+  t.run.stories[0][2] = 'It [[span]] failed.';
+  t.run.picks[0].sortIntro = 'Same name as a listed entry, a [[span]].'; // a nested key that shares a listed entry's name
+  const { errors } = bindRun(t, runSkeleton(), RUN_OPTS(['picks', 'stories', 'sortIntro']));
+  assert.ok(errors.some((e) => e.startsWith('run.picks[0].says:') && e.includes(NOT_LISTED)), JSON.stringify(errors));
+  assert.ok(errors.some((e) => e.startsWith('run.stories[0][2]:') && e.includes(NOT_LISTED)), JSON.stringify(errors));
+  assert.ok(errors.some((e) => e.startsWith('run.picks[0].sortIntro:') && e.includes(NOT_LISTED)), JSON.stringify(errors));
+});
+
+test('terms: terms must name top-level string entries of run, each error with its name', () => {
+  const bad = (terms) => bindRun(runText(), runSkeleton(), RUN_OPTS(terms)).errors;
+  for (const name of ['nope', 'sort', 'picks', 'stories']) {
+    assert.ok(bad([name]).includes(`terms: "${name}" is not a prose entry of run (a top-level string)`), `${name}: ${JSON.stringify(bad([name]))}`);
+  }
+  assert.deepEqual(bad(['sortIntro', 'sentTo']), []);
+});
+
+test('terms: code regions inside a listed run entry stay literal', () => {
+  const t = runText();
+  t.run.sortIntro = 'Run <code>[[ -f x ]]</code> then [[span]] with {{n}}.';
+  const { value, errors } = bindRun(t, runSkeleton(), RUN_OPTS(['sortIntro']));
+  assert.deepEqual(errors, []);
+  assert.equal(value.run.sortIntro, `Run <code>[[ -f x ]]</code> then ${gloss('span')} with 2.`);
+});
+
+test('terms: a listed run entry is judged on its shown words and a broken marker is an error at the entry', () => {
+  const t = runText();
+  t.run.sortIntro = `A [[span]] ${DASH} dash.`;
+  const { errors } = bindRun(t, runSkeleton(), RUN_OPTS(['sortIntro']));
+  assert.ok(errors.some((e) => e.startsWith('run.sortIntro') && e.includes('em dash')), JSON.stringify(errors));
+  const u = runText();
+  u.run.sortIntro = 'A [[<b>x</b>|span]].';
+  assert.ok(bindRun(u, runSkeleton(), RUN_OPTS(['sortIntro'])).errors.some((e) => e.startsWith('run.sortIntro:')));
 });
 
 test('terms: broken markers are one error each at the field', () => {
