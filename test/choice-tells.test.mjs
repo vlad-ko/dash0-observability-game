@@ -117,14 +117,21 @@ const score = (qs, mark) =>
   }, 0);
 
 const BAND = 3; // points a blind rule may sit above or below chance: a rule far below is the same tell, read backwards
+/**
+ * How far a rule may stray from chance on ONE pooled question (T2 below). The sum over the game gets this much more room for
+ * each pooled question: a pool's right answers cannot all sit at one length rank, and T2 also stops them sitting too rarely in
+ * the middle, so a pool adds a little middle-length share that the fixed questions (which had none to spare) cannot give back.
+ */
+const POOL_BAND = 0.15;
 
-/** The strategies whose score over `qs` is further from chance than the band, as report lines. */
+/** The strategies whose score over `qs` is further from chance than the band (plus POOL_BAND for each pooled question), as report lines. */
 function strayed(qs) {
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
+  const band = BAND + POOL_BAND * qs.filter((q) => q.draw !== undefined).length;
   return Object.entries(STRATEGIES)
     .map(([name, mark]) => [name, score(qs, mark)])
-    .filter(([, got]) => Math.abs(got - chance) > BAND)
-    .map(([name, got]) => `${name}: ${got.toFixed(1)} of ${qs.length} first try (chance ${chance.toFixed(1)}, band ${(chance - BAND).toFixed(1)} to ${(chance + BAND).toFixed(1)})`);
+    .filter(([, got]) => Math.abs(got - chance) > band)
+    .map(([name, got]) => `${name}: ${got.toFixed(1)} of ${qs.length} first try (chance ${chance.toFixed(1)}, band ${(chance - band).toFixed(1)} to ${(chance + band).toFixed(1)})`);
 }
 
 test('no blind option-shape rule strays from chance by more than a few points, either way', async () => {
@@ -225,11 +232,11 @@ test('T2 every live pooled question stays within 0.15 of chance on every rule', 
   const pooled = (await allQuestions()).filter((q) => q.draw !== undefined);
   for (const q of pooled) {
     for (const [name, mark] of Object.entries(STRATEGIES)) {
-      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= 0.15, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
+      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= POOL_BAND, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
     }
   }
   // The same bound has teeth: a pool whose right answers are longer is outside it.
-  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > 0.15);
+  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > POOL_BAND);
 });
 
 test('T3 every pooled step is found as a question: the live registry, and the fixture level', async () => {
