@@ -575,6 +575,7 @@ const KEEP_PICKS = new Set([
   'cardinality:sum',
   'synthetic-checks:health-check',
   'frontend-rum:page-origin-otlp-header',
+  'what-costs-money:drop-debug',
 ]);
 
 /** Press the 50/50 of the question `answer` belongs to, if it has one that is enabled. */

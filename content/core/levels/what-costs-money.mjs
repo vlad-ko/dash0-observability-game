@@ -20,7 +20,7 @@ export default {
             },
             {
               "key": "fewer-hosts",
-              "label": "Run the same workload on fewer, larger hosts",
+              "label": "Run it on fewer, larger hosts",
               "why": "The bill counts hosts, so consolidating them is the lever. The flip side is that a host can send as much telemetry as it likes at no extra charge, so nothing in the bill pushes you to trim volume."
             },
             {
@@ -32,6 +32,86 @@ export default {
               "key": "short-keys",
               "label": "Shorten the attribute names: smaller records lower a per-host bill",
               "why": "Size matters when bytes are metered. A per-host price ignores both the size and the number of records."
+            },
+            {
+              "key": "consolidate-vms",
+              "label": "Merge the services of three small VMs onto a single larger VM",
+              "why": "Each VM is a host to the meter, so three become one on the bill, whatever telemetry the services send. The telemetry itself is unchanged, so what you pay for storage or network stays as it was."
+            },
+            {
+              "key": "retire-idle",
+              "label": "Switch off the idle hosts, or stop them sending telemetry, so the bill counts fewer hosts",
+              "why": "The meter counts hosts that send telemetry, so a host that is gone, or that sends nothing, drops off the bill. A host that sends one log line a day is charged the same as a busy one."
+            },
+            {
+              "key": "split-hosts",
+              "label": "Split each large host into several small ones to spread the load",
+              "why": "More hosts is more units on a per-host bill, and each one is charged the same flat amount however small it is. Spreading the load can help the application and still raise the invoice."
+            },
+            {
+              "key": "longer-interval",
+              "label": "Export metrics every 5 minutes instead of every 30 seconds, so a per-host bill gets smaller",
+              "why": "A longer interval makes fewer data points, which matters when the meter counts signals. A per-host price counts hosts, and every host still sends."
+            },
+            {
+              "key": "cut-cardinality",
+              "label": "Remove the user ID label from the metrics",
+              "why": "Every combination of label values is another time series, so cardinality drives cost where the price follows volume. A per-host price does not follow the number of series, only the number of hosts."
+            },
+            {
+              "key": "shorter-retention",
+              "label": "Keep the telemetry for 30 days, not 90",
+              "why": "Retention multiplies the volume you store, so it matters where storage is paid for. A flat amount for each host does not depend on how long the data is kept, and the number of hosts has not changed."
+            },
+            {
+              "key": "tail-sample",
+              "label": "Tail-sample in the Collector so that only errors and slow traces go on to the vendor: fewer traces lower the per-host bill",
+              "why": "Sampling is a lever on volume, and the OpenTelemetry docs call it one of the most effective ways to reduce the cost of observability. It does not remove a host, and a per-host bill counts hosts."
+            },
+            {
+              "key": "filter-health",
+              "label": "Filter the health-check spans out in the Collector",
+              "why": "The spans that are filtered out are fewer to send and store, and the hosts that sent them still send. The per-host bill has the same number of units."
+            },
+            {
+              "key": "compress",
+              "label": "Turn on compression on the exporter",
+              "why": "Compression makes what is sent smaller, which matters when bytes are the meter. A per-host price ignores the size of what each host sends."
+            },
+            {
+              "key": "host-per-service",
+              "label": "Give each new service a host of its own, so its telemetry is easy to tell apart",
+              "why": "Each extra host is another unit on the bill, and the flat amount does not shrink because a host runs only one service. Telling the telemetry apart is what a service name is for."
+            },
+            {
+              "key": "cut-bodies",
+              "label": "Cut the request and response bodies out of every log line: the vendor bills per host, so smaller lines cost less",
+              "why": "Smaller lines help when bytes are the meter. A per-host price does not move with the size of a record, and the hosts that send them are still there."
+            },
+            {
+              "key": "delete-dashboards",
+              "label": "Delete the dashboards nobody opens",
+              "why": "A dashboard reads data that has already been sent, and it is not a host. The number of hosts sending telemetry is the same after the clean-up as before."
+            },
+            {
+              "key": "one-service-metrics",
+              "label": "Stop the metrics of one service on a host that still sends its logs and traces",
+              "why": "A host that sends any telemetry is one unit, and this host still sends some. Only when it stops sending altogether does it leave a per-host bill."
+            },
+            {
+              "key": "downsize",
+              "label": "Move every host to a smaller instance type",
+              "why": "The flat amount is for each host, not for each unit of its size, so a smaller host is charged the same. Any saving is on the cloud bill for the machines, and that is a different bill."
+            },
+            {
+              "key": "filter-after",
+              "label": "Add a filter that drops the noisy telemetry once it has reached the vendor: a per-host bill falls as the data does",
+              "why": "Filtering changes what is kept, and the hosts that sent the data are still sending it. A per-host price follows hosts, not the amount of data that survives."
+            },
+            {
+              "key": "delete-alerts",
+              "label": "Delete half of the alert rules",
+              "why": "An alert rule reads telemetry that is already there, and it is not a host. The number of hosts that send telemetry has not changed."
             }
           ]
         }

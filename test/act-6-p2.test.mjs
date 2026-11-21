@@ -50,14 +50,16 @@ test('6.3: the steps are a Choice for per-host, then a Trade-off for per-GB and 
   assert.equal(/signal/.test(plain(steps[2].intro)), true);
 });
 
-test('6.3 per host: only consolidating hosts lowers a per-host bill; the three volume or size levers do not', () => {
-  assert.deepEqual(host().map((c) => c.key).sort(), ['drop-debug', 'fewer-hosts', 'sample', 'short-keys']);
-  assert.equal(host().find((c) => c.right).key, 'fewer-hosts');
-  for (const k of ['drop-debug', 'sample', 'short-keys']) {
-    assert.equal(host().find((c) => c.key === k).right, undefined, k);
-    assert.equal(/per-host|per host|price/.test(plain(host().find((c) => c.key === k).why)), true, `${k} says why the bill does not move`);
+test('6.3 per host: a pool of 20 (draw 4); only the three that remove a host lower a per-host bill', () => {
+  assert.equal(steps[0].choice.draw, 4);
+  assert.equal(host().length, 20);
+  assert.deepEqual(host().filter((c) => c.right).map((c) => c.key).sort(), ['consolidate-vms', 'fewer-hosts', 'retire-idle']);
+  for (const c of host().filter((x) => !x.right)) {
+    assert.equal(/per-host|per host|price|bill|meter|host/.test(plain(c.why)), true, `${c.key} says why the bill does not move`);
   }
-  assert.equal(/no extra charge|nothing in the bill/.test(plain(host().find((c) => c.right).why)), true, 'the flip side is stated');
+  for (const k of ['drop-debug', 'sample', 'short-keys']) assert.ok(host().find((c) => c.key === k), `${k} is still in the pool`);
+  assert.deepEqual(host().filter((c) => c.keep).map((c) => c.key), ['drop-debug'], 'the near-miss the 50/50 keeps');
+  assert.equal(/no extra charge|nothing in the bill/.test(plain(host().find((c) => c.key === 'fewer-hosts').why)), true, 'the flip side is stated');
 });
 
 test('6.3 per GB: costs and cap are the numbers the copy relies on', () => {
