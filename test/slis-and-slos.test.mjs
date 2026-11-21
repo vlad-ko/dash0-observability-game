@@ -48,11 +48,10 @@ test('7.2 fields: second level of act-7, scored with no par time, query and choi
 test('step 1: good over valid is the one right answer, labels do not give it away', () => {
   assert.equal(SLI_STEP.qid, 'sl-q-sli');
   const choices = SLI_STEP.choice.choices;
-  assert.deepEqual(choices.map((c) => c.key), ['good-over-valid', 'error-count', 'uptime']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['good-over-valid']);
-  const lens = choices.map((c) => plain(c.label).length);
-  assert.equal(plain(choices[0].label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 16, true, `plain label lengths ${lens}`);
+  assert.equal(SLI_STEP.choice.draw, 3);
+  assert.equal(choices.length, 20, 'a pool of 20');
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['failing-share', 'good-over-valid', 'non-error-share', 'successful-share']);
+  for (const k of ['error-count', 'uptime']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
   assert.match(plain(choices.find((c) => c.key === 'error-count').why), /follows the traffic/);
   assert.match(plain(choices.find((c) => c.key === 'uptime').why), /up and still fail/);
   const intro = plain(SLI_STEP.intro);
@@ -157,10 +156,10 @@ test('step 3: the 0.1% budget of 1,000,000 valid requests is 1,000, the illustra
 test('step 4: the load balancer is the right source; server spans are the tempting wrong one and the sum double counts', () => {
   assert.equal(EDGE_STEP.qid, 'sl-q-edge');
   const choices = EDGE_STEP.choice.choices;
-  assert.deepEqual(choices.map((c) => c.key), ['server-spans', 'load-balancer', 'both-summed']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['load-balancer']);
-  const lens = choices.map((c) => plain(c.label).length);
-  assert.equal(plain(choices[1].label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
+  assert.equal(EDGE_STEP.choice.draw, 3);
+  assert.equal(choices.length, 20, 'a pool of 20');
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['front-door-counts', 'ingress-metrics', 'lb-access-log', 'load-balancer']);
+  for (const k of ['server-spans', 'both-summed']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
   assert.match(plain(choices[0].why), /never reached checkout/);
   assert.match(plain(choices[2].why), /twice/);
   assert.match(plain(EDGE_STEP.intro), /502/);
@@ -182,7 +181,7 @@ test('step 4: the load balancer is the right source; server spans are the tempti
 
 // ---- sources -------------------------------------------------------------------------------
 
-test('sources: Spec lines on prometheus.io and opentelemetry.io only, facts and inventions listed, no Dash0 claim, no em dash', () => {
+test('sources: Spec lines on prometheus.io and opentelemetry.io only, facts and inventions listed, one Dash0 claim (the SLI sentence of the pool, cited), no em dash', () => {
   const specs = SRC.split('\n').filter((l) => /^\/\/ Spec: /.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g));
   assert.deepEqual(specs, [
     'https://prometheus.io/docs/prometheus/latest/querying/functions/#rate',
@@ -190,12 +189,13 @@ test('sources: Spec lines on prometheus.io and opentelemetry.io only, facts and 
     'https://opentelemetry.io/docs/specs/semconv/http/http-spans/',
     'https://opentelemetry.io/docs/collector/components/connector/',
   ]);
-  for (const url of SRC.match(/https:\/\/[^\s,)]+/g)) assert.equal(['prometheus.io', 'opentelemetry.io', 'github.com'].includes(new URL(url).host), true, url);
+  for (const url of SRC.match(/https:\/\/[^\s,)]+/g)) assert.equal(['prometheus.io', 'opentelemetry.io', 'github.com', 'www.dash0.com'].includes(new URL(url).host), true, url);
   assert.equal(/^\/\/ Docs \(GitHub, spanmetrics connector README at v0\.164\.0.*connector\/spanmetricsconnector\/README\.md$/m.test(SRC), true, 'the spanmetrics README is cited on a Docs line');
   assert.match(SRC, /Facts used/);
   assert.doesNotMatch(SRC, /read on the pages above/);
   assert.match(SRC, /Invented/);
-  assert.doesNotMatch(plain(JSON.stringify(level.play)), /Dash0/, '7.2 has no Dash0 tie-in (OUTLINE: n/a)');
+  assert.match(SRC, /^\/\/ Dash0 docs .*https:\/\/www\.dash0\.com\/docs\/dash0\/monitoring\/alerting\/slos$/m, 'the one Dash0 sentence cites the SLOs page');
+  assert.equal((plain(JSON.stringify(level.play)).match(/Dash0/g) ?? []).length, 1, 'one Dash0 sentence, in the pool of the first Choice');
   assert.doesNotMatch(plain(JSON.stringify(level.play)), /\bevents?\b/, 'player-facing copy says requests');
   assert.match(plain(level.play.finish), /^You can turn "it works" into a ratio of good requests to valid requests, and compute it from rates, not from a counter's total\. You can read the error budget off an SLO\. You know /);
   assert.equal(SRC.includes('\u2014'), false, 'no em dash');

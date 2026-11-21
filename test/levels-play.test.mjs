@@ -574,6 +574,7 @@ const KEEP_PICKS = new Set([
   'span-kinds:provider',
   'cardinality:sum',
   'synthetic-checks:health-check',
+  'good-alerts:for-1h',
   'frontend-rum:page-origin-otlp-header',
   'what-costs-money:drop-debug',
 ]);

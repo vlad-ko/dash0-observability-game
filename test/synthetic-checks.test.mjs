@@ -139,18 +139,15 @@ test('step 1: the honest sort scores 5 stars, and no keyword rule through place(
 
 // ---- step 2: the alert ---------------------------------------------------------------------
 
-test('step 2: the probe is the one right alert; each alert on spans is shown reading healthy or quiet in the numbers', () => {
+test('step 2: a pool of 20 (draw 6) with three probe answers right; the original span alerts and the health check stay in it, each reading healthy or quiet in the numbers', () => {
   assert.equal(ALERT_STEP.qid, 'sc-q-alert');
   const choices = ALERT_STEP.choice.choices;
-  assert.deepEqual(choices.map((c) => c.key), ['error-ratio', 'burn-rate', 'p99', 'rate', 'health-check', 'probe']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['probe']);
-  const lens = choices.map((c) => plain(c.label).length);
-  assert.equal(plain(choices[5].label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 16, true, `plain label lengths ${lens}`);
-  for (const c of choices) assert.doesNotMatch(plain(c.label), /expired|certificate|handshake|outside|blind|never|wrong|TLS|DNS/i, c.key);
-  const spanLabels = choices.filter((c) => /spans/.test(c.label)).length;
-  assert.equal(spanLabels, 4, 'four options are about spans, the other two are not: "spans" does not mark the odd one out');
-  assert.equal(/spans|probe/i.test(choices[5].label), false, 'the right label says what it does, not the step 1 bucket word');
+  assert.equal(ALERT_STEP.choice.draw, 6);
+  assert.equal(choices.length, 20);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['outside-200', 'probe', 'synthetic-check']);
+  for (const k of ['error-ratio', 'burn-rate', 'p99', 'rate', 'health-check']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
+  assert.deepEqual(choices.filter((c) => c.keep).map((c) => c.key), ['health-check'], 'the near-miss the 50/50 keeps');
+  for (const c of choices) assert.doesNotMatch(plain(c.label), /expired|certificate|handshake|blind|wrong|TLS|DNS/i, c.key);
   const intro = plain(ALERT_STEP.intro);
   for (const w of ['3,000 requests (usually 4,000 at that hour)', '0 errors', 'p99 latency 180 ms (usually 180 ms)', 'TLS certificate', 'expired', 'so they still connect']) assert.equal(intro.includes(w), true, w);
   // The numbers of the intro, read as each alert would read them.

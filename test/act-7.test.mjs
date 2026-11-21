@@ -164,16 +164,16 @@ test('step 1 whyNot on exactly the four good rules; explain names the three prob
 
 // ---- step 2: the fix ----------------------------------------------------------------------
 
-test('step 2: one right fix, increase; labels give nothing away', () => {
+test('step 2: a pool of 20 (draw 4); three fixes are right (increase, rate, the error share), the original wrong ones stay', () => {
   assert.equal(FIX_STEP.qid, 'ga-q-fix');
   assert.equal(FIX_STEP.choice.id, 'ga-fix');
+  assert.equal(FIX_STEP.choice.draw, 4);
   assert.equal(plain(FIX_STEP.question), 'How do you fix CheckoutErrors?');
-  assert.deepEqual(choices.map((c) => c.key), ['raise', 'for-1h', 'increase', 'delta']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['increase']);
-  const lens = choices.map((c) => plain(c.label).length);
-  const right = choices.find((c) => c.right);
-  assert.equal(plain(right.label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 10, true, `plain label lengths ${lens}`);
+  assert.equal(choices.length, 20);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['error-share', 'increase', 'rate-5m']);
+  for (const k of ['raise', 'for-1h', 'delta']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
+  assert.deepEqual(choices.filter((c) => c.keep).map((c) => c.key), ['for-1h'], 'the near-miss the 50/50 keeps');
+  const right = choices.find((c) => c.key === 'increase');
   assert.match(plain(choices.find((c) => c.key === 'delta').why), /gauges/);
   assert.equal(plain(right.why).includes('increase(http_requests_total{job="checkout", code=~"5.."}[10m]) > 20'), true);
   for (const c of choices) assert.equal(typeof c.why === 'string' && c.why.length > 0, true, `${c.key} has a why`);
