@@ -6,7 +6,7 @@ export default {
   "sub": "What travels with the request",
   "rewardTitle": "Light packer",
   "run": {
-    "sortIntro": "Baggage is a set of key/value pairs that travels with a request's context, from service to service. Storefront wants to put a few entries in it so services further down can use them.",
+    "sortIntro": "[[Baggage]] is a set of key/value pairs that travels with a request's [[context]], from service to service. Storefront wants to put a few entries in it so services further down can use them.",
     "sortQuestion": "Pick an entry, then say whether it belongs in baggage.",
     "sort": {
       "id": "bag-sort",

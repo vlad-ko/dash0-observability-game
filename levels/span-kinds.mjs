@@ -16,12 +16,13 @@ import CORE from '../content/core/levels/span-kinds.mjs';
 import { bindLevel, bindRunLevel } from '../lib/content/bind.mjs';
 import { fillSlots } from '../lib/content/placeholders.mjs';
 import {
-  actions, button, chip, clearFeedback, eyebrow, feedback, finishButton, nextButton, note, option, options, panel, question, setFeedback, sideColumn, split,
+  actions, button, chip, eyebrow, feedback, finishButton, nextButton, note, option, options, panel, question, sideColumn, split,
   stats, step, stepHead, table,
 } from '../lib/ui/index.mjs';
 import { choiceHtml, mountChoice } from '../lib/widgets/choice.mjs';
 import { focusFirst } from '../lib/widgets/focus.mjs';
 import { mountHintLadder, ruleText } from '../lib/widgets/help-ladder.mjs';
+import { quiet, tell } from '../lib/widgets/tell.mjs';
 import { waterfall } from '../lib/widgets/trace.mjs';
 import { escapeHtml } from '../lib/lesson-kit.mjs';
 import { flagSpan, newHunt, serviceView, withKind } from '../lib/service-view.mjs';
@@ -98,6 +99,9 @@ const VARS = {
 // Values only the code knows: the watched service and the count of the view being drawn, a rate, the map edges, a span's
 // times, parent, name and service.
 const SLOTS = ['service', 'count', 'rate', 'edges', 'start', 'end', 'parent', 'name'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.speech.
+export const TERMS = ['huntIntro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 const SKELETON = {
   id: 'span-kinds',
@@ -131,7 +135,7 @@ const contentOf = (say) => {
     ],
   };
 };
-export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, BIND).run);
 
 function screens(ctx, say) {
   const bar = ctx.ovActions;
@@ -175,7 +179,7 @@ function screens(ctx, say) {
     const view = viewOf(list);
     body.querySelector('#kinds-alert').innerHTML = alertHtml(view);
     body.querySelector('#kinds-rates').innerHTML = stats(view.rates.map((r) => ({ label: r.service, value: fillSlots(say.ratesValue, { rate: r.perMin }) })));
-    setFeedback(body.querySelector('#kinds-edges'), 'neutral', fillSlots(say.edgesLine, { edges: edgesList(view.edges, e, say.edgesNone) }), { scroll });
+    tell(ctx, body.querySelector('#kinds-edges'), 'neutral', fillSlots(say.edgesLine, { edges: edgesList(view.edges, e, say.edgesNone) }), { scroll });
   };
   // At 320px the step's first control and its question must be on screen when the How to play card closes, so the
   // view (and on the hunt screen the alert) sort after them (widgets.css; the markup order stays alert, board, view).
@@ -215,7 +219,7 @@ function screens(ctx, say) {
     let hunt = newHunt();
     let shown = null;
     const opened = new Set();
-    const verdict = (tone, html) => setFeedback(status, tone, html, { scroll: true });
+    const verdict = (tone, html) => tell(ctx, status, tone, html, { scroll: true });
 
     const ladder = mountHintLadder(ctx, box, 'kinds-hunt', {
       swirl: playSwirl,
@@ -293,7 +297,7 @@ function screens(ctx, say) {
     rowBtns.forEach((b) => {
       b.onclick = () => {
         // A wrong-flag verdict is about the span just flagged; once the player moves on it would read as about this one.
-        if (!hunt.solved) clearFeedback(status);
+        if (!hunt.solved) quiet(ctx, status);
         showSpan(b.dataset.openSpan, { focus: true });
       };
     });
@@ -333,7 +337,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);

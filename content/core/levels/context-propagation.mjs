@@ -6,7 +6,7 @@ export default {
   "sub": "Pass it on",
   "rewardTitle": "Header hunter",
   "run": {
-    "whereIntro": "One checkout request went storefront → nginx → checkout, but the backend shows it as two traces. Each hop should pass the trace context on in the <code>traceparent</code> header.",
+    "whereIntro": "One checkout request went storefront → nginx → checkout, but the backend shows it as two traces. Each hop should pass the [[trace context]] on in the <code>traceparent</code> header.",
     "whereHopsTitle": "<p>Headers on each hop:</p>",
     "hopWith": "{{from}} → {{to}}: <code data-token>traceparent: {{header}}</code>",
     "hopWithout": "{{from}} → {{to}}: no <code>traceparent</code> header",

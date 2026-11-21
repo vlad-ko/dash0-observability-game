@@ -26,7 +26,7 @@ export default {
       }
     ],
     "recordedReason": "Pick the right answer to continue.",
-    "errorsIntro": "<p>Here is what happened in three spans. Set each status by the outcome: Error when the operation failed, Unset when it completed, even if it handled an error on the way.</p>",
+    "errorsIntro": "<p>Here is what happened in three spans. Set each [[status]] by the outcome: Error when the operation failed, Unset when it completed, even if it handled an error on the way.</p>",
     "stories": [
       "The provider declined the card. <code>CardDeclinedError</code> was recorded and escaped the span: the charge failed.",
       "The span covers the whole charge, retries included. The first try hit a connection reset; the code caught it and retried, and the second try went through. Nothing was recorded, but a helper set Error.",

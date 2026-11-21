@@ -34,6 +34,9 @@ const span = (spanId, traceId, service, name, kind, startMs, endMs) => ({
 // This level's copy has no figures a grader computes over: no fill-ins. The one slot is the Build it widget's own reason.
 const VARS = {};
 const SLOTS = ['reason'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.speech.
+export const TERMS = ['oneTraceIntro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 // Step 2: the spans arrive one at a time in start order (the queue), A already placed; the
 // answer gives B, C and D their parents. E overlaps C in time on purpose: parenting it there
@@ -78,7 +81,7 @@ const contentOf = (say) => ({
     { id: 'sat-e', choices: say.other },
   ],
 });
-export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, BIND).run);
 
 function screens(ctx, say) {
   const bar = ctx.ovActions;
@@ -152,7 +155,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);

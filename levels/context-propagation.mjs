@@ -42,6 +42,9 @@ const ROOTS = [
 // The valid header the copy quotes (a figure); the hop, root and header values the screens show are slots, known only to the code.
 const VARS = { 'valid-traceparent': TRACEPARENT };
 const SLOTS = ['from', 'to', 'header', 'name', 'service', 'trace'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.speech.
+export const TERMS = ['whereIntro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 // Step 3: nginx now forwards the header, so checkout's spans carry trace 4bf9..., but its
 // SERVER span still arrives as a root. The answer gives it the parent the parent-id names.
@@ -85,7 +88,7 @@ const contentOf = (say) => ({
     { build: TREE },
   ],
 });
-export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, BIND).run);
 
 function screens(ctx, say) {
   const bar = ctx.ovActions;
@@ -171,7 +174,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);
