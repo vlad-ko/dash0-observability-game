@@ -197,7 +197,7 @@ const ANSWERS = {
     'choice dist-build: ocb',
   ],
   'what-costs-money': [
-    'choice wcm-host: fewer-hosts',
+    'choice wcm-host: consolidate-vms|fewer-hosts|retire-idle',
     'tradeoff wcm-gb: traces=tail logs=trimmed',
     'tradeoff wcm-signal: interval=s60 records=per-request spans=tail',
   ],

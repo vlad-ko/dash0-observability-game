@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
 import { STEP_TYPES } from '../lib/play.mjs';
 import { namer } from '../lib/widgets/build-it-names.mjs';
+import { choiceBoards, drawBoard } from '../lib/pool.mjs';
 import { answerTokens, findStep, guideAllowed, stepContext, withholds } from '../lib/guide/context.mjs';
 import { systemPrompt, userMessage } from '../lib/guide/prompt.mjs';
 
@@ -228,6 +229,13 @@ function scrambled(key, spec) {
   return s;
 }
 const contextOf = (level, type, spec, step) => stepContext(level, { type, spec, step });
+/** Every board a step can show (stepContext refuses a pool): all of a choice pool's, the identity board of another pool, the spec itself otherwise. */
+const boardsFor = (spec) => {
+  if (!Object.hasOwn(spec, 'draw')) return [spec];
+  return Array.isArray(spec.choices) ? choiceBoards(spec) : [drawBoard(spec, (list) => [...list])];
+};
+/** Each allowed step once per board it can show: `spec` is the board, `pool` the step's own spec. */
+const BOARDS = ALLOWED.flatMap((s) => boardsFor(s.spec).map((board) => ({ ...s, pool: s.spec, spec: board })));
 
 // Choice, incident and spot list their options to the player, and a trade-off's right option can be the
 // start of a wrong one's label ("Tail-sample in the Collector" and "..., failed traces only"): there the
@@ -235,10 +243,10 @@ const contextOf = (level, type, spec, step) => stepContext(level, { type, spec, 
 const LISTS_OPTIONS = new Set(['choice', 'incident', 'spot', 'tradeoff']);
 
 test('stepContext carries no answer: no line trips withholds, for every live allowed step', () => {
-  for (const { level, type, spec, step } of ALLOWED) {
+  for (const { level, type, spec, pool, step } of BOARDS) {
     const lines = contextOf(level, type, spec, step);
     assert.ok(Array.isArray(lines) && lines.length > 0 && lines.every((l) => typeof l === 'string' && l.trim() !== ''), `${level.id} ${type.idOf(spec)}`);
-    const tokens = answerTokens(type, spec, step);
+    const tokens = answerTokens(type, pool, step);
     if (!LISTS_OPTIONS.has(type.key)) {
       // A configure line is quoted with a leading bar (and may be a YAML list item), which a reply may not start a line with; the text is what counts.
       for (const line of lines) assert.equal(withholds(line.replace(/^\|\s*(?:-\s+)?/, ''), tokens), false, `${level.id} ${type.idOf(spec)}: ${line}`);
@@ -292,15 +300,16 @@ test('stepContext lists options in an order that does not say which is right', (
 
 test('stepContext does not depend on authoring order: choices, hypotheses, views, options and items reversed (finding 9)', () => {
   let swept = 0;
-  for (const { level, type, spec, step } of ALLOWED) {
-    const flipped = structuredClone(spec);
+  for (const { level, type, spec: board, step } of BOARDS) {
+    const spec = board;
+    const flipped = structuredClone(board);
     flipped.choices?.reverse();
     flipped.hypotheses?.reverse();
     flipped.views?.reverse();
     flipped.items?.reverse();
     for (const k of flipped.knobs ?? []) k.options.reverse();
     swept++;
-    assert.deepEqual(contextOf(level, type, flipped, step), contextOf(level, type, spec, step), `${level.id} ${type.idOf(spec)}`);
+    assert.deepEqual(contextOf(level, type, flipped, step), contextOf(level, type, board, step), `${level.id} ${type.idOf(spec)}`);
   }
   assert.ok(swept > 50);
 });
