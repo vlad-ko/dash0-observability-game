@@ -169,19 +169,32 @@ test('step 1 whyNot on exactly the five attributes that stay (stable names that 
 
 // ---- step 2: what first -------------------------------------------------------------------
 
-test('step 2: one right answer, move the queries first; labels give nothing away; the figure is scoped to the eight lines shown', () => {
+// Rewritten for the pool (#390): the fixed-set pins "the right label is not the longest" and "labels within 10 characters" become checks
+// over the 11 answers (no right label is the sole longest or shortest, within 70 characters); the word and punctuation tells are scored
+// over every board by C6 and T2 in test/pool-content.test.mjs and test/choice-tells.test.mjs.
+test('step 2 is a pool of 11 (draw 3): three right orders (move every reader first, rewrite the filters while both names arrive, stay on http/dup until nothing reads an old name), eight wrong; the figure is scoped to the eight lines shown', () => {
   assert.match(plain(SWITCH_STEP.intro), /Of the eight attributes you just read, 3 are old names/);
   assert.equal(SWITCH_STEP.qid, 'scv-q-switch');
   assert.equal(SWITCH_STEP.choice.id, 'scv-switch');
+  assert.equal(SWITCH_STEP.choice.draw, 3);
   assert.equal(plain(SWITCH_STEP.question), 'What has to happen first?');
-  assert.deepEqual(choices.map((c) => c.key), ['switch-now', 'move-queries', 'keep-dup']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['move-queries']);
+  assert.equal(choices.length, 11);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['move-queries', 'rewrite-filters', 'dup-until-unread']);
+  for (const k of ['switch-now', 'keep-dup']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
   const lens = choices.map((c) => plain(c.label).length);
-  const right = choices.find((c) => c.right);
-  assert.equal(plain(right.label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 10, true, `plain label lengths ${lens}`);
-  assert.match(plain(choices.find((c) => c.key === 'switch-now').why), /matches nothing/);
-  assert.match(plain(choices.find((c) => c.key === 'switch-now').why), /http\.status_code/);
+  for (const r of choices.filter((c) => c.right)) {
+    const n = plain(r.label).length;
+    assert.equal(lens.filter((l) => l >= n).length >= 2 && lens.filter((l) => l <= n).length >= 2, true, `${r.key} is not the sole longest or shortest: ${lens}`);
+  }
+  assert.equal(Math.max(...lens) - Math.min(...lens) <= 70, true, `plain label lengths ${lens}`);
+  const why = (k) => plain(choices.find((c) => c.key === k).why);
+  assert.match(why('switch-now'), /matches nothing/);
+  assert.match(why('switch-now'), /http\.status_code/);
+  assert.match(why('fix-when-quiet'), /an alert that matches nothing stays quiet/);
+  assert.match(why('route-only'), /"No change"/, 'http.route is "No change" on the migration page');
+  assert.match(why('three-only'), /http\.method.*http\.request\.method.*http\.scheme.*url\.scheme/, 'the migration page renames more than the three shown');
+  assert.match(why('backend-joins'), /Nothing on the migration page says a backend treats the two names as one/);
+  assert.match(why('dup-until-unread'), /not as an end state/);
   for (const c of choices) assert.equal(typeof c.why === 'string' && c.why.length > 0, true, `${c.key} has a why`);
 });
 

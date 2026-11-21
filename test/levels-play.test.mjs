@@ -575,6 +575,8 @@ const KEEP_PICKS = new Set([
   'cardinality:sum',
   'synthetic-checks:health-check',
   'good-alerts:for-1h',
+  'dashboards-as-code:operator',
+  'ai-assisted-debugging:newer-name',
   'frontend-rum:page-origin-otlp-header',
   'what-costs-money:drop-debug',
 ]);

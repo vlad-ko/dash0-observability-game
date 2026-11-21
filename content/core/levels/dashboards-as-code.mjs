@@ -85,23 +85,63 @@ export default {
           "choices": [
             {
               "key": "terraform",
-              "label": "Add a <code>dash0_dashboard</code> resource for each dashboard, with its YAML inline and a dataset",
-              "why": "Dash0's [[Terraform]] provider has a <code>dash0_dashboard</code> resource that takes a <code>dataset</code> and the dashboard as Perses YAML in <code>dashboard_yaml</code>. The file reviewed in the pull request is then what the pipeline applies, next to the rest of payments' infrastructure, with no cluster involved. The Dash0 CLI can create a dashboard from a file too, but that would be a second way to deploy beside the one the team already runs. Dash0 dashboards use the Perses format, so the YAML is the same document the operator would take, and an export from the Source tab gives you a starting file."
+              "label": "Add a <code>dash0_dashboard</code> entry per dashboard, with its <code>PersesDashboard</code> YAML inline and a dataset",
+              "why": "Dash0's [[Terraform]] provider has a <code>dash0_dashboard</code> resource that takes a <code>dataset</code> and the dashboard as Perses YAML in <code>dashboard_yaml</code>. The file reviewed in the pull request is then what the pipeline applies, next to the rest of payments' infrastructure, with no cluster involved. Dash0 dashboards use the Perses format, so the YAML is the same kind of document the operator takes (the Kubernetes resource wraps the configuration in <code>spec.config</code>), and a dashboard downloaded as YAML from More actions gives you a starting file."
+            },
+            {
+              "key": "provider",
+              "label": "Declare each dashboard as a Dash0 provider resource and let a deploy run it",
+              "why": "The provider, published as <code>dash0hq/dash0</code>, manages dashboards in your Terraform next to your other cloud resources, with no cluster involved. Dash0 describes managing dashboards as code as version control, automated deployment pipelines and code review for dashboard changes, and a merged pull request that the pipeline then applies gives payments all three."
+            },
+            {
+              "key": "agent0-pr",
+              "label": "Ask Agent0 to write each dashboard as code and raise the pull request before anything is applied",
+              "why": "Dash0's documentation says Agent0 can generate infrastructure as code for a dashboard and raise it as a pull request to your repository: after it builds a dashboard you ask for the Terraform configuration. The reviewers then read code, and the pipeline applies it through the same Terraform resource, with no cluster involved."
             },
             {
               "key": "operator",
-              "label": "Run the Dash0 operator and commit a <code>PersesDashboard</code> resource for each dashboard file",
+              "label": "Run the Dash0 operator with a <code>PersesDashboard</code> resource for each dashboard",
               "why": "The operator watches for Perses dashboard resources in namespaces that have a Dash0 monitoring resource, so it needs a Kubernetes cluster to run in. Payments has none, and building one just for dashboards is a much larger change than the one asked for."
             },
             {
               "key": "json",
-              "label": "Keep editing with Edit as JSON in the dashboard, and paste the result into git once it works",
+              "label": "Carry on editing with Edit as JSON in the dashboard, and paste the result into git once it works",
               "why": "Edit as JSON applies changes when you save, so the dashboard is already live before anyone reads the change, and git only records it afterwards. Dash0 describes the editor as convenient for quick edits and experiments, which is what it is for."
             },
             {
               "key": "export",
-              "label": "Export each dashboard as YAML from its Source tab every sprint and commit the files as a record",
+              "label": "Download each dashboard as YAML every sprint and store the files as a record",
               "why": "Exporting gives a snapshot of what is live, for sharing or version control. Changes still happen in Dash0 first and the file records them later, so nothing is reviewed before it goes live."
+            },
+            {
+              "key": "cli-first",
+              "label": "Use <code>dash0 dashboards create</code> on the YAML from a laptop before the pull request and look at the result live",
+              "why": "The Dash0 CLI does create a dashboard from a YAML or JSON file, but run before the review it makes the dashboard live first, and a laptop is not the pipeline that applies the rest of payments' infrastructure. The review would be of something already deployed."
+            },
+            {
+              "key": "perses-terraform",
+              "label": "Express each dashboard as a <code>PersesDashboard</code> YAML and let the Terraform pipeline deploy it",
+              "why": "A <code>PersesDashboard</code> is a Kubernetes custom resource, and the operator is what turns one into a Dash0 dashboard, by watching the namespaces of a cluster that have a Dash0 monitoring resource. Applying it from Terraform still needs that cluster and operator, and payments has neither. The Terraform resource that fits is <code>dash0_dashboard</code>, which takes the YAML directly."
+            },
+            {
+              "key": "grafana-import",
+              "label": "Write the dashboards in the Grafana format and have each deploy import them to a dataset",
+              "why": "Dash0's import is described as steps in the interface: Edit as JSON, browse to a Grafana file, review the converted dashboard, click Apply to update an unsaved preview, then save. It is for bringing existing Grafana or Perses dashboards in, and it converts Prometheus queries only. The page does not describe it as something a pipeline runs, so there is nothing for the merge to apply."
+            },
+            {
+              "key": "agent0-live",
+              "label": "Build each dashboard with Agent0 in Dash0 and let the team review it before sharing the link",
+              "why": "A dashboard built with Agent0 is created in Dash0, so it is live while it is reviewed, and nothing lands in git. Dash0's documentation says that to keep a dashboard in code you ask Agent0 for the Terraform configuration or Kubernetes manifest after it is built."
+            },
+            {
+              "key": "copy-dataset",
+              "label": "Make the dashboard in a test dataset, then copy it across to production in the editor",
+              "why": "Dash0 lists copying dashboards across organisations and datasets among the jobs the JSON editor suits. It is a copy by hand from one live dashboard to another, with no file in git and no pull request to review, so it does not give payments the review it asked for."
+            },
+            {
+              "key": "screenshot",
+              "label": "Set up the dashboard in the Dash0 interface and attach a screenshot to the pull request",
+              "why": "A screenshot shows how a dashboard looks, not what it is: a reviewer cannot read its queries or its layout from a picture. The dashboard is also built and live in Dash0 before the pull request exists, so the review comes after it."
             }
           ]
         }

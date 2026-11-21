@@ -273,30 +273,58 @@ test('step 1 explain: the namespace, the width in cells, and the missing panel, 
 
 // ---- step 2: how a team with no cluster deploys ---------------------------------------------
 
-test('step 2: one right answer, the dash0_dashboard resource; labels balanced, none argues its own wrongness or echoes the intro', () => {
+// Rewritten for the pool (#390): the fixed-set pins on the four labels (the right one neither longest nor shortest, within 14
+// characters, a code name on two of four labels, the product name on one of four) become checks over the 12 answers; the word,
+// punctuation and shape tells are scored over every board by C6 and T2 in test/pool-content.test.mjs and test/choice-tells.test.mjs.
+// The sentence about the Dash0 CLI as "a second way to deploy" is gone from the terraform answer: the CLI is now a wrong answer of its
+// own (run from a laptop before the review), and the pinned sentence would call a right answer's neighbour inferior.
+test('step 2 is a pool of 12 (draw 4): three right ways to reach Dash0 with no cluster (the dash0_dashboard resource, the provider, Agent0 raising the pull request), nine wrong; the original three wrong answers stay', () => {
   assert.equal(DEPLOY_STEP.qid, 'dac-q-deploy');
   assert.equal(DEPLOY_STEP.choice.id, 'dac-deploy');
+  assert.equal(DEPLOY_STEP.choice.draw, 4);
   assert.equal(plain(DEPLOY_STEP.question), 'How should payments\' dashboards reach Dash0?');
-  assert.deepEqual(choices.map((c) => c.key), ['terraform', 'operator', 'json', 'export']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['terraform']);
+  assert.equal(choices.length, 12);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['terraform', 'provider', 'agent0-pr']);
+  for (const k of ['operator', 'json', 'export']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
+  assert.deepEqual(choices.filter((c) => c.keep).map((c) => c.key), ['operator'], 'the near-miss the 50/50 keeps');
   const lens = choices.map((c) => plain(c.label).length);
-  const right = lens[0];
-  assert.equal(right < Math.max(...lens) && right > Math.min(...lens), true, `the right label is neither the longest nor the shortest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 14, true, `plain label lengths ${lens}`);
+  for (const r of choices.filter((c) => c.right)) {
+    const n = plain(r.label).length;
+    assert.equal(lens.filter((l) => l >= n).length >= 2 && lens.filter((l) => l <= n).length >= 2, true, `${r.key} is not the sole longest or shortest: ${lens}`);
+  }
+  assert.equal(Math.max(...lens) - Math.min(...lens) <= 45, true, `plain label lengths ${lens}`);
   for (const c of choices) assert.doesNotMatch(plain(c.label), /wrong|never|unsafe|slow|careful|manual|hand/i, c.key);
   const intro = plain(DEPLOY_STEP.intro);
   assert.match(intro, /Terraform/);
-  assert.doesNotMatch(plain(choices[0].label), /Terraform|pipeline|cluster|Kubernetes/, 'the right label does not repeat the intro\'s clue words');
-  assert.deepEqual(choices.map((c) => /<code>/.test(c.label)), [true, true, false, false], 'a code name is on the right label and on one wrong label');
-  assert.deepEqual(choices.map((c) => /\bDash0\b/.test(plain(c.label))), [false, true, false, false], 'the product name marks no odd one out: only the operator label has it');
+  // The pin "the right label does not repeat the intro's clue words" holds for every right label, and wrong answers use the words.
+  for (const r of choices.filter((c) => c.right)) assert.doesNotMatch(plain(r.label), /Terraform|pipeline|cluster|Kubernetes/, `${r.key}: a right label does not repeat the intro's clue words`);
+  assert.ok(choices.filter((c) => !c.right && /Terraform|pipeline|cluster|Kubernetes/.test(plain(c.label))).length >= 1, 'a wrong answer uses the clue words');
+  // The code-name and product-name pins: each is on both right and wrong labels, so neither marks a side.
+  for (const [name, has] of [['a code name', (c) => /<code>/.test(c.label)], ['the product name', (c) => /\bDash0\b/.test(plain(c.label))]]) {
+    assert.ok(choices.some((c) => c.right && has(c)) && choices.some((c) => c.right && !has(c)), `${name} is on some right labels and not others`);
+    assert.ok(choices.filter((c) => !c.right && has(c)).length >= 2 && choices.filter((c) => !c.right && !has(c)).length >= 2, `${name} is on some wrong labels and not others`);
+  }
 });
 
-test('step 2: each wrong option fails for a reason the scenario shows', () => {
+test('step 2: each wrong option fails for a reason the scenario or the docs show, and each right one holds for a reason the docs state', () => {
   const why = (k) => plain(choices.find((c) => c.key === k).why);
   assert.match(why('terraform'), /dash0_dashboard/);
   assert.match(why('terraform'), /dataset/);
   assert.match(why('terraform'), /dashboard_yaml/);
-  assert.match(why('terraform'), /Dash0 CLI can create a dashboard from a file too, but that would be a second way to deploy/);
+  assert.match(why('terraform'), /spec\.config/, 'the Kubernetes resource wraps the configuration in spec.config (read 2026-11-21)');
+  assert.match(why('terraform'), /More actions/, 'the export is a download from More actions, not a Source tab (read 2026-11-21)');
+  assert.doesNotMatch(why('terraform'), /Source tab/);
+  assert.match(why('provider'), /dash0hq\/dash0/);
+  assert.match(why('provider'), /version control, automated deployment pipelines and code review/);
+  assert.match(why('agent0-pr'), /Agent0 can generate infrastructure as code for a dashboard and raise it as a pull request to your repository/);
+  assert.match(why('cli-first'), /Dash0 CLI does create a dashboard from a YAML or JSON file/);
+  assert.match(why('cli-first'), /live first/);
+  assert.match(why('perses-terraform'), /Applying it from Terraform still needs that cluster and operator, and payments has neither/);
+  assert.match(why('grafana-import'), /Prometheus queries only/);
+  assert.match(why('grafana-import'), /does not describe it as something a pipeline runs/);
+  assert.match(why('agent0-live'), /ask Agent0 for the Terraform configuration or Kubernetes manifest/);
+  assert.match(why('copy-dataset'), /copying dashboards across organisations and datasets/);
+  assert.match(why('screenshot'), /not what it is/);
   assert.match(why('operator'), /needs a Kubernetes cluster to run in\. Payments has none/);
   assert.match(plain(DEPLOY_STEP.intro), /no Kubernetes cluster/);
   assert.match(why('json'), /applies changes when you save, so the dashboard is already live before anyone reads the change/);
