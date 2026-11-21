@@ -132,8 +132,19 @@ function strayed(qs) {
 // The fixed questions and the pooled ones are summed apart, each at BAND: a pool is held to chance in expectation (its own sum),
 // and the fixed set cannot hide behind it, nor a pool behind the fixed set.
 test('no blind option-shape rule strays from chance by more than a few points over the fixed questions, either way', async () => {
-  const qs = (await allQuestions()).filter((q) => q.draw === undefined);
-  assert.ok(qs.length >= 77, `found ${qs.length} fixed questions`);
+  const all = await allQuestions();
+  const qs = all.filter((q) => q.draw === undefined);
+  // The floor comes from the registry, so pooling a level never edits it: every declarative choice step without `draw` must be found
+  // here (the scan also reads run levels, so it may find more), and the fixed and pooled sets must add up to what was scanned.
+  const steps = Object.values(liveRegistry().levels).flatMap((l) => (l.play?.steps ?? []).filter((s) => s.choice));
+  const declaredFixed = steps.filter((s) => s.choice.draw === undefined).length;
+  assert.ok(declaredFixed > 0, 'the registry has fixed choice steps');
+  const declaredPooled = steps.length - declaredFixed;
+  assert.ok(qs.length >= declaredFixed, `found ${qs.length} fixed questions, the registry declares ${declaredFixed}`);
+  assert.equal(all.length - qs.length, declaredPooled, 'every pooled step is scanned, and nothing else counts as pooled');
+  // Run levels keep their questions in code and content, not in `play.steps`; the scan reads them too, and about half must stay found.
+  const runLevels = Object.values(liveRegistry().levels).filter((l) => !l.play?.steps).length;
+  assert.ok(qs.length - declaredFixed >= Math.floor(runLevels / 2), `found ${qs.length - declaredFixed} run-level questions across ${runLevels} run levels`);
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
   if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS fixed ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
   if (process.env.TELLS) {
