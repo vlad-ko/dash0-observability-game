@@ -10,7 +10,7 @@ import { STEP_TYPES } from '../lib/play.mjs';
 import { FIFTY_MIN } from '../lib/widgets/choice.mjs';
 import { validateSortSpec } from '../lib/widgets/sort-it.mjs';
 import { validateSortHelps } from '../lib/widgets/sort-it-help.mjs';
-import { cp, fiftyPool, poolFixture } from './fixtures/pool-fixtures.mjs';
+import { cp, fiftyPool, poolFixture, sp } from './fixtures/pool-fixtures.mjs';
 
 const plain = (html) => String(html).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 /** A line that points at a position or at its siblings, which is false on a board with other siblings. */
@@ -199,6 +199,79 @@ test('C6 has teeth: a word on every right answer, a word on every wrong answer a
   assert.ok(tellProblems(skipOnly[0]).some((m) => m.startsWith('cp: skip word "golden"')), 'a word on every answer but one right one is a tell only when skipped');
   const comma = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label}, so it holds`; });
   assert.ok(tellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every right answer');
+});
+
+// ---- C7: a generative tell finder over the labels of a pooled sort ----
+// The sort twin of C6. Every feature C6 looks for (a word or two-word phrase that two or more labels share, a final word two or
+// more share, a punctuation mark) and code formatting is read as a strategy, "an item with this feature goes in bucket X, every
+// other item in bucket Y", for every ordered pair of buckets. Each is scored as the mean share of a board's items it places
+// right, over every board the pool can make (lib/pool.mjs sortBoards: all of them up to 5,000, else a seeded sample), and must
+// not beat the best uninformed guess (always the bucket a board shows most of) by more than TELL_BAND, the band of C6 and of
+// test/choice-tells.test.mjs T2. A rule worse than that guess is no tell: its reverse is also scored, as another pair.
+/** The features of the labels of a sort: those of a choice, and whether the label has code formatting. */
+const sortFeatures = (labels) => [
+  ...tellFeatures(labels),
+  ...(labels.some((l) => /<code>/.test(l)) ? [{ name: 'code formatting', has: (l) => /<code>/.test(l) }] : []),
+];
+/** Every strategy's score over every board of a pooled sort, and the uninformed guess's: `{chance, scores: [{name, score}]}`. */
+function sortTellScores(spec) {
+  const boards = sortBoards(spec);
+  const ids = spec.buckets.map((b) => b.id);
+  const shown = Object.values(spec.draw);
+  const chance = Math.max(...shown) / shown.reduce((a, b) => a + b, 0);
+  const scores = [];
+  for (const f of sortFeatures(spec.items.map((i) => i.label))) {
+    for (const yes of ids) {
+      for (const no of ids.filter((id) => id !== yes)) {
+        let total = 0;
+        for (const board of boards) total += board.items.filter((it) => (f.has(it.label) ? yes : no) === it.bucket).length / board.items.length;
+        scores.push({ name: `${f.name} means ${yes}, any other ${no}`, score: total / boards.length });
+      }
+    }
+  }
+  return { chance, scores: scores.sort((a, b) => b.score - a.score) };
+}
+const sortTellProblems = (p) => {
+  if (p.kind !== 'sort') return [];
+  const { chance, scores } = sortTellScores(p.spec);
+  return scores.filter((s) => s.score - chance > TELL_BAND).map((s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against the uninformed guess ${chance.toFixed(3)}`);
+};
+const withSort = (edit) => {
+  const pool = sp();
+  edit(pool);
+  return pooledSteps(poolFixture({ sort: pool }).play).filter((p) => p.id === 'sp');
+};
+
+test('C7 no word, phrase, ending, punctuation mark or code formatting of a pooled sort places its items much better than the uninformed guess', () => {
+  for (const p of live) assert.deepEqual(sortTellProblems(p), [], `${p.level} ${p.id}`);
+  for (const p of good) assert.deepEqual(sortTellProblems(p), [], p.id);
+  if (process.env.TELLS) {
+    for (const p of live.filter((x) => x.kind === 'sort')) {
+      const { chance, scores } = sortTellScores(p.spec);
+      console.log('C7', p.id, `guess ${chance.toFixed(3)}`, scores.slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+    }
+  }
+});
+
+test('C7 has teeth: a word, a closing word, a two-word phrase, a comma and code formatting that mark one bucket are reported, whichever bucket', () => {
+  const word = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label} golden`; });
+  assert.ok(sortTellProblems(word[0]).some((m) => m.includes('word "golden" means a')), 'a word on every item of one bucket');
+  const other = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `golden ${it.label}`; });
+  assert.ok(sortTellProblems(other[0]).some((m) => m.includes('word "golden" means b')), 'a word on every item of the other bucket');
+  const last = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'a' ? `${it.label} today` : `${it.label} soon`; });
+  assert.ok(sortTellProblems(last[0]).some((m) => m.includes('last word "today"')), 'a closing word that differs by bucket');
+  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} in the end`; });
+  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "in the" means b')), 'a phrase on every item of one bucket');
+  const comma = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label}, then more`; });
+  assert.ok(sortTellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every item of one bucket');
+  const code = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `<code>${it.id}</code>`; });
+  assert.ok(sortTellProblems(code[0]).some((m) => m.includes('code formatting means b')), 'code formatting on every item of one bucket');
+});
+
+test('C7 is not fooled by a feature every label has, or by one on a mixed set: the clean fixture and a word on half of each bucket pass', () => {
+  assert.deepEqual(sortTellProblems(pooledSteps(poolFixture().play).find((p) => p.id === 'sp')), []);
+  const mixed = withSort((pool) => { for (const it of pool.items) if (Number(it.id.slice(1)) % 2 === 1) it.label = `${it.label} golden`; });
+  assert.deepEqual(sortTellProblems(mixed[0]), []);
 });
 
 test('C2 the position rule catches the phrasings it names, in any case, and leaves ordinary text alone', () => {
