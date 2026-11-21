@@ -20,7 +20,11 @@
 // preferred logging library with a log appender. The specification also says the Logs API can be used
 // directly by applications (for instance to emit structured events), so the level says "keep your
 // logger", not "never call the Logs API".
-// Dash0 tie-in: none for this level (docs/OUTLINE.md §4 Act 4: n/a).
+// Dash0 tie-in: none for this level (docs/OUTLINE.md §4 Act 4: n/a); the pooled severity answers use the severity ranges of
+// https://www.dash0.com/docs/dash0/telemetry/logging/log-severities (Dash0 docs, not an allowed Spec host).
+// Pooled answers (#390): the data model fields above for the sl-attrs and sl-severity pools (Attributes, Resource, InstrumentationScope,
+// EventName, TraceId, SeverityNumber comparison); https://opentelemetry.io/docs/concepts/signals/logs/ for semistructured text and the
+// Logger Provider and Logger of the Bridge API; https://opentelemetry.io/docs/specs/otel/logs/ for the richer feature set of logging libraries.
 //
 // The words are in content/core/levels/structured-logs.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/structured-logs.mjs';
@@ -67,15 +71,27 @@ const SKELETON = {
       { qid: 'sl-q-sort', sort: SORT },
       {
         qid: 'sl-q-attrs',
-        choice: { id: 'sl-attrs', choices: [{ key: 'short-message', right: true }] },
+        choice: {
+          id: 'sl-attrs',
+          draw: 3,
+          choices: [{ key: 'short-message', right: true }, { key: 'named-attrs', right: true }, { key: 'pairs-on-record', right: true }, { key: 'facts-out-of-text', right: true }],
+        },
       },
       {
         qid: 'sl-q-severity',
-        choice: { id: 'sl-severity', choices: [{ key: 'number', right: true }] },
+        choice: {
+          id: 'sl-severity',
+          draw: 3,
+          choices: [{ key: 'number', right: true }, { key: 'number-range', right: true }, { key: 'number-from-warn', right: true }, { key: 'severity-range', right: true }],
+        },
       },
       {
         qid: 'sl-q-bridge',
-        choice: { id: 'sl-bridge', choices: [{ key: 'keep-logger', right: true }] },
+        choice: {
+          id: 'sl-bridge',
+          draw: 3,
+          choices: [{ key: 'keep-logger', right: true }, { key: 'leave-calls', right: true }, { key: 'appender-and-sdk', right: true }, { key: 'library-bridge', right: true }],
+        },
       },
     ],
   },

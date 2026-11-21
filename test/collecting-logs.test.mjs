@@ -24,6 +24,9 @@ const stepOf = (key, widgetId) => steps().find((s) => s[key] && s[key].id === wi
 const choiceOf = (widgetId) => stepOf('choice', widgetId).choice.choices;
 const rightOf = (widgetId) => choiceOf(widgetId).find((c) => c.right);
 const wrongKeys = (widgetId) => choiceOf(widgetId).filter((c) => !c.right).map((c) => c.key).sort();
+// A pooled step (#390) lists more wrong answers than it shows: the original ones stay in the pool, and a board shows 3.
+const keepsWrong = (widgetId, keys) => keys.every((k) => wrongKeys(widgetId).includes(k));
+const drawOf = (widgetId) => stepOf('choice', widgetId).choice.draw;
 const config = () => stepOf('configure', 'col-config').configure;
 const docOf = (text) => checkConfig(text, COLLECTOR_SCHEMA).doc;
 
@@ -90,7 +93,8 @@ test('route: orders (code the team owns) should export over OTLP through an appe
   const text = plain(right.label + right.why);
   for (const w of ['OTLP', 'appender', 'TraceId', 'SpanId', 'parse', 'tail']) assert.equal(text.includes(w), true, w);
   assert.equal(/cannot change|can.t change|change to the app/.test(right.why), true, 'the cost of the route is named');
-  assert.deepEqual(wrongKeys('col-route'), ['otlp-no-logs', 'tail-adds-context']);
+  assert.equal(keepsWrong('col-route', ['otlp-no-logs', 'tail-adds-context']), true);
+  assert.equal(drawOf('col-route'), 3);
   const tail = choiceOf('col-route').find((c) => c.key === 'tail-adds-context');
   assert.equal(/only if the application wrote/.test(tail.why) && /time/.test(tail.why), true, 'a file line has no context of its own');
   const none = choiceOf('col-route').find((c) => c.key === 'otlp-no-logs');
@@ -255,7 +259,8 @@ test('multiline step: split where an entry starts (the timestamp), before any op
   for (const w of ['multiline', 'line_start_pattern', 'beginning of an entry', 'before any operator', 'line_end_pattern']) {
     assert.equal(text.includes(w), true, w);
   }
-  assert.deepEqual(wrongKeys('col-multiline'), ['frame-pattern', 'parser-joins']);
+  assert.equal(keepsWrong('col-multiline', ['frame-pattern', 'parser-joins']), true);
+  assert.equal(drawOf('col-multiline'), 3);
   assert.equal(/already split/.test(choiceOf('col-multiline').find((c) => c.key === 'parser-joins').why), true);
   assert.equal(/every frame/.test(choiceOf('col-multiline').find((c) => c.key === 'frame-pattern').why), true);
 });
@@ -266,7 +271,8 @@ test('parse step: shipping cannot be changed, so a regex_parser with a severity 
   const text = plain(right.label + right.why);
   for (const w of ['regex_parser', 'severity', '(?s)', 'Collector', 'cannot be changed']) assert.equal(text.includes(w), true, w);
   assert.equal(/own the code|an app you own/.test(right.why), true, 'where you own the code the source is the better place');
-  assert.deepEqual(wrongKeys('col-parse'), ['agent-config', 'receiver-knows']);
+  assert.equal(keepsWrong('col-parse', ['agent-config', 'receiver-knows']), true);
+  assert.equal(drawOf('col-parse'), 3);
   const knows = choiceOf('col-parse').find((c) => c.key === 'receiver-knows');
   assert.equal(/UNSPECIFIED/.test(knows.why) && /no severity number/.test(knows.why), true);
 });
@@ -278,7 +284,8 @@ test('dash0 step: Log AI infers severity and extracts patterns for unstructured 
   for (const w of ['infers a severity', 'patterns', 'named attributes', 'never overrides', 'JSON', 'resource attributes', 'k8sattributes', 'dash0.log.pattern']) {
     assert.equal(text.includes(w), true, w);
   }
-  assert.deepEqual(wrongKeys('col-dash0'), ['needs-parser', 'rewrites-all']);
+  assert.equal(keepsWrong('col-dash0', ['needs-parser', 'rewrites-all']), true);
+  assert.equal(drawOf('col-dash0'), 3);
   assert.equal(/does not wait/.test(choiceOf('col-dash0').find((c) => c.key === 'needs-parser').why), true);
   assert.equal(/respected/.test(choiceOf('col-dash0').find((c) => c.key === 'rewrites-all').why), true);
 });

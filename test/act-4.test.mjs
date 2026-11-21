@@ -32,6 +32,9 @@ const stepOf = (levelId, key, widgetId) =>
   LIVE.levels[levelId].play.steps.find((s) => s[key] && s[key].id === widgetId)[key];
 const choiceOf = (levelId, widgetId) => stepOf(levelId, 'choice', widgetId).choices;
 const rightOf = (levelId, widgetId) => choiceOf(levelId, widgetId).find((c) => c.right);
+// A pooled step (#390) lists more answers than it shows: the original answers stay in the pool, and it shows 3.
+const hasKeys = (levelId, widgetId, keys) => keys.every((k) => choiceOf(levelId, widgetId).some((c) => c.key === k));
+const drawOf = (levelId, widgetId) => stepOf(levelId, 'choice', widgetId).draw;
 
 const ACT_4 = ['structured-logs', 'correlation'];
 const ACT_4_LEVELS = [...ACT_4, 'collecting-logs'];
@@ -219,7 +222,8 @@ test('structured logs: body vs attributes is graded: a short message with the fa
   assert.equal(right.key, 'short-message');
   const text = plain(right.label + right.why);
   for (const w of ['Attributes', 'order.id', 'payment.method', 'Body']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(choiceOf('structured-logs', 'sl-attrs').map((c) => c.key).sort(), ['all-in-body', 'on-resource', 'short-message']);
+  assert.equal(hasKeys('structured-logs', 'sl-attrs', ['all-in-body', 'on-resource', 'short-message']), true, 'the original three answers are in the pool');
+  assert.equal(drawOf('structured-logs', 'sl-attrs'), 3);
   const resource = choiceOf('structured-logs', 'sl-attrs').find((c) => c.key === 'on-resource');
   assert.equal(/fixed|same/.test(resource.why), true, 'a Resource is the same for every record from a source');
 });
@@ -240,7 +244,8 @@ test('structured logs: the Logs Bridge API is for appender authors; the answer i
   for (const w of ['appender', 'logging library authors', 'Logs Bridge API']) assert.equal(text.includes(w), true, w);
   assert.equal(/can also be used directly|directly by applications/.test(right.why), true, 'the nuance is not overclaimed into a ban');
   const wrong = choiceOf('structured-logs', 'sl-bridge').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['call-bridge', 'collector-only']);
+  assert.equal(hasKeys('structured-logs', 'sl-bridge', ['call-bridge', 'collector-only']), true, 'the original wrong answers are in the pool');
+  assert.equal(wrong.every((c) => !c.right), true);
 });
 
 // ---- 4.2 Correlation ----------------------------------------------------------------
@@ -362,7 +367,8 @@ test('correlation: why the ids are missing is graded: no active span or an unbri
   const text = plain(right.label + right.why);
   for (const w of ['active span', 'bridged', 'current context']) assert.equal(text.includes(w), true, w);
   const wrong = choiceOf('correlation', 'cor-why').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['errors-only', 'stripped']);
+  assert.equal(hasKeys('correlation', 'cor-why', ['errors-only', 'stripped']), true, 'the original wrong answers are in the pool');
+  assert.equal(wrong.every((c) => !c.right), true);
   assert.equal(/severity/i.test(wrong.find((c) => c.key === 'errors-only').why), true, 'severity does not decide');
 });
 
@@ -372,7 +378,8 @@ test('correlation: the fix runs the log call inside a span (or carries the conte
   const text = plain(right.label + right.why);
   for (const w of ['span', 'context']) assert.equal(text.includes(w), true, w);
   const wrong = choiceOf('correlation', 'cor-fix').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['in-message', 'zeros']);
+  assert.equal(hasKeys('correlation', 'cor-fix', ['in-message', 'zeros']), true, 'the original wrong answers are in the pool');
+  assert.equal(wrong.every((c) => !c.right), true);
   assert.equal(/invalid/.test(wrong.find((c) => c.key === 'zeros').why), true, 'W3C: all-zero is invalid');
   assert.equal(/TraceId and SpanId fields/.test(wrong.find((c) => c.key === 'in-message').why), true);
 });
@@ -383,7 +390,8 @@ test('correlation: the Dash0 tie-in is bounded to what the docs say: default tra
   for (const w of ['Related Logs', 'same trace', 'Resource', '30 minutes']) assert.equal(plain(right.why).includes(w), true, w);
   assert.equal(/default/.test(right.why) && /background jobs/.test(right.why), true, 'the default and what the Resource mode is for');
   const wrong = choiceOf('correlation', 'cor-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['by-text', 'by-time']);
+  assert.equal(hasKeys('correlation', 'cor-dash0', ['by-text', 'by-time']), true, 'the original wrong answers are in the pool');
+  assert.equal(wrong.every((c) => !c.right), true);
 });
 
 test('correlation uses Build it for its log records: one build step, in logs mode, and no span row for a record', () => {
