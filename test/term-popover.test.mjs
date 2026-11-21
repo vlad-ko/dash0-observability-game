@@ -324,6 +324,45 @@ test('placement: a fixed card is kept inside the body at the right edge and abov
   assert.equal(p.getPropertyValue('bottom'), 'auto', 'the kit above rule sets bottom: 100%, which must not stretch a fixed card');
 });
 
+test('placement: the origin is measured with the card\'s transition off (reduced motion leaves a .01ms transition that reads a stale box)', () => {
+  const { a, fire, origin } = clippedSetup();
+  const live = a.pop.getBoundingClientRect;
+  a.pop.getBoundingClientRect = () => {
+    return offImportant ? live() : rect(0, -732, 300, 80);
+  };
+  // linkedom keeps no priority, so the call is recorded: important, to beat the reduced-motion rule's !important.
+  let offImportant = false;
+  const style = a.pop.style;
+  const spy = new Proxy(style, {
+    get: (t, k) => (k === 'setProperty'
+      ? (name, value, priority) => {
+        if (name === 'transition' && value === 'none' && priority === 'important') offImportant = true;
+        return t.setProperty(name, value, priority);
+      }
+      : typeof t[k] === 'function' ? t[k].bind(t) : t[k]),
+  });
+  Object.defineProperty(a.pop, 'style', { get: () => spy });
+  fire(a.wrap, 'mouseenter');
+  assert.equal(origin.top + parseFloat(a.pop.style.getPropertyValue('top')), 200);
+  assert.equal(origin.left + parseFloat(a.pop.style.getPropertyValue('left')), 600);
+});
+
+test('placement: an open fixed card is placed again when the window resizes', () => {
+  const { a, fire, window, document, origin } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  a.wrap.getBoundingClientRect = () => rect(1000, 180, 40, 20);
+  Object.defineProperty(document.documentElement, 'clientWidth', { value: 1000, configurable: true });
+  window.dispatchEvent(new window.Event('resize'));
+  assert.equal(origin.left + parseFloat(a.pop.style.getPropertyValue('left')), 692, 'right edge at 1000 - 8');
+});
+
+test('placement: closing a fixed card clears its inline placement', () => {
+  const { a, fire } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  fire(a.wrap, 'mouseleave');
+  assert.equal(a.pop.hasAttribute('style'), false);
+});
+
 test('placement: closing and reopening in a box that does not clip clears the fixed placement', () => {
   const { a, fire, window } = clippedSetup();
   fire(a.wrap, 'mouseenter');
