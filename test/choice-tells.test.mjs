@@ -117,6 +117,8 @@ const score = (qs, mark) =>
   }, 0);
 
 const BAND = 3; // points a blind rule may sit above or below chance: a rule far below is the same tell, read backwards
+/** How far a rule may stray from chance on ONE pooled question (T2 below), as a share of a question. */
+const QUESTION_BAND = 0.15;
 
 /** The strategies whose score over `qs` is further from chance than the band, as report lines. */
 function strayed(qs) {
@@ -127,12 +129,31 @@ function strayed(qs) {
     .map(([name, got]) => `${name}: ${got.toFixed(1)} of ${qs.length} first try (chance ${chance.toFixed(1)}, band ${(chance - BAND).toFixed(1)} to ${(chance + BAND).toFixed(1)})`);
 }
 
-test('no blind option-shape rule strays from chance by more than a few points, either way', async () => {
-  const qs = await allQuestions();
-  assert.ok(qs.length >= 77, `found ${qs.length} questions`);
+// The fixed questions and the pooled ones are summed apart, each at BAND: a pool is held to chance in expectation (its own sum),
+// and the fixed set cannot hide behind it, nor a pool behind the fixed set.
+test('no blind option-shape rule strays from chance by more than a few points over the fixed questions, either way', async () => {
+  const qs = (await allQuestions()).filter((q) => q.draw === undefined);
+  assert.ok(qs.length >= 77, `found ${qs.length} fixed questions`);
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
-  if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
+  if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS fixed ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
+  if (process.env.TELLS) {
+    for (const q of qs.filter((x) => x.choices.length === 3)) {
+      const lens = q.choices.map((c) => plain(c.label).length);
+      const mine = lens[q.choices.findIndex((c) => c.right)];
+      if (mine > Math.min(...lens) && mine < Math.max(...lens)) console.log(`TELLS middle-right ${q.level} ${lens.join('/')} ${q.choices.map((c) => `${c.right ? '*' : ''}${plain(c.label)}`).join(' | ')}`);
+    }
+  }
   assert.deepEqual(strayed(qs), []);
+});
+
+test('no blind option-shape rule strays from chance by more than a few points over the pooled questions, in expectation', async () => {
+  const qs = (await allQuestions()).filter((q) => q.draw !== undefined);
+  assert.ok(qs.length >= 3, `found ${qs.length} pooled questions`);
+  const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
+  if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS pooled ${name} ${score(qs, mark).toFixed(2)} of ${qs.length} (chance ${chance.toFixed(2)})`);
+  assert.deepEqual(strayed(qs), []);
+  // The same sum has teeth: ten pools whose right answers are the longest are far outside it.
+  assert.ok(strayed(Array.from({ length: 10 }, () => longRights(12))).length > 0);
 });
 
 /** The three-option boards of the questions, each as { choices, share }: a fixed question is one board, a pool shares one over its boards. */
@@ -225,11 +246,11 @@ test('T2 every live pooled question stays within 0.15 of chance on every rule', 
   const pooled = (await allQuestions()).filter((q) => q.draw !== undefined);
   for (const q of pooled) {
     for (const [name, mark] of Object.entries(STRATEGIES)) {
-      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= 0.15, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
+      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= QUESTION_BAND, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
     }
   }
   // The same bound has teeth: a pool whose right answers are longer is outside it.
-  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > 0.15);
+  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > QUESTION_BAND);
 });
 
 test('T3 every pooled step is found as a question: the live registry, and the fixture level', async () => {

@@ -13,9 +13,9 @@ import { poolFixture } from './fixtures/pool-fixtures.mjs';
 
 const ANSWERS = {
   'auto-vs-manual': [
-    'sort avm-sort: server=auto loyalty=manual redis=auto coupon=manual client=auto item-count=manual',
-    'choice avm-why: two-setups',
-    'choice avm-fix: keep-one',
+    'sort avm-sort: server=auto loyalty=manual redis=auto coupon=manual client=auto item-count=manual postgres=auto coupon-event=manual kafka=auto orders-counter=manual pino=auto basket-histogram=manual runtime=auto job-link=manual mongodb=auto payment-error=manual s3=auto open-baskets=manual graphql=auto declined-status=manual',
+    'choice avm-why: agent-and-sdk|tracing-repeats-agent|two-fetch-hooks|two-setups',
+    'choice avm-fix: agent-only|drop-second-sdk|either-not-both|keep-one',
   ],
   resources: [
     'sort res-sort: service-name=resource http-method=signal pod-name=resource http-route=signal host-name=resource status-code=signal cloud-region=resource url-path=signal',

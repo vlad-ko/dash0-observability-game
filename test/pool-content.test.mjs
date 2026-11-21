@@ -6,11 +6,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
 import { choiceBoards, sortBoards } from '../lib/pool.mjs';
+import { scoreStars } from '../lib/scoring.mjs';
 import { STEP_TYPES } from '../lib/play.mjs';
 import { FIFTY_MIN } from '../lib/widgets/choice.mjs';
 import { validateSortSpec } from '../lib/widgets/sort-it.mjs';
 import { validateSortHelps } from '../lib/widgets/sort-it-help.mjs';
-import { cp, fiftyPool, poolFixture } from './fixtures/pool-fixtures.mjs';
+import { cp, fiftyPool, poolFixture, sp } from './fixtures/pool-fixtures.mjs';
 
 const plain = (html) => String(html).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 /** A line that points at a position or at its siblings, which is false on a board with other siblings. */
@@ -199,6 +200,156 @@ test('C6 has teeth: a word on every right answer, a word on every wrong answer a
   assert.ok(tellProblems(skipOnly[0]).some((m) => m.startsWith('cp: skip word "golden"')), 'a word on every answer but one right one is a tell only when skipped');
   const comma = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label}, so it holds`; });
   assert.ok(tellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every right answer');
+});
+
+// ---- C7: a generative tell finder over the labels of a pooled sort ----
+// The sort twin of C6. Every feature C6 looks for (a word or two-word phrase that two or more labels share, a final word two or
+// more share, a punctuation mark) and code formatting is read as a strategy, "an item with this feature goes in bucket X, every
+// other item in bucket Y", for every ordered pair of buckets. Each is scored as the mean share of a board's items it places
+// right, over every board the pool can make (lib/pool.mjs sortBoards: all of them up to 5,000, else a seeded sample), and must
+// not beat the best uninformed guess (always the bucket a board shows most of) by more than TELL_BAND, the band of C6 and of
+// test/choice-tells.test.mjs T2. A rule worse than that guess is no tell: its reverse is also scored, as another pair.
+// Beyond one word or mark at a time, it also reads the SHAPE of the identifier inside <code> (an upper-case letter, an underscore, a
+// call's "()", a dotted name, a shared dotted prefix, a plain lower-case word), any all-caps word, every length cut ("longer than N
+// characters") and every OR of two of all these features. And a strategy must not reach 5 stars (no mistake, through
+// lib/scoring.mjs) on more than PERFECT_SHARE of the boards: a rule that sorts a tenth of the boards perfectly is a way to finish
+// the level without the concept, however close to the guess it is on average.
+/** The most boards of a pool a blind rule may sort without a mistake, as a share of them. */
+const PERFECT_SHARE = 0.1;
+/** Boards the pair search reads (pairs are many; a seeded sample of this size stands in for all boards). */
+const PAIR_BOARDS = 1000;
+const identOf = (label) => String(label).match(/<code>(.*?)<\/code>/)?.[1] ?? '';
+const capsWordsOf = (label) => plain(label).split(/[^A-Za-z0-9]+/).filter((w) => w.length >= 2 && /[A-Z]/.test(w) && w === w.toUpperCase());
+/** The features of the labels of a sort: those of a choice, code formatting, identifier shape, all-caps words and length cuts. */
+function sortFeatures(labels) {
+  const out = [...tellFeatures(labels)];
+  const has = (re) => (l) => re.test(identOf(l));
+  if (labels.some((l) => /<code>/.test(l))) out.push({ name: 'code formatting', has: (l) => /<code>/.test(l) });
+  out.push(
+    { name: 'identifier with an upper-case letter', has: has(/[A-Z]/) },
+    { name: 'identifier with an underscore', has: has(/_/) },
+    { name: 'identifier with ()', has: has(/\(\)/) },
+    { name: 'dotted identifier', has: has(/\./) },
+    { name: 'identifier of one plain lower-case word', has: has(/^[a-z][a-z0-9]*$/) },
+  );
+  const prefixes = new Map();
+  for (const l of labels) {
+    const id = identOf(l);
+    if (id.includes('.')) prefixes.set(id.split('.')[0], (prefixes.get(id.split('.')[0]) ?? 0) + 1);
+  }
+  for (const [p, n] of prefixes) if (n >= 2) out.push({ name: `identifier prefix "${p}."`, has: (l) => identOf(l).startsWith(`${p}.`) });
+  out.push({ name: 'an all-caps word', has: (l) => capsWordsOf(l).length > 0 });
+  const caps = new Map();
+  for (const l of labels) for (const w of new Set(capsWordsOf(l))) caps.set(w, (caps.get(w) ?? 0) + 1);
+  for (const [w, n] of caps) if (n >= 2) out.push({ name: `all-caps word "${w}"`, has: (l) => capsWordsOf(l).includes(w) });
+  const lengths = [...new Set(labels.map((l) => plain(l).length))].sort((a, b) => a - b);
+  for (const n of lengths.slice(1)) out.push({ name: `length over ${n - 1}`, has: (l) => plain(l).length >= n });
+  return out;
+}
+const STARS = new Map();
+/** The stars a run with `wrong` mistakes earns, through the real scorer (memoised). */
+function starsFor(wrong) {
+  if (!STARS.has(wrong)) STARS.set(wrong, scoreStars({ mistakes: wrong, hintsUsed: 0, elapsedMs: 0 }, { scored: true, scoring: { parMs: null } }));
+  return STARS.get(wrong);
+}
+/** Every strategy's mean accuracy and share of boards sorted for 5 stars, and the uninformed guess's: `{chance, scores: [{name, score, perfect}]}`. */
+function sortTellScores(spec) {
+  const ids = spec.buckets.map((b) => b.id);
+  const shown = Object.values(spec.draw);
+  const chance = Math.max(...shown) / shown.reduce((a, b) => a + b, 0);
+  const at = new Map(spec.items.map((it, i) => [it, i]));
+  const prep = (boards) => boards.map((b) => ({ idx: b.items.map((it) => at.get(it)) }));
+  const want = spec.items.map((it) => ids.indexOf(it.bucket));
+  const features = sortFeatures(spec.items.map((i) => i.label)).map((f) => ({ name: f.name, h: spec.items.map((it) => (f.has(it.label) ? 1 : 0)) }));
+  const run = (h, yes, no, boards) => {
+    const ok = h.map((v, i) => ((v ? yes : no) === want[i] ? 1 : 0));
+    let total = 0;
+    let perfect = 0;
+    for (const b of boards) {
+      let right = 0;
+      for (const i of b.idx) right += ok[i];
+      total += right / b.idx.length;
+      if (starsFor(b.idx.length - right) === 5) perfect++;
+    }
+    return { score: total / boards.length, perfect: perfect / boards.length };
+  };
+  const all = prep(sortBoards(spec));
+  const some = prep(sortBoards(spec, { limit: PAIR_BOARDS }));
+  const scores = [];
+  for (let yes = 0; yes < ids.length; yes++) {
+    for (let no = 0; no < ids.length; no++) {
+      if (yes === no) continue;
+      for (const [a, f] of features.entries()) {
+        scores.push({ name: `${f.name} means ${ids[yes]}, any other ${ids[no]}`, ...run(f.h, yes, no, all) });
+        for (const g of features.slice(a + 1)) scores.push({ name: `${f.name} or ${g.name} means ${ids[yes]}, any other ${ids[no]}`, ...run(f.h.map((v, i) => v | g.h[i]), yes, no, some) });
+      }
+    }
+  }
+  return { chance, scores: scores.sort((a, b) => b.score - a.score) };
+}
+/**
+ * A pair is the best of thousands of ORs chosen after the fact, so its mean may sit further above the guess than a single feature's
+ * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both.
+ */
+const PAIR_BAND = 0.25;
+const sortTellProblems = (p) => {
+  if (p.kind !== 'sort') return [];
+  const { chance, scores } = sortTellScores(p.spec);
+  return scores
+    .filter((s) => s.score - chance > (s.name.includes(' or ') ? PAIR_BAND : TELL_BAND) || s.perfect > PERFECT_SHARE)
+    .map((s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against the uninformed guess ${chance.toFixed(3)} and sorts ${(100 * s.perfect).toFixed(1)}% of the boards for 5 stars`);
+};
+const withSort = (edit) => {
+  const pool = sp();
+  edit(pool);
+  return pooledSteps(poolFixture({ sort: pool }).play).filter((p) => p.id === 'sp');
+};
+
+test('C7 no word, phrase, ending, punctuation mark or code formatting of a pooled sort places its items much better than the uninformed guess', () => {
+  for (const p of live) assert.deepEqual(sortTellProblems(p), [], `${p.level} ${p.id}`);
+  for (const p of good) assert.deepEqual(sortTellProblems(p), [], p.id);
+  if (process.env.TELLS) {
+    for (const p of live.filter((x) => x.kind === 'sort')) {
+      const { chance, scores } = sortTellScores(p.spec);
+      console.log('C7', p.id, `guess ${chance.toFixed(3)}`, scores.slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+    }
+  }
+});
+
+test('C7 has teeth: a word, a closing word, a two-word phrase, a comma and code formatting that mark one bucket are reported, whichever bucket', () => {
+  const word = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label} golden`; });
+  assert.ok(sortTellProblems(word[0]).some((m) => m.includes('word "golden" means a')), 'a word on every item of one bucket');
+  const other = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `golden ${it.label}`; });
+  assert.ok(sortTellProblems(other[0]).some((m) => m.includes('word "golden" means b')), 'a word on every item of the other bucket');
+  const last = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'a' ? `${it.label} today` : `${it.label} soon`; });
+  assert.ok(sortTellProblems(last[0]).some((m) => m.includes('last word "today"')), 'a closing word that differs by bucket');
+  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} in the end`; });
+  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "in the" means b')), 'a phrase on every item of one bucket');
+  const comma = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label}, then more`; });
+  assert.ok(sortTellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every item of one bucket');
+  const code = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `<code>${it.id}</code>`; });
+  assert.ok(sortTellProblems(code[0]).some((m) => m.includes('code formatting means b')), 'code formatting on every item of one bucket');
+});
+
+test('C7 has teeth: the shape of the identifier, a length cut, an all-caps word and an OR of two features that mark one bucket are reported', () => {
+  // Every item has one identifier in code; only the shape tells the buckets apart (the split the level had at 021833f).
+  const shape = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'b' ? `<code>sort_${it.id}</code> note` : `<code>${it.id}</code> note`; });
+  const shapeProblems = sortTellProblems(shape[0]);
+  assert.ok(shapeProblems.some((m) => m.includes('identifier with an underscore means b')), 'an underscore in the identifier of one bucket');
+  assert.ok(shapeProblems.some((m) => m.includes('identifier of one plain lower-case word means a')), 'a plain word as the identifier of the other');
+  const caps = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'b' ? `<code>${it.id}</code> SERVER note` : `<code>${it.id}</code> plain note`; });
+  assert.ok(sortTellProblems(caps[0]).some((m) => m.includes('all-caps word "SERVER" means b')), 'an all-caps word on every item of one bucket');
+  const cut = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} with a few more words`; });
+  assert.ok(sortTellProblems(cut[0]).some((m) => m.includes('length over')), 'longer labels in one bucket');
+  const either = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} ${Number(it.id.slice(1)) % 2 ? 'golden' : 'silver'}`; });
+  const eitherProblems = sortTellProblems(either[0]);
+  assert.ok(eitherProblems.some((m) => / or /.test(m) && m.includes('golden') && m.includes('silver') && m.includes('means b')), 'two words that between them cover one bucket');
+});
+
+test('C7 is not fooled by a feature every label has, or by one on a mixed set: the clean fixture and a word on half of each bucket pass', () => {
+  assert.deepEqual(sortTellProblems(pooledSteps(poolFixture().play).find((p) => p.id === 'sp')), []);
+  const mixed = withSort((pool) => { for (const it of pool.items) if (Number(it.id.slice(1)) % 2 === 1) it.label = `${it.label} golden`; });
+  assert.deepEqual(sortTellProblems(mixed[0]), []);
 });
 
 test('C2 the position rule catches the phrasings it names, in any case, and leaves ordinary text alone', () => {
