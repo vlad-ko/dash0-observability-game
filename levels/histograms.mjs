@@ -6,6 +6,12 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram , https://opentelemetry.io/docs/specs/otel/metrics/sdk/#explicit-bucket-histogram-aggregation
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#histograms , https://prometheus.io/docs/practices/histograms/ , https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile
 // Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/metrics/about-metrics , https://www.dash0.com/docs/dash0/telemetry/metrics/query-metrics
+// The first Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 13 answers and a showing draws 3. Its extra answers rest on the SDK page
+// (Base2 Exponential Bucket Histogram Aggregation: a maximum size of 160 buckets that covers 1 ms to 100 s with under 5% relative error, a maximum scale of 20, the scale adjusted
+// to the data) and the data model (ExponentialHistogram: boundaries at integer powers of base = 2**(2**(-scale)), the same relative error in every bucket, buckets that map exactly
+// into a lesser scale, "perfect subsetting"; a histogram keeps counts in buckets, never the individual values), read 2026-11-21:
+// Spec: https://opentelemetry.io/docs/specs/otel/metrics/sdk/#base2-exponential-bucket-histogram-aggregation , https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
+// The bucket Choice stays fixed: its answer is read off the p99 of 2.5 and the bucket bounds on the screen.
 // Docs (Step 4 copy: OTel attribute names written with underscores in PromQL, `service.name` as `service_name`; the practice labels `service` and `route` are the game's own): https://www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation
 //
 // The words are in content/core/levels/histograms.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
@@ -24,7 +30,21 @@ const SKELETON = {
   play: {
     prefix: 'hist',
     steps: [
-      { qid: 'hist-q-kind', choice: { id: 'hist-kind', choices: [{ key: 'exponential', right: true }] } },
+      {
+        qid: 'hist-q-kind',
+        // An answer pool: 4 right and 9 wrong in the content, a showing draws 3. Every right answer is marked here, and a right
+        // answer added in the content file without `right: true` would be graded wrong.
+        choice: {
+          id: 'hist-kind',
+          draw: 3,
+          choices: [
+            { key: 'exponential', right: true },
+            { key: 'wider', right: true },
+            { key: 'same-error', right: true },
+            { key: 'merge', right: true },
+          ],
+        },
+      },
       {
         qid: 'hist-q-avg',
         query: {

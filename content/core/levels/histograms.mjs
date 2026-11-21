@@ -27,6 +27,56 @@ export default {
               "key": "exact",
               "label": "Exponential: it keeps every value, and a percentile read from it is exact, with no estimate and no bucket error",
               "why": "Both kinds count observations into buckets and keep a count, a sum and, by default, a min and max. A percentile read from either is an estimate. The exponential one is just built to keep the error small across a wide range."
+            },
+            {
+              "key": "wider",
+              "label": "Exponential: buckets get wider as values grow, so only a limited number reach a wide range",
+              "why": "The boundaries sit at powers of a base, so a bucket gets wider as the values grow and the relative error stays the same. The SDK's default of 160 buckets can cover 1 ms to 100 s with less than 5% relative error."
+            },
+            {
+              "key": "same-error",
+              "label": "It gives every bucket the same relative error, so a large value is read as precisely as a low value",
+              "why": "The bucket widths grow with the value, so the relative error is the same in every bucket. An explicit histogram has no such guarantee: its error depends on the boundaries you chose."
+            },
+            {
+              "key": "merge",
+              "label": "Exponential: a backend can lower the resolution by merging buckets, and no error is added",
+              "why": "The buckets of an exponential histogram map exactly into those of a histogram with a lesser scale, which the data model calls perfect subsetting. A consumer can therefore lower the resolution without introducing error."
+            },
+            {
+              "key": "equal-width",
+              "label": "Exponential: every bucket covers the same width of values, so a wide range needs thousands of buckets",
+              "why": "The boundaries sit at powers of a base, so a bucket gets wider as the values grow, and the relative error is the same in every bucket. That is how a limited number of buckets covers a wide range."
+            },
+            {
+              "key": "fixed-scale",
+              "label": "The SDK fixes the scale at 0 for every metric, so the error is the same for all of them",
+              "why": "The SDK adjusts the scale to the data it sees, up to a maximum (20 by default), so the scale and the relative error differ from one metric to the next."
+            },
+            {
+              "key": "explicit-wide-range",
+              "label": "Explicit: one histogram covers a wide range with small relative error, whichever boundaries you give it",
+              "why": "The error of an explicit histogram depends on where you put the boundaries. Values beyond the first or last boundary fall into a single bucket, so a poor list gives a coarse answer."
+            },
+            {
+              "key": "unbounded",
+              "label": "Exponential: it adds buckets without any limit as the range grows, so its memory is never bounded",
+              "why": "The SDK sets a maximum number of buckets for each range (160 by default). When values need more, it lowers the scale instead of adding buckets."
+            },
+            {
+              "key": "sample-values",
+              "label": "Exponential: a percentile is read from stored sample values, so the tail needs no buckets at all",
+              "why": "Neither kind stores the individual values. A percentile is estimated from the bucket counts, and the exponential kind only lays the buckets out differently."
+            },
+            {
+              "key": "echo-small",
+              "label": "Exponential: a small scale gives finer buckets, so a narrow range is read with small relative error",
+              "why": "A higher scale gives finer buckets, not a smaller one. The exponential layout is built to cover a wide range with small relative error, not a narrow one."
+            },
+            {
+              "key": "echo-one",
+              "label": "One histogram of either kind covers a wide range with the same relative error, so nothing differs",
+              "why": "The kinds differ in how the boundaries are chosen. An explicit histogram uses the list you give it, so its error depends on that list, while an exponential one derives the boundaries from the scale."
             }
           ]
         }

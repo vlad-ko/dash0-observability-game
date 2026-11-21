@@ -99,6 +99,56 @@ export default {
               "key": "metrics-only",
               "label": "PromQL cannot query logs or spans: they need a different query language, learned separately, and <code>otel_metric_name</code> does not apply to them",
               "why": "Dash0 turns logs and spans into synthetic metrics such as <code>dash0.logs</code> and <code>dash0.spans</code>, and you query those with the same PromQL."
+            },
+            {
+              "key": "stable-selector",
+              "label": "A selector on <code>otel_metric_name</code> stays valid whatever the translation does to the name or unit",
+              "why": "The label holds the original OpenTelemetry name, so the query does not depend on how Dash0 translated it for Prometheus. The Dash0 docs recommend it for most queries, and for long-term stability."
+            },
+            {
+              "key": "type-label",
+              "label": "The <code>otel_metric_type</code> label tells a sum from a gauge or a histogram, which helps when two metrics share a name",
+              "why": "The label holds the OTLP type: <code>sum</code>, <code>gauge</code>, <code>histogram</code>, <code>exponential_histogram</code> or <code>summary</code>. A selector can add it to tell apart metrics that share a name but differ in type."
+            },
+            {
+              "key": "type-is-unit",
+              "label": "The <code>otel_metric_type</code> label holds the unit of the metric, such as <code>s</code> or <code>By</code>",
+              "why": "That label holds the OTLP type: <code>sum</code>, <code>gauge</code>, <code>histogram</code>, <code>exponential_histogram</code> or <code>summary</code>. The unit is in <code>otel_metric_unit</code>."
+            },
+            {
+              "key": "wrapped-increase",
+              "label": "In the visual query tabs, a counter-shaped metric such as <code>dash0.logs</code> or <code>dash0.spans</code> is wrapped in <code>increase()</code> for you",
+              "why": "Raw values of a counter only go up, so Dash0 applies <code>increase()</code> to counter-shaped synthetic metrics in the visual Query Builder tabs and in data previews. In PromQL mode you write it yourself."
+            },
+            {
+              "key": "stored-counters",
+              "label": "Logs and spans are stored as ready-made counters when they arrive, which is why <code>dash0.logs</code> can be queried",
+              "why": "Dash0 does not read a stored counter for them. A synthetic metric is derived on demand from the raw records."
+            },
+            {
+              "key": "label-from-sdk",
+              "label": "The <code>otel_metric_name</code> label has to be set by your instrumentation, or Dash0 cannot find the metric by its original name",
+              "why": "Your instrumentation does not send it. Dash0 derives the label from the metric's own name, type and unit, and adds it to every metric."
+            },
+            {
+              "key": "echo-hist",
+              "label": "The OpenTelemetry name works through <code>otel_metric_name</code> only for one metric type, histograms, not for sums or gauges",
+              "why": "Every metric carries the <code>otel_metric_name</code> label, whatever its type. The <code>otel_metric_type</code> label tells a sum from a gauge or a histogram when two metrics share a name."
+            },
+            {
+              "key": "echo-register",
+              "label": "Logs and spans are queryable as metrics, but each one needs an <code>otel_metric_name</code> that you register first",
+              "why": "Nothing has to be registered. Dash0 derives synthetic metrics such as <code>dash0.logs</code> and <code>dash0.spans</code> from the raw records when you query them."
+            },
+            {
+              "key": "unit-is-type",
+              "label": "The <code>otel_metric_unit</code> label says whether a metric is a sum or a gauge",
+              "why": "That label holds the unit declared in the metric definition, such as <code>s</code> or <code>By</code>. The type is in <code>otel_metric_type</code>."
+            },
+            {
+              "key": "synthetic-gauge",
+              "label": "Synthetic metrics such as <code>dash0.logs</code> are gauge-shaped, so you wrap them in <code>avg_over_time()</code> to read them",
+              "why": "Most synthetic metrics are counters, and the visual tabs wrap those in <code>increase()</code>. Only the gauge-shaped ones, such as <code>dash0.metrics.timeseries</code>, are aggregated directly."
             }
           ]
         }

@@ -122,18 +122,53 @@ export default {
           "choices": [
             {
               "key": "sync-updown",
-              "label": "A synchronous UpDownCounter: call <code>add()</code> with the change at every allocation and release",
+              "label": "An <code>UpDownCounter</code> that your code updates with <code>add()</code>, given the change in heap size at each allocation and release",
               "why": "An UpDownCounter you call yourself is for when the current value is not already known, or reading it takes extra effort. Here the runtime already has the number, so reading it on demand is simpler."
             },
             {
               "key": "async-updown",
-              "label": "An asynchronous UpDownCounter: register a callback that reads the heap size when the SDK collects",
+              "label": "An asynchronous <code>UpDownCounter</code>: register a callback that reads the heap size when the SDK collects",
               "why": "Heap sizes from several processes add up to the total heap in use, so the value is additive, and an asynchronous (observable) instrument runs your callback only when metrics are collected. Additive and readable on demand is an asynchronous UpDownCounter."
             },
             {
               "key": "async-gauge",
-              "label": "An asynchronous Gauge: register a callback that reads the heap size when the SDK collects",
+              "label": "An asynchronous <code>Gauge</code>: register a callback that reads the heap size when the SDK collects",
               "why": "The callback part is right, but a Gauge is for values that make no sense to add up. Heap sizes from several processes add up to the total heap in use, so the API points additive values to an asynchronous UpDownCounter."
+            },
+            {
+              "key": "observable-updown",
+              "label": "An observable <code>UpDownCounter</code> rather than a <code>Gauge</code>, as the SDK takes the absolute heap size, not an amount to add",
+              "why": "Heap sizes from several processes add up to the total heap in use, which makes the value additive. Observable is the other name for asynchronous: the SDK runs the callback only when metrics are collected, and the API's own example for it is the process heap size."
+            },
+            {
+              "key": "on-demand-additive",
+              "label": "The additive instrument for values like the heap size (available on request)",
+              "why": "That is the asynchronous UpDownCounter. Its callback reports the absolute value, not an increment, and the heap sizes of several processes add up to the total heap in use."
+            },
+            {
+              "key": "sync-gauge",
+              "label": "A synchronous <code>Gauge</code>, with <code>record()</code> receiving the new heap size when it moves, so the SDK keeps the last value",
+              "why": "A Gauge is for values that make no sense to add up, and heap sizes from several processes add up to the total heap in use, so the API points additive values to an UpDownCounter. The synchronous Gauge is also meant for values you hear about through change events, and the runtime can simply be asked."
+            },
+            {
+              "key": "async-counter",
+              "label": "An asynchronous <code>Counter</code>, its callback reading the absolute value of the heap size when the SDK collects",
+              "why": "A Counter, in either form, is for values that only grow, such as CPU time. A heap size falls when memory is released, so it does not fit."
+            },
+            {
+              "key": "span-attribute",
+              "label": "Put the heap size on the spans as an attribute and chart it from the traces",
+              "why": "A span attribute exists only while a request runs, so the chart has no point when traffic stops, and the values cannot be added up into a total. A metric is read at every collection, whether requests arrive or not."
+            },
+            {
+              "key": "add-per-minute",
+              "label": "An <code>UpDownCounter</code> fed once a minute with the absolute heap size you just read",
+              "why": "An UpDownCounter you call yourself takes changes, not current values, so each minute would pile another whole heap onto the total. A value you can read at any time is reported as an absolute number, from a callback."
+            },
+            {
+              "key": "async-add-change",
+              "label": "An <code>UpDownCounter</code> observed asynchronously, whose callback hands <code>add()</code> the difference in heap size since the SDK's previous collection",
+              "why": "The callback of an asynchronous instrument reports the absolute value, not an increment. The change between two collections is worked out afterwards from successive values."
             }
           ]
         }
@@ -158,6 +193,61 @@ export default {
               "key": "lost-between",
               "label": "Orders: a gauge keeps one value per interval, and orders between two samples are lost",
               "why": "Nothing is lost that way: the value recorded is the running total, so the last sample still includes every earlier order. What the gauge lacks is meaning, not data."
+            },
+            {
+              "key": "no-aggregation",
+              "label": "Adding: a gauge holds the latest reading only, so no total of orders across pods exists",
+              "why": "Gauges do not provide an aggregation semantic: the last sample value is used when a backend aligns points in time or lowers the resolution, and a Gauge cannot be assumed to be a sum. A [[monotonic]] [[Sum]] adds across pods, so orders belong in a Counter."
+            },
+            {
+              "key": "start-time",
+              "label": "Restarts: a Sum should carry the start time that marks a reset, and a Gauge point may omit it",
+              "why": "The start time is strongly recommended on Sum points, because a rate that is aware of restarts needs it, and it is optional on a Gauge point. A running total reported by a Gauge therefore gives the backend nothing it can rely on to tell a restart from a drop."
+            },
+            {
+              "key": "always-delta",
+              "label": "Deltas: a gauge reports only what changed since its last report, and the running total is not kept",
+              "why": "A Gauge has no aggregation temporality. Only Sum and Histogram points have one, and a Gauge point is the last sampled value, here the running total itself."
+            },
+            {
+              "key": "no-attributes",
+              "label": "The split: sampled values drop attributes, which means the rate of all orders shows together",
+              "why": "Each Gauge point carries its own set of attributes, like any other point, so a split is possible. What the Gauge lacks is the sum semantic a count needs."
+            },
+            {
+              "key": "rate-any-series",
+              "label": "Rates: <code>rate()</code> and <code>increase()</code> give the same result on a gauge as on a counter, whatever sent it",
+              "why": "Prometheus says <code>rate()</code> should only be used with counters, because it adjusts for the resets of a counter. A series that arrives as a Gauge has no such guarantee, so the result can be wrong."
+            },
+            {
+              "key": "total-suffix",
+              "label": "Naming: a Gauge is exported with a <code>_total</code> suffix, so queries for each count find nothing",
+              "why": "The <code>_total</code> suffix is added to a [[monotonic]] [[Sum]], which becomes a Prometheus counter. A Gauge becomes a Prometheus gauge and keeps its name."
+            },
+            {
+              "key": "thread-safety",
+              "label": "Safety: recording to a Gauge from several threads is not supported, and concurrent orders corrupt the total",
+              "why": "The Metrics API requires every Instrument method to be safe for concurrent use by default, so concurrent calls do not corrupt a value. The problem is meaning, not safety."
+            },
+            {
+              "key": "no-unit",
+              "label": "Units: a Gauge cannot have a unit, and the orders show up without one",
+              "why": "The unit is an optional property of every instrument, and the API's own Gauge example sets one. A Gauge of orders can carry a unit, so the problem is the meaning of its value."
+            },
+            {
+              "key": "decimals-only",
+              "label": "Whole numbers: a Gauge records decimals only, and a count of orders is stored as a fraction",
+              "why": "The API has integer and floating-point forms of the Gauge, such as the UInt64 and double variants of its creation call, so a count can be recorded as a whole number."
+            },
+            {
+              "key": "callback-only",
+              "label": "The form: a Gauge is observed by the SDK, which makes a handler that records to it a mistake",
+              "why": "The Gauge is a synchronous instrument: you record to it where a change happens, and the API's own example does so. The callback form is the Asynchronous Gauge, a different instrument."
+            },
+            {
+              "key": "resets-to-zero",
+              "label": "Zeroing: each report empties the Gauge, so the next sampled value is only what came since",
+              "why": "A Gauge point is the last sampled value for its time window, so the running total is reported as it is and nothing resets it to zero."
             }
           ]
         }
