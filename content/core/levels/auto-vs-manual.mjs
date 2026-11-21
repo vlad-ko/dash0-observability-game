@@ -304,7 +304,7 @@ export default {
           "choices": [
             {
               "key": "sample",
-              "label": "Sample 50% of traces and keep fewer duplicates, then add the business spans with the API",
+              "label": "Sample 50% of the agent traces to keep fewer duplicates, then add the business spans with the API",
               "why": "Sampling drops whole traces. In the traces you keep, each fetch call still has two CLIENT spans."
             },
             {
@@ -334,7 +334,7 @@ export default {
             },
             {
               "key": "tail-sample",
-              "label": "Tail-sample in the Collector and keep only slow traces, then add the business spans with the API",
+              "label": "Tail-sample in the Collector and keep only slow cart traces, then add the business spans with the API",
               "why": "Sampling chooses which traces are exported and which are not. In the traces it keeps, each fetch call still has two CLIENT spans."
             },
             {
