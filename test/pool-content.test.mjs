@@ -134,6 +134,73 @@ for (const [name, check] of Object.entries(CHECKS)) {
   });
 }
 
+// ---- C6: a generative tell finder over the labels of a pooled choice ----
+// Hand-fixing one wording tell at a time moves it somewhere else, so this searches them all: every word and two-word phrase that
+// two or more labels share, every final word two or more labels share, and every punctuation mark. For each feature it scores
+// "pick a label that has it" and "pick a label that has not" over every board (ties split evenly, a board with no candidate is
+// chance) and the score must stay within TELL_BAND of 1 / draw, the same band as test/choice-tells.test.mjs T2.
+const TELL_BAND = 0.15;
+const MARKS = [',', ':', ';', '%', '(', ')', "'", '/', '-', '.', '?', '&'];
+/** The lower-case words of a label with tags stripped. */
+const wordsOf = (label) => plain(label).toLowerCase().match(/[a-z0-9]+/g) ?? [];
+/** The features of `labels` as `{name, has}`: `has(label)` says whether a label carries it. */
+function tellFeatures(labels) {
+  const count = (get) => {
+    const n = new Map();
+    for (const l of labels) for (const f of new Set(get(l))) n.set(f, (n.get(f) ?? 0) + 1);
+    return [...n].filter(([, c]) => c >= 2).map(([f]) => f);
+  };
+  const bigrams = (l) => wordsOf(l).slice(1).map((w, i) => `${wordsOf(l)[i]} ${w}`);
+  const last = (l) => wordsOf(l).slice(-1);
+  return [
+    ...count(wordsOf).map((w) => ({ name: `word "${w}"`, has: (l) => wordsOf(l).includes(w) })),
+    ...count(bigrams).map((w) => ({ name: `phrase "${w}"`, has: (l) => bigrams(l).includes(w) })),
+    ...count(last).map((w) => ({ name: `last word "${w}"`, has: (l) => last(l)[0] === w })),
+    ...MARKS.filter((m) => labels.some((l) => plain(l).includes(m))).map((m) => ({ name: `mark "${m}"`, has: (l) => plain(l).includes(m) })),
+  ];
+}
+/** Every feature's two blind strategies over every board of a pooled choice: `{name, score}`; a board no label can decide counts as chance. */
+function tellScores(spec) {
+  const boards = choiceBoards(spec);
+  const out = [];
+  for (const f of tellFeatures(spec.choices.map((c) => c.label))) {
+    for (const want of [true, false]) {
+      let sum = 0;
+      for (const board of boards) {
+        const top = board.choices.filter((c) => f.has(c.label) === want);
+        sum += top.length === 0 ? 1 / board.choices.length : top.filter((c) => c.right).length / top.length;
+      }
+      out.push({ name: `${want ? 'pick' : 'skip'} ${f.name}`, score: sum / boards.length });
+    }
+  }
+  return out;
+}
+/** The scores furthest from chance first. */
+const byTell = (spec) => tellScores(spec).sort((a, b) => Math.abs(b.score - 1 / spec.draw) - Math.abs(a.score - 1 / spec.draw));
+const tellProblems = (p) =>
+  p.kind !== 'choice'
+    ? []
+    : byTell(p.spec)
+        .filter((s) => Math.abs(s.score - 1 / p.spec.draw) > TELL_BAND)
+        .map((s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against chance ${(1 / p.spec.draw).toFixed(3)}`);
+
+test('C6 no word, phrase, ending or punctuation mark of a pooled choice picks the right answer far from chance, either way', () => {
+  for (const p of live) assert.deepEqual(tellProblems(p), [], `${p.level} ${p.id}`);
+  for (const p of good) assert.deepEqual(tellProblems(p), [], p.id);
+  if (process.env.TELLS) for (const p of live.filter((x) => x.kind === 'choice')) console.log('C6', p.id, byTell(p.spec).slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+});
+
+test('C6 has teeth: a word on every right answer, a word on every wrong answer and a comma on every right answer are reported', () => {
+  const marked = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label} golden`; });
+  assert.ok(tellProblems(marked[0]).some((m) => m.includes('golden')), 'a word on every right answer');
+  const wrongMarked = withChoice((pool) => { for (const c of pool.choices) if (!c.right) c.label = `${c.label} golden`; });
+  assert.ok(tellProblems(wrongMarked[0]).some((m) => m.includes('golden')), 'a word on every wrong answer');
+  const skipOnly = withChoice((pool) => { for (const c of pool.choices) if (c.key !== 'r1') c.label = `${c.label} golden`; });
+  assert.ok(tellProblems(skipOnly[0]).some((m) => m.startsWith('cp: skip word "golden"')), 'a word on every answer but one right one is a tell only when skipped');
+  const comma = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label}, so it holds`; });
+  assert.ok(tellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every right answer');
+});
+
 test('C2 the position rule catches the phrasings it names, in any case, and leaves ordinary text alone', () => {
   const caught = [
     'Unlike the other two options, it holds.', 'Both of the others fail.', 'Neither of the others holds.', 'See the options above.', 'It is the LAST answer.',
