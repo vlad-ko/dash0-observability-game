@@ -185,14 +185,34 @@ function maskScore({ boards, right }, match, want) {
   return sum / boards.length;
 }
 /** Every feature's two blind strategies over every board of a pooled choice: `{name, score}`; a board no label can decide counts as chance. */
-function tellScores(spec) {
+function tellScores(spec, step) {
   const data = indexedBoards(spec);
   const out = [];
-  for (const f of tellFeatures(spec.choices.map((c) => c.label))) {
+  const features = [...tellFeatures(spec.choices.map((c) => c.label)), CAPITAL_TERM];
+  for (const f of features) {
     const match = spec.choices.map((c) => f.has(c.label));
     for (const want of [true, false]) out.push({ name: `${want ? 'pick' : 'skip'} ${f.name}`, score: maskScore(data, match, want) });
   }
-  return out;
+  return [...out, ...(step ? introOverlapScores(spec, step, data) : [])];
+}
+/** A label with a capitalised term after its first word (ClusterRole, Kubernetes, SDK, OTEL_RESOURCE_ATTRIBUTES): a shape the words alone do not show. */
+const CAPITAL_TERM = { name: 'a capitalised term', has: (l) => /\s\S*[A-Z]/.test(plain(l)) };
+/**
+ * "Pick the label that shares the most words with the step's intro and question" and "skip it": an answer that restates the screen is a
+ * tell when the rights do it more than the wrongs. Per board; a board where no label shares a word, or all share the same number, is chance.
+ */
+function introOverlapScores(spec, step, { boards, right }) {
+  const text = new Set(wordsOf([step.intro, step.show, step.question].filter((t) => typeof t === 'string').join(' ')));
+  const shared = spec.choices.map((c) => [...new Set(wordsOf(c.label))].filter((w) => text.has(w)).length);
+  const sums = { pick: 0, skip: 0 };
+  for (const board of boards) {
+    const top = Math.max(...board.map((i) => shared[i]));
+    for (const [name, want] of [['pick', true], ['skip', false]]) {
+      const chosen = board.filter((i) => (shared[i] === top) === want);
+      sums[name] += top === 0 || chosen.length === 0 ? 1 / board.length : chosen.filter((i) => right[i]).length / chosen.length;
+    }
+  }
+  return ['pick', 'skip'].map((name) => ({ name: `${name} the label sharing the most words with the intro and question`, score: sums[name] / boards.length }));
 }
 /** The OR-pairs of words and two-word phrases shared by two or more labels, as `{name, score}` for "pick a label with either" and "skip them". */
 function pairScores(spec) {
@@ -216,16 +236,16 @@ function pairScores(spec) {
 }
 /** The scores furthest from chance first. */
 const furthest = (spec, scores) => scores.sort((a, b) => Math.abs(b.score - 1 / spec.draw) - Math.abs(a.score - 1 / spec.draw));
-const byTell = (spec) => furthest(spec, tellScores(spec));
+const byTell = (spec, step) => furthest(spec, tellScores(spec, step));
 const byPair = (spec) => furthest(spec, pairScores(spec));
 const report = (p, s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against chance ${(1 / p.spec.draw).toFixed(3)}`;
-const tellProblems = (p) => (p.kind !== 'choice' ? [] : byTell(p.spec).filter((s) => Math.abs(s.score - 1 / p.spec.draw) > TELL_BAND).map((s) => report(p, s)));
+const tellProblems = (p) => (p.kind !== 'choice' ? [] : byTell(p.spec, p.step).filter((s) => Math.abs(s.score - 1 / p.spec.draw) > TELL_BAND).map((s) => report(p, s)));
 const pairProblems = (p) => (p.kind !== 'choice' ? [] : byPair(p.spec).filter((s) => Math.abs(s.score - 1 / p.spec.draw) > PAIR_BAND).map((s) => report(p, s)));
 
 test('C6 no word, phrase, ending or punctuation mark of a pooled choice picks the right answer far from chance, either way', () => {
   for (const p of live) assert.deepEqual(tellProblems(p), [], `${p.level} ${p.id}`);
   for (const p of good) assert.deepEqual(tellProblems(p), [], p.id);
-  if (process.env.TELLS) for (const p of live.filter((x) => x.kind === 'choice')) console.log('C6', p.id, byTell(p.spec).slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+  if (process.env.TELLS) for (const p of live.filter((x) => x.kind === 'choice')) console.log('C6', p.id, byTell(p.spec, p.step).slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
 });
 
 test('C6 no pair of words or phrases (pick a label with either) picks the right answer far from chance, either way', () => {
@@ -273,6 +293,17 @@ test('C6 has teeth: a word on every right answer, a word on every wrong answer a
   assert.ok(tellProblems(skipOnly[0]).some((m) => m.startsWith('cp: skip word "golden"')), 'a word on every answer but one right one is a tell only when skipped');
   const comma = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label}, so it holds`; });
   assert.ok(tellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every right answer');
+});
+
+test('C6 has teeth for shape and echo: a capitalised term on every right answer, and rights that restate the intro, are reported', () => {
+  const capital = withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label} Kubernetes`; });
+  assert.ok(tellProblems(capital[0]).some((m) => m.includes('a capitalised term')), 'a capitalised term on every right answer');
+  const wrongCapital = withChoice((pool) => { for (const c of pool.choices) if (!c.right) c.label = `${c.label} Kubernetes`; });
+  assert.ok(tellProblems(wrongCapital[0]).some((m) => m.includes('a capitalised term')), 'a capitalised term on every wrong answer');
+  const [base] = withChoice(() => {});
+  const echo = { ...base, step: { ...base.step, intro: base.spec.choices.filter((c) => c.right).map((c) => c.label).join(' ') } };
+  assert.ok(tellProblems(echo).some((m) => m.includes('sharing the most words with the intro')), 'an intro that restates the right answers');
+  assert.deepEqual(tellProblems(base).filter((m) => /capitalised|intro and question/.test(m)), [], 'the plain fixture shows neither');
 });
 
 // ---- C7: a generative tell finder over the labels of a pooled sort ----
@@ -362,9 +393,9 @@ function sortTellScores(spec) {
 }
 /**
  * A pair is the best of thousands of ORs chosen after the fact, so its mean may sit further above the guess than a single feature's
- * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both.
+ * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both. C6 and C7
+ * share one PAIR_BAND (declared above), as both read the best of many ORs.
  */
-const PAIR_BAND = 0.25;
 const sortTellProblems = (p) => {
   if (p.kind !== 'sort') return [];
   const { chance, scores } = sortTellScores(p.spec);
@@ -396,8 +427,8 @@ test('C7 has teeth: a word, a closing word, a two-word phrase, a comma and code 
   assert.ok(sortTellProblems(other[0]).some((m) => m.includes('word "golden" means b')), 'a word on every item of the other bucket');
   const last = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'a' ? `${it.label} today` : `${it.label} soon`; });
   assert.ok(sortTellProblems(last[0]).some((m) => m.includes('last word "today"')), 'a closing word that differs by bucket');
-  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} in the end`; });
-  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "in the" means b')), 'a phrase on every item of one bucket');
+  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} once more`; });
+  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "once more" means b')), 'a phrase on every item of one bucket');
   const comma = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label}, then more`; });
   assert.ok(sortTellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every item of one bucket');
   const code = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `<code>${it.id}</code>`; });
