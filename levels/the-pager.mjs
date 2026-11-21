@@ -23,15 +23,18 @@ import {
   options,
   question,
   reason,
-  setFeedback,
   step,
 } from '../lib/ui/index.mjs';
+import { tell } from '../lib/widgets/tell.mjs';
 
 const BUDGET = { startPct: 100, stepPct: 25 };
 
 // The Spent on chips quote the step of the budget (a figure); the label of a look is known only to the code (a slot).
 const VARS = { 'step-pct': BUDGET.stepPct };
 const SLOTS = ['label'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.renderStep.
+export const TERMS = ['intro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 const SKELETON = {
   id: 'the-pager',
@@ -71,7 +74,7 @@ const contentOf = (say) => ({
   intro: say.intro,
   telemetry: { intro: say.litIntro, asks: say.asks.map(({ reply, ...ask }) => ({ ...ask, answer: reply })) },
 });
-export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, BIND).run);
 
 const CELLS = BUDGET.startPct / BUDGET.stepPct;
 
@@ -114,7 +117,7 @@ function screens(ctx, say) {
     // A label that is a question reads on as it is; any other label gets a colon.
     const mark = label.endsWith('?') ? '' : ':';
     region.newestHtml = `<p data-${attr}="${key}"><strong>${label}${mark}</strong> ${body}</p>`;
-    setFeedback(region, 'neutral', region.newestHtml, { scroll: true }); // each row answers a click: in view, above the footer (#346)
+    tell(ctx, region, 'neutral', region.newestHtml, { scroll: true }); // each row answers a click: in view, above the footer (#346)
   };
   const askAnswers = (escalatedByBudget = false) => {
     // The note is said at the top of part 2 when the fourth look spent the last of the budget: the player never presses Escalate, and the meter and the look's row are gone with part 1.
@@ -191,7 +194,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);
