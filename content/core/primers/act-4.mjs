@@ -92,7 +92,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In [[Dash0]], the [[Related Logs]] tab shows log records from the same [[resource]] and the same trace, in time order around the log you selected."
+          "text": "In [[Dash0]], the [[Related Logs]] tab shows log records from the same [[resource]], the same trace or both, in time order around the log you selected."
         }
       ],
       "sources": [

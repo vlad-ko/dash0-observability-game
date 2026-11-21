@@ -8,6 +8,6 @@ export default {
     {"id": "parentbased-sampler", "name": "ParentBased sampler", "variants": ["ParentBased", "parent-based sampler"], "definition": "An SDK sampler that decides by the parent: by default a span with a parent is kept only if its parent was sampled, and a span with no parent is decided by the root sampler you give it.", "topic": "Traces"},
     {"id": "probabilistic-sampler", "name": "Probabilistic sampler", "variants": ["probabilistic sampling", "probabilistic_sampler"], "definition": "Sampling that keeps a set percentage of traces, decided from the trace ID, as in the Collector's probabilistic_sampler processor or the probabilistic policy of tail_sampling.", "topic": "Traces"},
     {"id": "retention", "name": "Retention", "variants": ["data retention"], "definition": "How long a backend keeps the telemetry it stores. It can differ by signal.", "topic": "Foundations"},
-    {"id": "spam-filter", "name": "Spam filter", "variants": [], "definition": "A rule that drops unwanted telemetry at ingest.", "topic": "Dash0"}
+    {"id": "spam-filter", "name": "Spam filter", "variants": [], "definition": "A Dash0 rule that drops matching telemetry during ingestion, before it is stored, so it is never indexed but still carries the Ingest charge.", "topic": "Dash0"}
   ]
 };

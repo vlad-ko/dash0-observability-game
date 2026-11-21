@@ -5,7 +5,7 @@ export default {
   "terms": [
     {"id": "cardinality", "name": "Cardinality", "variants": ["high cardinality"], "definition": "The number of unique values (or label combinations) a field has; for metrics, the number of time series.", "topic": "Foundations"},
     {"id": "instrument", "name": "Instrument", "variants": ["instruments"], "definition": "Counter, UpDownCounter, Gauge, Histogram (sync) and their observable (async) forms.", "topic": "Metrics"},
-    {"id": "data-point", "name": "Data point", "variants": ["data points"], "definition": "One reported value of a metric for one attribute combination over one time window: the sum of its measurements, or for a gauge the last one.", "topic": "Metrics"},
+    {"id": "data-point", "name": "Data point", "variants": ["data points"], "definition": "What a metric reports for one attribute combination at one time: a sum's delta or cumulative total, a gauge's last sampled value, or a histogram's count, sum, bucket counts and optional min and max.", "topic": "Metrics"},
     {"id": "metric", "name": "Metric", "variants": ["metrics"], "definition": "A named set of streams of data points, one per attribute combination, that describes how something changes over time, such as request count or memory in use.", "topic": "Metrics"},
     {"id": "bucket", "name": "Bucket", "variants": ["buckets", "histogram bucket", "histogram buckets"], "definition": "A range of values in a histogram, with a count of the observations that fell inside it; upper bounds are inclusive and lower bounds exclusive.", "topic": "Metrics"},
     {"id": "sum", "name": "Sum", "variants": ["sums"], "definition": "The OpenTelemetry metric type that adds up measurements. It is either monotonic or not, and either cumulative or delta.", "topic": "Metrics"},
@@ -15,6 +15,9 @@ export default {
     {"id": "histogram", "name": "Histogram", "variants": ["histograms", "exponential histogram"], "definition": "Counts of values in buckets; exponential histograms pick buckets automatically.", "topic": "Metrics"},
     {"id": "quantile", "name": "Quantile / percentile", "variants": ["quantile", "quantiles", "percentile", "percentiles"], "definition": "A value picked by rank from sorted observations, named by a number between 0 and 1; the 0.95-quantile is the 95th percentile.", "topic": "Metrics"},
     {"id": "monotonic", "name": "Monotonic", "variants": [], "definition": "A sum that only goes up, as a Counter produces; an UpDownCounter gives a non-monotonic sum.", "topic": "Metrics"},
+    {"id": "counter", "name": "Counter", "variants": ["counters"], "definition": "A synchronous OpenTelemetry instrument that only takes non-negative increments, such as the number of requests completed.", "topic": "Metrics"},
+    {"id": "updowncounter", "name": "UpDownCounter", "variants": ["updowncounters"], "definition": "A synchronous OpenTelemetry instrument that takes increments and decrements, such as the number of active requests or of items in a queue.", "topic": "Metrics"},
+    {"id": "gauge", "name": "Gauge", "variants": ["gauges"], "definition": "An OpenTelemetry instrument that records values it makes no sense to add up, such as the current room temperature or CPU fan speed.", "topic": "Metrics"},
     {"id": "exemplar", "name": "Exemplar", "variants": ["exemplars"], "definition": "A sample point on a metric linked to a trace/span ID.", "topic": "Metrics"},
     {"id": "metric-event", "name": "Metric event", "variants": ["metric events"], "definition": "One measurement recorded for a metric.", "topic": "Metrics"},
     {"id": "view", "name": "View", "variants": ["views"], "definition": "SDK configuration that renames, filters or re-buckets a metric.", "topic": "Metrics"},
