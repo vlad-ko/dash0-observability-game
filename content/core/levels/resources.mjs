@@ -115,17 +115,17 @@ export default {
             },
             {
               "key": "all-signals",
-              "label": "A span attribute covers only spans, so metrics and logs lack this pod name",
+              "label": "A span attribute reaches only spans, so metrics and logs miss the pod name",
               "why": "A Resource is associated with the tracer, meter and logger providers when they are created, and everything those providers produce carries it. A wrapper that sets an attribute on spans touches spans alone."
             },
             {
               "key": "not-standard",
-              "label": "<code>k8s.pod.name</code> is not a standard attribute, so it has to be renamed before it can be sent",
+              "label": "<code>k8s.pod.name</code> is not a standard attribute, so it needs renaming before it is sent",
               "why": "It is a standard attribute: the Kubernetes semantic conventions define <code>k8s.pod.name</code> as the name of the Pod. The problem is where it is set, not what it is called."
             },
             {
               "key": "producer",
-              "label": "Such a name is part of the observed system, which a Resource exists to represent",
+              "label": "A name like this is an attribute of what is observed, which a Resource is built to hold",
               "why": "OpenTelemetry defines a resource as the entity producing telemetry, and a Kubernetes pod is one of the entities it names. The pod is the same for every span the process emits, so it describes the producer and not any one operation."
             },
             {
@@ -140,7 +140,7 @@ export default {
             },
             {
               "key": "repeats",
-              "label": "A wrapper copies <code>k8s.pod.name</code> onto every span, when attributes can be held in one place",
+              "label": "The wrapper repeats <code>k8s.pod.name</code> on every span instead of using the Resource",
               "why": "Set on the Resource, the pod name is attached to the provider when it is created, and every span, metric and log from that provider carries it, with no wrapper around the tracer."
             },
             {
@@ -160,7 +160,7 @@ export default {
             },
             {
               "key": "env-only",
-              "label": "A Resource can be set only through <code>OTEL_RESOURCE_ATTRIBUTES</code>, never in code",
+              "label": "A Resource takes its attributes only from <code>OTEL_RESOURCE_ATTRIBUTES</code>, never from code",
               "why": "Custom resource attributes can be provided in code or through the <code>OTEL_RESOURCE_ATTRIBUTES</code> environment variable. Either way they are set once on the Resource."
             },
             {
@@ -194,17 +194,17 @@ export default {
             },
             {
               "key": "derived",
-              "label": "Out of the signals themselves, with nothing to register first",
+              "label": "Straight from the signals, with nothing to send or register",
               "why": "Dash0 lists what the telemetry describes. The names and types in its Resources table are derived automatically from OpenTelemetry attributes, and nobody registers them by hand."
             },
             {
               "key": "registry-ahead",
-              "label": "From a registry that the Collector sends ahead of the telemetry",
+              "label": "From a registry that the Collector sends ahead of the signals",
               "why": "There is no such registry. Every signal carries resource metadata that identifies the system it describes, and Dash0 builds its view from that."
             },
             {
               "key": "signal-metadata",
-              "label": "From a signal's own metadata about the system it describes",
+              "label": "From the metadata that each signal carries about its system",
               "why": "In OpenTelemetry each signal carries resource metadata identifying the observed system, whether that is a process, a container or a Kubernetes pod. That is what Dash0 reads."
             },
             {
@@ -219,7 +219,7 @@ export default {
             },
             {
               "key": "equality",
-              "label": "By matching pod identifiers across sources, to merge a log agent alongside an SDK into one",
+              "label": "By matching pod identifiers across sources, so a log agent and an SDK count as one pod",
               "why": "Sources that describe the same pod rarely carry identical attributes. Dash0 applies resource equality rules, based on attributes such as <code>k8s.pod.uid</code> for Kubernetes, to merge them into one resource without any configuration."
             },
             {
@@ -229,7 +229,7 @@ export default {
             },
             {
               "key": "collector-name",
-              "label": "From the name of the Collector forwarding the telemetry",
+              "label": "From the name of the Collector that forwarded the signals",
               "why": "A resource describes the observed system, not whatever collected or forwarded the telemetry. Metrics that CloudWatch provides about an RDS instance describe the instance, not CloudWatch."
             },
             {

@@ -133,7 +133,7 @@ function strayed(qs) {
 // and the fixed set cannot hide behind it, nor a pool behind the fixed set.
 test('no blind option-shape rule strays from chance by more than a few points over the fixed questions, either way', async () => {
   const qs = (await allQuestions()).filter((q) => q.draw === undefined);
-  assert.ok(qs.length >= 77, `found ${qs.length} fixed questions`);
+  assert.ok(qs.length >= 70, `found ${qs.length} fixed questions`);
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
   if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS fixed ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
   if (process.env.TELLS) {

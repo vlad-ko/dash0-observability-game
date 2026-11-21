@@ -364,7 +364,6 @@ function sortTellScores(spec) {
  * A pair is the best of thousands of ORs chosen after the fact, so its mean may sit further above the guess than a single feature's
  * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both.
  */
-const PAIR_BAND = 0.25;
 const sortTellProblems = (p) => {
   if (p.kind !== 'sort') return [];
   const { chance, scores } = sortTellScores(p.spec);

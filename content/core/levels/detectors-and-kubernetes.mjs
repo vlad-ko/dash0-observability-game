@@ -30,7 +30,7 @@ export default {
             },
             {
               "key": "init",
-              "label": "During initialisation, before a single event",
+              "label": "At initialisation, before any telemetry is produced",
               "why": "Detection runs as the application starts, and its result becomes the Resource that is attached to the tracer, meter and logger providers when they are created. That is why detection is expected to complete quickly."
             },
             {
@@ -40,7 +40,7 @@ export default {
             },
             {
               "key": "setup",
-              "label": "When setup runs, with the environment read in that very moment",
+              "label": "When tracing is configured and its environment is read",
               "why": "The SDK builds the Resource by running its detectors and merging what they return, then associates it with the providers. After that the association cannot be changed."
             },
             {
@@ -50,7 +50,7 @@ export default {
             },
             {
               "key": "one-time",
-              "label": "One time per process: on start without a repeat for a span or a metric",
+              "label": "One time per process, rather than again for each span or metric",
               "why": "Resources are immutable, and a provider keeps the one it was given. Nothing runs detection a second time for each signal."
             },
             {
@@ -192,17 +192,17 @@ export default {
             },
             {
               "key": "read-only",
-              "label": "Read access over the Kubernetes API, because that is where it discovers each pod",
+              "label": "Read access to the Kubernetes API, where the processor discovers its pods",
               "why": "The processor uses the Kubernetes API to discover the pods running in a cluster, so its service account needs permission to read them there. Without it the processor finds no pods."
             },
             {
               "key": "ssh",
-              "label": "Shell access to each node, to read the container runtime's files for pod names",
+              "label": "Shell access to each node, to read the container runtime's files for pod details",
               "why": "The processor discovers pods through the Kubernetes API. It does not open shells or read files on the nodes."
             },
             {
               "key": "cluster-wide",
-              "label": "Reach across the whole cluster, so pods in any namespace can be seen",
+              "label": "Rights across the whole cluster, so a pod can be looked up by name in any namespace that reports to it",
               "why": "To receive telemetry from across namespaces, the processor needs <code>get</code>, <code>watch</code> and <code>list</code> on pods and namespaces for all of them, and a ClusterRole grants exactly that."
             },
             {
@@ -212,32 +212,32 @@ export default {
             },
             {
               "key": "binding",
-              "label": "A binding tying those read rights to the identity the Collector uses for pod lookups",
+              "label": "A ClusterRoleBinding that ties the Collector's service account to the pod permissions it needs",
               "why": "The permissions are given to the service account the Collector runs as, through a ClusterRole and its binding. Some attributes need a little more, such as access to nodes when it extracts node metadata."
             },
             {
               "key": "sidecar-needed",
-              "label": "A sidecar in every pod, since the processor can only describe the pod it sits in",
+              "label": "A sidecar in every pod, since the processor can only describe the pod and namespace it sits in",
               "why": "The processor is not usable in a sidecar. It discovers all the pods in a cluster through the Kubernetes API, from a DaemonSet or a gateway Collector."
             },
             {
               "key": "admin",
-              "label": "The <code>cluster-admin</code> ClusterRole, because narrower roles cannot list pods",
+              "label": "The <code>cluster-admin</code> ClusterRole for its service account, since narrower permissions cannot list pods",
               "why": "A narrow ClusterRole is enough: <code>get</code>, <code>watch</code> and <code>list</code> on pods and namespaces, with a little more for some attributes. Full admin rights are far wider than the processor needs."
             },
             {
               "key": "write",
-              "label": "Permission to create and delete pods, so it can tag them with their metadata",
+              "label": "Permission for its service account to create and delete pods, so it can tag them",
               "why": "The processor only reads: the verbs it needs are <code>get</code>, <code>watch</code> and <code>list</code>. It adds metadata to the telemetry, not to the pods."
             },
             {
               "key": "kubelet",
-              "label": "A credential for each node's kubelet, which it queries for pod data",
+              "label": "A credential with permission to query each node's kubelet for pod data",
               "why": "The processor uses the Kubernetes API to discover pods, so its service account needs permissions there. Pulling pod and container metrics from a kubelet is the job of the kubeletstats receiver."
             },
             {
               "key": "namespaces-only",
-              "label": "Permission to read namespaces only, because the pod name is in the telemetry already",
+              "label": "Permission for its service account to read namespaces only, because the pod name is in the telemetry already",
               "why": "It needs pods as well as namespaces. By default it matches telemetry to a pod by IP address, then reads that pod's metadata, instead of trusting a name in the telemetry."
             }
           ]
@@ -266,7 +266,7 @@ export default {
             },
             {
               "key": "tracing",
-              "label": "It enables tracing out of the box where it has support, with no SDK in any app",
+              "label": "It enables tracing for supported runtimes, with no SDK added to any application by you",
               "why": "In namespaces enabled for Dash0 monitoring, supported workloads are instrumented automatically, so tracing works out of the box for supported runtimes without adding an SDK."
             },
             {
@@ -276,22 +276,22 @@ export default {
             },
             {
               "key": "attributes",
-              "label": "It adds the namespace plus the container to resource attributes on the workload",
+              "label": "It adds the namespace and container to the workload's resource attributes by itself once monitoring is enabled",
               "why": "The operator improves the auto-detection of OpenTelemetry resource attributes: namespace, pod name, pod UID and container name are added to the workload's resource attributes."
             },
             {
               "key": "in-place",
-              "label": "It instruments pods and jobs that are already running, without restarting them",
+              "label": "It instruments pods and jobs of supported runtimes that are already running, without restarting them",
               "why": "Pods and jobs are instrumented only at deploy time, because existing ones cannot be restarted. Other workload types can be instrumented in place."
             },
             {
               "key": "hassle",
-              "label": "It saves the team from instrumenting apps by hand, or having to supply all Kubernetes details themselves",
+              "label": "It saves the team from adding an SDK, or from having to set Kubernetes attributes by hand",
               "why": "Those are the two jobs Dash0 says the operator takes off you: adding the OpenTelemetry SDK to the application, and setting the Kubernetes-related resource attributes manually."
             },
             {
               "key": "any-runtime",
-              "label": "It adds tracing to every runtime, whatever language the application is written in",
+              "label": "It adds tracing to supported runtimes and unsupported ones alike, whatever language the application uses",
               "why": "Automatic tracing only works for supported runtimes. For other runtimes you add an OpenTelemetry SDK by other means."
             },
             {
@@ -301,17 +301,17 @@ export default {
             },
             {
               "key": "rewrite",
-              "label": "It rewrites the application's source code to call the OpenTelemetry API",
+              "label": "It rewrites the application's source code to add the OpenTelemetry SDK",
               "why": "It modifies the Pod spec template, or the Pod spec itself for a standalone pod, and the source code stays as it was."
             },
             {
               "key": "needs-sdk",
-              "label": "It waits for the team to add an SDK, and only then sets the Kubernetes attributes",
+              "label": "It waits for the team to add an SDK to supported runtimes, and only then sets the Kubernetes attributes",
               "why": "Tracing for supported runtimes needs no SDK, and attribute detection works both for the runtimes the operator instruments and for workloads that got an SDK some other way."
             },
             {
               "key": "new-only",
-              "label": "It touches only workloads deployed after it was installed, never existing deployments",
+              "label": "It sets Kubernetes attributes only on workloads deployed after it was installed, never existing ones",
               "why": "For workload types other than jobs and pods, the operator can instrument existing workloads as well as new ones, depending on the <code>spec.instrumentWorkloads.mode</code> setting."
             }
           ]
