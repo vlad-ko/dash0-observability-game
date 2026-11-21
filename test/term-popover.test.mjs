@@ -279,3 +279,96 @@ test('placement: with no room below inside the body it opens above', () => {
   fire(a.wrap, 'mouseenter');
   assert.equal(a.pop.hasAttribute('data-side'), false);
 });
+
+// A box that clips (overflow: hidden, as the kit's lesson card does) cuts a card positioned inside it, and is too short for the
+// card to fit above or below the term. The card then leaves the box: fixed to the viewport, placed from the term's rectangle.
+function clippedSetup() {
+  const s = setup();
+  const { a, root, document, window } = s;
+  Object.defineProperty(document.documentElement, 'clientWidth', { value: 1280, configurable: true });
+  Object.defineProperty(document.documentElement, 'clientHeight', { value: 800, configurable: true });
+  const box = a.wrap.parentElement;
+  window.getComputedStyle = (el) => ({ overflowX: 'visible', overflowY: el === box ? 'hidden' : 'visible' });
+  root.getBoundingClientRect = () => rect(100, 0, 1000, 800);
+  box.getBoundingClientRect = () => rect(100, 97, 900, 123);
+  a.wrap.getBoundingClientRect = () => rect(600, 180, 40, 20);
+  const origin = { left: 30, top: 10 }; // where a fixed element at left 0, top 0 lands (a containing block that is not the viewport)
+  a.pop.getBoundingClientRect = () => {
+    const fixed = a.pop.style.getPropertyValue('position') === 'fixed';
+    const left = fixed ? origin.left + parseFloat(a.pop.style.getPropertyValue('left') || '0') : 600;
+    const top = fixed ? origin.top + parseFloat(a.pop.style.getPropertyValue('top') || '0') : 200;
+    return rect(left, top, 300, 80);
+  };
+  return { ...s, origin };
+}
+
+test('placement: a card in a clipping box leaves the box, fixed beside the term and inside the body', () => {
+  const { a, fire, origin } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  const p = a.pop.style;
+  assert.equal(p.getPropertyValue('position'), 'fixed');
+  assert.equal(origin.left + parseFloat(p.getPropertyValue('left')), 600, 'its left edge is the term\'s');
+  assert.equal(origin.top + parseFloat(p.getPropertyValue('top')), 200, 'below the term, though the box ends at 220');
+  assert.equal(a.pop.hasAttribute('data-side'), false);
+});
+
+test('placement: a fixed card is kept inside the body at the right edge and above the term when there is no room below', () => {
+  const { a, fire, origin, document } = clippedSetup();
+  Object.defineProperty(document.documentElement, 'clientHeight', { value: 260, configurable: true });
+  a.wrap.getBoundingClientRect = () => rect(1000, 180, 40, 20);
+  fire(a.wrap, 'mouseenter');
+  const p = a.pop.style;
+  assert.equal(origin.left + parseFloat(p.getPropertyValue('left')), 792, 'right edge at the body edge 1100 - 8');
+  assert.equal(origin.top + parseFloat(p.getPropertyValue('top')), 100, 'above the term: 180 - 80');
+  assert.equal(a.pop.getAttribute('data-side'), 'above');
+  assert.equal(p.getPropertyValue('bottom'), 'auto', 'the kit above rule sets bottom: 100%, which must not stretch a fixed card');
+});
+
+test('placement: the origin is measured with the card\'s transition off (reduced motion leaves a .01ms transition that reads a stale box)', () => {
+  const { a, fire, origin } = clippedSetup();
+  const live = a.pop.getBoundingClientRect;
+  a.pop.getBoundingClientRect = () => {
+    return offImportant ? live() : rect(0, -732, 300, 80);
+  };
+  // linkedom keeps no priority, so the call is recorded: important, to beat the reduced-motion rule's !important.
+  let offImportant = false;
+  const style = a.pop.style;
+  const spy = new Proxy(style, {
+    get: (t, k) => (k === 'setProperty'
+      ? (name, value, priority) => {
+        if (name === 'transition' && value === 'none' && priority === 'important') offImportant = true;
+        return t.setProperty(name, value, priority);
+      }
+      : typeof t[k] === 'function' ? t[k].bind(t) : t[k]),
+  });
+  Object.defineProperty(a.pop, 'style', { get: () => spy });
+  fire(a.wrap, 'mouseenter');
+  assert.equal(origin.top + parseFloat(a.pop.style.getPropertyValue('top')), 200);
+  assert.equal(origin.left + parseFloat(a.pop.style.getPropertyValue('left')), 600);
+});
+
+test('placement: an open fixed card is placed again when the window resizes', () => {
+  const { a, fire, window, document, origin } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  a.wrap.getBoundingClientRect = () => rect(1000, 180, 40, 20);
+  Object.defineProperty(document.documentElement, 'clientWidth', { value: 1000, configurable: true });
+  window.dispatchEvent(new window.Event('resize'));
+  assert.equal(origin.left + parseFloat(a.pop.style.getPropertyValue('left')), 692, 'right edge at 1000 - 8');
+});
+
+test('placement: closing a fixed card clears its inline placement', () => {
+  const { a, fire } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  fire(a.wrap, 'mouseleave');
+  assert.equal(a.pop.hasAttribute('style'), false);
+});
+
+test('placement: closing and reopening in a box that does not clip clears the fixed placement', () => {
+  const { a, fire, window } = clippedSetup();
+  fire(a.wrap, 'mouseenter');
+  fire(a.wrap, 'mouseleave');
+  window.getComputedStyle = () => ({ overflowX: 'visible', overflowY: 'visible' });
+  fire(a.wrap, 'mouseenter');
+  assert.equal(a.pop.style.getPropertyValue('position'), '');
+  assert.equal(a.pop.style.getPropertyValue('top'), '');
+});

@@ -2,11 +2,14 @@
 // live level names a term. Bind checks the syntax; existence is checked here, against the glossary, so bind never imports it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
 import { liveRegistry } from '../app.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
 import { GLOSSARY } from '../content/core/glossary/index.mjs';
-import { checkLevelTerms, readGloss } from '../lib/content/terms.mjs';
+import { checkLevelTerms, parseTerms, readGloss, termLookup } from '../lib/content/terms.mjs';
+import { createLevelContext } from '../lib/level-context.mjs';
 import { extractLevelText } from '../tools/extract-level-text.mjs';
+import { click, makeDom, q } from './helpers/dom.mjs';
 
 const gloss = (shown, ref = '') => `<span data-gloss="${ref}">${shown}</span>`;
 const SMALL = { terms: [{ id: 'span', name: 'Span', variants: [], definition: 'One unit of work.', act: 'a0', topic: 'Traces' }] };
@@ -103,4 +106,60 @@ test('extractLevelText writes a marker in answer feedback back as [[...]] and le
 test('checkLevelTerms: a level with no span has no problem, and a glossary that is not one resolves nothing', () => {
   assert.deepEqual(checkLevelTerms({ intro: 'plain <b>text</b>', n: 3, list: [null, 'x'] }, SMALL), []);
   assert.deepEqual(checkLevelTerms({ intro: gloss('span', 'span') }, null), ['intro: "span" is not a term in the glossary']);
+});
+
+// ---- run levels (#442 phase 4): the entries a level lists in TERMS mark terms ------------------------------------------
+
+test('monitoring-vs-observability draws its marked terms on the second screen, once each, and wires them (glossary sense only)', async () => {
+  const { default: level } = await import('../levels/monitoring-vs-observability.mjs');
+  const dom = makeDom();
+  const wired = [];
+  const termPops = { wire: (root) => wired.push([...root.querySelectorAll('[data-term] button')].map((b) => b.textContent)), closeAll: () => {} };
+  const ctx = createLevelContext({
+    level, ovBody: dom.body, ovActions: dom.actions, now: () => 0, shuffle: (a) => a, reduceMotion: true,
+    onFinish: () => {}, signal: new AbortController().signal, reportError: (e) => { throw e; }, glossary: GLOSSARY, termPops,
+  });
+  level.run(ctx);
+  assert.equal(dom.body.querySelectorAll('[data-term]').length, 0, 'the sort screen marks no term');
+  for (const [item, bucket] of [['cpu', 'known'], ['5xx', 'known'], ['disk', 'known'], ['ios', 'new'], ['cust', 'new'], ['coupon', 'new']]) {
+    click(`[data-item="${item}"]`);
+    click(`[data-bucket="${bucket}"]`);
+  }
+  click('#mvo-next');
+  const shown = [...dom.body.querySelectorAll('[data-term] button')].map((b) => b.textContent);
+  assert.deepEqual(shown, ['Monitoring', 'Observability', 'telemetry']);
+  assert.ok(q('#mvo-q-why'), 'control: this is the second screen');
+  assert.equal(dom.body.innerHTML.includes('data-gloss'), false, 'no gloss span reaches the page');
+  assert.ok(wired.some((w) => w.join() === 'Monitoring,Observability,telemetry'), JSON.stringify(wired));
+});
+
+/** The levels that list prose entries: `{id, terms, source}` from each levels/*.mjs that exports TERMS. */
+async function levelsWithTerms() {
+  const dir = new URL('../levels/', import.meta.url);
+  const out = [];
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.mjs') && n !== 'index.mjs')) {
+    const mod = await import(new URL(f, dir));
+    if (Array.isArray(mod.TERMS)) out.push({ id: f.replace(/\.mjs$/, ''), terms: mod.TERMS, source: readFileSync(new URL(f, dir), 'utf8') });
+  }
+  return out;
+}
+
+test('every run level that lists TERMS has markers that resolve against the glossary, and does not call setFeedback', async () => {
+  const levels = await levelsWithTerms();
+  assert.ok(levels.some((l) => l.id === 'monitoring-vs-observability' && l.terms.length > 0), 'the proof level lists its prose');
+  let markers = 0;
+  for (const { id, terms, source } of levels) {
+    const { default: core } = await import(new URL(`../content/core/levels/${id}.mjs`, import.meta.url));
+    const lookup = termLookup(GLOSSARY);
+    for (const name of terms) {
+      const parsed = parseTerms(core.run[name]);
+      assert.ok(parsed.ok, `${id}.run.${name}: ${parsed.problem}`);
+      for (const p of parsed.parts.filter((x) => x.shown !== undefined)) {
+        markers += 1;
+        assert.notEqual(lookup.resolve(p.shown, p.ref), null, `${id}.run.${name}: [[${p.shown}${p.ref ? `|${p.ref}` : ''}]] names no glossary term`);
+      }
+    }
+    if (terms.length > 0) assert.equal(/\bsetFeedback\(/.test(source), false, `${id} lists prose in TERMS, so its answer lines go through tell, not setFeedback`);
+  }
+  assert.ok(markers >= 3, `the proof level marks at least three terms (${markers})`);
 });

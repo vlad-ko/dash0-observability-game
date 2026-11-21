@@ -702,8 +702,8 @@ primers keep their own schema (§2.12) over the same text rules.
 A play step's `intro` and `show` may mark glossary terms with the primer marker (`[[shown|id]]`, `[[shown]]`, §2.12). `bindLevel`
 validates the syntax and writes each marker as `<span data-gloss="id">shown</span>`, so the guide's plain-text reads
 (`lib/guide/context.mjs`) see the shown words only. Markers are read in `intro`, `show` and the answer feedback keys (`why`, a
-`whyNot` value, `explain`, `hint`, `closing`; `MARKER_KEYS` in `lib/content/keys.mjs`); no other field and nothing under `run` reads
-one yet. `createLevelContext` takes `glossary` and `termPops` (default `null`; `app.mjs` passes both). `renderStep` closes the open
+`whyNot` value, `explain`, `hint`, `closing`; `MARKER_KEYS` in `lib/content/keys.mjs`); no other field reads
+one, and under `run` only the top-level string entries a run level lists in its `TERMS` (`terms` to `bindText`). `createLevelContext` takes `glossary` and `termPops` (default `null`; `app.mjs` passes both). `renderStep` closes the open
 card, opens a scope for the screen (even for a body with no span), draws the body through it (`lib/term-text.mjs`: the first use of
 each term on the screen is a kit `term`, popover id `lvterm-<screen>-<n>`; every other span is plain escaped words) and wires the body.
 The first-use rule is `createTermScope`, shared with the primer view. It records which owner drew each term, so `release(owner)` gives

@@ -73,7 +73,7 @@ export default {
       ]
     },
     "sortReason": "Sort every item to continue.",
-    "answerableIntro": "Monitoring answers the known questions. Observability is being able to answer the new ones from the telemetry your system already sends, without shipping new code.",
+    "answerableIntro": "[[Monitoring]] answers the known questions. [[Observability]] is being able to answer the new ones from the [[telemetry]] your system already sends, without shipping new code.",
     "answerableQuestion": "What makes the second kind answerable?",
     "answerable": [
       {
