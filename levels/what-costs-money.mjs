@@ -9,7 +9,7 @@
 // (a flat amount for each host that sends telemetry), the OpenTelemetry sampling page above (sampling is one of the
 // most effective ways to reduce the cost of observability) and the Prometheus page above (each labelset is another
 // time series). Retention is the level's own explain text. No Dash0 claim is made in the pool.
-// Docs (Dash0):https://www.dash0.com/pricing , https://www.dash0.com/docs/dash0/cost-control , https://www.dash0.com/docs/dash0/cost-control/spam-filters , https://www.dash0.com/docs/dash0/cost-control/install-forecast
+// Docs (Dash0): https://www.dash0.com/pricing , https://www.dash0.com/docs/dash0/cost-control , https://www.dash0.com/docs/dash0/cost-control/spam-filters , https://www.dash0.com/docs/dash0/cost-control/install-forecast
 //
 // Every number here is illustrative and invented for Kettle & Co: the units are not a price list and
 // the three models are generic, not a description of any one vendor. The one product claim is

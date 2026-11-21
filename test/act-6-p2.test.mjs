@@ -55,7 +55,7 @@ test('6.3 per host: a pool of 20 (draw 4); only the three that remove a host low
   assert.equal(host().length, 20);
   assert.deepEqual(host().filter((c) => c.right).map((c) => c.key).sort(), ['consolidate-vms', 'fewer-hosts', 'retire-idle']);
   for (const c of host().filter((x) => !x.right)) {
-    assert.equal(/per-host|per host|price|bill|meter|host/.test(plain(c.why)), true, `${c.key} says why the bill does not move`);
+    assert.equal(/does not|ignores|nothing|not a host|still|same/.test(plain(c.why)), true, `${c.key} says why the bill does not move`);
   }
   for (const k of ['drop-debug', 'sample', 'short-keys']) assert.ok(host().find((c) => c.key === k), `${k} is still in the pool`);
   assert.deepEqual(host().filter((c) => c.keep).map((c) => c.key), ['drop-debug'], 'the near-miss the 50/50 keeps');

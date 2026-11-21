@@ -15,22 +15,22 @@ export default {
           "choices": [
             {
               "key": "drop-debug",
-              "label": "Drop the debug logs: the vendor bills per host, so fewer log lines cost less",
+              "label": "Drop the debug logs on the hosts, so that fewer log lines go out",
               "why": "Under per-host metering the bill follows the number of hosts, not the telemetry each one sends, so fewer log lines change nothing on the invoice. They can still cost you elsewhere: network, a Collector that has to process them, and a slower search."
             },
             {
               "key": "fewer-hosts",
-              "label": "Run it on fewer, larger hosts",
+              "label": "Run the same workload on fewer, larger hosts",
               "why": "The bill counts hosts, so consolidating them is the lever. The flip side is that a host can send as much telemetry as it likes at no extra charge, so nothing in the bill pushes you to trim volume."
             },
             {
               "key": "sample",
-              "label": "Sample 10% of traces: fewer spans lower a per-host bill",
+              "label": "Sample 10% of traces on the hosts, to send fewer spans",
               "why": "Sampling reduces what is sent and stored, which matters when the price follows volume. A per-host price does not move with it."
             },
             {
               "key": "short-keys",
-              "label": "Shorten the attribute names: smaller records lower a per-host bill",
+              "label": "Shorten the attribute names on the hosts to make the records smaller",
               "why": "Size matters when bytes are metered. A per-host price ignores both the size and the number of records."
             },
             {
@@ -40,7 +40,7 @@ export default {
             },
             {
               "key": "retire-idle",
-              "label": "Switch off the idle hosts, or stop them sending telemetry, so the bill counts fewer hosts",
+              "label": "Switch off the idle hosts, or stop them from sending any telemetry whatsoever",
               "why": "The meter counts hosts that send telemetry, so a host that is gone, or that sends nothing, drops off the bill. A host that sends one log line a day is charged the same as a busy one."
             },
             {
@@ -50,32 +50,32 @@ export default {
             },
             {
               "key": "longer-interval",
-              "label": "Export metrics every 5 minutes instead of every 30 seconds, so a per-host bill gets smaller",
+              "label": "Export metrics from the hosts every 5 minutes instead of every 30 seconds",
               "why": "A longer interval makes fewer data points, which matters when the meter counts signals. A per-host price counts hosts, and every host still sends."
             },
             {
               "key": "cut-cardinality",
-              "label": "Remove the user ID label from the metrics",
+              "label": "Remove the user ID label from the metrics the hosts send",
               "why": "Every combination of label values is another time series, so cardinality drives cost where the price follows volume. A per-host price does not follow the number of series, only the number of hosts."
             },
             {
               "key": "shorter-retention",
-              "label": "Keep the telemetry for 30 days, not 90",
+              "label": "Keep the telemetry from the hosts for 30 days, not 90",
               "why": "Retention multiplies the volume you store, so it matters where storage is paid for. A flat amount for each host does not depend on how long the data is kept, and the number of hosts has not changed."
             },
             {
               "key": "tail-sample",
-              "label": "Tail-sample in the Collector so that only errors and slow traces go on to the vendor: fewer traces lower the per-host bill",
+              "label": "Tail-sample in the Collector on the hosts so that only errors and slow traces go on to the vendor",
               "why": "Sampling is a lever on volume, and the OpenTelemetry docs call it one of the most effective ways to reduce the cost of observability. It does not remove a host, and a per-host bill counts hosts."
             },
             {
               "key": "filter-health",
-              "label": "Filter the health-check spans out in the Collector",
+              "label": "Filter the health-check spans out in the Collector on the hosts",
               "why": "The spans that are filtered out are fewer to send and store, and the hosts that sent them still send. The per-host bill has the same number of units."
             },
             {
               "key": "compress",
-              "label": "Turn on compression on the exporter",
+              "label": "Turn on compression on the hosts' exporters",
               "why": "Compression makes what is sent smaller, which matters when bytes are the meter. A per-host price ignores the size of what each host sends."
             },
             {
@@ -85,7 +85,7 @@ export default {
             },
             {
               "key": "cut-bodies",
-              "label": "Cut the request and response bodies out of every log line: the vendor bills per host, so smaller lines cost less",
+              "label": "Cut the request and response bodies out of every log line on the hosts",
               "why": "Smaller lines help when bytes are the meter. A per-host price does not move with the size of a record, and the hosts that send them are still there."
             },
             {
@@ -105,7 +105,7 @@ export default {
             },
             {
               "key": "filter-after",
-              "label": "Add a filter that drops the noisy telemetry once it has reached the vendor: a per-host bill falls as the data does",
+              "label": "Add a filter that drops the noisy telemetry once it has reached the vendor",
               "why": "Filtering changes what is kept, and the hosts that sent the data are still sending it. A per-host price follows hosts, not the amount of data that survives."
             },
             {
