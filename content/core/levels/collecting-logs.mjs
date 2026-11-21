@@ -39,8 +39,8 @@ export default {
               "why": "Sending logs direct to the Collector is the second route of the logs specification. Small, localised changes to the code change the logging target, and the logs come out well-defined and highly structured. The cost is the local file, and the destination must accept OTLP."
             },
             {
-              "key": "otlp-and-tail-split",
-              "label": "Emit structured entries, so there is no file, no line parsing and no rotation for <code>filelog</code>",
+              "key": "structured-over-otlp",
+              "label": "Send structured records over OTLP, so there is no file, no line parsing and no rotation for <code>filelog</code>",
               "why": "For code you own, OTLP removes the parsers and the tailing and keeps the trace context. Tailing is the route for code you cannot change, like the vendor's agent."
             },
             {
@@ -61,12 +61,12 @@ export default {
             {
               "key": "log-to-file",
               "label": "Write the logs to a file instead of standard output, giving the Collector a stable place for the context",
-              "why": "A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but not the span the call ran in. The file also has to be tailed, rotated and parsed."
+              "why": "A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but not the span the call ran in. The file also has to be tailed, rotated and parsed, and the records would still carry no trace context unless the app wrote it."
             },
             {
               "key": "same-route-as-shipping",
               "label": "Use shipping's route, tailing a file with <code>filelog</code>, so that one setup serves both services",
-              "why": "Tailing a file is the route for code you cannot change, like the vendor's agent. For code the team owns, an appender needs no files and no parsing, and it carries the trace context."
+              "why": "Tailing a file is the route for code you cannot change, like the vendor's agent. For code the team owns, an appender needs no files and no parsing, and it carries the trace context, which tailing a file would not add unless the app wrote it into the line."
             },
             {
               "key": "stamping-sidecar",
@@ -139,7 +139,7 @@ export default {
             },
             {
               "key": "split-while-reading",
-              "label": "Do it as the lines of the file are read, before any <code>operator</code> touches the trace",
+              "label": "Join the lines in the receiver as the file is read, before any <code>operator</code> touches the trace",
               "why": "The split happens as the file is read, before any operator runs, so it is where one stack trace becomes one entry. The operators then see the whole trace."
             },
             {
@@ -149,7 +149,7 @@ export default {
             },
             {
               "key": "both-patterns",
-              "label": "Set both a <code>line_start_pattern</code> and a <code>line_end_pattern</code> for the timestamp",
+              "label": "Set both a <code>line_start_pattern</code> and a <code>line_end_pattern</code> for the timestamp line of every entry",
               "why": "The <code>multiline</code> block must contain exactly one of <code>line_start_pattern</code> and <code>line_end_pattern</code>, so a block with both is not what the receiver expects."
             },
             {
@@ -184,7 +184,7 @@ export default {
             },
             {
               "key": "omit-the-pattern",
-              "label": "Use <code>omit_pattern</code> to strip the timestamp from each line and let the remaining lines join",
+              "label": "Use <code>omit_pattern</code> to strip the timestamp from each line and let the remaining lines join into one entry",
               "why": "<code>omit_pattern</code> only leaves the start or end pattern out of each entry. It belongs to a <code>multiline</code> block and does not decide where entries start."
             },
             {
@@ -223,7 +223,7 @@ export default {
             },
             {
               "key": "regex-to-number",
-              "label": "Turn the word <code>ERROR</code> into a severity number that the backend can read",
+              "label": "In the receiver, with a parser operator that turns <code>ERROR</code> into a number",
               "why": "Nothing reads the level in a plain text line until an operator parses it. The <code>severity</code> block of the parser sets the severity from the group, so the word ERROR becomes a number in the ERROR range, 17 to 20."
             },
             {
@@ -363,7 +363,7 @@ export default {
             {
               "key": "replaces-body",
               "label": "Log AI replaces each message with its pattern, so the original text is no longer shown",
-              "why": "The pattern and the extracted attributes are made available for querying next to the record. Hovering over the log body shows whether it matches a pattern, and which one."
+              "why": "The pattern and the extracted attributes are made available for querying next to the record. In the Log Patterns tab, hovering shows which pattern was mined and where the extracted attributes come from, so the original structured data and what Log AI extracted from the body stay apart."
             },
             {
               "key": "needs-trace-id",

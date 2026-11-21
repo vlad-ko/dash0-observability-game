@@ -7,9 +7,9 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/logs/ , https://opentelemetry.io/docs/specs/otel/logs/data-model/
 // Spec: https://opentelemetry.io/docs/collector/components/receiver/ , https://opentelemetry.io/docs/collector/configuration/#receivers
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
-// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/parsers.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md
+// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/parsers.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
 // RE2 syntax (not an allowed Spec host): https://github.com/google/re2/wiki/Syntax
-// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing , https://www.dash0.com/docs/dash0/telemetry/logging/log-severities , https://www.dash0.com/docs/dash0/telemetry/logging/patterns , https://www.dash0.com/docs/dash0/telemetry/logging/json-log-processing
+// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing , https://www.dash0.com/docs/dash0/telemetry/logging/log-severities , https://www.dash0.com/docs/dash0/telemetry/logging/patterns , https://www.dash0.com/docs/dash0/telemetry/logging/json-log-processing , https://www.dash0.com/docs/dash0/telemetry/logging/use-ai-in-logs/pattern-hover
 //
 // Facts used, each from the pages above. The logs spec describes two ways to collect the logs of an
 // application: via files or standard output, and direct to the Collector over OTLP. The first needs
@@ -127,7 +127,7 @@ const SKELETON = {
         choice: {
           id: 'col-route',
           draw: 3,
-          choices: [{ key: 'otlp-appender', right: true }, { key: 'sdk-and-appender', right: true }, { key: 'otlp-target', right: true }, { key: 'otlp-and-tail-split', right: true }],
+          choices: [{ key: 'otlp-appender', right: true }, { key: 'sdk-and-appender', right: true }, { key: 'otlp-target', right: true }, { key: 'structured-over-otlp', right: true }],
         },
       },
       {

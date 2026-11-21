@@ -20,8 +20,9 @@
 // preferred logging library with a log appender. The specification also says the Logs API can be used
 // directly by applications (for instance to emit structured events), so the level says "keep your
 // logger", not "never call the Logs API".
-// Dash0 tie-in: none for this level (docs/OUTLINE.md §4 Act 4: n/a); the pooled severity answers use the severity ranges of
-// https://www.dash0.com/docs/dash0/telemetry/logging/log-severities (Dash0 docs, not an allowed Spec host).
+// Dash0 tie-in: the main questions have none (docs/OUTLINE.md §4 Act 4: n/a); only the pooled `severity-range` answer of sl-severity
+// names Dash0, through its severity ranges.
+// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-severities
 // Pooled answers (#390): the data model fields above for the sl-attrs and sl-severity pools (Attributes, Resource, InstrumentationScope,
 // EventName, TraceId, SeverityNumber comparison); https://opentelemetry.io/docs/concepts/signals/logs/ for semistructured text and the
 // Logger Provider and Logger of the Bridge API; https://opentelemetry.io/docs/specs/otel/logs/ for the richer feature set of logging libraries.

@@ -108,7 +108,7 @@ const ANSWERS = {
     'choice agw-key: trace-id',
   ],
   'collecting-logs': [
-    'choice col-route: otlp-and-tail-split|otlp-appender|otlp-target|sdk-and-appender',
+    'choice col-route: otlp-appender|otlp-target|sdk-and-appender|structured-over-otlp',
     'configure col-config: receivers: otlp: protocols: grpc: filelog/shipping: include: [/var/log/shipping/agent.log] processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [filelog/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
     'choice col-multiline: frames-join-above|line-start|split-while-reading|start-on-timestamp',
     'choice col-parse: collector-regex|receiver-operators|regex-to-number|where-it-is-read',

@@ -38,12 +38,12 @@ export default {
             },
             {
               "key": "no-span-current",
-              "label": "Nothing was current when the appender was called and there was no trace to copy at all",
+              "label": "Nothing was current when the appender was called so there was no trace to copy at all",
               "why": "The appender passes the current context to the Logs API, and the record gets the TraceId and SpanId of the span in that context. With no span current there is nothing to copy, and the fields stay empty."
             },
             {
               "key": "start-up-and-workers",
-              "label": "This code runs at start-up and on a worker thread of the service, beyond the request",
+              "label": "These calls ran with no span current, such as at start-up or on a worker without context",
               "why": "Start-up code runs before any request, so there is no span. A worker thread that was not handed the request's context has none either. In both cases the ids stay empty."
             },
             {
@@ -98,7 +98,7 @@ export default {
             },
             {
               "key": "email-uninstrumented",
-              "label": "The notifications service is not instrumented, so the whole system lost its link to the trace",
+              "label": "The payments retry worker is not instrumented, so the whole system lost its link to the trace",
               "why": "A record is linked or unlinked on its own: it depends on whether its own call ran inside an active span through a bridged logger. Records from other services are still linked."
             }
           ]
@@ -137,8 +137,8 @@ export default {
             },
             {
               "key": "bring-back-context",
-              "label": "Bring back whatever the caller left behind before the first log call of the work is made",
-              "why": "What the caller left behind is its context, with the span that was current. Brought back on the worker before the first log call, it lets the bridged logger read that span and set the ids, so the log calls themselves do not change."
+              "label": "Restore the request's trace context on the worker before the first log call of each job",
+              "why": "The request's trace context holds the span that was current. Restored on the worker before the first log call, it lets the bridged logger read that span and set the ids, so the log calls themselves do not change."
             },
             {
               "key": "raise-to-error",
@@ -216,17 +216,17 @@ export default {
             },
             {
               "key": "trace-mode-default",
-              "label": "Not at first: the Dash0 tab follows one request, and a record with blank ids belongs to none",
+              "label": "Not at first: the Dash0 tab follows one request, so a record with blank ids belongs to none",
               "why": "Trace is the default mode of the tab, and it lists every log record and span event in the same trace as the selected span. A record with no ids belongs to no trace."
             },
             {
               "key": "switch-to-resource",
-              "label": "Once you switch the dropdown to Resource, which covers 30 minutes from the span",
+              "label": "No, not by default: it appears once you switch the dropdown to Resource mode",
               "why": "Resource mode lists everything on the same resource within 30 minutes of the span, which suits logs outside the span's own trace, such as background jobs. The default mode goes by trace."
             },
             {
               "key": "nothing-ties-it",
-              "label": "No tie to the span exists, so the record appears solely when the view goes by service",
+              "label": "No tie to the span exists, so the record only appears in a mode that goes by resource",
               "why": "Without a trace ID the record cannot be matched to the trace, and the default mode lists only the trace. The Resource mode and the Resource &amp; Trace mode can list it, because they go by the resource as well."
             },
             {
