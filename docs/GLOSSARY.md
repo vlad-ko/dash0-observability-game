@@ -103,7 +103,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 ## Metrics
 
 - **Instrument**: Counter, UpDownCounter, Gauge, Histogram (sync) and their observable (async) forms. (Act 3)
-- **Data point**: One reported value of a metric for one attribute combination over one time window: the sum of its measurements, or for a gauge the last one. (Act 3)
+- **Data point**: What a metric reports for one attribute combination at one time: a sum's delta or cumulative total, a gauge's last sampled value, or a histogram's count, sum, bucket counts and optional min and max. (Act 3)
 - **Metric**: A named set of streams of data points, one per attribute combination, that describes how something changes over time, such as request count or memory in use. (Act 3)
 - **Bucket**: A range of values in a histogram, with a count of the observations that fell inside it; upper bounds are inclusive and lower bounds exclusive. (Act 3)
 - **Sum**: The OpenTelemetry metric type that adds up measurements. It is either monotonic or not, and either cumulative or delta. (Act 3)
@@ -113,6 +113,9 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Histogram**: Counts of values in buckets; exponential histograms pick buckets automatically. (Act 3)
 - **Quantile / percentile**: A value picked by rank from sorted observations, named by a number between 0 and 1; the 0.95-quantile is the 95th percentile. (Act 3)
 - **Monotonic**: A sum that only goes up, as a Counter produces; an UpDownCounter gives a non-monotonic sum. (Act 3)
+- **Counter**: A synchronous OpenTelemetry instrument that only takes non-negative increments, such as the number of requests completed. (Act 3)
+- **UpDownCounter**: A synchronous OpenTelemetry instrument that takes increments and decrements, such as the number of active requests or of items in a queue. (Act 3)
+- **Gauge**: An OpenTelemetry instrument that records values it makes no sense to add up, such as the current room temperature or CPU fan speed. (Act 3)
 - **Exemplar**: A sample point on a metric linked to a trace/span ID. (Act 3)
 - **Metric event**: One measurement recorded for a metric. (Act 3)
 - **View**: SDK configuration that renames, filters or re-buckets a metric. (Act 3)
@@ -207,7 +210,7 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Log Sidebar**: The Dash0 detail panel for a selected log record: its body, attributes, span context and resource. (Act 4)
 - **Patterns view**: The Dash0 log view that groups similar log records into patterns, templates whose variable parts are placeholders, each with its record count and severity mix. (Act 4)
 - **Log AI**: Pattern and severity extraction for unstructured logs. (Act 4)
-- **Spam filter**: A rule that drops unwanted telemetry at ingest. (Act 6)
+- **Spam filter**: A Dash0 rule that drops matching telemetry during ingestion, before it is stored, so it is never indexed but still carries the Ingest charge. (Act 6)
 - **Check rule**: A Dash0 rule that evaluates a PromQL expression against your telemetry and triggers an alert when values cross a threshold. (Act 7)
 - **Notification channel**: Where Dash0 delivers alerts from check rules and synthetic checks, such as Slack, PagerDuty or email. (Act 7)
 - **Perses**: The open dashboard format that Dash0 dashboards follow; they can be managed as code. (Act 8)
