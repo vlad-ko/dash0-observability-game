@@ -98,7 +98,7 @@ export default {
             {
               "key": "old-name",
               "label": "The query used the name the status code had before the HTTP conventions went stable",
-              "why": "The failed-requests query asks for http.status_code, the name before the HTTP conventions went stable. Checkout sends http.response.status_code now (its opt-in is http, level 8.2), so the old name matches nothing even while orders fail: the versions query, on the same spans and the same window, counted {{failed-after}} failed from {{window}}. Use the names the spans carry. In Dash0, Agent0 reads telemetry in the OpenTelemetry semantic conventions it was produced in, and getAttributeKeys, one of the tools of the Dash0 MCP Server, lists the attribute keys present, so check the keys present before you ask for a name."
+              "why": "The failed-requests query asks for http.status_code, the name before the HTTP conventions went stable. Checkout sends http.response.status_code now (its opt-in is http, level 8.2), so the old name matches nothing even while orders fail: the versions query, on the same spans and the same window, counted {{failed-after}} failed from {{window}}. Use the names the spans carry. In Dash0, [[Agent0]] reads telemetry in the OpenTelemetry semantic conventions it was produced in, and getAttributeKeys, one of the tools of the [[Dash0 MCP Server]], lists the attribute keys present, so check the keys present before you ask for a name."
             },
             {
               "key": "invented-name",

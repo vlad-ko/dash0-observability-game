@@ -27,7 +27,7 @@ export default {
             {
               "key": "wrong",
               "label": "Counters and histograms now come through as delta points",
-              "why": "With the preference set to delta, Counter, Asynchronous Counter and Histogram instruments export delta, and UpDownCounter and Asynchronous UpDownCounter instruments stay cumulative. A backend that stores cumulative totals cannot use the delta ones as they are."
+              "why": "With the preference set to delta, Counter, [[Asynchronous Counter|asynchronous-instrument]] and Histogram instruments export delta, and UpDownCounter and Asynchronous UpDownCounter instruments stay cumulative. A backend that stores cumulative totals cannot use the delta ones as they are."
             }
           ]
         }
