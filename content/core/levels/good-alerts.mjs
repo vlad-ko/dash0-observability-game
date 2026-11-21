@@ -70,7 +70,7 @@ export default {
             {
               "key": "increase",
               "label": "Alert on <code>increase()</code> over 10 minutes: failures in that window",
-              "why": "<code>increase(http_requests_total{job=\"checkout\", code=~\"5..\"}[10m]) > 20</code> estimates the failures in the last ten minutes, so it fires while checkout fails and resolves when it stops, and it adjusts for the reset when the process restarts. Better still, page on the share that fails, as <code>CheckoutErrorRatio</code> does. In Dash0, a check rule evaluates a PromQL expression against a threshold, and its For setting is how long the threshold must be exceeded before alerting."
+              "why": "<code>increase(http_requests_total{job=\"checkout\", code=~\"5..\"}[10m]) > 20</code> estimates the failures in the last ten minutes, so it fires while checkout fails and resolves when it stops, and it adjusts for the reset when the process restarts. Better still, page on the share that fails, as <code>CheckoutErrorRatio</code> does. In Dash0, a [[check rule]] evaluates a PromQL expression against a threshold, and its For setting is how long the threshold must be exceeded before alerting."
             },
             {
               "key": "delta",

@@ -101,7 +101,7 @@ export default {
             {
               "key": "outside-check",
               "label": "A probe of the public hostname, run every minute from a public location, that pages on failure",
-              "why": "The check makes the request from outside the network the way a visitor does, so it meets the expired certificate that the spans and the internal health check never meet. In Dash0, a synthetic check sends requests at regular intervals from locations you choose and fires a notification when an assertion fails, and a check run breaks the request into DNS resolution, TCP connection and the SSL/TLS handshake and shows a TLS error as such. It pages in the first minute after the certificate ends and says which step failed."
+              "why": "The check makes the request from outside the network the way a visitor does, so it meets the expired certificate that the spans and the internal health check never meet. In Dash0, a [[synthetic check]] sends requests at regular intervals from locations you choose and fires a notification when an assertion fails, and a check run breaks the request into DNS resolution, TCP connection and the SSL/TLS handshake and shows a TLS error as such. It pages in the first minute after the certificate ends and says which step failed."
             },
             {
               "key": "tighter-ratio",

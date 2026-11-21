@@ -23,7 +23,7 @@ export default {
             {
               "key": "page-origin-api-header",
               "label": "Allow <code>https://shop.kettle.example</code> on the OTLP endpoint, and <code>traceparent</code> in the API's allowed headers",
-              "why": "The export request is sent by the page, so its origin is <code>https://shop.kettle.example</code> and the endpoint has to allow that origin: on a Collector that is <code>allowed_origins</code> under <code>cors</code> on the HTTP receiver, or the same headers set by a reverse proxy in front of it. The trace context travels on the call to the API, so the reply that blocks it is the API's, and it is the API that has to list <code>traceparent</code>. Dash0's website monitoring then shows the sessions and their Core Web Vitals (LCP, INP and CLS, at p75), and a request links to its backend trace through the header you just followed."
+              "why": "The export request is sent by the page, so its [[origin]] is <code>https://shop.kettle.example</code> and the endpoint has to allow that origin: on a Collector that is <code>allowed_origins</code> under <code>cors</code> on the HTTP receiver, or the same headers set by a reverse proxy in front of it. The trace context travels on the call to the API, so the reply that blocks it is the API's, and it is the API that has to list <code>traceparent</code>. Dash0's website monitoring then shows the sessions and their [[Core Web Vitals|web-vitals]] (LCP, INP and CLS, at p75), and a request links to its backend trace through the header you just followed."
             },
             {
               "key": "page-origin-otlp-header",

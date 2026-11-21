@@ -28,7 +28,7 @@ export default {
             {
               "key": "force-flush",
               "label": "Call <code>ForceFlush</code> on the tracer provider before each handler returns",
-              "why": "ForceFlush on the provider exports every span that has not been exported yet, so the spans are out before the handler returns and before the platform suspends the environment, and the provider stays usable for the next request. The SDK spec names this case: ForceFlush \"SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans\". Without it the batch processor waits for its {{delay-ms}} ms delay (the default) or a full batch."
+              "why": "ForceFlush on the provider exports every span that has not been exported yet, so the spans are out before the handler returns and before the platform suspends the environment, and the provider stays usable for the next request. The SDK spec names this case: ForceFlush \"SHOULD only be called in cases where it is absolutely necessary, such as when using some FaaS providers that may suspend the process after an invocation, but before the SpanProcessor exports the completed spans\". Without it the [[batch processor|batch-span-processor]] waits for its {{delay-ms}} ms delay (the default) or a full batch."
             }
           ]
         }

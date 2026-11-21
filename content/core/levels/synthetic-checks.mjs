@@ -148,7 +148,7 @@ export default {
             {
               "key": "probe",
               "label": "A request to the public hostname every minute, must pass",
-              "why": "The probe makes its own request from outside the way a visitor does: the DNS lookup, then the TLS handshake, and with an expired certificate the handshake fails, whatever the spans say. In Dash0, a synthetic check sends requests to your endpoint at regular intervals from locations you choose and fires a notification when an assertion fails. A check run breaks down DNS resolution, TCP connection and the SSL/TLS handshake and shows a TLS error as such, and notification channels deliver the alert. Keep the spans for why a request that arrived went wrong; use the probe to learn that requests are not arriving."
+              "why": "The probe makes its own request from outside the way a visitor does: the DNS lookup, then the TLS handshake, and with an expired certificate the handshake fails, whatever the spans say. In Dash0, a synthetic check sends requests to your endpoint at regular intervals from locations you choose and fires a notification when an assertion fails. A check run breaks down DNS resolution, TCP connection and the SSL/TLS handshake and shows a TLS error as such, and [[notification channels]] deliver the alert. Keep the spans for why a request that arrived went wrong; use the probe to learn that requests are not arriving."
             }
           ]
         }
