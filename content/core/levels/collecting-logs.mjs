@@ -15,7 +15,7 @@ export default {
           "choices": [
             {
               "key": "otlp-appender",
-              "label": "Add an OpenTelemetry log appender to orders' logger, so its records are exported over OTLP",
+              "label": "Add an OpenTelemetry log appender to orders' logger, so its records go out over OTLP",
               "why": "The records leave the app already structured, with TraceId and SpanId taken from the active span, and there are no files to tail, rotate or parse. The cost is a change to the app, and the log is no longer a local file you can read. Tailing standard output with the Collector is the other route, and it is the one for code you cannot change, like shipping's agent: it needs no change to the app, but the Collector has to parse every line back into fields, and that may not be reliable when the format is loose."
             },
             {

@@ -15,7 +15,7 @@ export default {
           "choices": [
             {
               "key": "http-port",
-              "label": "4317 is the OTLP/gRPC port. OTLP/HTTP uses 4318, so the endpoint should be <code>http://collector:4318</code>",
+              "label": "4317 is the OTLP/gRPC port. OTLP/HTTP uses 4318, so use <code>http://collector:4318</code>",
               "why": "OTLP has two transports with their own default ports: 4317 for OTLP/[[gRPC]] and 4318 for OTLP/HTTP. An HTTP exporter pointed at the gRPC port is not understood by it. Also remember the difference in shape: a gRPC endpoint is a host and a port with no path, while an HTTP base endpoint gets the signal path added."
             },
             {
