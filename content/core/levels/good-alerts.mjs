@@ -59,7 +59,7 @@ export default {
           "choices": [
             {
               "key": "raise",
-              "label": "Raise the threshold to 5,000, so a normal day stays below it",
+              "label": "Raise the threshold to 5,000, so a normal checkout day stays below it",
               "why": "The counter only grows, so a bigger threshold only delays the page: one day it passes 5,000 and fires for good, failing or not."
             },
             {
@@ -69,7 +69,7 @@ export default {
             },
             {
               "key": "increase",
-              "label": "Alert on <code>increase()</code> over 10 minutes: failures in that window",
+              "label": "Alert on <code>increase()</code> over 10 minutes: checkout failures in that window",
               "why": "<code>increase(http_requests_total{job=\"checkout\", code=~\"5..\"}[10m]) > 20</code> estimates the failures in the last ten minutes, so it fires while checkout fails and resolves when it stops, and it adjusts for the reset when the process restarts. Better still, page on the share that fails, as <code>CheckoutErrorRatio</code> does. In Dash0, a [[check rule]] evaluates a PromQL expression against a threshold, and its For setting is how long the threshold must be exceeded before alerting."
             },
             {
@@ -84,12 +84,12 @@ export default {
             },
             {
               "key": "error-share",
-              "label": "Page as soon as an error reaches one user in 50",
+              "label": "Alert as soon as an error reaches one user in 50",
               "why": "The failing request rate divided by the whole request rate is a symptom that does not grow with the traffic or with the age of the process. It rises while users get errors and falls back when they stop, and the Prometheus practices page says to page on user-visible errors."
             },
             {
               "key": "keep-firing",
-              "label": "Add <code>keep_firing_for: 1h</code> to the rule, to hold the alert open",
+              "label": "Add <code>keep_firing_for: 1h</code> to the checkout rule, to hold the alert open",
               "why": "That setting holds an alert open after its condition stops being true. This condition never stops being true, because the total stays over 500, so the alert has no way to resolve and the setting adds nothing."
             },
             {
@@ -104,7 +104,7 @@ export default {
             },
             {
               "key": "rate-gauge",
-              "label": "Apply <code>rate()</code> to a gauge that holds the count of failed requests over the last 60 seconds",
+              "label": "Apply <code>rate()</code> to a gauge that holds the count of failed checkout requests over the last 60 seconds",
               "why": "Prometheus says <code>rate()</code> should only be used with counters. A gauge that dips is read as a counter that reset, so the speed it reports is not the speed of anything, and the failures a gauge holds are not events to count."
             },
             {
