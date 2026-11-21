@@ -71,7 +71,7 @@ test("the guide's model call is a CLIENT span", async (t) => {
   const res = await POST(new Request('https://game.test/api/guide', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.9' },
-    body: JSON.stringify({ v: 1, levelId: 'resources', stepId: 'res-pod', question: 'What does a resource describe?' }),
+    body: JSON.stringify({ v: 1, levelId: 'correlation', stepId: 'cor-why', question: 'What does a resource describe?' }),
   }));
   assert.equal(res.status, 200);
   assert.equal((await res.json()).ok, true);
@@ -82,8 +82,8 @@ test("the guide's model call is a CLIENT span", async (t) => {
   const client = spans.find((s) => s.name === 'POST');
   assert.equal(client.attrs['url.full'], ANTHROPIC);
   assert.equal(client.parentSpanId, server.spanId);
-  assert.equal(server.attrs['game.level.id'], 'resources');
-  assert.equal(server.attrs['game.step.id'], 'res-pod');
+  assert.equal(server.attrs['game.level.id'], 'correlation');
+  assert.equal(server.attrs['game.step.id'], 'cor-why');
 });
 
 test('a play-events POST exports its own spans, and the function span is a second, separate export', async (t) => {
