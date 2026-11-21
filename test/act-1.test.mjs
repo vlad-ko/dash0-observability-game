@@ -198,7 +198,7 @@ test('resources: the nuance is graded: a pod name on every span belongs on the R
   for (const w of ['Resource', 'once', 'k8s.pod.name', 'every span, metric and log']) assert.equal(text.includes(w), true, w);
   assert.equal(/metrics and logs/.test(right.why), true, 'the cost of the per-span habit is named');
   const wrong = choiceOf('resources', 'res-pod').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['cardinality', 'same-thing']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['backend-ignores', 'cardinality', 'env-only', 'lookup', 'not-standard', 'only-traces', 'personal-data', 'replaces-service', 'same-thing', 'sdk-default']);
   const card = wrong.find((c) => c.key === 'cardinality');
   assert.equal(/where it is set/.test(card.why), true, 'the value is fine, the place is wrong');
 });
@@ -207,7 +207,10 @@ test('resources: the Dash0 tie-in is graded: Resources are built from resource a
   const right = rightOf('resources', 'res-dash0');
   assert.equal(right.key, 'resource-attributes');
   assert.equal(/service\.name/.test(right.label) && /k8s\.pod\.uid/.test(right.label), true);
-  assert.deepEqual(choiceOf('resources', 'res-dash0').map((c) => c.key).sort(), ['by-hand', 'resource-attributes', 'span-attributes']);
+  assert.deepEqual(
+    choiceOf('resources', 'res-dash0').filter((c) => !c.right).map((c) => c.key).sort(),
+    ['by-hand', 'collector-name', 'endpoint', 'hostname', 'ip-lookup', 'per-signal', 'registry-ahead', 'service-only', 'span-attributes'],
+  );
 });
 
 // ---- 1.3 Detectors and Kubernetes ---------------------------------------------------

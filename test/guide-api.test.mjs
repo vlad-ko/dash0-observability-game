@@ -11,8 +11,8 @@ const IP = '203.0.113.77';
 const URL_ = 'https://game.test/api/guide';
 const REG = liveRegistry();
 // A choice step the guide may speak on, a step that has no hint ladder, and a level that runs its own code.
-const LEVEL = 'resources';
-const STEP = 'res-pod';
+const LEVEL = 'correlation';
+const STEP = 'cor-why';
 const RIGHT = REG.levels[LEVEL].play.steps.map((s) => s.choice).find((c) => c?.id === STEP).choices.find((c) => c.right).label;
 const HINTLESS = ['auto-vs-manual', 'avm-sort'];
 const RUN_LEVEL = 'the-signals';

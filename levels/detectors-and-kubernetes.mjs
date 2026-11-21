@@ -6,6 +6,7 @@
 // Spec: https://opentelemetry.io/docs/concepts/resources/#resource-detectors , https://opentelemetry.io/docs/specs/otel/resource/sdk/#resource-detector
 // Spec: https://opentelemetry.io/docs/platforms/kubernetes/collector/components/#kubernetes-attributes-processor , https://opentelemetry.io/docs/collector/components/processor/ , https://opentelemetry.io/docs/collector/configuration/#processors
 // Spec: https://opentelemetry.io/docs/specs/semconv/resource/k8s/#pod
+// Spec (the answer pools): https://opentelemetry.io/docs/concepts/resources/ , https://opentelemetry.io/docs/specs/otel/resource/sdk/#resource-detector , https://opentelemetry.io/docs/platforms/kubernetes/collector/components/ , https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/k8sattributesprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor , https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/memorylimiterprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/kubernetes/dash0-operator/auto-instrumentation
 //
 // The configure step grades the config through COLLECTOR_SCHEMA (docs/M1-DESIGN.md §4.8), which
@@ -20,11 +21,25 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
+// The choice steps (1, 2, 4 and 5) are answer pools (docs/CONTENT.md section 10). Each content file lists 13 to 15 answers
+// and a showing draws 3 (one of the 4 right, 2 of the wrong ones). Only the right answers are marked here, so a right
+// answer added in the content file without `right: true` would be graded wrong. No 50/50 (it needs 4 shown), so no `keep`.
+
 // Step 1: when detectors run. `why` follows "Right." or "Not quite.".
-const WHEN = [{ key: 'at-start', right: true }];
+const WHEN = [
+  { key: 'at-start', right: true },
+  { key: 'init', right: true },
+  { key: 'setup', right: true },
+  { key: 'one-time', right: true },
+];
 
 // Step 2: where pod metadata is better added.
-const WHERE = [{ key: 'collector', right: true }];
+const WHERE = [
+  { key: 'collector', right: true },
+  { key: 'daemonset', right: true },
+  { key: 'gateway', right: true },
+  { key: 'once-for-all', right: true },
+];
 
 // Step 3: the config. The pipeline lists `k8sattributes`, but it is not defined: the Collector
 // would refuse to start. The reference defines it, with the default metadata.
@@ -84,10 +99,20 @@ const CONFIG = {
 };
 
 // Step 4: what the processor needs.
-const RBAC = [{ key: 'pods-namespaces', right: true }];
+const RBAC = [
+  { key: 'pods-namespaces', right: true },
+  { key: 'read-only', right: true },
+  { key: 'cluster-wide', right: true },
+  { key: 'binding', right: true },
+];
 
 // Step 5: the Dash0 tie-in.
-const DASH0 = [{ key: 'operator-adds', right: true }];
+const DASH0 = [
+  { key: 'operator-adds', right: true },
+  { key: 'tracing', right: true },
+  { key: 'attributes', right: true },
+  { key: 'hassle', right: true },
+];
 
 // The level as it was, minus the words.
 const SKELETON = {
@@ -100,11 +125,11 @@ const SKELETON = {
   play: {
     prefix: 'det',
     steps: [
-      { qid: 'det-q-when', choice: { id: 'det-when', choices: WHEN } },
-      { qid: 'det-q-where', choice: { id: 'det-where', choices: WHERE } },
+      { qid: 'det-q-when', choice: { id: 'det-when', draw: 3, choices: WHEN } },
+      { qid: 'det-q-where', choice: { id: 'det-where', draw: 3, choices: WHERE } },
       { qid: 'det-q-config', configure: CONFIG },
-      { qid: 'det-q-rbac', choice: { id: 'det-rbac', choices: RBAC } },
-      { qid: 'det-q-dash0', choice: { id: 'det-dash0', choices: DASH0 } },
+      { qid: 'det-q-rbac', choice: { id: 'det-rbac', draw: 3, choices: RBAC } },
+      { qid: 'det-q-dash0', choice: { id: 'det-dash0', draw: 3, choices: DASH0 } },
     ],
   },
 };

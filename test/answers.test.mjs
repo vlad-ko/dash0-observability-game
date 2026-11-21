@@ -19,15 +19,15 @@ const ANSWERS = {
   ],
   resources: [
     'sort res-sort: service-name=resource http-method=signal pod-name=resource http-route=signal host-name=resource status-code=signal cloud-region=resource url-path=signal',
-    'choice res-pod: set-once',
-    'choice res-dash0: resource-attributes',
+    'choice res-pod: all-signals|producer|repeats|set-once',
+    'choice res-dash0: derived|equality|resource-attributes|signal-metadata',
   ],
   'detectors-and-kubernetes': [
-    'choice det-when: at-start',
-    'choice det-where: collector',
+    'choice det-when: at-start|init|one-time|setup',
+    'choice det-where: collector|daemonset|gateway|once-for-all',
     'configure det-config: receivers: otlp: protocols: grpc: processors: k8sattributes: extract: metadata: - k8s.namespace.name - k8s.pod.name - k8s.pod.uid - k8s.deployment.name - k8s.node.name batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [k8sattributes, batch] exporters: [otlp_grpc/dash0]',
-    'choice det-rbac: pods-namespaces',
-    'choice det-dash0: operator-adds',
+    'choice det-rbac: binding|cluster-wide|pods-namespaces|read-only',
+    'choice det-dash0: attributes|hassle|operator-adds|tracing',
   ],
   instruments: [
     'sort instr-sort: orders-placed=counter warehouse-temp=gauge queue-length=up-down-counter checkout-duration=histogram payment-declines=counter cache-hit-ratio=gauge active-requests=up-down-counter response-bytes=histogram',
