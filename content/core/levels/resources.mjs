@@ -140,7 +140,7 @@ export default {
             },
             {
               "key": "repeats",
-              "label": "The wrapper repeats <code>k8s.pod.name</code> on every span instead of using the Resource",
+              "label": "The value <code>k8s.pod.name</code> is copied onto each span, not put on the Resource",
               "why": "Set on the Resource, the pod name is attached to the provider when it is created, and every span, metric and log from that provider carries it, with no wrapper around the tracer."
             },
             {
@@ -194,7 +194,7 @@ export default {
             },
             {
               "key": "derived",
-              "label": "Straight from the signals, with nothing to send or register",
+              "label": "Straight from the signals, with nothing extra to send to Dash0",
               "why": "Dash0 lists what the telemetry describes. The names and types in its Resources table are derived automatically from OpenTelemetry attributes, and nobody registers them by hand."
             },
             {

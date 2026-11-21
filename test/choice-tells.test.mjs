@@ -139,8 +139,12 @@ test('no blind option-shape rule strays from chance by more than a few points ov
   const steps = Object.values(liveRegistry().levels).flatMap((l) => (l.play?.steps ?? []).filter((s) => s.choice));
   const declaredFixed = steps.filter((s) => s.choice.draw === undefined).length;
   assert.ok(declaredFixed > 0, 'the registry has fixed choice steps');
+  const declaredPooled = steps.length - declaredFixed;
   assert.ok(qs.length >= declaredFixed, `found ${qs.length} fixed questions, the registry declares ${declaredFixed}`);
-  assert.equal(qs.length + all.filter((q) => q.draw !== undefined).length, all.length);
+  assert.equal(all.length - qs.length, declaredPooled, 'every pooled step is scanned, and nothing else counts as pooled');
+  // Run levels keep their questions in code and content, not in `play.steps`; the scan reads them too, and about half must stay found.
+  const runLevels = Object.values(liveRegistry().levels).filter((l) => !l.play?.steps).length;
+  assert.ok(qs.length - declaredFixed >= Math.floor(runLevels / 2), `found ${qs.length - declaredFixed} run-level questions across ${runLevels} run levels`);
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
   if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS fixed ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
   if (process.env.TELLS) {

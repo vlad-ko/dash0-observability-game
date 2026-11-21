@@ -40,7 +40,7 @@ export default {
             },
             {
               "key": "setup",
-              "label": "When tracing is configured and its environment is read",
+              "label": "When the providers are created and the environment is read",
               "why": "The SDK builds the Resource by running its detectors and merging what they return, then associates it with the providers. After that the association cannot be changed."
             },
             {
@@ -104,7 +104,7 @@ export default {
             },
             {
               "key": "daemonset",
-              "label": "In a DaemonSet agent on each node, where the Kubernetes attributes processor adds pod metadata",
+              "label": "In an agent run as a DaemonSet next to the workloads, using the processor that adds pod details",
               "why": "The processor is usable in a DaemonSet Collector. It looks up the pod each piece of telemetry came from through the Kubernetes API and adds the pod metadata as resource attributes, for services in any language."
             },
             {
@@ -114,12 +114,12 @@ export default {
             },
             {
               "key": "gateway",
-              "label": "On a gateway in the cluster, set up to tag what passes using the pod's details",
+              "label": "On a gateway, applying the Kubernetes attributes processor to whatever passes through it",
               "why": "A Collector deployed as a gateway can use the Kubernetes attributes processor too. It associates each datapoint with a pod and adds the metadata to spans, metrics and logs, so the services need no change."
             },
             {
               "key": "log-library",
-              "label": "In the logging library, by adding the pod name to every log line",
+              "label": "In a logging library such as Log4j, by adding the pod name to every log line",
               "why": "That covers logs only. The Kubernetes attributes processor adds pod metadata to spans, metrics and logs as resource attributes."
             },
             {
@@ -134,7 +134,7 @@ export default {
             },
             {
               "key": "transform",
-              "label": "In the Collector's <code>transform</code> processor, asking the Kubernetes API about each record",
+              "label": "In the Collector's <code>transform</code> processor, asking the Kubernetes API about the record",
               "why": "The transform processor modifies telemetry by running OTTL statements against it. It does not query the Kubernetes API, which is what the <code>k8sattributes</code> processor does."
             },
             {
@@ -149,7 +149,7 @@ export default {
             },
             {
               "key": "attributes-processor",
-              "label": "In the attributes processor, which fills in the pod for each record from the cluster",
+              "label": "In the Collector's attributes processor, which fills in the pod for the record from the cluster",
               "why": "The attributes processor modifies the attributes of a span, log or metric by the actions in its config, such as insert and update. It does not discover pods, and the transform processor has superseded it."
             },
             {
@@ -192,32 +192,32 @@ export default {
             },
             {
               "key": "read-only",
-              "label": "Read access to the Kubernetes API, where the processor discovers its pods",
+              "label": "Read access to the Kubernetes API, since that is where its pods are recorded",
               "why": "The processor uses the Kubernetes API to discover the pods running in a cluster, so its service account needs permission to read them there. Without it the processor finds no pods."
             },
             {
               "key": "ssh",
-              "label": "Shell access to each node, to read the container runtime's files for pod details",
+              "label": "SSH access to each node, to read the container runtime's files for pod and namespace details",
               "why": "The processor discovers pods through the Kubernetes API. It does not open shells or read files on the nodes."
             },
             {
               "key": "cluster-wide",
-              "label": "Rights across the whole cluster, so a pod can be looked up by name in any namespace that reports to it",
-              "why": "To receive telemetry from across namespaces, the processor needs <code>get</code>, <code>watch</code> and <code>list</code> on pods and namespaces for all of them, and a ClusterRole grants exactly that."
+              "label": "Reach to pods across every namespace that sends it telemetry, and not only the one it runs in",
+              "why": "To receive telemetry from across namespaces, the processor needs <code>get</code>, <code>watch</code> and <code>list</code> on pods and namespaces for all of them, and a ClusterRole grants that and more."
             },
             {
               "key": "packets",
-              "label": "To capture the traffic between pods and read their names out of the packets",
+              "label": "To capture the traffic between pods and read their identity out of the packets",
               "why": "By default the processor matches telemetry to a pod through the IP address of the incoming connection, then reads that pod's metadata from its record of the cluster's pods. It never inspects packets."
             },
             {
               "key": "binding",
-              "label": "A ClusterRoleBinding that ties the Collector's service account to the pod permissions it needs",
+              "label": "A ClusterRoleBinding that ties the Collector's service account to the pod read permissions it needs",
               "why": "The permissions are given to the service account the Collector runs as, through a ClusterRole and its binding. Some attributes need a little more, such as access to nodes when it extracts node metadata."
             },
             {
               "key": "sidecar-needed",
-              "label": "A sidecar in every pod, since the processor can only describe the pod and namespace it sits in",
+              "label": "A Collector sidecar in every pod, since the processor can only describe its own pod",
               "why": "The processor is not usable in a sidecar. It discovers all the pods in a cluster through the Kubernetes API, from a DaemonSet or a gateway Collector."
             },
             {
@@ -227,17 +227,17 @@ export default {
             },
             {
               "key": "write",
-              "label": "Permission for its service account to create and delete pods, so it can tag them",
+              "label": "A ClusterRole giving its service account permission to create and delete pods, so it can tag them",
               "why": "The processor only reads: the verbs it needs are <code>get</code>, <code>watch</code> and <code>list</code>. It adds metadata to the telemetry, not to the pods."
             },
             {
               "key": "kubelet",
-              "label": "A credential with permission to query each node's kubelet for pod data",
-              "why": "The processor uses the Kubernetes API to discover pods, so its service account needs permissions there. Pulling pod and container metrics from a kubelet is the job of the kubeletstats receiver."
+              "label": "A credential for each node's kubelet, which is how it reads pods by default",
+              "why": "By default the processor discovers pods through the Kubernetes API, so its service account needs permissions there. Polling the kubelet for pod metadata is an experimental mode that is off by default, and pulling pod and container metrics from a kubelet is the job of the kubeletstats receiver."
             },
             {
               "key": "namespaces-only",
-              "label": "Permission for its service account to read namespaces only, because the pod name is in the telemetry already",
+              "label": "Permission for its service account to read namespaces only, because the telemetry already says which pod it came from",
               "why": "It needs pods as well as namespaces. By default it matches telemetry to a pod by IP address, then reads that pod's metadata, instead of trusting a name in the telemetry."
             }
           ]
@@ -276,7 +276,7 @@ export default {
             },
             {
               "key": "attributes",
-              "label": "It adds the namespace and container to the workload's resource attributes by itself once monitoring is enabled",
+              "label": "It adds the container and pod identity to each workload's resource attributes, unprompted, at deploy time",
               "why": "The operator improves the auto-detection of OpenTelemetry resource attributes: namespace, pod name, pod UID and container name are added to the workload's resource attributes."
             },
             {
@@ -286,8 +286,8 @@ export default {
             },
             {
               "key": "hassle",
-              "label": "It saves the team from adding an SDK, or from having to set Kubernetes attributes by hand",
-              "why": "Those are the two jobs Dash0 says the operator takes off you: adding the OpenTelemetry SDK to the application, and setting the Kubernetes-related resource attributes manually."
+              "label": "It spares the team from having to set Kubernetes attributes by hand in the services",
+              "why": "Dash0 says the operator spares you from setting the Kubernetes-related resource attributes manually, and, for supported runtimes, from adding the OpenTelemetry SDK to the application."
             },
             {
               "key": "any-runtime",
@@ -312,7 +312,7 @@ export default {
             {
               "key": "new-only",
               "label": "It sets Kubernetes attributes only on workloads deployed after it was installed, never existing ones",
-              "why": "For workload types other than jobs and pods, the operator can instrument existing workloads as well as new ones, depending on the <code>spec.instrumentWorkloads.mode</code> setting."
+              "why": "For workload types other than jobs and pods, the operator can instrument existing workloads as well as new ones, depending on the <code>spec.instrumentWorkloads.mode</code> setting. The Kubernetes attributes are set as part of that instrumentation, so they follow it."
             }
           ]
         }

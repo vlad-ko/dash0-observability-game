@@ -20,7 +20,7 @@ export default {
             },
             {
               "key": "fewer-hosts",
-              "label": "Run the workload on fewer bigger servers",
+              "label": "Send the same volume on fewer bigger hosts",
               "why": "The bill counts hosts, so consolidating them is the lever. The flip side is that a host can send as much telemetry as it likes at no extra charge, so nothing in the bill pushes you to trim volume."
             },
             {

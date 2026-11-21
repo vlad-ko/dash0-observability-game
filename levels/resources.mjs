@@ -6,7 +6,7 @@
 // Spec: https://opentelemetry.io/docs/concepts/resources/ , https://opentelemetry.io/docs/specs/otel/resource/sdk/ , https://opentelemetry.io/docs/specs/otel/resource/
 // Spec: https://opentelemetry.io/docs/specs/semconv/resource/k8s/#pod , https://opentelemetry.io/docs/specs/semconv/resource/cloud/ , https://opentelemetry.io/docs/specs/semconv/resource/host/ , https://opentelemetry.io/docs/specs/semconv/resource/#service
 // Spec: https://opentelemetry.io/docs/specs/semconv/http/http-spans/
-// Spec (the answer pools of steps 2 and 3): https://opentelemetry.io/docs/concepts/resources/ , https://opentelemetry.io/docs/specs/otel/resource/sdk/ , https://opentelemetry.io/docs/specs/semconv/resource/k8s/ , https://opentelemetry.io/docs/platforms/kubernetes/collector/components/#kubernetes-attributes-processor
+// Spec: https://opentelemetry.io/docs/specs/semconv/resource/k8s/ , https://opentelemetry.io/docs/platforms/kubernetes/collector/components/#kubernetes-attributes-processor
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/resources/about-resources , https://www.dash0.com/docs/dash0/monitoring/resources/explore-resources
 //
 // The words are in content/core/levels/resources.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
