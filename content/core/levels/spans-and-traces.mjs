@@ -6,7 +6,7 @@ export default {
   "sub": "One request, many spans",
   "rewardTitle": "Trace reader",
   "run": {
-    "oneTraceIntro": "A customer pays. The request passes through storefront and api-gateway, and each service records [[spans]] for its part of the work: one span per operation.",
+    "oneTraceIntro": "A customer pays. The request passes through storefront and api-gateway, and each service records spans for its part of the work: one span per operation.",
     "oneTraceQuestion": "What makes these spans one trace?",
     "oneTrace": [
       {
