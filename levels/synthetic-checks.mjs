@@ -5,6 +5,12 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind , https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/synthetics/synthetic-monitoring , https://www.dash0.com/docs/dash0/monitoring/synthetics/explore-run-details , https://www.dash0.com/docs/dash0/monitoring/alerting/about-notifications
 //
+// The alert Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 20 answers and a showing draws 6 (one of
+// the 3 right, 5 of the 17 wrong). Its extra answers use the same facts as below plus, read 2026-11-20 on the synthetic monitoring page
+// above: a synthetic check makes real requests to an endpoint at regular intervals from Dash0 public regions or private locations, and
+// notifications fire automatically when any assertion fails. Every wrong answer rests on the scenario in the step's own text (spans
+// healthy, internal tools still connecting, nothing deployed, pods untouched), not on a claim about a product.
+//
 // Facts used (each read on the page named in its parentheses, 2026-11-07): a SERVER span covers server-side handling of a remote request
 // (the trace API page, SpanKind); the HTTP spans page has an example of a client call that fails with a DNS error, seen from the client
 // side. In Dash0, synthetic checks are scripted tests that send requests to your websites and APIs at regular intervals from public or
@@ -62,13 +68,12 @@ const SKELETON = {
         qid: 'sc-q-alert',
         choice: {
           id: 'sc-alert',
+          draw: 6,
           choices: [
-            { key: 'error-ratio' },
-            { key: 'burn-rate' },
-            { key: 'p99' },
-            { key: 'rate' },
             { key: 'health-check', keep: true }, // the tempting near-miss: the 50/50 never removes it (#371)
             { key: 'probe', right: true },
+            { key: 'synthetic-check', right: true },
+            { key: 'outside-200', right: true },
           ],
         },
       },

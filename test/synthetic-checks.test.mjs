@@ -11,6 +11,7 @@ import { freshlyLit, litText } from '../lib/globe-ignite.mjs';
 import { emptyProgress } from '../lib/progress.mjs';
 import { newSortState, place, validateSortSpec } from '../lib/widgets/sort-it.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
+import { choiceBoards } from '../lib/pool.mjs';
 
 const ID = 'synthetic-checks';
 const LIVE = liveRegistry();
@@ -139,18 +140,15 @@ test('step 1: the honest sort scores 5 stars, and no keyword rule through place(
 
 // ---- step 2: the alert ---------------------------------------------------------------------
 
-test('step 2: the probe is the one right alert; each alert on spans is shown reading healthy or quiet in the numbers', () => {
+test('step 2: a pool of 20 (draw 6) with three probe answers right; the original span alerts and the health check stay in it, each reading healthy or quiet in the numbers', () => {
   assert.equal(ALERT_STEP.qid, 'sc-q-alert');
   const choices = ALERT_STEP.choice.choices;
-  assert.deepEqual(choices.map((c) => c.key), ['error-ratio', 'burn-rate', 'p99', 'rate', 'health-check', 'probe']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['probe']);
-  const lens = choices.map((c) => plain(c.label).length);
-  assert.equal(plain(choices[5].label).length < Math.max(...lens), true, `the right label is not the longest: ${lens}`);
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 16, true, `plain label lengths ${lens}`);
-  for (const c of choices) assert.doesNotMatch(plain(c.label), /expired|certificate|handshake|outside|blind|never|wrong|TLS|DNS/i, c.key);
-  const spanLabels = choices.filter((c) => /spans/.test(c.label)).length;
-  assert.equal(spanLabels, 4, 'four options are about spans, the other two are not: "spans" does not mark the odd one out');
-  assert.equal(/spans|probe/i.test(choices[5].label), false, 'the right label says what it does, not the step 1 bucket word');
+  assert.equal(ALERT_STEP.choice.draw, 6);
+  assert.equal(choices.length, 20);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['outside-200', 'probe', 'synthetic-check']);
+  for (const k of ['error-ratio', 'burn-rate', 'p99', 'rate', 'health-check']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
+  assert.deepEqual(choices.filter((c) => c.keep).map((c) => c.key), ['health-check'], 'the near-miss the 50/50 keeps');
+  for (const c of choices) assert.doesNotMatch(plain(c.label), /expired|certificate|handshake|blind|wrong|TLS|DNS/i, c.key);
   const intro = plain(ALERT_STEP.intro);
   for (const w of ['3,000 requests (usually 4,000 at that hour)', '0 errors', 'p99 latency 180 ms (usually 180 ms)', 'TLS certificate', 'expired', 'so they still connect']) assert.equal(intro.includes(w), true, w);
   // The numbers of the intro, read as each alert would read them.
@@ -172,6 +170,24 @@ test('step 2: the probe is the one right alert; each alert on spans is shown rea
   assert.match(why('rate'), /the probe names the TLS error/);
   assert.match(why('health-check'), /never meets the certificate on the public hostname/);
   assert.match(why('probe'), /DNS lookup, then the TLS handshake/);
+});
+
+test('step 2: on every board, picking the labels that name a probe, a synthetic check, the outside or the public hostname is no better than chance', () => {
+  // These are the words the right answers are about. If the wrong answers lack them the pool is passed by its words alone, so wrong answers
+  // that fail for a reason the intro shows (inside the cluster, verification off, a connection only) carry them too.
+  // The second family is the expectation every right answer states ("must pass", "if they fail", "expecting success").
+  const boards = choiceBoards(ALERT_STEP.choice);
+  const chance = 1 / ALERT_STEP.choice.draw;
+  assert.ok(boards.length > 1000, `${boards.length} boards`);
+  for (const family of [/probe|synthetic|outside|public/i, /pass|fail|success|expect/i]) {
+    let sum = 0;
+    for (const b of boards) {
+      const picked = b.choices.filter((c) => family.test(plain(c.label)));
+      sum += picked.length === 0 ? 1 / b.choices.length : picked.filter((c) => c.right).length / picked.length;
+    }
+    assert.ok(Math.abs(sum / boards.length - chance) <= 0.15, `${family} picks the right answer ${(sum / boards.length).toFixed(3)} of the time, chance ${chance.toFixed(3)}`);
+    assert.ok(ALERT_STEP.choice.choices.filter((c) => !c.right && family.test(plain(c.label))).length >= 4, `at least four wrong answers carry ${family}`);
+  }
 });
 
 test('step 2: the Dash0 tie-in uses only what the run-details and notification pages state', () => {

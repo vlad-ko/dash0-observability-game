@@ -142,8 +142,12 @@ for (const [name, check] of Object.entries(CHECKS)) {
 // chance) and the score must stay within TELL_BAND of 1 / draw, the same band as test/choice-tells.test.mjs T2.
 const TELL_BAND = 0.15;
 const MARKS = [',', ':', ';', '%', '(', ')', "'", '/', '-', '.', '?', '&'];
-/** The lower-case words of a label with tags stripped. */
-const wordsOf = (label) => plain(label).toLowerCase().match(/[a-z0-9]+/g) ?? [];
+/** Function words a label may use freely: they carry no meaning, so they are neither features nor part of a two-word phrase. */
+const FUNCTION_WORDS = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'to', 'by', 'as', 'it', 'that', 'with', 'is', 'for', 'at', 'and']);
+/** A word with a plural -s folded away, so "error" and "errors" are one feature. */
+const fold = (w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
+/** The lower-case words of a label with tags stripped, function words dropped and plurals folded. */
+const wordsOf = (label) => (plain(label).toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => !FUNCTION_WORDS.has(w)).map(fold);
 /** The features of `labels` as `{name, has}`: `has(label)` says whether a label carries it. */
 function tellFeatures(labels) {
   const count = (get) => {
@@ -160,35 +164,104 @@ function tellFeatures(labels) {
     ...MARKS.filter((m) => labels.some((l) => plain(l).includes(m))).map((m) => ({ name: `mark "${m}"`, has: (l) => plain(l).includes(m) })),
   ];
 }
+// A family of words split over the right answers (each word on a different right one, and on a wrong one or two) passes every single
+// feature, so C6 also scores the OR of any two words or two-word phrases that two or more labels share ("pick a label that has either"),
+// within PAIR_BAND of chance. Pairs whose labels are the same as a single feature's, or all of the labels, are not scored twice.
+const PAIR_BAND = 0.25;
+/** The board of every showing as label indexes, and which labels are right. */
+function indexedBoards(spec) {
+  const at = new Map(spec.choices.map((c, i) => [c, i]));
+  return { boards: choiceBoards(spec).map((b) => b.choices.map((c) => at.get(c))), right: spec.choices.map((c) => !!c.right) };
+}
+/** The mean first-try score over every board of picking the labels whose `match` equals `want` (a board no label decides counts as chance). */
+function maskScore({ boards, right }, match, want) {
+  let sum = 0;
+  for (const board of boards) {
+    let n = 0;
+    let r = 0;
+    for (const i of board) if (match[i] === want) { n++; if (right[i]) r++; }
+    sum += n === 0 ? 1 / board.length : r / n;
+  }
+  return sum / boards.length;
+}
 /** Every feature's two blind strategies over every board of a pooled choice: `{name, score}`; a board no label can decide counts as chance. */
 function tellScores(spec) {
-  const boards = choiceBoards(spec);
+  const data = indexedBoards(spec);
   const out = [];
   for (const f of tellFeatures(spec.choices.map((c) => c.label))) {
-    for (const want of [true, false]) {
-      let sum = 0;
-      for (const board of boards) {
-        const top = board.choices.filter((c) => f.has(c.label) === want);
-        sum += top.length === 0 ? 1 / board.choices.length : top.filter((c) => c.right).length / top.length;
-      }
-      out.push({ name: `${want ? 'pick' : 'skip'} ${f.name}`, score: sum / boards.length });
+    const match = spec.choices.map((c) => f.has(c.label));
+    for (const want of [true, false]) out.push({ name: `${want ? 'pick' : 'skip'} ${f.name}`, score: maskScore(data, match, want) });
+  }
+  return out;
+}
+/** The OR-pairs of words and two-word phrases shared by two or more labels, as `{name, score}` for "pick a label with either" and "skip them". */
+function pairScores(spec) {
+  const labels = spec.choices.map((c) => c.label);
+  const feats = tellFeatures(labels).filter((f) => f.name.startsWith('word ') || f.name.startsWith('phrase '));
+  const masks = feats.map((f) => labels.map((l) => f.has(l)));
+  const singles = new Set([...masks, ...tellFeatures(labels).map((f) => labels.map((l) => f.has(l)))].map((m) => m.join()));
+  const data = indexedBoards(spec);
+  const seen = new Set(singles);
+  const out = [];
+  for (let i = 0; i < feats.length; i++) {
+    for (let j = i + 1; j < feats.length; j++) {
+      const match = masks[i].map((v, k) => v || masks[j][k]);
+      const key = match.join();
+      if (seen.has(key) || match.every(Boolean)) continue;
+      seen.add(key);
+      for (const want of [true, false]) out.push({ name: `${want ? 'pick' : 'skip'} ${feats[i].name} or ${feats[j].name}`, score: maskScore(data, match, want), pair: true });
     }
   }
   return out;
 }
 /** The scores furthest from chance first. */
-const byTell = (spec) => tellScores(spec).sort((a, b) => Math.abs(b.score - 1 / spec.draw) - Math.abs(a.score - 1 / spec.draw));
-const tellProblems = (p) =>
-  p.kind !== 'choice'
-    ? []
-    : byTell(p.spec)
-        .filter((s) => Math.abs(s.score - 1 / p.spec.draw) > TELL_BAND)
-        .map((s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against chance ${(1 / p.spec.draw).toFixed(3)}`);
+const furthest = (spec, scores) => scores.sort((a, b) => Math.abs(b.score - 1 / spec.draw) - Math.abs(a.score - 1 / spec.draw));
+const byTell = (spec) => furthest(spec, tellScores(spec));
+const byPair = (spec) => furthest(spec, pairScores(spec));
+const report = (p, s) => `${p.id}: ${s.name} scores ${s.score.toFixed(3)} against chance ${(1 / p.spec.draw).toFixed(3)}`;
+const tellProblems = (p) => (p.kind !== 'choice' ? [] : byTell(p.spec).filter((s) => Math.abs(s.score - 1 / p.spec.draw) > TELL_BAND).map((s) => report(p, s)));
+const pairProblems = (p) => (p.kind !== 'choice' ? [] : byPair(p.spec).filter((s) => Math.abs(s.score - 1 / p.spec.draw) > PAIR_BAND).map((s) => report(p, s)));
 
 test('C6 no word, phrase, ending or punctuation mark of a pooled choice picks the right answer far from chance, either way', () => {
   for (const p of live) assert.deepEqual(tellProblems(p), [], `${p.level} ${p.id}`);
   for (const p of good) assert.deepEqual(tellProblems(p), [], p.id);
   if (process.env.TELLS) for (const p of live.filter((x) => x.kind === 'choice')) console.log('C6', p.id, byTell(p.spec).slice(0, 5).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+});
+
+test('C6 no pair of words or phrases (pick a label with either) picks the right answer far from chance, either way', () => {
+  for (const p of live) assert.deepEqual(pairProblems(p), [], `${p.level} ${p.id}`);
+  for (const p of good) assert.deepEqual(pairProblems(p), [], p.id);
+  if (process.env.TELLS) for (const p of live.filter((x) => x.kind === 'choice')) console.log('C6 pairs', p.id, byPair(p.spec).slice(0, 3).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; '));
+});
+
+test('C6 pairs have teeth: a family of words split over the right answers, each word also on one wrong answer, passes every single feature and fails the pair', () => {
+  // Four rights and thirty-two wrongs, three shown: a word on one right and one wrong is within the single band, two such words are not within the pair band.
+  const family = () => {
+    const pool = { id: 'cf4', draw: 3, choices: [] };
+    for (let i = 0; i < 4; i++) pool.choices.push({ key: `r${i}`, label: `Answer r${i} ${['alpha', 'beta', 'gamma', 'delta'][i]}`, why: `Right ${i}.`, right: true });
+    for (let i = 0; i < 32; i++) pool.choices.push({ key: `w${i}`, label: `Answer w${i}${i < 4 ? ` ${['alpha', 'beta', 'gamma', 'delta'][i]}` : ''}`, why: `Wrong ${i}.` });
+    return pool;
+  };
+  const spec = family();
+  const step = { id: 'cf4', kind: 'choice', spec };
+  assert.deepEqual(tellProblems(step), [], 'every single feature passes');
+  assert.ok(pairProblems(step).some((m) => /alpha|beta|gamma|delta/.test(m)), `a pair of the family words is reported: ${byPair(spec).slice(0, 2).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; ')}`);
+});
+
+test('C6 folds plurals and skips function words: a family split over error, errors and failures is reported, and function words alone are not', () => {
+  // Four rights say error, errors, failure and failures; each form is also on one wrong answer, so exact-word matching sees four harmless
+  // words, while folded they are two features on two rights each.
+  const pool = { id: 'cf5', draw: 3, choices: [] };
+  const forms = ['error', 'errors', 'failure', 'failures'];
+  for (let i = 0; i < 4; i++) pool.choices.push({ key: `r${i}`, label: `Answer r${i} ${forms[i]}`, why: `Right ${i}.`, right: true });
+  for (let i = 0; i < 32; i++) pool.choices.push({ key: `w${i}`, label: `Answer w${i}${i < 4 ? ` ${forms[i]}` : ''}`, why: `Wrong ${i}.` });
+  const found = tellProblems({ id: 'cf5', kind: 'choice', spec: pool });
+  assert.ok(found.some((m) => /"(error|failure)"/.test(m)), `the folded family is reported: ${found.join('; ') || 'nothing'}`);
+  // Function words on the rights only are not a feature.
+  const plainPool = { id: 'cf6', draw: 3, choices: [] };
+  for (let i = 0; i < 4; i++) plainPool.choices.push({ key: `r${i}`, label: `The answer r${i} of that`, why: `Right ${i}.`, right: true });
+  for (let i = 0; i < 16; i++) plainPool.choices.push({ key: `w${i}`, label: `Answer w${i}`, why: `Wrong ${i}.` });
+  assert.deepEqual(tellProblems({ id: 'cf6', kind: 'choice', spec: plainPool }), [], 'a, the, of and that are skipped');
 });
 
 test('C6 has teeth: a word on every right answer, a word on every wrong answer and a comma on every right answer are reported', () => {

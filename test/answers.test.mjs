@@ -130,12 +130,12 @@ const ANSWERS = {
     'tradeoff ts-budget: wait=wait-25s policies=errors-slow-baseline',
     'spot ts-spot: traces-processors,traces-exporters',
   ],
-  'good-alerts': ['spot ga-spot: counter-value,cause-cpu,no-for', 'choice ga-fix: increase'],
+  'good-alerts': ['spot ga-spot: counter-value,cause-cpu,no-for', 'choice ga-fix: error-share|increase|rate-5m'],
   'slis-and-slos': [
-    'choice sl-sli: good-over-valid',
+    'choice sl-sli: failing-share|good-over-valid|non-error-share|successful-requests',
     'query sl-sli-query: checkout-spanmetrics@3600 sum(rate(traces_span_metrics_calls_total{service_name="checkout", span_kind="SPAN_KIND_SERVER", status_code!="STATUS_CODE_ERROR"}[5m])) / sum(rate(traces_span_metrics_calls_total{service_name="checkout", span_kind="SPAN_KIND_SERVER"}[5m]))',
     'choice sl-budget: thousand',
-    'choice sl-edge: load-balancer',
+    'choice sl-edge: front-door-counts|ingress-metrics|lb-access-log|load-balancer',
   ],
   'burn-rate-alerts': [
     'query br-burn: checkout-http@3600 sum(rate(http_server_requests_total{service="checkout", status="500"}[1h])) / sum(rate(http_server_requests_total{service="checkout"}[1h])) / 0.001',
@@ -143,7 +143,7 @@ const ANSWERS = {
   ],
   'synthetic-checks': [
     'sort sc-sort: handler-throws=spans tls-expired=probe payment-dns=spans slow-query=spans dns-dropout=probe inventory-loop=spans dns-stale=probe payment-tls=spans cdn-stale=probe bad-deploy=spans lb-no-targets=probe',
-    'choice sc-alert: probe',
+    'choice sc-alert: outside-200|probe|synthetic-check',
   ],
   'everything-is-green': [
     'incident everything-is-green: span-numbers,who-calls,outside-request > expired-certificate',

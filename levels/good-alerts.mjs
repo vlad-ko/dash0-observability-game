@@ -3,6 +3,11 @@
 // threshold, so it fires for good; one pages on a cause (busy CPUs) no user feels; one has `for: 0s`, so it flaps. Then one Choice:
 // how to fix the rule that has fired for three days (alert on increase() over a window, not a bigger threshold, not a longer `for`,
 // not delta()). Hints are off (the default ladder: hints in early acts only).
+// The Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 20 answers and a showing draws 4. Its extra
+// answers use only the pages below: increase() and rate() (counters only, resets adjusted for), delta() and predict_linear() (gauges
+// only), resets(), changes(), absent() and avg_over_time() on the functions page; the `for` and `keep_firing_for` clauses on the
+// alerting rules page; a gauge against a counter on the metric types page; and paging on user-visible errors and avoiding pages with
+// nothing to do on the alerting practices page. The rest is reasoning from "the total only grows" in this level's own scenario.
 // Spec: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/ , https://prometheus.io/docs/practices/alerting/ , https://prometheus.io/docs/prometheus/latest/querying/functions/ , https://prometheus.io/docs/concepts/metric_types/#counter
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/alerting/create-check-rules , https://www.dash0.com/docs/dash0/monitoring/alerting/create-check-rules-from-scratch
 //
@@ -46,8 +51,14 @@ const SKELETON = {
       },
       {
         qid: 'ga-q-fix',
-        // Only the answer is marked; every choice's text is in the content file.
-        choice: { id: 'ga-fix', choices: [{ key: 'increase', right: true }] },
+        // An answer pool: 3 right and 17 wrong in the content, a showing draws 4. Every right answer is marked here, and a right
+        // answer added in the content file without `right: true` would be graded wrong. 'for-1h' is the tempting near-miss the
+        // 50/50 keeps. Every choice's text is in the content file.
+        choice: {
+          id: 'ga-fix',
+          draw: 4,
+          choices: [{ key: 'increase', right: true }, { key: 'rate-5m', right: true }, { key: 'error-share', right: true }, { key: 'for-1h', keep: true }],
+        },
       },
     ],
   },
