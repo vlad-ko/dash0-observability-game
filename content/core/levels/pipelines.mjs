@@ -37,7 +37,7 @@ export default {
         "configure": {
           "id": "pipe-config",
           "hint": "A component works only when it is both defined in its own section and enabled by a list under <code>service</code>. Compare the two both ways: a name listed but not defined stops the Collector, and a component defined but listed nowhere does nothing. Fix by adding what is missing, not by deleting a name.",
-          "explain": "<p>A component takes effect only when it is both defined in its section and enabled. <code>health_check</code> was listed but not defined, so the Collector refuses to start. <code>memory_limiter</code> was defined but not listed, so it does nothing: both pipelines ran without it.</p><p>Receivers, processors and exporters are enabled by listing them in a pipeline, extensions under <code>service.extensions</code>. Deleting <code>memory_limiter</code>, listing it in only one pipeline, or giving it another name would all leave a pipeline unprotected, so it must be listed in both. Each pipeline gets its own instance of a processor listed in several.</p><p>The order of each list is the next level's question, and this game checks the wiring, not the settings.</p><p>In Collector v0.164.0 the OTLP gRPC exporter is <code>otlp_grpc</code> and the OTLP HTTP exporter is <code>otlp_http</code>; <code>otlp</code> and <code>otlphttp</code> are deprecated aliases that still resolve, and every config in this act uses the new names.</p>"
+          "explain": "<p>A component takes effect only when it is both defined in its section and enabled. <code>health_check</code> was listed but not defined, so the Collector refuses to start. <code>memory_limiter</code> was defined but not listed, so it does nothing: both [[pipelines]] ran without it.</p><p>Receivers, processors and exporters are enabled by listing them in a pipeline, extensions under <code>service.extensions</code>. Deleting <code>memory_limiter</code>, listing it in only one pipeline, or giving it another name would all leave a pipeline unprotected, so it must be listed in both. Each pipeline gets its own instance of a processor listed in several.</p><p>The order of each list is the next level's question, and this game checks the wiring, not the settings.</p><p>In Collector v0.164.0 the OTLP gRPC exporter is <code>otlp_grpc</code> and the OTLP HTTP exporter is <code>otlp_http</code>; <code>otlp</code> and <code>otlphttp</code> are deprecated aliases that still resolve, and every config in this act uses the new names.</p>"
         }
       },
       {
@@ -54,7 +54,7 @@ export default {
             {
               "key": "service-extensions",
               "label": "It is defined under <code>extensions</code> but not listed under <code>service.extensions</code>",
-              "why": "Configuring an extension does not enable it. Extensions are enabled by listing them under <code>service.extensions</code>, not in a pipeline. Defined but not listed, <code>health_check</code> is not enabled, so nothing answers."
+              "why": "Configuring an [[extension]] does not enable it. Extensions are enabled by listing them under <code>service.extensions</code>, not in a pipeline. Defined but not listed, <code>health_check</code> is not enabled, so nothing answers."
             },
             {
               "key": "start-order",

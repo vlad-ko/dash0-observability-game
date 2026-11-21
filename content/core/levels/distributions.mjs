@@ -22,7 +22,7 @@ export default {
             {
               "key": "refuses-to-start",
               "label": "The Collector refuses to start with an unknown type error: <code>k8sattributes</code> is not compiled into the core distribution",
-              "why": "A distribution is a set of components compiled into one binary. <code>k8sattributes</code> is in the contrib and k8s distributions, not in core, so the core binary has no processor of that type and the config is rejected at startup."
+              "why": "A distribution is a set of components compiled into one binary. <code>k8sattributes</code> is in the [[contrib]] and k8s distributions, not in core, so the core binary has no processor of that type and the config is rejected at startup."
             },
             {
               "key": "loads-on-demand",

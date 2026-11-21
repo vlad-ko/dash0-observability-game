@@ -61,7 +61,7 @@ export default {
         "configure": {
           "id": "agw-config",
           "hint": "Every span of one trace has to reach the same gateway replica; metrics have no such need. That is why the traces list names an exporter of its own: give that name a definition rather than pointing traces where metrics already go.",
-          "explain": "A pipeline can only list an exporter that is defined, and one that is defined but not listed does nothing. Pointing traces at <code>otlp_grpc/gateway</code>, the Service in front of the replicas, would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key, which the next question is about. The resolver, DNS on a headless Service here, lists the replicas. Metrics keep their own exporter. The exporter's type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, but this task asks for the current name, so a different id is a different component here. This game checks the wiring, not the settings: the routing key is the next question."
+          "explain": "A pipeline can only list an exporter that is defined, and one that is defined but not listed does nothing. Pointing traces at <code>otlp_grpc/gateway</code>, the Service in front of the replicas, would start the Collector and still split traces between them. <code>load_balancing</code> picks a replica by hashing a routing key, which the next question is about. The resolver, DNS on a [[headless Service]] here, lists the replicas. Metrics keep their own exporter. The exporter's type was renamed from <code>loadbalancing</code>; the old name still works in the Collector as a deprecated alias, but this task asks for the current name, so a different id is a different component here. This game checks the wiring, not the settings: the routing key is the next question."
         }
       },
       {
@@ -73,7 +73,7 @@ export default {
             {
               "key": "trace-id",
               "label": "<code>routing_key: traceID</code>: every span of a trace goes to the same gateway replica",
-              "why": "The exporter picks a replica by hashing the routing_key, so every span with the same trace ID goes to the same one and the <code>tail_sampling</code> processor there sees the whole trace. For traces, traceID is also the default routing key, so setting it makes the intent explicit."
+              "why": "The exporter picks a replica by hashing the [[routing_key]], so every span with the same trace ID goes to the same one and the <code>tail_sampling</code> processor there sees the whole trace. For traces, traceID is also the default routing key, so setting it makes the intent explicit."
             },
             {
               "key": "service",

@@ -91,7 +91,7 @@ export default {
             {
               "key": "trace-and-resource",
               "label": "The <code>trace_id</code> on the log record, and resource attributes such as <code>service.name</code> and <code>service.version</code>",
-              "why": "A log record has TraceId and SpanId fields, so a backend can go from a log to the trace it was written in. Logs, traces and metrics each carry a Resource too, and the same attribute names and values for the same producer let a backend line them up by origin: here, inventory 3.1.0 on the trace and in the deploy list. The logs specification names three ways to correlate: by time, by trace context and by origin."
+              "why": "A log record has TraceId and SpanId fields, so a backend can go from a log to the trace it was written in. Logs, traces and metrics each carry a Resource too, and the same attribute names and values for the same producer let a backend line them up by origin: here, inventory 3.1.0 on the trace and in the deploy list. The logs specification names three ways to [[correlate|correlation]]: by time, by trace context and by origin."
             },
             {
               "key": "time-only",
