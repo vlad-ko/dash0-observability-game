@@ -35,7 +35,7 @@ export default {
             },
             {
               "key": "failing-share",
-              "label": "Failures among those that count towards the SLO target",
+              "label": "Failures per valid one counted in the same window",
               "why": "The Dash0 documentation says an SLI is a ratio of good, or of bad, to total. Failed over valid is 100% minus good over valid, and it does not move with the traffic either. An SLO target is then a ceiling on it, such as 0.1%."
             },
             {
@@ -50,12 +50,12 @@ export default {
             },
             {
               "key": "mean-latency",
-              "label": "Average latency of checkout, in milliseconds, for each day",
+              "label": "Average latency of valid requests, in milliseconds, for each day",
               "why": "An average of times can look fine while requests fail: a request that fails at once is quick and pulls the mean down. It is also one time, not a share of the requests that worked, so a target such as 99.9% cannot be set against it."
             },
             {
               "key": "week-on-week",
-              "label": "Successful requests per minute against the same minute last week",
+              "label": "Valid requests per minute against the same minute last week",
               "why": "That compares traffic with traffic. A quiet Tuesday after a busy one reads as a collapse though every request worked, and a bad hour that matches last week's volume reads as fine."
             },
             {
@@ -85,7 +85,7 @@ export default {
             },
             {
               "key": "total-since-start",
-              "label": "Total requests served by checkout since the process started",
+              "label": "Total valid requests served by checkout since the process started",
               "why": "A counter's total only grows until a restart, so it says how long the process has run, not how the service is doing now. A good measure is built from rates over a window."
             },
             {
@@ -182,7 +182,7 @@ export default {
             },
             {
               "key": "ingress-metrics",
-              "label": "The ingress controller's metrics on the outcomes returned for checkout's customers",
+              "label": "The ingress controller's metrics on the outcomes returned for checkout",
               "why": "The ingress controller records the status code of every response it sends, the 502s included, so good responses over all responses can be taken there. That makes it a measure of what users got, not of what checkout handled."
             },
             {
@@ -197,7 +197,7 @@ export default {
             },
             {
               "key": "http-server-metrics",
-              "label": "Checkout's own HTTP server metrics: good responses over all responses",
+              "label": "Checkout's own HTTP server figures: good responses over all responses",
               "why": "Those metrics are recorded by checkout's code for the requests it received, the same population as its server spans. The hour with no ready pod produced none, so the ratio keeps reading about 99.95%, which meets the target through the very hour customers saw errors."
             },
             {
@@ -232,8 +232,8 @@ export default {
             },
             {
               "key": "mesh-gateway",
-              "label": "The mesh's ingress gateway, with good responses counted after routing to a pod",
-              "why": "A ratio taken after the request has been routed to a pod has no count for the requests the load balancer answered with a 502 because no pod was ready. It reads healthy through the hour customers saw errors."
+              "label": "The mesh sidecar beside the checkout pods, counting good responses after routing",
+              "why": "A sidecar sits on the pod, so it sees only the requests that were routed there. The ones the load balancer answered with a 502 because no pod was ready never reach it, and its ratio reads healthy through the hour customers saw errors."
             },
             {
               "key": "front-door-502s",
@@ -252,7 +252,7 @@ export default {
             },
             {
               "key": "lb-total-rate",
-              "label": "The total request rate at the load balancer, in requests per second, across the period",
+              "label": "How busy the load balancer is, in requests handled a second, across the period",
               "why": "That is traffic, a count of requests arriving, and it does not say how many of them worked. It would only show the load balancer busy, as it was while it returned its 502s."
             },
             {

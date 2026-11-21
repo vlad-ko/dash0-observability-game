@@ -152,12 +152,12 @@ export default {
             },
             {
               "key": "synthetic-check",
-              "label": "Recurring checks of checkout's page alerting people if they fail",
+              "label": "Recurring checks of checkout's page notifying staff",
               "why": "A synthetic check makes real requests to your endpoint on a schedule, from public or private locations, and Dash0 notifies you when any assertion fails. With an expired certificate the handshake fails before an assertion can pass, so it fires while the spans stay green."
             },
             {
               "key": "outside-200",
-              "label": "Timed pings from beyond our network expecting success",
+              "label": "Timed pings sent beyond our network and scored by what comes back",
               "why": "It reaches checkout the way a visitor does, through the DNS lookup and the TLS handshake, so an expired certificate makes it fail while every span reads healthy. An expectation of a 200 turns that failure into an alert."
             },
             {
@@ -167,12 +167,12 @@ export default {
             },
             {
               "key": "inside-probe",
-              "label": "An in-cluster probe of the service endpoint every minute",
+              "label": "An in-cluster probe expecting success from the service endpoint every minute",
               "why": "It reaches the pods by their internal address and never meets the certificate on the public hostname, so it keeps passing, like the internal tools whose requests still arrive, while browsers are refused."
             },
             {
               "key": "unverified-check",
-              "label": "A synthetic check of the public hostname whose verification is switched off",
+              "label": "A synthetic check of the public hostname with verification off, alerting if it fails",
               "why": "A client that does not verify the identity it is shown accepts an expired certificate, just as the internal tools do. The handshake succeeds and the check passes while browsers, which do verify, are refused."
             },
             {
@@ -187,12 +187,12 @@ export default {
             },
             {
               "key": "pod-health-probe",
-              "label": "A probe of each pod's internal health route every minute",
+              "label": "A probe of each pod's internal health route every 30 seconds, must pass",
               "why": "The probe goes to the pods inside the network, so it never meets the certificate on the public hostname, and every pod answers healthy. It measures whether pods respond, not whether visitors can connect."
             },
             {
               "key": "tcp-connect",
-              "label": "A synthetic check that only opens a connection to the public hostname",
+              "label": "A synthetic check that only opens a connection to the public hostname, must pass",
               "why": "A check run breaks a request into steps: DNS resolution, TCP connection and the TLS handshake. Opening the connection succeeds with an expired certificate, because the certificate is only judged in the handshake that follows, so this check passes while browsers are refused."
             },
             {
@@ -217,7 +217,7 @@ export default {
             },
             {
               "key": "collector-drops",
-              "label": "Data dropped by the Collector, counted once a minute overall",
+              "label": "Data dropped by the Collector, counted every minute overall",
               "why": "The Collector handles only spans that exist. A visitor who fails the handshake never sends a request, so there is most likely no span to drop, and the Collector reports no loss."
             }
           ]

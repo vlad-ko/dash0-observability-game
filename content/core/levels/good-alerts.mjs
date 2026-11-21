@@ -79,12 +79,12 @@ export default {
             },
             {
               "key": "rate-5m",
-              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that 3 per second is the limit to cross",
+              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that 2 errors a minute is the limit to cross",
               "why": "<code>rate()</code> turns the counter into failures per second over the window, so the rule fires while checkout fails and resolves once it stops, and it adjusts for the reset when a process restarts. The threshold then reads as a speed, not as a total."
             },
             {
               "key": "error-share",
-              "label": "Page when users meet 1 error among 50 of the requests made",
+              "label": "Page if users meet one error among 50 of the requests made",
               "why": "The failing request rate divided by the whole request rate is a symptom that does not grow with the traffic or with the age of the process. It rises while users get errors and falls back when they stop, and the Prometheus practices page says to page on user-visible errors."
             },
             {

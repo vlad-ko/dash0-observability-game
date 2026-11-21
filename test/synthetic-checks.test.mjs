@@ -175,17 +175,19 @@ test('step 2: a pool of 20 (draw 6) with three probe answers right; the original
 test('step 2: on every board, picking the labels that name a probe, a synthetic check, the outside or the public hostname is no better than chance', () => {
   // These are the words the right answers are about. If the wrong answers lack them the pool is passed by its words alone, so wrong answers
   // that fail for a reason the intro shows (inside the cluster, verification off, a connection only) carry them too.
-  const family = /probe|synthetic|outside|public/i;
+  // The second family is the expectation every right answer states ("must pass", "if they fail", "expecting success").
   const boards = choiceBoards(ALERT_STEP.choice);
-  let sum = 0;
-  for (const b of boards) {
-    const picked = b.choices.filter((c) => family.test(plain(c.label)));
-    sum += picked.length === 0 ? 1 / b.choices.length : picked.filter((c) => c.right).length / picked.length;
-  }
   const chance = 1 / ALERT_STEP.choice.draw;
   assert.ok(boards.length > 1000, `${boards.length} boards`);
-  assert.ok(Math.abs(sum / boards.length - chance) <= 0.15, `the family picks the right answer ${(sum / boards.length).toFixed(3)} of the time, chance ${chance.toFixed(3)}`);
-  assert.ok(ALERT_STEP.choice.choices.filter((c) => !c.right && family.test(plain(c.label))).length >= 4, 'at least four wrong answers carry the family words');
+  for (const family of [/probe|synthetic|outside|public/i, /pass|fail|success|expect/i]) {
+    let sum = 0;
+    for (const b of boards) {
+      const picked = b.choices.filter((c) => family.test(plain(c.label)));
+      sum += picked.length === 0 ? 1 / b.choices.length : picked.filter((c) => c.right).length / picked.length;
+    }
+    assert.ok(Math.abs(sum / boards.length - chance) <= 0.15, `${family} picks the right answer ${(sum / boards.length).toFixed(3)} of the time, chance ${chance.toFixed(3)}`);
+    assert.ok(ALERT_STEP.choice.choices.filter((c) => !c.right && family.test(plain(c.label))).length >= 4, `at least four wrong answers carry ${family}`);
+  }
 });
 
 test('step 2: the Dash0 tie-in uses only what the run-details and notification pages state', () => {
