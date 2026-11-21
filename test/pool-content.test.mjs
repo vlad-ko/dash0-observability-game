@@ -141,8 +141,12 @@ for (const [name, check] of Object.entries(CHECKS)) {
 // chance) and the score must stay within TELL_BAND of 1 / draw, the same band as test/choice-tells.test.mjs T2.
 const TELL_BAND = 0.15;
 const MARKS = [',', ':', ';', '%', '(', ')', "'", '/', '-', '.', '?', '&'];
-/** The lower-case words of a label with tags stripped. */
-const wordsOf = (label) => plain(label).toLowerCase().match(/[a-z0-9]+/g) ?? [];
+/** Function words a label may use freely: they carry no meaning, so they are neither features nor part of a two-word phrase. */
+const FUNCTION_WORDS = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'to', 'by', 'as', 'it', 'that', 'with', 'is', 'for', 'at', 'and']);
+/** A word with a plural -s folded away, so "error" and "errors" are one feature. */
+const fold = (w) => (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w);
+/** The lower-case words of a label with tags stripped, function words dropped and plurals folded. */
+const wordsOf = (label) => (plain(label).toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => !FUNCTION_WORDS.has(w)).map(fold);
 /** The features of `labels` as `{name, has}`: `has(label)` says whether a label carries it. */
 function tellFeatures(labels) {
   const count = (get) => {
@@ -241,6 +245,22 @@ test('C6 pairs have teeth: a family of words split over the right answers, each 
   const step = { id: 'cf4', kind: 'choice', spec };
   assert.deepEqual(tellProblems(step), [], 'every single feature passes');
   assert.ok(pairProblems(step).some((m) => /alpha|beta|gamma|delta/.test(m)), `a pair of the family words is reported: ${byPair(spec).slice(0, 2).map((s) => `${s.name} ${s.score.toFixed(3)}`).join('; ')}`);
+});
+
+test('C6 folds plurals and skips function words: a family split over error, errors and failures is reported, and function words alone are not', () => {
+  // Four rights say error, errors, failure and failures; each form is also on one wrong answer, so exact-word matching sees four harmless
+  // words, while folded they are two features on two rights each.
+  const pool = { id: 'cf5', draw: 3, choices: [] };
+  const forms = ['error', 'errors', 'failure', 'failures'];
+  for (let i = 0; i < 4; i++) pool.choices.push({ key: `r${i}`, label: `Answer r${i} ${forms[i]}`, why: `Right ${i}.`, right: true });
+  for (let i = 0; i < 32; i++) pool.choices.push({ key: `w${i}`, label: `Answer w${i}${i < 4 ? ` ${forms[i]}` : ''}`, why: `Wrong ${i}.` });
+  const found = tellProblems({ id: 'cf5', kind: 'choice', spec: pool });
+  assert.ok(found.some((m) => /"(error|failure)"/.test(m)), `the folded family is reported: ${found.join('; ') || 'nothing'}`);
+  // Function words on the rights only are not a feature.
+  const plainPool = { id: 'cf6', draw: 3, choices: [] };
+  for (let i = 0; i < 4; i++) plainPool.choices.push({ key: `r${i}`, label: `The answer r${i} of that`, why: `Right ${i}.`, right: true });
+  for (let i = 0; i < 16; i++) plainPool.choices.push({ key: `w${i}`, label: `Answer w${i}`, why: `Wrong ${i}.` });
+  assert.deepEqual(tellProblems({ id: 'cf6', kind: 'choice', spec: plainPool }), [], 'a, the, of and that are skipped');
 });
 
 test('C6 has teeth: a word on every right answer, a word on every wrong answer and a comma on every right answer are reported', () => {

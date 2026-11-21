@@ -79,12 +79,12 @@ export default {
             },
             {
               "key": "rate-5m",
-              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that 2 errors a minute is the limit to cross",
+              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that the limit to cross is 120 an hour",
               "why": "<code>rate()</code> turns the counter into failures per second over the window, so the rule fires while checkout fails and resolves once it stops, and it adjusts for the reset when a process restarts. The threshold then reads as a speed, not as a total."
             },
             {
               "key": "error-share",
-              "label": "Page if users meet one error among 50 of the requests made",
+              "label": "Page as soon as an error reaches one user in 50",
               "why": "The failing request rate divided by the whole request rate is a symptom that does not grow with the traffic or with the age of the process. It rises while users get errors and falls back when they stop, and the Prometheus practices page says to page on user-visible errors."
             },
             {
@@ -104,7 +104,7 @@ export default {
             },
             {
               "key": "rate-gauge",
-              "label": "Apply <code>rate()</code> to a gauge that holds the failure count over the last 60 seconds",
+              "label": "Apply <code>rate()</code> to a gauge that holds the count of failed requests over the last 60 seconds",
               "why": "Prometheus says <code>rate()</code> should only be used with counters. A gauge that dips is read as a counter that reset, so the speed it reports is not the speed of anything, and the failures a gauge holds are not events to count."
             },
             {

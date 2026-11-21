@@ -35,7 +35,7 @@ export default {
             },
             {
               "key": "failing-share",
-              "label": "Failures per valid one counted in the same window",
+              "label": "The failures counted against all valid ones",
               "why": "The Dash0 documentation says an SLI is a ratio of good, or of bad, to total. Failed over valid is 100% minus good over valid, and it does not move with the traffic either. An SLO target is then a ceiling on it, such as 0.1%."
             },
             {
@@ -80,7 +80,7 @@ export default {
             },
             {
               "key": "quiet-minutes",
-              "label": "The share of minutes this month in which no alert was firing",
+              "label": "The share of this month during which no alert was firing",
               "why": "It depends on how the alert rules are written, not on how many requests worked. A minute in which one request failed and a minute in which all of them did count the same, and a badly tuned rule can fire while checkout is fine."
             },
             {
@@ -177,7 +177,7 @@ export default {
             },
             {
               "key": "lb-access-log",
-              "label": "The edge access log, with one line per response given",
+              "label": "The edge access log, with one line per reply given",
               "why": "The access log at the edge lists every request that reached the load balancer, including the ones it answered with a 502 because no pod was ready. Responses that were not errors over all responses is a good-over-valid ratio taken where users meet the system."
             },
             {
@@ -187,7 +187,7 @@ export default {
             },
             {
               "key": "front-door-counts",
-              "label": "Successful against total answers at the point of entry, before any pod",
+              "label": "Successful against total answers at the point of entry",
               "why": "A count of arrivals alone would say nothing about how they ended, but the outcome of each response counted at the point of entry includes the requests turned away before reaching the application, which is exactly what a promise to users must count. Anything measured further in is a view of the requests that got through."
             },
             {
@@ -197,7 +197,7 @@ export default {
             },
             {
               "key": "http-server-metrics",
-              "label": "Checkout's own HTTP server figures: good responses over all responses",
+              "label": "Checkout's own HTTP server metrics: the good share of responses served",
               "why": "Those metrics are recorded by checkout's code for the requests it received, the same population as its server spans. The hour with no ready pod produced none, so the ratio keeps reading about 99.95%, which meets the target through the very hour customers saw errors."
             },
             {
@@ -217,7 +217,7 @@ export default {
             },
             {
               "key": "average-of-two",
-              "label": "The average of the span-based ratio and the ratio from the load balancer",
+              "label": "The average of the application's ratio and the one from the load balancer",
               "why": "Averaging two ratios halves the signal of the one that saw the 502s and mixes in the one that is blind to them. A single source that sees every request has to be chosen, not blended."
             },
             {
@@ -232,12 +232,12 @@ export default {
             },
             {
               "key": "mesh-gateway",
-              "label": "The mesh sidecar beside the checkout pods, counting good responses after routing",
-              "why": "A sidecar sits on the pod, so it sees only the requests that were routed there. The ones the load balancer answered with a 502 because no pod was ready never reach it, and its ratio reads healthy through the hour customers saw errors."
+              "label": "The mesh sidecar in each checkout pod, counting good responses after routing",
+              "why": "A sidecar runs in the pod, so it sees only the requests that were routed there. The ones the load balancer answered with a 502 because no pod was ready never reach it, and its ratio reads healthy through the hour customers saw errors."
             },
             {
               "key": "front-door-502s",
-              "label": "The count of 502 answers at the front door during the month",
+              "label": "The number of 502s sent at the front door during the month",
               "why": "A count follows the traffic: a busy month has more 502s at the same quality, and a quiet one hides a bad hour. With no total beside it, it is not a ratio, so no target such as 99.9% can be set against it."
             },
             {
@@ -252,7 +252,7 @@ export default {
             },
             {
               "key": "lb-total-rate",
-              "label": "How busy the load balancer is, in requests handled a second, across the period",
+              "label": "The load balancer's traffic, in requests a second, across the period",
               "why": "That is traffic, a count of requests arriving, and it does not say how many of them worked. It would only show the load balancer busy, as it was while it returned its 502s."
             },
             {

@@ -152,12 +152,12 @@ export default {
             },
             {
               "key": "synthetic-check",
-              "label": "Recurring checks of checkout's page notifying staff",
+              "label": "Scheduled runs against checkout's page that notify staff",
               "why": "A synthetic check makes real requests to your endpoint on a schedule, from public or private locations, and Dash0 notifies you when any assertion fails. With an expired certificate the handshake fails before an assertion can pass, so it fires while the spans stay green."
             },
             {
               "key": "outside-200",
-              "label": "Timed pings sent beyond our network and scored by what comes back",
+              "label": "Timed pings coming in across the internet and scored by what comes back",
               "why": "It reaches checkout the way a visitor does, through the DNS lookup and the TLS handshake, so an expired certificate makes it fail while every span reads healthy. An expectation of a 200 turns that failure into an alert."
             },
             {
