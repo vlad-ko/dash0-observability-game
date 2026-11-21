@@ -103,7 +103,7 @@ export default {
             {
               "key": "pipeline",
               "label": "Redact in the Collector pipeline, before the exporter sends it. A spam filter drops whole points after they arrive and cannot edit one attribute",
-              "why": "The transform processor changes the data before it leaves the cluster. A Dash0 spam filter is the backend-side drop: it drops whole spans, logs or data points that match, at ingestion, so it cannot remove one attribute. The data has already left the cluster by then, a drop cannot be recovered, and filtered telemetry still carries the ingest charge. In the Collector, dropping whole telemetry is the filter processor's job, which drops what matches before anything is sent."
+              "why": "The transform processor changes the data before it leaves the cluster. A Dash0 spam filter is the backend-side drop: it drops whole spans, logs or data points that match, at ingestion, so it cannot remove one attribute. The data has already left the cluster by then, a drop cannot be recovered, and filtered telemetry still carries the ingest charge. In the Collector, dropping whole telemetry is the [[filter processor]]'s job, which drops what matches before anything is sent."
             },
             {
               "key": "filter-processor",

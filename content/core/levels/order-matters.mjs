@@ -70,7 +70,7 @@ export default {
             {
               "key": "refuse-early",
               "label": "So it can refuse data before other processors spend memory on it, and receivers can retry",
-              "why": "When memory is over the soft limit, the processor returns a non-permanent error to the component before it, so receivers can retry the data and can apply backpressure to their senders. The best practice is to make it the first processor in a pipeline, so backpressure reaches the receivers and fewer data are dropped when the limiter triggers."
+              "why": "When memory is over the soft limit, the processor returns a non-permanent error to the component before it, so receivers can retry the data and can apply [[backpressure]] to their senders. The best practice is to make it the first processor in a pipeline, so backpressure reaches the receivers and fewer data are dropped when the limiter triggers."
             },
             {
               "key": "any-position",
@@ -99,7 +99,7 @@ export default {
             {
               "key": "removed",
               "label": "Nowhere: the batch processor was removed from the Collector",
-              "why": "The batch processor is still there: it is part of the core, contrib and Kubernetes distributions. What changed is the advice to prefer batching in the exporter where the exporter supports it."
+              "why": "The batch processor is still there: it is part of the core, contrib and Kubernetes [[distributions]]. What changed is the advice to prefer batching in the exporter where the exporter supports it."
             }
           ]
         }

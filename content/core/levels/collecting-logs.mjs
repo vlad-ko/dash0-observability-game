@@ -26,7 +26,7 @@ export default {
             {
               "key": "otlp-no-logs",
               "label": "Logs cannot go over OTLP, which carries traces and metrics, so orders has to keep writing files",
-              "why": "OTLP carries logs as well as traces and metrics. The logs specification describes applications sending log records straight to the Collector over OTLP, through a log appender for their logging library."
+              "why": "[[OTLP]] carries logs as well as traces and metrics. The logs specification describes applications sending log records straight to the Collector over OTLP, through a log appender for their logging library."
             }
           ]
         }
@@ -37,7 +37,7 @@ export default {
         "configure": {
           "id": "col-config",
           "hint": "A pipeline list must match a receiver's id exactly. The id is the type, plus a slash and a name when there is one. Compare the id where the receiver is defined with the one the logs pipeline lists, character by character, and change the list, not the definition. Keep the file receiver; do not swap in another.",
-          "explain": "A receiver reads nothing until a pipeline lists it, and a pipeline can only list what is defined, spelled the same: <code>filelog</code> and <code>filelog/shipping</code> are different components, because the part after the slash names an instance. Defined but not listed, the receiver reads nothing; listed but not defined, the Collector refuses to start. Pointing the logs pipeline at <code>otlp</code> instead would start the Collector too, but shipping's file would never be read, so the task needs <code>filelog/shipping</code> in the logs pipeline, which exports to Dash0. The receiver produces logs, so it belongs in a logs pipeline, and it is a contrib component. Its settings do the reading: <code>include</code> says which files, and <code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped). This game checks the wiring, not the settings; the next steps are about two more of them."
+          "explain": "A receiver reads nothing until a pipeline lists it, and a pipeline can only list what is defined, spelled the same: <code>filelog</code> and <code>filelog/shipping</code> are different components, because the part after the slash names an instance. Defined but not listed, the receiver reads nothing; listed but not defined, the Collector refuses to start. Pointing the logs pipeline at <code>otlp</code> instead would start the Collector too, but shipping's file would never be read, so the task needs <code>filelog/shipping</code> in the logs pipeline, which exports to Dash0. The receiver produces logs, so it belongs in a logs pipeline, and it is a [[contrib]] component. Its settings do the reading: <code>include</code> says which files, and <code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped). This game checks the wiring, not the settings; the next steps are about two more of them."
         }
       },
       {
@@ -74,7 +74,7 @@ export default {
             {
               "key": "collector-regex",
               "label": "In the Collector: add a <code>regex_parser</code> operator to the receiver, with a <code>severity</code> block",
-              "why": "Operators run on each entry inside the receiver. The named groups of the regular expression become attributes, and the <code>severity</code> block sets the record's severity from the group it names, here the level. The entry is several lines long, so the expression turns on the <code>s</code> flag, <code>(?s)</code>, to let <code>.</code> match a newline; without it the message group stops at the first line break. Shipping's agent cannot be changed, so the Collector is the only place to parse it. Where you own the code, the better place is the source: write JSON, or export over OTLP with the severity already set."
+              "why": "[[Operators|filelog-operator]] run on each entry inside the receiver. The named groups of the regular expression become attributes, and the <code>severity</code> block sets the record's severity from the group it names, here the level. The entry is several lines long, so the expression turns on the <code>s</code> flag, <code>(?s)</code>, to let <code>.</code> match a newline; without it the message group stops at the first line break. Shipping's agent cannot be changed, so the Collector is the only place to parse it. Where you own the code, the better place is the source: write JSON, or export over OTLP with the severity already set."
             },
             {
               "key": "agent-config",
@@ -98,7 +98,7 @@ export default {
             {
               "key": "log-ai",
               "label": "Log AI infers a severity for them and groups similar messages into patterns, with the variable parts as named attributes",
-              "why": "Log AI works on unstructured messages as they are ingested. It infers a severity where none is set, and it extracts patterns: the variable parts, such as order numbers, become placeholders in the pattern and named attributes you can filter and group by (the Patterns view, and the <code>dash0.log.pattern</code> attribute). It never overrides a severity that is already set, and it leaves structured logs such as JSON to JSON log processing. It relies on resource attributes, so on Kubernetes the <code>k8sattributes</code> processor still matters. A parser in the Collector stays the precise fix; Log AI is for text nobody parsed."
+              "why": "[[Log AI]] works on unstructured messages as they are ingested. It infers a severity where none is set, and it extracts patterns: the variable parts, such as order numbers, become placeholders in the pattern and named attributes you can filter and group by (the [[Patterns view]], and the <code>dash0.log.pattern</code> attribute). It never overrides a severity that is already set, and it leaves structured logs such as JSON to JSON log processing. It relies on resource attributes, so on Kubernetes the <code>k8sattributes</code> processor still matters. A parser in the Collector stays the precise fix; Log AI is for text nobody parsed."
             },
             {
               "key": "rewrites-all",

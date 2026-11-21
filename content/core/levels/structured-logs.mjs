@@ -185,7 +185,7 @@ export default {
             {
               "key": "short-message",
               "label": "A short message in the Body, with <code>order.id</code> and <code>payment.method</code> as Attributes",
-              "why": "The Body holds the message and the Attributes hold additional information about this specific event, which can vary from record to record. Support can then filter by <code>order.id</code> and group by <code>payment.method</code> without taking a sentence apart. Structured logs mean a consistent schema of named, typed fields, not only text that happens to be JSON."
+              "why": "The Body holds the message and the Attributes hold additional information about this specific event, which can vary from record to record. Support can then filter by <code>order.id</code> and group by <code>payment.method</code> without taking a sentence apart. [[Structured logs]] mean a consistent schema of named, typed fields, not only text that happens to be JSON."
             },
             {
               "key": "on-resource",
@@ -233,7 +233,7 @@ export default {
             {
               "key": "keep-logger",
               "label": "Keep your logging library and configure a log appender (a bridge) that sends its records to OpenTelemetry",
-              "why": "The Logs Bridge API is for logging library authors, who build appenders that map their library's records onto the OpenTelemetry log data model. You keep the logger your code already uses, and add the appender to your setup. The specification does say the Logs API can also be used directly by applications, for example to emit structured events, but that is not the usual route for the log lines you already write."
+              "why": "The Logs Bridge API is for logging library authors, who build [[appenders]] that map their library's records onto the OpenTelemetry log data model. You keep the logger your code already uses, and add the appender to your setup. The specification does say the [[Logs API]] can also be used directly by applications, for example to emit structured events, but that is not the usual route for the log lines you already write."
             },
             {
               "key": "collector-only",

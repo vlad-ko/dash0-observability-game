@@ -29,7 +29,7 @@ export default {
             {
               "key": "no-active-span",
               "label": "The log call ran outside an active span, or through a logger that is not bridged to OpenTelemetry",
-              "why": "Correlation is automatic only when the log call happens inside an active span and the logger is bridged: the appender for your logging library hands the current context to the Logs API, which uses the current context when none is passed, and the record gets that span's TraceId and SpanId. Startup code, and a worker that does not carry the request's context over, log outside any span, so the ids stay empty."
+              "why": "[[Correlation]] is automatic only when the log call happens inside an active span and the logger is bridged: the appender for your logging library hands the current context to the [[Logs API]], which uses the current context when none is passed, and the record gets that span's TraceId and SpanId. Startup code, and a worker that does not carry the request's context over, log outside any span, so the ids stay empty."
             },
             {
               "key": "errors-only",
@@ -53,7 +53,7 @@ export default {
             {
               "key": "run-in-span",
               "label": "Run the retry inside a span, or carry the request's context over to the worker, and keep the bridged logger",
-              "why": "The ids come from the context at the moment of the log call. A span the worker starts for each attempt gives its records a span of their own, and carrying the request's context over to the worker thread gives them the request's trace. Either way the appender finds a valid span context and sets the fields."
+              "why": "The ids come from the context at the moment of the log call. A span the worker starts for each attempt gives its records a span of their own, and carrying the request's context over to the worker thread gives them the request's trace. Either way the appender finds a valid [[span context]] and sets the fields."
             },
             {
               "key": "in-message",
@@ -77,7 +77,7 @@ export default {
             {
               "key": "resource-mode",
               "label": "No: the default lists logs of the same trace, and this record has no trace ID. Resource mode can still show it",
-              "why": "In the Related Logs &amp; Events tab of a span, the default mode shows every log record and span event in the same trace. A record with blank ids is not in that trace. The Resource mode shows everything on the same resource within 30 minutes of the span, which Dash0 suggests for logs outside the span's trace, such as background jobs. From a log, the Log Sidebar shows the span the record was created in, and an unlinked record has none. Getting the log call inside a span is what makes the link exact."
+              "why": "In the Related Logs &amp; Events tab of a span, the default mode shows every log record and span event in the same trace. A record with blank ids is not in that trace. The Resource mode shows everything on the same resource within 30 minutes of the span, which Dash0 suggests for logs outside the span's trace, such as background jobs. From a log, the [[Log Sidebar]] shows the span the record was created in, and an unlinked record has none. Getting the log call inside a span is what makes the link exact."
             },
             {
               "key": "by-text",

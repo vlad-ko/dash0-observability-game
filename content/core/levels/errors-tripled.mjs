@@ -56,7 +56,7 @@ export default {
             {
               "id": "metrics-after-sampling",
               "label": "The <code>span_metrics</code> connector counts after sampling and skews the checkout ratio",
-              "why": "The change at 02:04 put <code>tail_sampling</code> in the pipeline that feeds <code>span_metrics</code>. Its policies keep all {{errors}} errors a second and {{keep-pct}}% of the other {{healthy}}, so the connector counts {{kept}} of {{requests}} requests: the rate falls {{drop}}%, the ratio is {{errors}} / {{kept}} = {{after}}, and the load balancer, which sees all {{requests}}, has not moved. The sampler drops {{drop-pct}}% of the healthy traces."
+              "why": "The change at 02:04 put <code>tail_sampling</code> in the pipeline that feeds <code>span_metrics</code>. Its policies keep all {{errors}} errors a second and {{keep-pct}}% of the other {{healthy}}, so the [[connector]] counts {{kept}} of {{requests}} requests: the rate falls {{drop}}%, the ratio is {{errors}} / {{kept}} = {{after}}, and the load balancer, which sees all {{requests}}, has not moved. The sampler drops {{drop-pct}}% of the healthy traces."
             },
             {
               "id": "payments-regression",
@@ -86,7 +86,7 @@ export default {
             {
               "key": "counted-after-sampling",
               "label": "The <code>span_metrics</code> connector counts what <code>tail_sampling</code> keeps: all {{errors}} errors but {{kept}} of {{requests}} requests, so the ratio is {{errors}} / {{kept}} = {{after}}, not {{errors}} / {{requests}} = {{before}}",
-              "why": "The numerator is complete and the denominator is not, so the ratio is biased up. Compute span metrics before sampling, in a pipeline with no sampling processor."
+              "why": "The numerator is complete and the denominator is not, so the ratio is biased up. Compute [[span metrics]] before sampling, in a pipeline with no sampling processor."
             },
             {
               "key": "uniform-sampling",
