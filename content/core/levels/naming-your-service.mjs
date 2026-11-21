@@ -6,7 +6,7 @@ export default {
   "sub": "Why can nobody find checkout?",
   "rewardTitle": "Service namer",
   "run": {
-    "showsUpAsIntro": "Your first ticket: checkout went live last week and nobody can find its traces. Its code sets no service name and it runs on a plain Linux VM, so this environment is all its SDK has to go on. The process is started as <code>node</code>.",
+    "showsUpAsIntro": "Your first ticket: checkout went live last week and nobody can find its traces. Its code sets no [[service name|service-name]] and it runs on a plain Linux VM, so this environment is all its [[SDK]] has to go on. The process is started as <code>node</code>.",
     "showsUpAsQuestion": "What service name does its telemetry show up under?",
     "showsUpAs": [
       {

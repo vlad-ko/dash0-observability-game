@@ -15,6 +15,7 @@ import { checkBuild, newBuildState, setKind, setParent, setStatus, toggleLink, v
 import { serviceEdges } from '../lib/widgets/trace.mjs';
 import { flagSpan, newHunt, serviceView, withKind } from '../lib/service-view.mjs';
 import { isComplete, newSortState, place, validateSortSpec } from '../lib/widgets/sort-it.mjs';
+import { choiceBoards, drawSortBoard, validateChoicePool, validateSortPool } from '../lib/pool.mjs';
 import { liveRegistry } from '../app.mjs';
 import { DECK } from '../cards/deck.mjs';
 import sat, { CONTENT as SAT } from '../levels/spans-and-traces.mjs';
@@ -226,28 +227,58 @@ const PIN = {
     level: { no: '2.7', mechanics: ['sort'], cards: ['double-instrumentation'], lights: ['cart'], scoring: { parMs: null } },
     steps: [
       {
+        // An answer pool (#390): 10 items for each bucket, 3 of each shown.
         sort: 'avm-sort',
         buckets: ['auto', 'manual'],
-        items: { server: 'auto', redis: 'auto', client: 'auto', loyalty: 'manual', coupon: 'manual', 'item-count': 'manual' },
+        draw: { auto: 3, manual: 3 },
+        items: {
+          server: 'auto', redis: 'auto', client: 'auto', postgres: 'auto', kafka: 'auto', pino: 'auto', runtime: 'auto', mongodb: 'auto', s3: 'auto', graphql: 'auto',
+          loyalty: 'manual', coupon: 'manual', 'item-count': 'manual', 'coupon-event': 'manual', 'orders-counter': 'manual', 'basket-histogram': 'manual',
+          'job-link': 'manual', 'payment-error': 'manual', 'open-baskets': 'manual', 'declined-status': 'manual',
+        },
         says: {
-          server: ['SERVER spans', 'express route'],
+          server: ['SERVER spans', 'express'],
           redis: ['Redis'],
           client: ['fetch', 'CLIENT spans'],
           loyalty: ['INTERNAL spans', 'applyLoyaltyDiscount()'],
           coupon: ['app.coupon.code'],
           'item-count': ['app.cart.item_count'],
+          postgres: ['client.query()'],
+          kafka: ['PRODUCER', 'kafkajs'],
+          pino: ['trace_id', 'pino'],
+          runtime: ['Event loop', 'heap'],
+          mongodb: ['db.collection.name', 'collection commands'],
+          s3: ['PutObject', 'S3'],
+          graphql: ['GraphQL'],
+          'coupon-event': ['span.addEvent()', 'coupon'],
+          'orders-counter': ['orders_placed'],
+          'basket-histogram': ['histogram'],
+          'job-link': ['links', 'nightly batch'],
+          'payment-error': ['recordException'],
+          'open-baskets': ['baskets open'],
+          'declined-status': ['ERROR status'],
         },
       },
       {
+        // An answer pool: 4 right and 16 wrong, 3 shown.
         choice: 'avm-why',
-        keys: ['collector', 'retries', 'two-setups'],
-        right: 'two-setups',
-        says: { 'two-setups': 'Two setups', retries: 'retries', collector: 'Collector' },
+        draw: 3,
+        keys: [
+          'agent-and-sdk', 'collector', 'diagnostics-twice', 'exporters-both', 'express-out', 'fetch-twice', 'http-and-undici', 'incoming-client', 'manual-wrap', 'proxy-span',
+          'request-response', 'retries', 'server-twin', 'traceparent-twice', 'tracing-repeats-agent', 'two-fetch-hooks', 'two-processors', 'two-replicas', 'two-service-names', 'two-setups',
+        ],
+        right: 'two-setups,agent-and-sdk,two-fetch-hooks,tracing-repeats-agent',
+        says: { 'two-setups': 'injected agent', retries: 'retries', collector: 'Collector' },
       },
       {
+        // An answer pool: 4 right and 16 wrong, 3 shown.
         choice: 'avm-fix',
-        keys: ['dedupe', 'keep-one', 'sample'],
-        right: 'keep-one',
+        draw: 3,
+        keys: [
+          'agent-only', 'dedupe', 'disable-fetch', 'disable-http', 'drop-second-sdk', 'either-not-both', 'enabled-undici', 'filter-client', 'hand-write-all', 'keep-one',
+          'kind-internal', 'load-order', 'remove-exporter', 'require-parent', 'sample', 'service-name', 'tail-sample', 'to-collector', 'upgrade', 'wrap-fetch',
+        ],
+        right: 'keep-one,agent-only,either-not-both,drop-second-sdk',
         says: { 'keep-one': 'one', sample: '50%', dedupe: 'Collector' },
       },
     ],
@@ -320,12 +351,14 @@ function shape(step) {
     return {
       sort: s.id,
       buckets: s.buckets.map((b) => b.id),
+      ...(s.draw === undefined ? {} : { draw: s.draw }),
       items: Object.fromEntries(s.items.map((it) => [it.id, it.bucket])),
       says: Object.fromEntries(s.items.map((it) => [it.id, plain(it.label)])),
     };
   }
   return {
     choice: step.id,
+    ...(step.draw === undefined ? {} : { draw: step.draw }),
     keys: step.choices.map((c) => c.key).sort(),
     right: step.choices.filter((c) => c.right).map((c) => c.key).join(','),
     says: Object.fromEntries(step.choices.map((c) => [c.key, plain(c.label)])),
@@ -349,13 +382,13 @@ for (const [id, [level, content]] of Object.entries(LEVELS)) {
         return;
       }
       if (want.sort) {
-        assert.deepEqual({ sort: got.sort, buckets: got.buckets, items: got.items }, { sort: want.sort, buckets: want.buckets, items: want.items }, `step ${i + 1} sort`);
+        assert.deepEqual({ sort: got.sort, buckets: got.buckets, draw: got.draw, items: got.items }, { sort: want.sort, buckets: want.buckets, draw: want.draw, items: want.items }, `step ${i + 1} sort`);
         for (const [item, words] of Object.entries(want.says)) {
           for (const w of words) assert.equal(got.says[item].includes(w), true, `${item} label "${got.says[item]}" says "${w}"`);
         }
         return;
       }
-      assert.deepEqual({ choice: got.choice, keys: got.keys, right: got.right }, { choice: want.choice, keys: want.keys, right: want.right }, `step ${i + 1} choice`);
+      assert.deepEqual({ choice: got.choice, draw: got.draw, keys: got.keys, right: got.right }, { choice: want.choice, draw: want.draw, keys: want.keys, right: want.right }, `step ${i + 1} choice`);
       if (want.question) assert.equal(got.question, want.question, `step ${i + 1} question`);
       for (const [key, words] of Object.entries(want.says)) {
         assert.equal(got.says[key].includes(words), true, `${key} label "${got.says[key]}" says "${words}"`);
@@ -400,7 +433,10 @@ for (const [id, [level, content]] of Object.entries(LEVELS)) {
         assert.deepEqual([...new Set(outcomes)], ['set'], `${spec.id}: every reference edit is accepted`);
         assert.deepEqual(checkBuild(spec, st), { ok: true, issues: [] }, `${spec.id}: the reference passes checkBuild`);
       } else if (step.sort) {
-        const spec = step.sort;
+        // A pooled sort (#390) is a valid pool, and a board drawn from it (the first items of each bucket) is a valid SortSpec.
+        const pooled = step.sort.draw !== undefined;
+        if (pooled) assert.deepEqual(validateSortPool(step.sort), [], `${step.sort.id} is a valid pool`);
+        const spec = pooled ? drawSortBoard(step.sort, (list) => [...list]) : step.sort;
         assert.deepEqual(validateSortSpec(spec), [], `${spec.id} is a valid SortSpec`);
         let state = newSortState(spec);
         const outcomes = [];
@@ -412,7 +448,12 @@ for (const [id, [level, content]] of Object.entries(LEVELS)) {
         assert.deepEqual([...new Set(outcomes)], ['right'], `${spec.id}: every reference placement is right`);
         assert.equal(isComplete(spec, state), true, `${spec.id} completes`);
       } else {
-        assert.equal(step.choices.filter((c) => c.right).length, 1, `${step.id}: exactly one right`);
+        if (step.draw === undefined) assert.equal(step.choices.filter((c) => c.right).length, 1, `${step.id}: exactly one right`);
+        else {
+          // A pooled choice (#390) lists several right answers: the pool is valid, and every board it can draw has exactly one.
+          assert.deepEqual(validateChoicePool(step), [], `${step.id} is a valid pool`);
+          for (const board of choiceBoards(step)) assert.equal(board.choices.filter((c) => c.right).length, 1, `${step.id}: a board has exactly one right`);
+        }
         for (const c of step.choices) {
           assert.equal(typeof c.why === 'string' && c.why.length > 0, true, `${step.id}/${c.key} has a why`);
         }
@@ -659,9 +700,18 @@ const put = (item, bucket) => {
   click(`[data-item="${item}"]`);
   click(`[data-bucket="${bucket}"]`);
 };
-/** Sort every pinned item of `step` into its bucket. */
+/** The pinned items of `step` that are on screen, as [item, bucket]: all of them, or the drawn board of a pooled sort (#390). */
+const shownItems = (step) => {
+  const shown = new Set(qa('[data-item]').map((el) => el.dataset.item));
+  return Object.entries(step.items).filter(([item]) => shown.has(item));
+};
+/** The right answer of choice `step` that is on screen: a pooled choice (#390) pins every right answer, comma-joined, and shows one. */
+const rightPick = (step) => step.right.split(',').find((k) => qa(`[data-pick="${k}"]`).length > 0);
+/** A wrong answer of choice `step` that is on screen. */
+const wrongPick = (step) => qa('[data-pick]').map((el) => el.dataset.pick).find((k) => !step.right.split(',').includes(k));
+/** Sort every item of `step` on screen into its bucket. */
 const sortStep = (step) => {
-  for (const [item, bucket] of Object.entries(step.items)) put(item, bucket);
+  for (const [item, bucket] of shownItems(step)) put(item, bucket);
 };
 
 /**
@@ -703,7 +753,7 @@ function runWith(id, slips = {}) {
     if (step.hunt) solveHunt(id, i);
     else if (step.build) solveBuild(id, i);
     else if (step.sort) sortStep(step);
-    else click(`[data-pick="${step.right}"]`);
+    else click(`[data-pick="${rightPick(step)}"]`);
     click(i === steps.length - 1 ? '[data-finish]' : `#${prefix}-next`);
   });
   assert.equal(finished.length, 1, 'finished once');
@@ -846,7 +896,7 @@ test('every Act 2 step waits for its answer and states each outcome in words', (
         assert.equal(fb(), 'Right. Every span checks out.', `${id}: a passing check says so`);
       } else if (step.sort) {
         const fb = () => q(`#${step.sort}-feedback`).textContent;
-        const [item, bucket] = Object.entries(step.items)[0];
+        const [item, bucket] = shownItems(step)[0];
         put(item, step.buckets.find((b) => b !== bucket));
         assert.match(fb(), /^Not quite\. /, `${id}: a wrong placement says so`);
         assert.equal(gate(), true);
@@ -854,11 +904,10 @@ test('every Act 2 step waits for its answer and states each outcome in words', (
         assert.match(fb(), /^Right\. /, `${id}: a right placement says so`);
       } else {
         const fb = () => q(`#${step.choice}-feedback`).textContent;
-        const wrong = step.keys.find((k) => k !== step.right);
-        click(`[data-pick="${wrong}"]`);
+        click(`[data-pick="${wrongPick(step)}"]`);
         assert.match(fb(), /^Not quite\. /, `${id}: a wrong pick says so`);
         assert.equal(gate(), true);
-        click(`[data-pick="${step.right}"]`);
+        click(`[data-pick="${rightPick(step)}"]`);
         assert.match(fb(), /^Right\. /, `${id}: the right pick says so`);
       }
       assert.equal(gate(), false, `${id} step ${i + 1}: open after the answer`);
@@ -1013,7 +1062,7 @@ test('focus walk: each step starts on its first control, moves on, and ends on F
         return;
       } else {
         assert.equal(focus.last().startsWith('pick:'), true, `${id} step ${i + 1} starts on a choice`);
-        click(`[data-pick="${step.right}"]`);
+        click(`[data-pick="${rightPick(step)}"]`);
       }
       // 2.2's fix shows its change first: the alert's heading takes focus (Finish stays in the footer, enabled).
       const target = id === 'span-kinds' ? '#kinds-alert-title' : last ? `#${prefix}-finish` : `#${prefix}-next`;

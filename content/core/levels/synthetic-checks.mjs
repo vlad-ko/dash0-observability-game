@@ -149,6 +149,76 @@ export default {
               "key": "probe",
               "label": "A request to the public hostname every minute, must pass",
               "why": "The probe makes its own request from outside the way a visitor does: the DNS lookup, then the TLS handshake, and with an expired certificate the handshake fails, whatever the spans say. In Dash0, a synthetic check sends requests to your endpoint at regular intervals from locations you choose and fires a notification when an assertion fails. A check run breaks down DNS resolution, TCP connection and the SSL/TLS handshake and shows a TLS error as such, and [[notification channels]] deliver the alert. Keep the spans for why a request that arrived went wrong; use the probe to learn that requests are not arriving."
+            },
+            {
+              "key": "synthetic-check",
+              "label": "Scheduled runs against checkout's page that notify staff",
+              "why": "A synthetic check makes real requests to your endpoint on a schedule, from public or private locations, and Dash0 notifies you when any assertion fails. With an expired certificate the handshake fails before an assertion can pass, so it fires while the spans stay green."
+            },
+            {
+              "key": "outside-200",
+              "label": "Timed pings coming in across the internet and scored by what comes back",
+              "why": "It reaches checkout the way a visitor does, through the DNS lookup and the TLS handshake, so an expired certificate makes it fail while every span reads healthy. An expectation of a 200 turns that failure into an alert."
+            },
+            {
+              "key": "error-logs",
+              "label": "Alert when error log lines reach 10 a minute, or more",
+              "why": "A log line is written by code that handled a request. The failed handshakes never reached checkout, so it writes nothing for them, and the internal tools that do connect cause no errors."
+            },
+            {
+              "key": "inside-probe",
+              "label": "An in-cluster probe expecting success from the service endpoint every minute",
+              "why": "It reaches the pods by their internal address and never meets the certificate on the public hostname, so it keeps passing, like the internal tools whose requests still arrive, while browsers are refused."
+            },
+            {
+              "key": "unverified-check",
+              "label": "A synthetic check of the public hostname with verification off, alerting if it fails",
+              "why": "A client that does not verify the identity it is shown accepts an expired certificate, just as the internal tools do. The handshake succeeds and the check passes while browsers, which do verify, are refused."
+            },
+            {
+              "key": "four-xx",
+              "label": "Share of 4xx answers per request climbing past 5% of traffic",
+              "why": "It counts answers that the pods gave, and a visitor who fails the handshake never gets one. The spans hold only the requests from internal tools, which all succeed."
+            },
+            {
+              "key": "client-latency",
+              "label": "Median time of calls to the payment provider past 500 ms",
+              "why": "Client spans describe the calls that checkout makes outward after it has accepted a request. A visitor stopped by the certificate never starts one, so the payment calls stay as quick as ever."
+            },
+            {
+              "key": "pod-health-probe",
+              "label": "A probe of each pod's internal health route every 30 seconds, must pass",
+              "why": "The probe goes to the pods inside the network, so it never meets the certificate on the public hostname, and every pod answers healthy. It measures whether pods respond, not whether visitors can connect."
+            },
+            {
+              "key": "tcp-connect",
+              "label": "A synthetic check that only opens a connection to the public hostname, must pass",
+              "why": "A check run breaks a request into steps: DNS resolution, TCP connection and the TLS handshake. Opening the connection succeeds with an expired certificate, because the certificate is only judged in the handshake that follows, so this check passes while browsers are refused."
+            },
+            {
+              "key": "slow-spans",
+              "label": "More than 5% of customer requests taking over 500 ms to finish",
+              "why": "Spans hold only the requests that got in, and those ran at their usual 180 ms at p99. A refused visitor leaves no span, so no span is slow."
+            },
+            {
+              "key": "no-spans",
+              "label": "Nothing arriving in the trace pipeline for 5 minutes in a row",
+              "why": "Spans kept arriving: 3,000 requests from internal tools in the last 5 minutes. Silence would need every client to fail, and these ones do not check certificates."
+            },
+            {
+              "key": "exceptions",
+              "label": "Any exception recorded by the checkout application code",
+              "why": "An exception is recorded by code that is running a request, and that code ran for no refused visitor. The spans held 0 errors."
+            },
+            {
+              "key": "morning-look",
+              "label": "A look at the dashboard by the on-call engineer every morning",
+              "why": "A dashboard built from the same spans shows green, and a person looking once a day is not an alert: the outage ran all night."
+            },
+            {
+              "key": "collector-drops",
+              "label": "Data dropped by the Collector, counted every minute overall",
+              "why": "The Collector handles only spans that exist. A visitor who fails the handshake never sends a request, so there is most likely no span to drop, and the Collector reports no loss."
             }
           ]
         }

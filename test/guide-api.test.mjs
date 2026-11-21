@@ -14,7 +14,8 @@ const REG = liveRegistry();
 const LEVEL = 'correlation';
 const STEP = 'cor-why';
 const RIGHT = REG.levels[LEVEL].play.steps.map((s) => s.choice).find((c) => c?.id === STEP).choices.find((c) => c.right).label;
-const HINTLESS = ['auto-vs-manual', 'avm-sort'];
+// A sort with no hint ladder that is not pooled (a pooled step answers 400 `shown` before 404 unavailable; avm-sort used to be the example).
+const HINTLESS = ['instruments', 'instr-sort'];
 const RUN_LEVEL = 'the-signals';
 const NEUTRAL = 'Re-read what the question asks.';
 

@@ -74,6 +74,22 @@ test('a failed check says so in words and lists each problem', () => {
   assert.ok(!q('#nys-next').disabled);
 });
 
+test('#339 every line the checker says scrolls into view by the least distance, neutral ones too', () => {
+  start();
+  toEditor();
+  const calls = [];
+  q('#nys-feedback').scrollIntoView = (o) => calls.push(o);
+  q('#nys-env').value = '';
+  click('#nys-check');
+  assert.equal(calls.length, 1, 'the blank line scrolls');
+  q('#nys-env').value = 'OTEL_EXPORTER_OTLP_ENDPOINT=http://x';
+  click('#nys-check');
+  assert.equal(calls.length, 2, 'a failed Check scrolls');
+  click('#nys-check');
+  assert.equal(calls.length, 3, 'the repeated config line (neutral) scrolls');
+  for (const o of calls) assert.deepEqual(o, { block: 'nearest' });
+});
+
 test('player config is echoed only escaped', () => {
   start();
   toEditor();

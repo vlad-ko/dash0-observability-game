@@ -8,7 +8,7 @@ export default {
   "run": {
     "startIntro": "The game has no telemetry session in this build, so there is nothing to connect.",
     "startNote": "Use Back to return to the map.",
-    "modeIntro": "Every level so far ran against a simulation. This one connects the game to a Dash0. A sender needs two things: the <b>endpoint</b> of your organization, and an <b>auth token</b>. The game sends from a browser tab, and browsers cannot make gRPC calls, so it uses the <b>OTLP via HTTP</b> endpoint. Then it sends one test span, and you will see whether it was accepted.",
+    "modeIntro": "Every level so far ran against a simulation. This one connects the game to a Dash0. A sender needs two things: the <b>endpoint</b> of your organization, and an <b>[[auth token]]</b>. The game sends from a browser tab, and browsers cannot make gRPC calls, so it uses the <b>OTLP via HTTP</b> endpoint. Then it sends one test span, and you will see whether it was accepted.",
     "modeChip": "Practice: a simulated Dash0, not your account",
     "modePractice": "<p>Practice shows a simulated Dash0 settings page to read the endpoint from and to create a token in. Nothing leaves this page, and it is scored the same way as your own Dash0.</p>",
     "modeLive": "<p>Your own Dash0: the game sends one test span, and a level-complete span for each level you finish until you reload the page, to the endpoint you enter. Nothing goes to the game's servers.</p>",
@@ -55,7 +55,7 @@ export default {
     "connectTokenLabel": "Auth token",
     "connectTokenNote": "A token looks like <code>{{prefix}}abc123...</code>. The game keeps it only in this tab's memory and never saves it: it is cleared from this field the moment you press Connect and forgotten when you reload the page. Your browser may offer to save it. Decline.",
     "connectDatasetLabel": "Dataset (optional)",
-    "connectDatasetNote": "Leave it empty to use the token's default ingestion dataset.",
+    "connectDatasetNote": "Leave it empty to use the token's default ingestion [[dataset]].",
     "connectLiveNote": "The test span is named <code>connection.test</code>, and carries your session id and nothing you typed.",
     "connectButton": "Connect and send a test span",
     "connectBarButton": "Connect and send a test span",

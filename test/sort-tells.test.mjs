@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTS } from '../levels/index.mjs';
 import { drawSortBoard, sortBoards } from '../lib/pool.mjs';
+import { scoreStars } from '../lib/scoring.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { FIXTURE_CARD } from './fixtures/fixture-level.mjs';
@@ -32,11 +33,37 @@ async function allSortSources(fixtures = []) {
   return out;
 }
 
-/** Every board a Sort it can show, as { level, spec }: a fixed spec is its own board, a pool is expanded to its boards. Every rule runs on all of them. */
+/** Every board a Sort it can show, as { level, spec, pool }: a fixed spec is its own board (no `pool`), a pool is expanded to its boards, each carrying the pool's key. Every rule runs on all of them. */
 async function allSortSpecs(fixtures = []) {
   return (await allSortSources(fixtures)).flatMap(({ level, spec }) =>
-    spec.draw === undefined ? [{ level, spec }] : sortBoards(spec, { limit: BOARD_LIMIT, rng: rng(1) }).map((board) => ({ level, spec: board })),
+    spec.draw === undefined ? [{ level, spec }] : sortBoards(spec, { limit: BOARD_LIMIT, rng: rng(1) }).map((board) => ({ level, spec: board, pool: `${level} ${spec.id}` })),
   );
+}
+
+/**
+ * The most boards of a pool a blind rule may sort for 5 stars (no mistake, through the real scorer), as a share of them. A fixed
+ * Sort it keeps the stricter per-board rule (MIN_WRONG on its one board); a pool cannot, because a bucket that rotates shows
+ * boards the rule happens to fit, so it may fit a tenth of them and no more (test/pool-content.test.mjs C7 reads the same share).
+ */
+const PERFECT_SHARE = 0.1;
+const stars = (wrong) => scoreStars({ mistakes: wrong, hintsUsed: 0, elapsedMs: 0 }, { scored: true, scoring: { parMs: null } });
+
+/** Judges what a rule costs: a fixed board by MIN_WRONG, a pool by the share of its boards the rule sorts for 5 stars. */
+class Judge {
+  pools = new Map();
+  /** `key` is the board's `pool` (with the rule's variant appended), undefined for a fixed board. */
+  check(key, wrong, message) {
+    if (key === undefined) return assert.equal(wrong >= MIN_WRONG, true, message);
+    const seen = this.pools.get(key) ?? { boards: 0, perfect: 0, message };
+    seen.boards++;
+    if (stars(wrong) === 5) seen.perfect++;
+    this.pools.set(key, seen);
+  }
+  done() {
+    for (const [key, { boards, perfect, message }] of this.pools) {
+      assert.equal(perfect / boards <= PERFECT_SHARE, true, `${key}: the rule sorts ${perfect} of ${boards} boards for 5 stars, more than ${100 * PERFECT_SHARE}% (for example ${message})`);
+    }
+  }
 }
 
 /** How many items a rule places in the wrong bucket; `pick(item, i)` returns a bucket id. */
@@ -252,79 +279,83 @@ test('Sort it: the registry has Sort it specs to check', async () => {
 });
 
 test('Sort it: "short labels to one bucket, long to the other" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
-    const wrong = bestByLength(spec);
-    assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: some label-length cut gets ${wrong} wrong`);
-  }
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) judge.check(pool, bestByLength(spec), `${level} ${spec.id}: some label-length cut`);
+  judge.done();
 });
 
 test('Sort it: "the items with code formatting go in one bucket" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (spec.buckets.length !== 2) continue;
-    for (const codeIndex of [0, 1]) {
-      const wrong = byCode(spec, codeIndex);
-      assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: <code> alone gets ${wrong} wrong (to bucket ${codeIndex})`);
-    }
+    for (const codeIndex of [0, 1]) judge.check(pool && `${pool}/${codeIndex}`, byCode(spec, codeIndex), `${level} ${spec.id}: <code> alone (to bucket ${codeIndex})`);
   }
+  judge.done();
 });
 
 test('Sort it: "a word or a % shared by labels goes to one bucket" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (spec.buckets.length !== 2) continue;
     const { wrong, token } = bestByToken(spec);
-    assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: the token "${token}" alone gets ${wrong} wrong`);
+    judge.check(pool, wrong, `${level} ${spec.id}: the token "${token}" alone`);
   }
+  judge.done();
 });
 
 test('Sort it: "word A to one bucket, else word B to another, else the third" never earns 4 stars (3+ buckets)', async () => {
   let boards = 0;
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (spec.buckets.length < 3) continue;
     boards++;
     const { wrong, rule } = bestByTokenList(spec);
-    assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: the rule ${rule} gets ${wrong} wrong`);
+    judge.check(pool, wrong, `${level} ${spec.id}: the rule ${rule}`);
   }
+  judge.done();
   assert.equal(boards > 0, true, 'no Sort it board with three or more buckets to check');
 });
 
 test('Sort it: "the labels with an all-caps word go in one bucket" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (spec.buckets.length !== 2) continue;
-    for (const capsIndex of [0, 1]) {
-      const wrong = byCaps(spec, capsIndex);
-      assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: an all-caps word alone gets ${wrong} wrong (to bucket ${capsIndex})`);
-    }
+    for (const capsIndex of [0, 1]) judge.check(pool && `${pool}/${capsIndex}`, byCaps(spec, capsIndex), `${level} ${spec.id}: an all-caps word alone (to bucket ${capsIndex})`);
   }
+  judge.done();
 });
 
 // Guards the mixed-case case (SERVER in one label beside server in another), which the lower-cased token test cannot see.
 test('Sort it: "one all-caps word shared by labels goes to one bucket" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (spec.buckets.length !== 2) continue;
     const { wrong, token } = bestByCapsWord(spec);
-    assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: the all-caps word "${token}" alone gets ${wrong} wrong`);
+    judge.check(pool, wrong, `${level} ${spec.id}: the all-caps word "${token}" alone`);
   }
+  judge.done();
 });
 
 test('Sort it: "yes/no questions go in one bucket, other questions in the other" never earns 4 stars', async () => {
   let boards = 0;
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (!questionBoard(spec)) continue;
     boards++;
-    for (const yesNoIndex of [0, 1]) {
-      const wrong = byYesNo(spec, yesNoIndex);
-      assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: the question form alone gets ${wrong} wrong (yes/no to bucket ${yesNoIndex})`);
-    }
+    for (const yesNoIndex of [0, 1]) judge.check(pool && `${pool}/${yesNoIndex}`, byYesNo(spec, yesNoIndex), `${level} ${spec.id}: the question form alone (yes/no to bucket ${yesNoIndex})`);
   }
+  judge.done();
   assert.equal(boards > 0, true, 'no all-question Sort it board to check');
 });
 
 test('Sort it: "questions with the same opening word go in one bucket" never earns 4 stars', async () => {
-  for (const { level, spec } of await allSortSpecs()) {
+  const judge = new Judge();
+  for (const { level, spec, pool } of await allSortSpecs()) {
     if (!questionBoard(spec)) continue;
     const { wrong, token } = bestByOpener(spec);
-    assert.equal(wrong >= MIN_WRONG, true, `${level} ${spec.id}: the opening word "${token}" alone gets ${wrong} wrong`);
+    judge.check(pool, wrong, `${level} ${spec.id}: the opening word "${token}" alone`);
   }
+  judge.done();
 });
 
 test('Sort it: "keep the buckets balanced" wins a spec on at most 1 shuffle in 10', async () => {
@@ -369,6 +400,17 @@ test('T5 a tell only some boards have is caught: the first-items board is clean,
   assert.ok(flagged.length > 0, 'some board lets <code> alone sort it');
   // A board of two plain items per bucket stays clean, so the flag is the board's, not the pool's.
   assert.ok(boards.some(({ spec }) => fewestByCode(spec) >= MIN_WRONG));
+});
+
+test('the relaxed floor of a pool has teeth: a rule that sorts 3 boards in 10 for 5 stars fails it, a rule that sorts few passes', async () => {
+  const boards = (await allSortSpecs(codeLevel())).filter((s) => s.level === 'code-fixture');
+  const judge = new Judge();
+  for (const { spec, pool } of boards) judge.check(pool, fewestByCode(spec), 'code formatting alone');
+  assert.throws(() => judge.done(), /sorts \d+ of 100 boards for 5 stars, more than 10%/);
+  // A rule that never sorts a board for 5 stars passes the same floor.
+  const never = new Judge();
+  for (const { pool } of boards) never.check(pool, 3, 'a rule that always costs 3 mistakes');
+  never.done();
 });
 
 test('every rule runs on every board of a pool: the fixture pool expands to all its boards', async () => {

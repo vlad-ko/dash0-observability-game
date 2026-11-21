@@ -574,6 +574,7 @@ const KEEP_PICKS = new Set([
   'span-kinds:provider',
   'cardinality:sum',
   'synthetic-checks:health-check',
+  'good-alerts:for-1h',
   'frontend-rum:page-origin-otlp-header',
   'what-costs-money:drop-debug',
 ]);
@@ -1218,6 +1219,24 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     assert.deepEqual(leaked, [], `${id}: words of the real content shown without the edit`);
     assert.deepEqual(unseen, [], `${id}: entries no run shows edited (add them to UNREACHED if the drivers cannot reach them)`);
     assert.deepEqual(stale, [], `${id}: UNREACHED entries that a run does show, or that are no entry`);
+  }
+});
+
+test('a run level that lists TERMS shows at least one glossary term during its happy run (#442)', async () => {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'levels');
+  const listed = [];
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.mjs') && n !== 'index.mjs')) {
+    const mod = await import(pathToFileURL(join(dir, f)).href);
+    if (Array.isArray(mod.TERMS) && mod.TERMS.length > 0) listed.push({ id: f.replace(/\.mjs$/, ''), level: mod.default });
+  }
+  assert.ok(listed.length > 0, 'some run level lists TERMS');
+  for (const { id, level } of listed) {
+    assert.ok(DRIVERS[id], `${id} has a driver`);
+    const { frames, clicks } = DRIVERS[id].async
+      ? await playLevelAsync(level, DRIVERS[id].play, { telemetry: DRIVERS[id].telemetry?.() })
+      : playLevel(level, DRIVERS[id].play);
+    const shown = [...frames, ...clicks].map((f) => f.body).join('');
+    assert.ok(shown.includes('class="ui-term-btn"'), `${id} lists TERMS but its happy run shows no glossary term: a marker was lost from its content`);
   }
 });
 
