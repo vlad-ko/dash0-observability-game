@@ -214,6 +214,16 @@ for (const [endpoint, token, expected] of REASON_CASES) {
   });
 }
 
+test('a line that answers the Connect press scrolls the feedback into view (#331)', () => {
+  open(practiceTelemetry().tele);
+  press('#ctd-practice');
+  const calls = [];
+  q('#ctd-feedback').scrollIntoView = (o) => calls.push(o);
+  press('#ctd-connect'); // no endpoint: the neutral nudge
+  assert.match(q('#ctd-feedback').textContent, /Enter the endpoint first/);
+  assert.deepEqual(calls, [{ block: 'nearest' }]);
+});
+
 test('an empty endpoint or token is a nudge, not a mistake; a bad dataset is a mistake', () => {
   const h = open(practiceTelemetry().tele);
   press('#ctd-practice');
