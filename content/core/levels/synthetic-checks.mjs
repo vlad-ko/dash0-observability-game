@@ -152,12 +152,12 @@ export default {
             },
             {
               "key": "synthetic-check",
-              "label": "Synthetic checks of checkout's address that notify on failure",
+              "label": "Recurring checks of checkout's page alerting people if they fail",
               "why": "A synthetic check makes real requests to your endpoint on a schedule, from public or private locations, and Dash0 notifies you when any assertion fails. With an expired certificate the handshake fails before an assertion can pass, so it fires while the spans stay green."
             },
             {
               "key": "outside-200",
-              "label": "Scheduled probes from an outside place expecting 200",
+              "label": "Timed pings from beyond our network expecting success",
               "why": "It reaches checkout the way a visitor does, through the DNS lookup and the TLS handshake, so an expired certificate makes it fail while every span reads healthy. An expectation of a 200 turns that failure into an alert."
             },
             {
@@ -166,14 +166,14 @@ export default {
               "why": "A log line is written by code that handled a request. The failed handshakes never reached checkout, so it writes nothing for them, and the internal tools that do connect cause no errors."
             },
             {
-              "key": "cpu",
-              "label": "CPU use on the pods staying over 90% for ten minutes straight",
-              "why": "Visitors are refused before they reach the pods, so there is less work for them, not more. CPU use stays ordinary or falls while the outage runs."
+              "key": "inside-probe",
+              "label": "An in-cluster probe of the service endpoint every minute",
+              "why": "It reaches the pods by their internal address and never meets the certificate on the public hostname, so it keeps passing, like the internal tools whose requests still arrive, while browsers are refused."
             },
             {
-              "key": "restarts",
-              "label": "More than 3 restarts of any pod inside a window of 10 minutes",
-              "why": "Nothing is wrong with the pods. An expiring certificate does not restart them, so the count stays at zero while browsers are refused."
+              "key": "unverified-check",
+              "label": "A synthetic check of the public hostname whose verification is switched off",
+              "why": "A client that does not verify the identity it is shown accepts an expired certificate, just as the internal tools do. The handshake succeeds and the check passes while browsers, which do verify, are refused."
             },
             {
               "key": "four-xx",
@@ -186,14 +186,14 @@ export default {
               "why": "Client spans describe the calls that checkout makes outward after it has accepted a request. A visitor stopped by the certificate never starts one, so the payment calls stay as quick as ever."
             },
             {
-              "key": "db-errors",
-              "label": "Errors connecting to the database past 1% of attempts made",
-              "why": "The database is not involved. A visitor who cannot finish the handshake causes no query, and the internal tools' queries succeed, so the error rate stays at zero."
+              "key": "pod-health-probe",
+              "label": "A probe of each pod's internal health route every minute",
+              "why": "The probe goes to the pods inside the network, so it never meets the certificate on the public hostname, and every pod answers healthy. It measures whether pods respond, not whether visitors can connect."
             },
             {
-              "key": "pipeline",
-              "label": "A failed run of the deploy pipeline, in the last day or so",
-              "why": "Nothing was deployed. A certificate can expire with no change to the code, and a pipeline reports only on the runs it makes."
+              "key": "tcp-connect",
+              "label": "A synthetic check that only opens a connection to the public hostname",
+              "why": "A check run breaks a request into steps: DNS resolution, TCP connection and the TLS handshake. Opening the connection succeeds with an expired certificate, because the certificate is only judged in the handshake that follows, so this check passes while browsers are refused."
             },
             {
               "key": "slow-spans",
@@ -218,7 +218,7 @@ export default {
             {
               "key": "collector-drops",
               "label": "Data dropped by the Collector, counted once a minute overall",
-              "why": "The Collector handles only spans that exist. A visitor who fails the handshake never sends a request, so there is no span to drop, and the Collector reports no loss."
+              "why": "The Collector handles only spans that exist. A visitor who fails the handshake never sends a request, so there is most likely no span to drop, and the Collector reports no loss."
             }
           ]
         }

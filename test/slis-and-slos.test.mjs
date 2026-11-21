@@ -50,7 +50,8 @@ test('step 1: good over valid is the one right answer, labels do not give it awa
   const choices = SLI_STEP.choice.choices;
   assert.equal(SLI_STEP.choice.draw, 3);
   assert.equal(choices.length, 20, 'a pool of 20');
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['failing-share', 'good-over-valid', 'non-error-share', 'successful-share']);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['failing-share', 'good-over-valid', 'non-error-share', 'successful-requests']);
+  assert.ok(choices.find((c) => c.key === 'funnel-rate' && !c.right), 'the funnel rate (completed over started) is a wrong answer');
   for (const k of ['error-count', 'uptime']) assert.ok(choices.find((c) => c.key === k && !c.right), `${k} is still a wrong answer`);
   assert.match(plain(choices.find((c) => c.key === 'error-count').why), /follows the traffic/);
   assert.match(plain(choices.find((c) => c.key === 'uptime').why), /up and still fail/);

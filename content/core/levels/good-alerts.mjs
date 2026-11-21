@@ -79,12 +79,12 @@ export default {
             },
             {
               "key": "rate-5m",
-              "label": "Use <code>rate()</code> to turn the total into a speed, so that a limit applies",
+              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that 3 per second is the limit to cross",
               "why": "<code>rate()</code> turns the counter into failures per second over the window, so the rule fires while checkout fails and resolves once it stops, and it adjusts for the reset when a process restarts. The threshold then reads as a speed, not as a total."
             },
             {
               "key": "error-share",
-              "label": "Page for the percentage of failing requests, from rates",
+              "label": "Page when users meet 1 error among 50 of the requests made",
               "why": "The failing request rate divided by the whole request rate is a symptom that does not grow with the traffic or with the age of the process. It rises while users get errors and falls back when they stop, and the Prometheus practices page says to page on user-visible errors."
             },
             {
@@ -95,31 +95,31 @@ export default {
             {
               "key": "resets",
               "label": "Alert on <code>resets()</code> over 10 minutes: restarts in that window",
-              "why": "<code>resets()</code> counts how often the counter fell back to zero, which happens when a process restarts. That pages on restarts, not on failed requests, and a restart is not an error a customer meets."
+              "why": "<code>resets()</code> counts how often the counter fell back, which happens when a process restarts. That pages on restarts, not on failed requests, and a restart is not an error a customer meets."
             },
             {
               "key": "changes",
               "label": "Alert on <code>changes()</code> over 10 minutes: movements in that window",
-              "why": "<code>changes()</code> counts how many times the value moved, so a single failed request in ten minutes is enough to page, however calm the rest of the traffic is. The threshold of 500 is gone, and with it any idea of how bad things are."
+              "why": "<code>changes()</code> counts how many times the value moved. With the threshold lowered to 0, a single failed request in ten minutes is enough to page, however calm the rest of the traffic is. Kept at 500 it could never fire, because ten minutes hold far fewer than 500 samples at a usual scrape interval."
             },
             {
-              "key": "interval",
-              "label": "Evaluate the rule every 5 seconds instead of once a minute",
-              "why": "How often a rule is evaluated does not change what its expression says. The total is over 500 at every evaluation, so the alert keeps firing and the checks only come faster."
+              "key": "rate-gauge",
+              "label": "Apply <code>rate()</code> to a gauge that holds the failure count over the last 60 seconds",
+              "why": "Prometheus says <code>rate()</code> should only be used with counters. A gauge that dips is read as a counter that reset, so the speed it reports is not the speed of anything, and the failures a gauge holds are not events to count."
             },
             {
               "key": "nightly-restart",
-              "label": "Restart checkout nightly, so that the counter starts again from zero",
+              "label": "Restart checkout nightly at 03:00, so that the counter starts again from zero",
               "why": "A restart resets the total, so the rule clears until 500 failures have piled up once more, which on a busy service can take only days. That hides the flaw instead of fixing it, and each restart interrupts real requests."
             },
             {
               "key": "gauge",
-              "label": "Declare the metric a gauge, since a gauge can go down as well as up",
+              "label": "Declare the metric a gauge, since a gauge can fall back below 500 as well as rise",
               "why": "A gauge holds a value that can go up and down, such as the length of a queue, while this metric counts the failures since the process began. Declaring another type does not change what the numbers record: they still only grow."
             },
             {
               "key": "sum-pods",
-              "label": "Add up the totals of the checkout pods with <code>sum()</code>",
+              "label": "Add up the 4 checkout pods' totals using <code>sum()</code>",
               "why": "A sum of counters is still a total that only grows, and a larger one than any single pod's. The rule would cross 500 sooner and stay over it for as long as the pods run."
             },
             {
@@ -134,7 +134,7 @@ export default {
             },
             {
               "key": "quiet-channel",
-              "label": "Send this alert to a quieter channel, so that nobody is woken",
+              "label": "Send this alert to a quieter channel, so that nobody is woken at 4 a.m.",
               "why": "The rule would still claim that checkout is failing when it is not, now somewhere fewer people look. A page nobody can act on is a flaw in the rule, and the Prometheus practices page says to avoid pages where there is nothing to do."
             },
             {
@@ -144,18 +144,18 @@ export default {
             },
             {
               "key": "predict-linear",
-              "label": "Alert on <code>predict_linear()</code> over 1 hour: the forecast from that window",
+              "label": "Alert on <code>predict_linear()</code> over 6 hours: the forecast from that window",
               "why": "Prometheus says <code>predict_linear()</code> should only be used with gauges. A total that only grows is forecast to keep growing, so the prediction stays above any threshold, and the drop to zero at a restart bends the line."
             },
             {
               "key": "for-0s",
-              "label": "Set <code>for: 0s</code>, so that the alert can clear a lot sooner",
+              "label": "Drop to <code>for: 0s</code>, so that the alert can clear a lot sooner",
               "why": "The <code>for</code> clause only holds back the first firing: without it an alert is active at the first evaluation. How soon an alert clears depends on the expression turning false, and a total over 500 stays over 500."
             },
             {
-              "key": "scrape-faster",
-              "label": "Scrape checkout every 5 seconds to get fresher totals",
-              "why": "Scraping more often gives more samples of the same running total. The latest one is still over 500, so the condition holds, and is simply noticed sooner."
+              "key": "rate-500",
+              "label": "Alert when <code>rate()</code> over 10 minutes is above 500, as before",
+              "why": "<code>rate()</code> is a speed, in failures per second, so a limit of 500 asks for 500 failed requests every second. Checkout would be down long before it got there, so the rule stays silent through a real incident. The limit has to be in the unit of the function."
             }
           ]
         }

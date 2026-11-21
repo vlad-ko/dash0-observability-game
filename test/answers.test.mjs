@@ -132,7 +132,7 @@ const ANSWERS = {
   ],
   'good-alerts': ['spot ga-spot: counter-value,cause-cpu,no-for', 'choice ga-fix: error-share|increase|rate-5m'],
   'slis-and-slos': [
-    'choice sl-sli: failing-share|good-over-valid|non-error-share|successful-share',
+    'choice sl-sli: failing-share|good-over-valid|non-error-share|successful-requests',
     'query sl-sli-query: checkout-spanmetrics@3600 sum(rate(traces_span_metrics_calls_total{service_name="checkout", span_kind="SPAN_KIND_SERVER", status_code!="STATUS_CODE_ERROR"}[5m])) / sum(rate(traces_span_metrics_calls_total{service_name="checkout", span_kind="SPAN_KIND_SERVER"}[5m]))',
     'choice sl-budget: thousand',
     'choice sl-edge: front-door-counts|ingress-metrics|lb-access-log|load-balancer',

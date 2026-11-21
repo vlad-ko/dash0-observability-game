@@ -51,7 +51,7 @@ const SKELETON = {
           draw: 3,
           choices: [
             { key: 'good-over-valid', right: true },
-            { key: 'successful-share', right: true },
+            { key: 'successful-requests', right: true },
             { key: 'failing-share', right: true },
             { key: 'non-error-share', right: true },
           ],
