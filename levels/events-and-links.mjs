@@ -29,6 +29,9 @@ const span = (spanId, traceId, service, name, kind, startMs, endMs, status = 'UN
 // This level's copy has no figures a grader computes over and no values only the code knows: no fill-ins.
 const VARS = {};
 const SLOTS = [];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.speech.
+export const TERMS = ['errorsIntro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 // Step 2: what happened in each span (authored), and the statuses as recorded. charge's
 // exception escaped and was recorded, yet its status is Unset; a helper set Error on
@@ -94,7 +97,7 @@ const contentOf = (say) => ({
     { build: BATCH },
   ],
 });
-export const CONTENT = contentOf(bindLevel(CORE, SKELETON, { vars: VARS, slots: SLOTS }).run);
+export const CONTENT = contentOf(bindLevel(CORE, SKELETON, BIND).run);
 
 function screens(ctx, say) {
   const bar = ctx.ovActions;
@@ -169,7 +172,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);

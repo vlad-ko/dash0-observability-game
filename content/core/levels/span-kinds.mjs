@@ -6,7 +6,7 @@ export default {
   "sub": "Which side of the call?",
   "rewardTitle": "Map maker",
   "run": {
-    "huntIntro": "You're on call. The payments alert below says payments handled far fewer requests than usual, yet finance says the card provider billed a charge for every checkout. Payments did the work, so the view is miscounting it. The view counts a service's requests from its SERVER spans and draws service edges from span kinds. Open the spans, compare each span's kind with what it does, and flag the span recorded with the wrong kind. Opening a span is free; a wrong flag costs one penalty.",
+    "huntIntro": "You're on call. The payments alert below says payments handled far fewer requests than usual, yet finance says the card provider billed a charge for every checkout. Payments did the work, so the view is miscounting it. The view counts a service's requests from its SERVER spans and draws service edges from span kinds. Open the spans, compare each span's [[kind]] with what it does, and [[flag]] the span recorded with the wrong kind. Opening a span is free; a wrong flag costs one penalty.",
     "alertEyebrowFiring": "Firing",
     "alertEyebrowResolved": "Resolved",
     "alertTitle": "{{service}}: {{count}} requests/min",

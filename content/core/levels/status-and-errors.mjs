@@ -6,7 +6,7 @@ export default {
   "sub": "Unset, Error, Ok",
   "rewardTitle": "Status checker",
   "run": {
-    "sortIntro": "Every span's status starts as Unset. Instrumentation sets Error when an operation fails, following the semantic conventions, and for HTTP the rule depends on the span's kind. Check five spans from this morning.",
+    "sortIntro": "Every span's [[status]] starts as Unset. Instrumentation sets Error when an operation fails, following the semantic conventions, and for HTTP the rule depends on the span's [[kind]]. Check five spans from this morning.",
     "sortQuestion": "Pick a span, then say whether its status is right.",
     "sort": {
       "id": "status-sort",
