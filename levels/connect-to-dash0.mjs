@@ -29,11 +29,15 @@ import { PRACTICE_HOSTS, REASONS, TOKEN_PREFIX } from '../lib/dash0/ingress.mjs'
 import { OUTCOME, TIMEOUT_MS } from '../lib/otlp/send.mjs';
 import { MODE, STATE } from '../lib/telemetry.mjs';
 import { focusFirst } from '../lib/widgets/focus.mjs';
-import { actions as actionsBar, button, chip, feedback, field, note, panel, prose, radio, radioGroup, reason, setFeedback, step } from '../lib/ui/index.mjs';
+import { actions as actionsBar, button, chip, feedback, field, note, panel, prose, radio, radioGroup, reason, step } from '../lib/ui/index.mjs';
+import { tell } from '../lib/widgets/tell.mjs';
 
 // The one figure the copy quotes; every other {{name}} in the content is a slot the code fills as it runs.
 const VARS = { 'timeout-s': TIMEOUT_MS / 1000 };
 const SLOTS = ['where', 'status', 'message', 'host', 'prefix', 'session'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.renderStep.
+export const TERMS = ['modeIntro', 'connectDatasetNote'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 // The Permissions options of an auth token (glossary/auth-tokens). Only Ingesting is right. The
 // keys are the telemetry session's PRACTICE_SCOPE values (it mints the practice token per key); their
@@ -218,7 +222,7 @@ function screens(ctx, say) {
     );
 
     const fb = $('#ctd-feedback');
-    const tell = (tone, html) => setFeedback(fb, tone, html, { scroll: true }); // each line answers a button press (#339)
+    const report = (tone, html) => tell(ctx, fb, tone, html, { scroll: true }); // each line answers a button press (#339)
     const endpointEl = $('#ctd-endpoint');
     const tokenEl = $('#ctd-token');
     const datasetEl = $('#ctd-dataset');
@@ -263,7 +267,7 @@ function screens(ctx, say) {
     // A permission other than Ingesting is a mistake; `fbEl` says why.
     const declareScope = (fbEl) => {
       if (!scope.right) charge(`scope:${scope.key}`);
-      setFeedback(fbEl, scope.right ? 'success' : 'error', scope.why);
+      tell(ctx, fbEl, scope.right ? 'success' : 'error', scope.why);
     };
 
     // Practice: create a token. The token's name does not say what it can do.
@@ -271,7 +275,7 @@ function screens(ctx, say) {
       const mintFb = $('#ctd-mint-feedback');
       $('#ctd-mint').onclick = () => {
         if (!scope) {
-          setFeedback(mintFb, 'neutral', say.connectMintSays, { scroll: true });
+          tell(ctx, mintFb, 'neutral', say.connectMintSays, { scroll: true });
           return;
         }
         minted.textContent = tele.practiceCredential(scope.key); // a public practice token, only ever shown here
@@ -289,7 +293,7 @@ function screens(ctx, say) {
     const send = async () => {
       setActions({ busy: true });
       fb.removeAttribute('data-outcome');
-      tell('neutral', say.connectSendingSays);
+      report('neutral', say.connectSendingSays);
       const outcome = await tele.sendTest({ signal: ctx.signal });
       if (ctx.signal.aborted) return; // the level was closed while the request was out
       // "Connected?" has one answer: the session's own state, never the outcome alone.
@@ -306,7 +310,7 @@ function screens(ctx, say) {
       if (outcome.kind === OUTCOME.rejected && outcome.auth) charge(`rejected:${outcome.status}`);
       lastProblem = outcome.kind === OUTCOME.rejected && outcome.auth;
       const message = shown.message ? ` ${fillSlots(say.outcomeSaid, { message: e(shown.message) })}` : '';
-      tell(shown.tone, `${shown.html}${message}`);
+      report(shown.tone,`${shown.html}${message}`);
       fb.setAttribute('data-outcome', outcome.kind);
       setActions({ retry: shown.retry, toPractice: !practice && outcome.kind === OUTCOME.unreachable });
       (shown.retry ? actions.querySelector('#ctd-retry') : endpointEl).focus({ preventScroll: true }); // the feedback just scrolled into view stays in view (#331)
@@ -322,19 +326,19 @@ function screens(ctx, say) {
       const same = input === lastInput;
       lastInput = input;
       if (endpoint.trim() === '') {
-        tell('neutral', say.connectEndpointFirstSays);
+        report('neutral', say.connectEndpointFirstSays);
         return;
       }
       if (!practice) {
         if (!scope) {
-          tell('neutral', say.connectScopeFirstSays);
+          report('neutral', say.connectScopeFirstSays);
           return;
         }
         declareScope($('#ctd-scope-feedback'));
         if (scope.key === 'read') {
           // Declared and already charged above: sending would only earn a second charge for it.
           lastProblem = false;
-          tell('error', say.connectReadingSays);
+          report('error', say.connectReadingSays);
           return;
         }
       }
@@ -350,7 +354,7 @@ function screens(ctx, say) {
         if (verdict.reason === 'empty' && lastProblem) {
           lastProblem = false;
           fb.removeAttribute('data-outcome');
-          tell('neutral', `${connectProblem(say, e, verdict)} ${practice ? say.connectAgainPractice : say.connectAgainLive} ${say.connectNothingSent}`);
+          report('neutral', `${connectProblem(say, e, verdict)} ${practice ? say.connectAgainPractice : say.connectAgainLive} ${say.connectNothingSent}`);
           return;
         }
         if (verdict.reason !== 'empty') {
@@ -358,7 +362,7 @@ function screens(ctx, say) {
           lastProblem = true;
         }
         fb.removeAttribute('data-outcome');
-        tell('error', `${connectProblem(say, e, verdict)} ${say.connectNothingSent}`);
+        report('error', `${connectProblem(say, e, verdict)} ${say.connectNothingSent}`);
         return;
       }
       lastProblem = false;
@@ -400,7 +404,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);
