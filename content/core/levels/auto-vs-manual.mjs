@@ -26,7 +26,7 @@ export default {
           "items": [
             {
               "id": "server",
-              "label": "<code>express.js</code> request handler run times",
+              "label": "The HTTP SERVER spans, one per <code>express</code> route",
               "why": "The HTTP server instrumentation starts a span for every request that reaches an Express route, with no code of yours.",
               "whyNot": {
                 "manual": "Nothing here needs your own code: the instrumentation sees each Express request arrive and starts the span itself."
@@ -34,7 +34,7 @@ export default {
             },
             {
               "id": "loyalty",
-              "label": "<code>applyLoyaltyDiscount()</code> loyalty spans",
+              "label": "INTERNAL spans around <code>applyLoyaltyDiscount()</code> calls",
               "why": "Instrumentation knows nothing about your business functions. You start that span yourself with the API. Its span kind defaults to INTERNAL, though instrumentation libraries may emit INTERNAL spans too.",
               "whyNot": {
                 "auto": "No library has heard of <code>applyLoyaltyDiscount()</code>. It is your own function, so nothing wraps it unless you do."
@@ -42,7 +42,7 @@ export default {
             },
             {
               "id": "redis",
-              "label": "<code>redis</code> command round trip timing data",
+              "label": "A span for each Redis command",
               "why": "The Redis instrumentation wraps the client and starts a span for each command.",
               "whyNot": {
                 "manual": "You never call a tracer for Redis. The instrumentation wraps the client and does it."
@@ -50,7 +50,7 @@ export default {
             },
             {
               "id": "coupon",
-              "label": "<code>app.coupon.code</code> attribute for orders",
+              "label": "<code>app.coupon.code</code> on the checkout span",
               "why": "Only your code knows which coupon the customer used, so you set that attribute on the span yourself.",
               "whyNot": {
                 "auto": "A library cannot see which coupon the customer used. Only your code holds that value."
@@ -58,7 +58,7 @@ export default {
             },
             {
               "id": "client",
-              "label": "<code>fetch</code> outgoing calls latency to cart",
+              "label": "Outgoing <code>fetch</code> CLIENT spans",
               "why": "The HTTP client instrumentation starts a CLIENT span for each outgoing call, with no code of yours.",
               "whyNot": {
                 "manual": "Your code only calls <code>fetch</code>. The HTTP client instrumentation starts the CLIENT span around it."
@@ -66,7 +66,7 @@ export default {
             },
             {
               "id": "item-count",
-              "label": "<code>app.cart.item_count</code> number in basket",
+              "label": "<code>app.cart.item_count</code>",
               "why": "That is a business number only your code can read, so you add it as an attribute yourself.",
               "whyNot": {
                 "auto": "A library cannot see your cart. The count is a business value, so your code has to read it and set it."
@@ -74,7 +74,7 @@ export default {
             },
             {
               "id": "postgres",
-              "label": "<code>pg</code> postgresql query processing steps",
+              "label": "A span per <code>client.query()</code> call",
               "why": "The <code>pg</code> instrumentation creates a span whenever your code calls <code>client.query()</code>, so you write no tracing code for it.",
               "whyNot": {
                 "manual": "You never call a tracer around a query. The <code>pg</code> instrumentation starts the span when your code calls <code>client.query()</code>."
@@ -82,7 +82,7 @@ export default {
             },
             {
               "id": "coupon-event",
-              "label": "<code>addEvent</code> rejected promo code message",
+              "label": "<code>span.addEvent()</code> for each coupon that is rejected",
               "why": "A span event is added with <code>span.addEvent()</code>, and only your code knows the moment a coupon is rejected.",
               "whyNot": {
                 "auto": "No library knows your coupon rules. Only your code can tell when a coupon is rejected and add the event."
@@ -90,7 +90,7 @@ export default {
             },
             {
               "id": "kafka",
-              "label": "<code>kafkajs</code> producer topic message spans",
+              "label": "PRODUCER spans on messages that kafkajs sends",
               "why": "The <code>kafkajs</code> instrumentation starts a PRODUCER span each time a producer sends a message, named after the topic.",
               "whyNot": {
                 "manual": "Your code only calls <code>send</code>. The <code>kafkajs</code> instrumentation starts the PRODUCER span around it."
@@ -98,7 +98,7 @@ export default {
             },
             {
               "id": "orders-counter",
-              "label": "<code>orders_placed</code> running total per hour",
+              "label": "An <code>orders_placed</code> counter",
               "why": "A counter comes from the meter through <code>createCounter()</code>, and your code adds to it each time an order is placed.",
               "whyNot": {
                 "auto": "Instrumentation does not know what an order is. Your code has to create the counter and add to it."
@@ -106,15 +106,15 @@ export default {
             },
             {
               "id": "pino",
-              "label": "<code>pino</code> log record trace context fields",
-              "why": "The <code>pino</code> instrumentation injects the trace context into every pino log record, with no change to your logging calls.",
+              "label": "The <code>trace_id</code> on each pino log line",
+              "why": "The <code>pino</code> instrumentation injects the trace context, such as <code>trace_id</code>, into every pino log record, with no change to your logging calls.",
               "whyNot": {
                 "manual": "Your code only writes the log line. The <code>pino</code> instrumentation adds the trace context to the record."
               }
             },
             {
               "id": "basket-histogram",
-              "label": "<code>basket_value</code> distribution of amounts",
+              "label": "A <code>histogram</code> of every basket value",
               "why": "A histogram is created through the meter, and your code records each value into it. Only your code knows what a basket is worth.",
               "whyNot": {
                 "auto": "Instrumentation cannot see the value of a basket. Your code has to create the histogram and record each value."
@@ -122,7 +122,7 @@ export default {
             },
             {
               "id": "runtime",
-              "label": "<code>node.js</code> event loop lag and heap size",
+              "label": "Event loop delay and heap use of the Node.js process",
               "why": "The Node.js runtime instrumentation exposes event loop delay and heap use as metrics, with no code of yours.",
               "whyNot": {
                 "manual": "Nothing in your code reads the event loop or the heap. The runtime instrumentation reports them itself."
@@ -130,7 +130,7 @@ export default {
             },
             {
               "id": "job-link",
-              "label": "<code>links</code> back to the job that queued it",
+              "label": "A <code>link</code> from the CONSUMER span to the one that queued it",
               "why": "A link is passed when the span is created, in the <code>links</code> option, with the context of the other span.",
               "whyNot": {
                 "auto": "Instrumentation cannot tell which earlier span caused this work. Your code holds that context and passes it in as a link."
@@ -138,7 +138,7 @@ export default {
             },
             {
               "id": "mongodb",
-              "label": "<code>mongodb</code> collection names for actions",
+              "label": "<code>db.collection.name</code> on every MongoDB command span",
               "why": "The MongoDB instrumentation creates a span for the commands your code runs and sets <code>db.collection.name</code> on it.",
               "whyNot": {
                 "manual": "Your code only calls the driver. The MongoDB instrumentation starts the span and sets the collection name."
@@ -146,7 +146,7 @@ export default {
             },
             {
               "id": "payment-error",
-              "label": "<code>recordException</code> card failures caught",
+              "label": "A caught payment error, noted on a span with <code>recordException</code>",
               "why": "Recording an exception is a call on the span, made in your own <code>catch</code> block. The docs suggest setting the span status as well.",
               "whyNot": {
                 "auto": "That call sits in your own <code>catch</code> block. Nothing makes it for you, so your code has to record the error."
@@ -154,7 +154,7 @@ export default {
             },
             {
               "id": "s3",
-              "label": "<code>aws</code> sdk operation service attributes",
+              "label": "A <code>PutObject</code> call to S3 through the AWS SDK gets its own span",
               "why": "The AWS SDK instrumentation sets <code>rpc.service</code> and <code>rpc.method</code> on the span, for example S3 and <code>PutObject</code>.",
               "whyNot": {
                 "manual": "Your code only calls the SDK client. The AWS SDK instrumentation adds the service and method to the span."
@@ -162,7 +162,7 @@ export default {
             },
             {
               "id": "open-baskets",
-              "label": "<code>baskets_open</code> level rising or falling",
+              "label": "Baskets open now, going up and down",
               "why": "An up-down counter can go up and down. Your code adds 1 when a basket opens and -1 when it closes.",
               "whyNot": {
                 "auto": "Instrumentation does not know what a basket is. Your code has to create the counter and add and subtract."
@@ -170,7 +170,7 @@ export default {
             },
             {
               "id": "graphql",
-              "label": "<code>graphql</code> resolver invocation duration",
+              "label": "Each GraphQL resolver gets a span",
               "why": "By default, the GraphQL instrumentation creates a span for each invocation of a resolver, with no code of yours.",
               "whyNot": {
                 "manual": "Your resolvers are plain functions. The GraphQL instrumentation starts a span around each one that runs."
@@ -178,7 +178,7 @@ export default {
             },
             {
               "id": "declined-status",
-              "label": "<code>setStatus</code> declined payments as error",
+              "label": "An ERROR status set on a span for a declined card",
               "why": "A span's status is set through the span at any time before it ends, and by default it is Unset. Only your code knows a declined card is a failure.",
               "whyNot": {
                 "auto": "A declined card is a business outcome, and the status stays Unset unless something sets Error. Your code has to decide that."
@@ -195,102 +195,102 @@ export default {
           "choices": [
             {
               "key": "retries",
-              "label": "Cart retries every outgoing request once and keeps both attempts, so each call gets a second span",
+              "label": "Cart retries every fetch call once, and each attempt is its own span",
               "why": "A retry would show two spans with different start times, and cart does not retry. Here each call has a twin, and the twins start together."
             },
             {
               "key": "two-setups",
-              "label": "The injected agent and the SDK of the app both instrument the fetch calls that cart makes, so each call gets a second span",
+              "label": "The injected agent and <code>tracing.js</code> each make a CLIENT span for every fetch call",
               "why": "The operator's <code>NODE_OPTIONS</code> loads the auto-instrumentation agent, and <code>tracing.js</code> starts a second NodeSDK with the same instrumentations. Fetch instrumentation subscribes to a diagnostics channel, so a second setup subscribes again, and in this scenario each call gets a CLIENT span from each setup."
             },
             {
               "key": "collector",
-              "label": "The Collector copies the telemetry received on its way to Dash0, so each call gets a second span",
+              "label": "The Collector copies each span on its way to Dash0, and its <code>otlp_grpc</code> exporter sends both copies",
               "why": "A Collector forwards the spans it receives. Both copies were already in what cart exported."
             },
             {
               "key": "agent-and-sdk",
-              "label": "<code>NODE_OPTIONS</code> loads one tracer, a startup script loads another tracer, so each call gets a second span",
-              "why": "The operator loads the agent through <code>NODE_OPTIONS</code> and <code>tracing.js</code> starts a NodeSDK of its own. Each has the fetch instrumentation, and in this scenario each call gets a CLIENT span from both."
+              "label": "The operator and cart's own code both switch telemetry on, giving each fetch call two CLIENT spans",
+              "why": "The operator loads the agent through <code>NODE_OPTIONS</code> and <code>tracing.js</code> starts a NodeSDK of its own. Each registers the fetch instrumentation, and in this scenario each call gets a CLIENT span from both."
             },
             {
               "key": "server-twin",
-              "label": "The downstream service sends a SERVER span that the display shows with the CLIENT kind, so each call gets a second span",
+              "label": "The downstream service's SERVER span for a fetch call is drawn as a second CLIENT span",
               "why": "A CLIENT span is the outgoing side of a call and a SERVER span is the incoming side, and they are different kinds. Each call would show one of each, not two CLIENT spans."
             },
             {
               "key": "two-fetch-hooks",
-              "label": "Cart is hooked twice on each request, so each call gets a second span",
+              "label": "The fetch instrumentation is registered twice, and every registration starts its own span",
               "why": "Fetch instrumentation subscribes to a diagnostics channel, so loading it a second time subscribes a second time. In this scenario that is what the two setups do, and each call gets two CLIENT spans."
             },
             {
               "key": "express-out",
-              "label": "The Express instrumentation traces outgoing requests and incoming ones, so each call gets a second span",
+              "label": "The Express instrumentation traces cart's outgoing fetch calls too, and starts a span for each",
               "why": "The Express instrumentation covers the app's routers, middleware and request handlers, which are on the incoming side. The instrumentation for undici and fetch traces the outgoing call."
             },
             {
               "key": "traceparent-twice",
-              "label": "The <code>traceparent</code> header is sent twice and the receiver starts a new trace, so each call gets a second span",
+              "label": "The <code>traceparent</code> header of a fetch call is sent twice, and the receiver starts a second span",
               "why": "Propagation moves the trace ID and span ID in a header so the receiving service can continue the trace. It makes no span, and the receiver's span is usually a SERVER span."
             },
             {
-              "key": "baggage-spans",
-              "label": "Each <code>baggage</code> entry that cart sets is exported on its own, so each call gets a second span",
-              "why": "Baggage is a key-value store that travels beside the context. It carries data and not spans."
+              "key": "http-and-undici",
+              "label": "The <code>http</code> and <code>undici</code> instrumentations both start a span for each fetch call",
+              "why": "The HTTP instrumentation covers the http and https modules, and the undici instrumentation covers undici and the global fetch. A fetch call goes through undici, so one of them traces it, and a second CLIENT span needs a second registration of that one."
             },
             {
-              "key": "span-event",
-              "label": "Every call adds an event, which the backend turns into one more call, so each call gets a second span",
-              "why": "A span event is an annotation at one point in time on a span. It is part of that span and is not a span of its own."
+              "key": "exporters-both",
+              "label": "The SDK exports every span over gRPC and over HTTP because both exporter variables are set",
+              "why": "An exporter sends each span once, over the protocol it is set to, and <code>OTEL_EXPORTER_OTLP_PROTOCOL</code> names one protocol. Two exports of one span would carry the same span ID, and the twins here are two CLIENT spans."
             },
             {
-              "key": "span-link",
-              "label": "A link joins each call to the one before, so each call gets a second span",
-              "why": "A link associates one span with another to show cause. It points at a span and does not create one."
+              "key": "two-replicas",
+              "label": "Cart runs as two replicas, and each replica starts a span for the fetch call",
+              "why": "One call is handled by one replica, and each replica makes its spans in its own process. The twins here belong to a single call."
             },
             {
-              "key": "sampler-twice",
-              "label": "The sampler exports everything kept twice, so each call gets a second span",
-              "why": "Sampling decides which traces or spans are processed and exported. It removes data and does not add spans."
+              "key": "diagnostics-twice",
+              "label": "The diagnostics channel publishes every fetch twice, and even one setup starts two spans",
+              "why": "Fetch instrumentation subscribes to a diagnostics channel and starts a span when a message arrives. A call publishes one message to each subscriber, so a second span needs a second subscriber."
             },
             {
-              "key": "resource-detectors",
-              "label": "Each resource detector adds an entry for the host or pod found, so each call gets a second span",
-              "why": "A resource describes the entity that produces the telemetry, as attributes. The detectors fill in those attributes and make no spans."
+              "key": "two-service-names",
+              "label": "The agent and <code>tracing.js</code> use different service names, and a fetch span is stored under both",
+              "why": "A span carries one resource, so it belongs to one service. Two service names would not make one span appear twice."
             },
             {
-              "key": "metric-recording",
-              "label": "A request duration metric turns each recording into a new item, so each call gets a second span",
-              "why": "A metric is a measurement captured at runtime, a signal apart from traces. A recording is a metric event and not a span."
+              "key": "manual-wrap",
+              "label": "Cart wraps each fetch in a CLIENT span of its own, and the instrumentation adds another span",
+              "why": "The scenario names only the operator's injected agent and the NodeSDK in <code>tracing.js</code>, and each registers the fetch instrumentation. Nothing in it wraps <code>fetch</code> by hand."
             },
             {
-              "key": "log-lines",
-              "label": "Each log line cart writes about a call is exported as another row, so each call gets a second span",
-              "why": "A log is a timestamped text record and a signal of its own. It can carry the trace context to be correlated with a span, and it does not become one."
+              "key": "proxy-span",
+              "label": "A proxy between cart and the downstream service adds its own span for each fetch call",
+              "why": "A proxy that is instrumented reports its spans in its own telemetry. The two CLIENT spans in question both come from cart's call."
             },
             {
-              "key": "batch-split",
-              "label": "The <code>batch</code> processor in the Collector splits each message when a batch fills up, so each call gets a second span",
-              "why": "The batch processor places the spans it receives into batches, so they compress better and need fewer connections. The spans in a batch were already made by cart."
+              "key": "two-processors",
+              "label": "Two span processors, a batch and a simple one, are both set, so each fetch span is exported twice",
+              "why": "A span processor hands each finished span to the exporter once. Two exports of one span would carry the same span ID, and the twins here are two CLIENT spans."
             },
             {
               "key": "tracing-repeats-agent",
-              "label": "The operator and some code each trace the traffic to services, so each call gets a second span",
+              "label": "A second layer of setup runs in cart, and both start a span per fetch",
               "why": "The agent the operator injects and the NodeSDK in <code>tracing.js</code> both switch on the Node.js auto-instrumentations. Run twice, the fetch instrumentation traces each call twice."
             },
             {
               "key": "request-response",
-              "label": "One CLIENT kind covers the request and another covers the response, so each call gets a second span",
+              "label": "One CLIENT span covers the fetch request and a second span covers the response",
               "why": "A CLIENT span represents one synchronous outgoing remote call, such as an HTTP request."
             },
             {
               "key": "incoming-client",
-              "label": "The incoming request to cart is also logged outgoing, so each call gets a second span",
+              "label": "Cart's own incoming request is also recorded as a CLIENT span next to the fetch span",
               "why": "An incoming call is a SERVER span, and a CLIENT span is for an outgoing call. Cart's incoming requests are not its outgoing fetch calls."
             },
             {
               "key": "fetch-twice",
-              "label": "Cart code calls <code>fetch</code> twice for every request, so each call gets a second span",
+              "label": "Cart's code calls fetch twice for every request, so each call has its own span",
               "why": "Then there would be two fetch calls with one span each. The question is about one call that has two spans."
             }
           ]
@@ -309,12 +309,12 @@ export default {
             },
             {
               "key": "keep-one",
-              "label": "Keep one setup in cart, then add the business spans with the API",
+              "label": "Keep one setup, then add the business spans with the API",
               "why": "Run the agent or your own SDK, not both. Then add spans such as <code>applyLoyaltyDiscount()</code> and attributes such as <code>app.coupon.code</code> with the API, which the one setup exports."
             },
             {
               "key": "dedupe",
-              "label": "Dedupe the twin spans in the Collector, then add the business spans with the API",
+              "label": "Dedupe the agent's twin spans in the Collector, then add the business spans with the API",
               "why": "That hides the symptom and keeps both setups running, with twice the instrumentation work in every cart request."
             },
             {
@@ -324,7 +324,7 @@ export default {
             },
             {
               "key": "agent-only",
-              "label": "Run only the agent that the operator injects in the pod, with none of the other tracers running, then add the business spans with the API",
+              "label": "Leave only the agent injected in the pod, with nothing else running in cart, then add the business spans with the API",
               "why": "One setup means one CLIENT span for each call. The API calls add the business spans, which the one setup exports."
             },
             {
@@ -339,7 +339,7 @@ export default {
             },
             {
               "key": "either-not-both",
-              "label": "Choose the agent or the SDK to use and never both, then add the business spans with the API",
+              "label": "Choose the agent or the SDK and never run both of them, then add the business spans with the API",
               "why": "Run the agent or your own SDK, not both. The spans for <code>applyLoyaltyDiscount()</code> and the coupon come from the API, and the one setup exports them."
             },
             {
@@ -353,13 +353,13 @@ export default {
               "why": "Span kind says how a span relates to others, and an INTERNAL span is one that does not cross a process boundary. Relabelling a span leaves both setups running."
             },
             {
-              "key": "otlp-http",
-              "label": "Switch the OTLP exporter of the agent from <code>gRPC</code> to HTTP, then add the business spans with the API",
-              "why": "The OTLP protocol decides how spans are sent, not how many are made. Both setups would still make them."
+              "key": "remove-exporter",
+              "label": "Remove the OTLP exporter from the second setup, then add the business spans with the API",
+              "why": "The exporter only sends spans. Both setups still register the fetch instrumentation, so each call still has two CLIENT spans."
             },
             {
               "key": "drop-second-sdk",
-              "label": "Drop the <code>NodeSDK</code> from the startup script for a single setup, then add the business spans with the API",
+              "label": "Remove the <code>NodeSDK</code> setup from <code>tracing.js</code>, then add the business spans with the API",
               "why": "With the second NodeSDK gone, only the agent instruments fetch, so each call has one CLIENT span. The business spans and attributes come from the API, and the agent's setup exports them."
             },
             {
@@ -368,39 +368,39 @@ export default {
               "why": "A service name labels the telemetry a setup sends. Two names would let you tell the twins apart, and each call would still have two CLIENT spans."
             },
             {
-              "key": "detectors-none",
-              "label": "Set the resource detectors variable to none in the agent, then add the business spans with the API",
-              "why": "That variable chooses which resource detectors run, and the detectors fill in resource attributes. It does not change which libraries are instrumented."
+              "key": "disable-http",
+              "label": "Disable the <code>http</code> module tracing in <code>tracing.js</code>, then add the business spans with the API",
+              "why": "The HTTP instrumentation covers the http and https modules. Fetch goes through undici, whose instrumentation is separate, so both setups still trace each call."
             },
             {
-              "key": "propagator",
-              "label": "Use another format for the trace context headers of each setup, then add the business spans with the API",
-              "why": "The propagation format decides which headers carry the trace context between services. It does not decide how many spans a call makes."
+              "key": "load-order",
+              "label": "Load <code>tracing.js</code> before the agent, then add the business spans with the API",
+              "why": "Which one loads first does not matter here: both still register the fetch instrumentation, so each call gets a CLIENT span from each."
             },
             {
-              "key": "more-instrumentations",
-              "label": "Turn on more instrumentations in the agent to cover your own functions, then add the business spans with the API",
-              "why": "Zero-code instrumentation covers the libraries you use, not your own code, so no setting makes the agent trace your own functions."
+              "key": "enabled-undici",
+              "label": "Set <code>OTEL_NODE_ENABLED_INSTRUMENTATIONS=undici</code> in the agent, then add the business spans with the API",
+              "why": "That variable picks which instrumentations the agent loads. Keeping only undici in the agent leaves the fetch instrumentation in both setups."
             },
             {
               "key": "wrap-fetch",
-              "label": "Wrap each fetch call of the agent in a CLIENT span of your own, then add the business spans with the API",
+              "label": "Wrap each of cart's fetch calls in a CLIENT span of your own, then add the business spans with the API",
               "why": "A third span adds to the twins and does not remove them. Both setups would still make theirs."
             },
             {
-              "key": "other-backend",
-              "label": "Use a backend that does not double spans, then add the business spans with the API",
-              "why": "The two spans are made in cart's process, before anything is exported, so a backend does not decide how many exist."
+              "key": "to-collector",
+              "label": "Send the agent's spans through a gateway instead of straight to Dash0, then add the business spans with the API",
+              "why": "Where the spans are sent does not change how many cart makes: both are made in its process before anything is exported."
             },
             {
-              "key": "more-memory",
-              "label": "Give cart more memory and CPU for the agent to keep up, then add the business spans with the API",
-              "why": "The spans double because two setups each instrument fetch, and more memory or CPU changes neither of them."
+              "key": "require-parent",
+              "label": "Set <code>requireParentforSpans</code> on the undici instrumentation, then add the business spans with the API",
+              "why": "That option only requires a parent span before a span is created for an outgoing request. Both setups still start one for each call."
             },
             {
-              "key": "log-level",
-              "label": "Set the log level to <code>debug</code> in the injected setup, then add the business spans with the API",
-              "why": "<code>OTEL_LOG_LEVEL</code> sets how much the SDK logs. It does not turn a setup off."
+              "key": "upgrade",
+              "label": "Upgrade the packages to their latest versions, then add the business spans with the API",
+              "why": "The twins come from two registrations of the same instrumentation, and a newer version of it does not remove one of them."
             }
           ]
         }
