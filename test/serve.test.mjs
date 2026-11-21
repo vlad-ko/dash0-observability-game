@@ -220,7 +220,7 @@ function send(port, method, path, { body, headers = {} } = {}) {
   });
 }
 const JSON_TYPE = { 'content-type': 'application/json' };
-const question = (over = {}) => JSON.stringify({ v: 1, levelId: 'resources', stepId: 'res-pod', question: 'What does a resource describe?', ...over });
+const question = (over = {}) => JSON.stringify({ v: 1, levelId: 'correlation', stepId: 'cor-why', question: 'What does a resource describe?', ...over });
 
 test('POST /api/<name> reaches api/<name>.mjs as a Web Request, and the vercel.json headers still apply', async () => {
   const res = await send(site.port, 'POST', '/api/hello', { body: 'ping', headers: { 'content-type': 'text/x' } });
