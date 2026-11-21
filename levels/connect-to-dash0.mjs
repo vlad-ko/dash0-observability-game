@@ -310,7 +310,7 @@ function screens(ctx, say) {
       if (outcome.kind === OUTCOME.rejected && outcome.auth) charge(`rejected:${outcome.status}`);
       lastProblem = outcome.kind === OUTCOME.rejected && outcome.auth;
       const message = shown.message ? ` ${fillSlots(say.outcomeSaid, { message: e(shown.message) })}` : '';
-      report(shown.tone,`${shown.html}${message}`);
+      report(shown.tone, `${shown.html}${message}`);
       fb.setAttribute('data-outcome', outcome.kind);
       setActions({ retry: shown.retry, toPractice: !practice && outcome.kind === OUTCOME.unreachable });
       (shown.retry ? actions.querySelector('#ctd-retry') : endpointEl).focus({ preventScroll: true }); // the feedback just scrolled into view stays in view (#331)
