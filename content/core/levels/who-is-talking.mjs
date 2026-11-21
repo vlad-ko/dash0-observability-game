@@ -90,7 +90,7 @@ export default {
           "choices": [
             {
               "key": "env-var",
-              "label": "Set <code>OTEL_SERVICE_NAME=notifications</code> on the deployment again",
+              "label": "Set <code>OTEL_SERVICE_NAME=notifications</code> on the deployment again, so the SDK stops falling back",
               "why": "<code>OTEL_SERVICE_NAME</code> sets <code>service.name</code>, and it takes precedence over a <code>service.name</code> in <code>OTEL_RESOURCE_ATTRIBUTES</code> if both are set, so it is the one place to put the name. With neither, the SDK reports <code>unknown_service:&lt;process.executable.name&gt;</code>, here <code>unknown_service:node</code>."
             },
             {

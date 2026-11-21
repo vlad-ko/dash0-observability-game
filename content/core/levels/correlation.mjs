@@ -38,7 +38,7 @@ export default {
             },
             {
               "key": "no-span-current",
-              "label": "Nothing was current when the appender was called and the record got no trace context at all",
+              "label": "Nothing was current when the appender was called and there was no trace to copy at all",
               "why": "The appender passes the current context to the Logs API, and the record gets the TraceId and SpanId of the span in that context. With no span current there is nothing to copy, and the fields stay empty."
             },
             {
@@ -48,7 +48,7 @@ export default {
             },
             {
               "key": "read-at-the-call",
-              "label": "The ids are taken from the moment of logging and these ones carried none at that point",
+              "label": "The ids are taken from the moment of logging and these records carried none at that point",
               "why": "Correlation is decided by the call, not by anything done to the record afterwards. A record logged inside an active span through a bridged logger carries the ids, and one logged outside any span does not."
             },
             {
@@ -93,12 +93,12 @@ export default {
             },
             {
               "key": "set-at-export",
-              "label": "The ids are filled in when the data is exported and the spans of these three had already closed by then",
+              "label": "The ids are filled in when the data is exported and the spans of these three records had already closed by then",
               "why": "The ids are set at the moment of the log call, from the context at that moment. Whether the span has ended, or the trace has been exported, does not change a record that is already written."
             },
             {
               "key": "email-uninstrumented",
-              "label": "The notifications service is not instrumented, so the whole system lost its links",
+              "label": "The notifications service is not instrumented, so the whole system lost its link to the trace",
               "why": "A record is linked or unlinked on its own: it depends on whether its own call ran inside an active span through a bridged logger. Records from other services are still linked."
             }
           ]
