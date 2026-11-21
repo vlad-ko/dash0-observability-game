@@ -107,14 +107,14 @@ export default {
             {
               "id": "pino",
               "label": "The <code>trace_id</code> on each pino log line",
-              "why": "The <code>pino</code> instrumentation injects the trace context, such as <code>trace_id</code>, into every pino log record, with no change to your logging calls.",
+              "why": "The <code>pino</code> instrumentation injects the trace context, such as <code>trace_id</code>, into each pino log record written inside a span, with no change to your logging calls.",
               "whyNot": {
                 "manual": "Your code only writes the log line. The <code>pino</code> instrumentation adds the trace context to the record."
               }
             },
             {
               "id": "basket-histogram",
-              "label": "A <code>histogram</code> of every basket value",
+              "label": "A <code>histogram</code> of the basket values",
               "why": "A histogram is created through the meter, and your code records each value into it. Only your code knows what a basket is worth.",
               "whyNot": {
                 "auto": "Instrumentation cannot see the value of a basket. Your code has to create the histogram and record each value."
@@ -130,15 +130,15 @@ export default {
             },
             {
               "id": "job-link",
-              "label": "A <code>link</code> from the CONSUMER span to the one that queued it",
-              "why": "A link is passed when the span is created, in the <code>links</code> option, with the context of the other span.",
+              "label": "<code>links</code> from the nightly batch spans to the orders they settle",
+              "why": "A link is passed when the span is created, in the <code>links</code> option, with the context of the other span. Only your code knows which orders a batch settles.",
               "whyNot": {
-                "auto": "Instrumentation cannot tell which earlier span caused this work. Your code holds that context and passes it in as a link."
+                "auto": "No library knows which orders your batch settles. Your code holds those contexts and passes each one in as a link."
               }
             },
             {
               "id": "mongodb",
-              "label": "<code>db.collection.name</code> on every MongoDB command span",
+              "label": "<code>db.collection.name</code> on the spans for collection commands",
               "why": "The MongoDB instrumentation creates a span for the commands your code runs and sets <code>db.collection.name</code> on it.",
               "whyNot": {
                 "manual": "Your code only calls the driver. The MongoDB instrumentation starts the span and sets the collection name."
@@ -162,7 +162,7 @@ export default {
             },
             {
               "id": "open-baskets",
-              "label": "Baskets open now, going up and down",
+              "label": "The baskets open now, going up and down",
               "why": "An up-down counter can go up and down. Your code adds 1 when a basket opens and -1 when it closes.",
               "whyNot": {
                 "auto": "Instrumentation does not know what a basket is. Your code has to create the counter and add and subtract."
@@ -220,7 +220,7 @@ export default {
             },
             {
               "key": "two-fetch-hooks",
-              "label": "The fetch instrumentation is registered twice, and every registration starts its own span",
+              "label": "The fetch instrumentation is registered twice, and every registration starts a span of its own",
               "why": "Fetch instrumentation subscribes to a diagnostics channel, so loading it a second time subscribes a second time. In this scenario that is what the two setups do, and each call gets two CLIENT spans."
             },
             {
@@ -245,8 +245,8 @@ export default {
             },
             {
               "key": "two-replicas",
-              "label": "Cart runs as two replicas, and each replica starts a span for the fetch call",
-              "why": "One call is handled by one replica, and each replica makes its spans in its own process. The twins here belong to a single call."
+              "label": "The agent runs in one replica and <code>tracing.js</code> in another, and each starts a span for the fetch call",
+              "why": "Both are in the same cart process: the operator injects the agent through <code>NODE_OPTIONS</code> and <code>tracing.js</code> starts its NodeSDK there. A replica handles its own calls, and the twins here belong to a single call."
             },
             {
               "key": "diagnostics-twice",
@@ -265,27 +265,27 @@ export default {
             },
             {
               "key": "proxy-span",
-              "label": "A proxy between cart and the downstream service adds its own span for each fetch call",
+              "label": "The agent traces the fetch, and <code>tracing.js</code> adds a span for the proxy hop to the downstream service",
               "why": "A proxy that is instrumented reports its spans in its own telemetry. The two CLIENT spans in question both come from cart's call."
             },
             {
               "key": "two-processors",
-              "label": "Two span processors, a batch and a simple one, are both set, so each fetch span is exported twice",
+              "label": "<code>tracing.js</code> adds its own simple span processor to the agent's batch one, so each fetch span is exported twice",
               "why": "A span processor hands each finished span to the exporter once. Two exports of one span would carry the same span ID, and the twins here are two CLIENT spans."
             },
             {
               "key": "tracing-repeats-agent",
-              "label": "A second layer of setup runs in cart, and both start a span per fetch",
+              "label": "<code>tracing.js</code> repeats the agent's setup in cart, and both start a fetch span",
               "why": "The agent the operator injects and the NodeSDK in <code>tracing.js</code> both switch on the Node.js auto-instrumentations. Run twice, the fetch instrumentation traces each call twice."
             },
             {
               "key": "request-response",
-              "label": "One CLIENT span covers the fetch request and a second span covers the response",
+              "label": "The agent starts a CLIENT span for the fetch request and <code>tracing.js</code> starts a second span for the response",
               "why": "A CLIENT span represents one synchronous outgoing remote call, such as an HTTP request."
             },
             {
               "key": "incoming-client",
-              "label": "Cart's own incoming request is also recorded as a CLIENT span next to the fetch span",
+              "label": "The agent records cart's incoming request as a CLIENT span, and <code>tracing.js</code> records the fetch span",
               "why": "An incoming call is a SERVER span, and a CLIENT span is for an outgoing call. Cart's incoming requests are not its outgoing fetch calls."
             },
             {
@@ -355,7 +355,7 @@ export default {
             {
               "key": "remove-exporter",
               "label": "Remove the OTLP exporter from the second setup, then add the business spans with the API",
-              "why": "The exporter only sends spans. Both setups still register the fetch instrumentation, so each call still has two CLIENT spans."
+              "why": "A NodeSDK with no exporter passed in sets up the default <code>otlp</code> exporter from the environment, so the second setup still sends its spans. Both setups also still register the fetch instrumentation, so each call still has two CLIENT spans."
             },
             {
               "key": "drop-second-sdk",
