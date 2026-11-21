@@ -95,8 +95,8 @@ export default {
             },
             {
               "key": "agent0-pr",
-              "label": "Ask Agent0 to write each dashboard as code and raise the pull request before anything is applied",
-              "why": "Dash0's documentation says Agent0 can generate infrastructure as code for a dashboard and raise it as a pull request to your repository: after it builds a dashboard you ask for the Terraform configuration. The reviewers then read code, and the pipeline applies it through the same Terraform resource, with no cluster involved."
+              "label": "Ask Agent0 to write each dashboard as code and raise the pull request that the team then reviews",
+              "why": "Dash0's documentation says Agent0 can generate infrastructure as code for dashboards and raise it as pull requests to your repository: after it creates a dashboard you ask for the Terraform configuration. The reviewers then read code, and the pipeline, not the Agent0 session, applies it through the same Terraform resource, with no cluster involved."
             },
             {
               "key": "operator",
@@ -119,9 +119,9 @@ export default {
               "why": "The Dash0 CLI does create a dashboard from a YAML or JSON file, but run before the review it makes the dashboard live first, and a laptop is not the pipeline that applies the rest of payments' infrastructure. The review would be of something already deployed."
             },
             {
-              "key": "perses-terraform",
-              "label": "Express each dashboard as a <code>PersesDashboard</code> YAML and let the Terraform pipeline deploy it",
-              "why": "A <code>PersesDashboard</code> is a Kubernetes custom resource, and the operator is what turns one into a Dash0 dashboard, by watching the namespaces of a cluster that have a Dash0 monitoring resource. Applying it from Terraform still needs that cluster and operator, and payments has neither. The Terraform resource that fits is <code>dash0_dashboard</code>, which takes the YAML directly."
+              "key": "operator-kubectl",
+              "label": "Install the operator where the pipeline runs and let it apply each <code>PersesDashboard</code> with <code>kubectl</code>",
+              "why": "<code>kubectl apply</code> sends a <code>PersesDashboard</code> to a Kubernetes cluster, and the operator watches the namespaces of that cluster that have a Dash0 monitoring resource. Payments has no cluster, so there is nothing for <code>kubectl</code> to apply to and nothing for the operator to watch. The Terraform resource <code>dash0_dashboard</code> takes the YAML directly and needs no cluster."
             },
             {
               "key": "grafana-import",

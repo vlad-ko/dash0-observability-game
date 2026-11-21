@@ -316,10 +316,13 @@ test('step 2: each wrong option fails for a reason the scenario or the docs show
   assert.doesNotMatch(why('terraform'), /Source tab/);
   assert.match(why('provider'), /dash0hq\/dash0/);
   assert.match(why('provider'), /version control, automated deployment pipelines and code review/);
-  assert.match(why('agent0-pr'), /Agent0 can generate infrastructure as code for a dashboard and raise it as a pull request to your repository/);
+  assert.match(why('agent0-pr'), /Agent0 can generate infrastructure as code for dashboards and raise it as pull requests to your repository/);
   assert.match(why('cli-first'), /Dash0 CLI does create a dashboard from a YAML or JSON file/);
   assert.match(why('cli-first'), /live first/);
-  assert.match(why('perses-terraform'), /Applying it from Terraform still needs that cluster and operator, and payments has neither/);
+  assert.match(why('operator-kubectl'), /Payments has no cluster, so there is nothing for kubectl to apply to/);
+  assert.match(why('operator-kubectl'), /dash0_dashboard takes the YAML directly and needs no cluster/);
+  assert.match(why('agent0-pr'), /the pipeline, not the Agent0 session, applies it/);
+  assert.doesNotMatch(plain(choices.find((c) => c.key === 'agent0-pr').label), /before anything is applied/);
   assert.match(why('grafana-import'), /Prometheus queries only/);
   assert.match(why('grafana-import'), /does not describe it as something a pipeline runs/);
   assert.match(why('agent0-live'), /ask Agent0 for the Terraform configuration or Kubernetes manifest/);

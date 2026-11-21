@@ -112,7 +112,7 @@ export default {
             },
             {
               "key": "metric-label",
-              "label": "The HTTP status code is a metric label, and spans keep it differently",
+              "label": "The HTTP status code is a metric label, while spans store it under a different key",
               "why": "Both names are span attribute names in the HTTP conventions (the migration page renames one to the other), so spans do carry the status code as an attribute. The two queries differ by the name the migration renamed, not by metric against span."
             },
             {
@@ -122,7 +122,7 @@ export default {
             },
             {
               "key": "stable-key",
-              "label": "The failing spans carry the current status code identifier, not the old one",
+              "label": "The failing spans carry the current status code attribute, not the old one",
               "why": "Checkout sends http.response.status_code (its opt-in is http, level 8.2), and the versions query counted {{failed-after}} failed from {{window}} by that key. The failed-requests query asked for http.status_code, which no checkout span carries now, so it matched nothing while orders failed."
             },
             {
@@ -147,12 +147,12 @@ export default {
             },
             {
               "key": "refused",
-              "label": "The backend refuses span names the HTTP conventions deprecated, and returned nothing at all",
+              "label": "The backend refuses attribute names the HTTP conventions deprecated, and returned nothing at all",
               "why": "The answer was 0 spans, which is what a query returns when no span matches, not a refusal. Nothing on the migration page says a backend rejects the old names: the query ran, and no span carried that key."
             },
             {
               "key": "lag",
-              "label": "The spans with the failing status code had not been ingested when the query ran",
+              "label": "The failing status code spans had not been ingested when the query ran",
               "why": "The versions query read the same window, {{window}}, and counted {{failed-after}} failed, so the spans had arrived. Spans that were late would be missing from both queries."
             }
           ]
