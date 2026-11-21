@@ -69,22 +69,22 @@ export default {
             },
             {
               "key": "increase",
-              "label": "Alert on <code>increase()</code> over 10 minutes: failures of checkout in that window",
+              "label": "Alert on <code>increase()</code> over 10 minutes: checkout failures in that window",
               "why": "<code>increase(http_requests_total{job=\"checkout\", code=~\"5..\"}[10m]) > 20</code> estimates the failures in the last ten minutes, so it fires while checkout fails and resolves when it stops, and it adjusts for the reset when the process restarts. Better still, page on the share that fails, as <code>CheckoutErrorRatio</code> does. In Dash0, a [[check rule]] evaluates a PromQL expression against a threshold, and its For setting is how long the threshold must be exceeded before alerting."
             },
             {
               "key": "delta",
-              "label": "Alert on <code>delta()</code> over 10 minutes: the checkout change across that window",
+              "label": "Alert on <code>delta()</code> over 10 minutes: the change across that window",
               "why": "Prometheus says to use <code>delta()</code> with gauges only. On a counter, a restart resets the total to zero and delta reads that as a huge drop. <code>increase()</code> and <code>rate()</code> are the counter functions."
             },
             {
               "key": "rate-5m",
-              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that the checkout limit to cross is 120 an hour",
+              "label": "Use <code>rate()</code> with a <code>[5m]</code> range, so that the limit to cross is 120 an hour",
               "why": "<code>rate()</code> turns the counter into failures per second over the window, so the rule fires while checkout fails and resolves once it stops, and it adjusts for the reset when a process restarts. The threshold then reads as a speed, not as a total."
             },
             {
               "key": "error-share",
-              "label": "Page as soon as an error reaches one user in 50",
+              "label": "Alert as soon as an error reaches one user in 50",
               "why": "The failing request rate divided by the whole request rate is a symptom that does not grow with the traffic or with the age of the process. It rises while users get errors and falls back when they stop, and the Prometheus practices page says to page on user-visible errors."
             },
             {
