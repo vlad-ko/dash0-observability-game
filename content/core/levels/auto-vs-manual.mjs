@@ -210,7 +210,7 @@ export default {
             },
             {
               "key": "agent-and-sdk",
-              "label": "The operator and cart's own code both switch telemetry on, giving each fetch call two CLIENT spans",
+              "label": "The operator and cart's code both switch telemetry on in the pod, giving fetches a second CLIENT span",
               "why": "The operator loads the agent through <code>NODE_OPTIONS</code> and <code>tracing.js</code> starts a NodeSDK of its own. Each registers the fetch instrumentation, and in this scenario each call gets a CLIENT span from both."
             },
             {
@@ -220,7 +220,7 @@ export default {
             },
             {
               "key": "two-fetch-hooks",
-              "label": "The fetch instrumentation is registered twice, and every registration starts a span of its own",
+              "label": "The fetch instrumentation is registered twice, and each registration starts a span of its own",
               "why": "Fetch instrumentation subscribes to a diagnostics channel, so loading it a second time subscribes a second time. In this scenario that is what the two setups do, and each call gets two CLIENT spans."
             },
             {
@@ -275,7 +275,7 @@ export default {
             },
             {
               "key": "tracing-repeats-agent",
-              "label": "<code>tracing.js</code> repeats the agent's setup in cart, and both start a fetch span",
+              "label": "<code>tracing.js</code> repeats the agent's configuration in cart, so a copy gives the fetch an extra span",
               "why": "The agent the operator injects and the NodeSDK in <code>tracing.js</code> both switch on the Node.js auto-instrumentations. Run twice, the fetch instrumentation traces each call twice."
             },
             {
