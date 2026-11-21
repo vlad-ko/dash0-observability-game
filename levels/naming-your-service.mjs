@@ -10,7 +10,8 @@
 import CORE from '../content/core/levels/naming-your-service.mjs';
 import { bindRunLevel } from '../lib/content/bind.mjs';
 import { fillSlots } from '../lib/content/placeholders.mjs';
-import { actions, codeBlock, finishButton, helpChips, nextButton, prose, question, setFeedback, sideColumn, split, step } from '../lib/ui/index.mjs';
+import { actions, codeBlock, finishButton, helpChips, nextButton, prose, question, sideColumn, split, step } from '../lib/ui/index.mjs';
+import { tell } from '../lib/widgets/tell.mjs';
 import { choiceHtml, mountChoice } from '../lib/widgets/choice.mjs';
 import { canFocus } from '../lib/widgets/focus.mjs';
 import { editorPanel, fitEditor, lockEditor } from '../lib/widgets/editor.mjs';
@@ -24,6 +25,9 @@ import { playSwirl } from '../lib/swirl-render.mjs';
 // (the count and list of problems Check found, and the values of the config that passed).
 const VARS = {};
 const SLOTS = ['count', 'issues', 'name', 'version', 'environment'];
+// The run entries that are prose and may mark glossary terms (docs/CONTENT.md section 5.1). Drawn through ctx.renderStep.
+export const TERMS = ['showsUpAsIntro'];
+const BIND = { vars: VARS, slots: SLOTS, terms: TERMS };
 
 const SKELETON = {
   id: 'naming-your-service',
@@ -98,7 +102,7 @@ function screens(ctx, say) {
     const check = body.querySelector('#nys-check');
     const fb = body.querySelector('#nys-feedback');
     const next = bar.querySelector('#nys-next');
-    const tell = (tone, html) => setFeedback(fb, tone, html, { scroll: true }); // each line answers a button press (#339)
+    const show = (tone, html) => tell(ctx, fb, tone, html, { scroll: true }); // each line answers a button press (#339)
     const fit = fitEditor(input, { max: 16, signal: ctx.signal });
     const tried = new Set(); // normalised failing configs, as in Configure it
     ctx.widget?.('configure'); // this step is the env checker, a Configure it board (how to play follows it)
@@ -118,7 +122,7 @@ function screens(ctx, say) {
     function run({ hinted = false } = {}) {
       if (ladder.done) return;
       const text = input.value;
-      if (!hinted && text.trim() === '') return void tell('neutral', say.fixBlankSays);
+      if (!hinted && text.trim() === '') return void show('neutral', say.fixBlankSays);
       const result = checkConfig(text, TARGET, PROCESS);
       if (!result.ok) {
         // Only a new failing config costs a mistake; any config already checked (same after normalising) is free.
@@ -128,16 +132,16 @@ function screens(ctx, say) {
         tried.add(norm);
         const count = result.issues.length;
         const issues = prose(renderIssues(result.issues, ctx.escapeHtml));
-        if (same) return void tell('neutral', fillSlots(say.fixRepeatSays, { issues }));
+        if (same) return void show('neutral', fillSlots(say.fixRepeatSays, { issues }));
         ladder.miss();
-        tell('error', count === 1 ? fillSlots(say.fixMissOneSays, { issues }) : fillSlots(say.fixMissManySays, { count, issues }));
+        show('error', count === 1 ? fillSlots(say.fixMissOneSays, { issues }) : fillSlots(say.fixMissManySays, { count, issues }));
         return;
       }
       const { attributes: attrs, source } = effectiveResource(parseEnv(text).vars, PROCESS);
       const e = ctx.escapeHtml;
       ladder.complete();
       lockEditor(input, check);
-      tell(
+      show(
         hinted ? 'neutral' : 'success',
         `${hinted ? `${say.fixFilledSays} ` : ''}${fillSlots(say.fixPassSays, {
           name: e(attrs['service.name']),
@@ -185,7 +189,7 @@ function screens(ctx, say) {
 
 /** The level with `text` (a content file's object) joined to the logic; one content file per edition (docs/CONTENT.md). */
 export function withText(text) {
-  return bindRunLevel(text, SKELETON, { vars: VARS, slots: SLOTS, screens });
+  return bindRunLevel(text, SKELETON, { ...BIND, screens });
 }
 
 export default withText(CORE);

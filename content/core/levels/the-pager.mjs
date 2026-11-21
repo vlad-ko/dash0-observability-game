@@ -6,7 +6,7 @@ export default {
   "sub": "An alert with no context",
   "rewardTitle": "First page",
   "run": {
-    "intro": "Your pager goes off. Try the four questions below: you will find you cannot answer them, because nothing sends telemetry yet. Each try burns error budget. Press Escalate when you give up. If the budget runs out first, the pager escalates for you.",
+    "intro": "Your pager goes off. Try the four questions below: you will find you cannot answer them, because nothing sends [[telemetry]] yet. Each try burns error budget. Press Escalate when you give up. If the budget runs out first, the pager escalates for you.",
     "alert": "PAGE: checkout p95 > 2 s (firing)",
     "meterLabel": "Error budget",
     "meterUnit": "percent spent",

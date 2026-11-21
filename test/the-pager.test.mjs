@@ -59,7 +59,9 @@ test('the-pager: copy matches docs/M1-DESIGN.md §6', () => {
   }
   assert.deepEqual(CONTENT.budget, { startPct: 100, stepPct: 25 });
   assert.equal(CONTENT.reward, REWARD);
-  assert.equal(CONTENT.intro, INTRO);
+  // The intro marks one glossary term (#442): the words a reader sees stay INTRO, and the marker is there.
+  assert.equal(CONTENT.intro.replace(/<span data-gloss="">([^<]*)<\/span>/g, '$1'), INTRO);
+  assert.equal(CONTENT.intro.includes('<span data-gloss="">telemetry</span>'), true);
   assert.equal(CONTENT.telemetry.intro, LIT_INTRO);
   assert.deepEqual(CONTENT.telemetry.asks.map((a) => [a.key, a.label, a.answer]), ASKS);
   assert.deepEqual(CONTENT.telemetry.asks.map((a) => a.key), CONTENT.looks.map((l) => l.key), 'same questions');

@@ -92,7 +92,7 @@ export default {
       ]
     },
     "partsReason": "Sort every item to continue.",
-    "dependsOnIntro": "The payments team ships <code>kettle-payments-client</code>, a library used by 30 services. They want it to emit spans.",
+    "dependsOnIntro": "The payments team ships <code>kettle-payments-client</code>, a library used by 30 services. They want it to emit [[spans]].",
     "dependsOnQuestion": "Which OpenTelemetry package should the library depend on?",
     "dependsOn": [
       {

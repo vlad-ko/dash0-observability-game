@@ -24,7 +24,7 @@ export default {
         "label": "Profile"
       }
     ],
-    "dataIntro": "OpenTelemetry carries four kinds of telemetry, called signals: metrics, logs, traces and profiles. Here is a little of each from the shop.",
+    "dataIntro": "[[OpenTelemetry]] carries four kinds of [[telemetry]], called signals: metrics, logs, traces and profiles. Here is a little of each from the shop.",
     "dataQuestion": "Which signal is each one?",
     "data": {
       "id": "sig-data",
