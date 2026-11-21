@@ -681,7 +681,8 @@ const REVIEW2_REPLIES = [
 /** The replies the third review (of 12c43c3) found passing: the right label nearly verbatim, a clause dropped or a word swapped. */
 const REVIEW3_REPLIES = [
   ['silence', 'The exporter was renamed, but the pipelines still list the old id.'],
-  ['pipe-extension', 'It is defined under extensions but never listed under service.extensions.'],
+  // #390: pipe-extension is a pool now; the reply is the near-verbatim of its first right phrasing ("defined in extensions, yet service.extensions skips it").
+  ['pipe-extension', 'It is defined in extensions, yet service.extensions skips it.'],
   // Not here on purpose: pipe-extension "health_check is there but service.extensions does not list it." The step's own text already says
   // "not listed under service.extensions", so only a reply built from the right label's other words can be caught; accepted.
   ['det-when', 'Once, when the SDK starts: the resource is detected then and does not change.'],

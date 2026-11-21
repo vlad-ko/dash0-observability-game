@@ -11,6 +11,14 @@
 // read the request context (k8sattributes); the order between those middle processors is not
 // graded, so no line depends on it. A pipeline without batch is fine.
 //
+// The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9 answers each (3 right, 6 wrong) and a showing draws 3.
+// Their extra answers rest on pages read 2026-11-21 (Collector v0.164.0): the memory limiter README
+// (https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/memorylimiterprocessor/README.md: periodic checks, a refusal is a
+// non-permanent error to the preceding component, receivers retry and may apply backpressure, forced GC only above the hard limit, first processor in
+// a pipeline), the batch README (.../processor/batchprocessor/README.md: after memory_limiter and sampling, send_batch_size is a trigger and
+// send_batch_max_size the limit, the timeout) and the processors README (.../processor/README.md: the recommended order, batching clears the request
+// context, prefer the exporter's batching).
+//
 // The words are in content/core/levels/order-matters.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/order-matters.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -44,11 +52,39 @@ const SKELETON = {
       },
       {
         qid: 'order-q-why',
-        choice: { id: 'order-why', choices: [{ key: 'refuse-early', right: true }] },
+        choice: {
+          id: 'order-why',
+          draw: 3,
+          choices: [
+            { key: 'refuse-early', right: true },
+            { key: 'backpressure', right: true },
+            { key: 'only-sees', right: true },
+            { key: 'cleans-data' },
+            { key: 'any-position' },
+            { key: 'sizes-batches' },
+            { key: 'gc-each' },
+            { key: 'drops-oldest' },
+            { key: 'scales-up' },
+          ],
+        },
       },
       {
         qid: 'order-q-batch',
-        choice: { id: 'order-batch', choices: [{ key: 'late', right: true }] },
+        choice: {
+          id: 'order-batch',
+          draw: 3,
+          choices: [
+            { key: 'late', right: true },
+            { key: 'after-filters', right: true },
+            { key: 'last-in-list', right: true },
+            { key: 'early' },
+            { key: 'removed' },
+            { key: 'ahead-of-limiter' },
+            { key: 'exporter-cannot' },
+            { key: 'send-size-max' },
+            { key: 'shared-instance' },
+          ],
+        },
       },
     ],
   },

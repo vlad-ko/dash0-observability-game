@@ -20,6 +20,14 @@
 // Distribution: the transform and redaction processors are shipped in the contrib distribution (and
 // k8s); the level does not say more, because the core list has grown and the pages differ.
 //
+// The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the rename step lists 9 statements (3 right, 6 wrong) and shows 3, the
+// spam filter step lists 12 answers (3 right, 9 wrong) and shows 4, the filter processor being the near-miss the 50/50 keeps. Their extra answers rest
+// on pages read 2026-11-21 (Collector v0.164.0): the OTTL functions README (.../pkg/ottl/ottlfuncs/README.md: set, delete_key,
+// delete_matching_keys, replace_all_patterns with the modes key and value, no rename function), the transform processor README (the "key" mode example
+// that renames a resource attribute, statements run in order, per-signal contexts), the attributes processor README (the delete action) and
+// Dash0's spam filter page (https://www.dash0.com/docs/dash0/cost-control/spam-filters: filters drop spans, logs, metrics and web events during
+// ingestion, filtered telemetry still carries the Ingest charge) and its auth tokens page (they authenticate and authorise senders).
+//
 // The words are in content/core/levels/ottl-and-transforms.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/ottl-and-transforms.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -126,7 +134,21 @@ const SKELETON = {
     steps: [
       {
         qid: 'ottl-q-rename',
-        choice: { id: 'ottl-rename', choices: [{ key: 'set-then-delete', right: true }] },
+        choice: {
+          id: 'ottl-rename',
+          draw: 3,
+          choices: [
+            { key: 'set-then-delete', right: true },
+            { key: 'replace-key', right: true },
+            { key: 'set-delete-matching', right: true },
+            { key: 'set-only' },
+            { key: 'delete-then-set' },
+            { key: 'value-mode' },
+            { key: 'rename-function' },
+            { key: 'delete-wrong-case' },
+            { key: 'delete-new' },
+          ],
+        },
       },
       {
         qid: 'ottl-q-spot',
@@ -138,7 +160,24 @@ const SKELETON = {
       },
       {
         qid: 'ottl-q-backend',
-        choice: { id: 'ottl-backend', choices: [{ key: 'pipeline', right: true }] },
+        choice: {
+          id: 'ottl-backend',
+          draw: 4,
+          choices: [
+            { key: 'pipeline', right: true },
+            { key: 'transform-first', right: true },
+            { key: 'attributes-delete', right: true },
+            { key: 'spam-strip' },
+            { key: 'filter-processor', keep: true }, // the tempting near-miss: the 50/50 never removes it (#371)
+            { key: 'spam-drop-all' },
+            { key: 'spam-mask' },
+            { key: 'spam-cleans-stored' },
+            { key: 'view-hide' },
+            { key: 'dash0-runs-processors' },
+            { key: 'exporter-exclude' },
+            { key: 'rotate-token' },
+          ],
+        },
       },
     ],
   },

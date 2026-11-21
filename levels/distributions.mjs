@@ -18,6 +18,13 @@
 // otlp and eBPF profiling distributions ship little, so no item depends on those, and the copy tells the
 // player to read the manifest.
 //
+// The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9 answers each (3 right, 6 wrong) and a showing draws 3.
+// Their extra answers rest on pages read 2026-11-21: the distribution manifests of Collector v0.164.0
+// (https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol/manifest.yaml and the contrib and k8s ones:
+// k8sattributes is in contrib and k8s and not in core), the distributions page (https://opentelemetry.io/docs/collector/distributions/: a manifest.yaml
+// per distribution, ocb for custom ones) and the OCB guide (https://opentelemetry.io/docs/collector/extend/ocb/: a manifest with a dist section and
+// lists of modules, needs Go), plus the contrib distribution README (limit a production Collector to the components it needs).
+//
 // The words are in content/core/levels/distributions.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/distributions.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -57,12 +64,40 @@ const SKELETON = {
     steps: [
       {
         qid: 'dist-q-unknown',
-        choice: { id: 'dist-unknown', choices: [{ key: 'refuses-to-start', right: true }] },
+        choice: {
+          id: 'dist-unknown',
+          draw: 3,
+          choices: [
+            { key: 'refuses-to-start', right: true },
+            { key: 'rejected-at-startup', right: true },
+            { key: 'fails-before-data', right: true },
+            { key: 'ignored' },
+            { key: 'loads-on-demand' },
+            { key: 'drops-data' },
+            { key: 'core-has-all' },
+            { key: 'no-cluster' },
+            { key: 'reduced-mode' },
+          ],
+        },
       },
       { qid: 'dist-q-sort', sort: SORT },
       {
         qid: 'dist-q-build',
-        choice: { id: 'dist-build', choices: [{ key: 'ocb', right: true }] },
+        choice: {
+          id: 'dist-build',
+          draw: 3,
+          choices: [
+            { key: 'ocb', right: true },
+            { key: 'ocb-manifest', right: true },
+            { key: 'ocb-chosen', right: true },
+            { key: 'contrib-config' },
+            { key: 'otlp-distro' },
+            { key: 'plugin-dir' },
+            { key: 'core-module-path' },
+            { key: 'edit-manifest' },
+            { key: 'set-flag' },
+          ],
+        },
       },
     ],
   },

@@ -29,7 +29,8 @@ const stepOf = (levelId, key, widgetId) =>
   LIVE.levels[levelId].play.steps.find((s) => s[key] && s[key].id === widgetId)[key];
 const choiceOf = (levelId, widgetId) => stepOf(levelId, 'choice', widgetId).choices;
 const rightOf = (levelId, widgetId) => choiceOf(levelId, widgetId).find((c) => c.right);
-const keysOf = (levelId, widgetId) => choiceOf(levelId, widgetId).map((c) => c.key).sort();
+const rightKeys = (levelId, widgetId) => choiceOf(levelId, widgetId).filter((c) => c.right).map((c) => c.key).sort();
+const wrongKeys = (levelId, widgetId) => choiceOf(levelId, widgetId).filter((c) => !c.right).map((c) => c.key).sort();
 
 const OTTL = 'ottl-and-transforms';
 const OTTL_SRC = levelSource('ottl-and-transforms');
@@ -114,7 +115,10 @@ test('ottl: a rename is a set then a delete_key, in that order (the OTTL functio
   assert.equal(right.key, 'set-then-delete');
   const text = plain(right.label + right.why);
   for (const w of ['set', 'delete_key', 'order', 'no rename function']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf(OTTL, 'ottl-rename'), ['delete-then-set', 'set-only', 'set-then-delete']);
+  // #390: a pool (draw 3) of three right statements and six wrong ones; the old three are among them.
+  assert.equal(stepOf(OTTL, 'choice', 'ottl-rename').draw, 3);
+  assert.deepEqual(rightKeys(OTTL, 'ottl-rename'), ['replace-key', 'set-delete-matching', 'set-then-delete']);
+  assert.deepEqual(wrongKeys(OTTL, 'ottl-rename'), ['delete-new', 'delete-then-set', 'delete-wrong-case', 'rename-function', 'set-only', 'value-mode']);
   const wrongWhy = (k) => plain(choiceOf(OTTL, 'ottl-rename').find((c) => c.key === k).why);
   assert.equal(/both|old key|still/.test(wrongWhy('set-only')), true, 'one set leaves the old attribute behind');
   assert.equal(/nothing left to copy|lost/.test(wrongWhy('delete-then-set')), true, 'delete first loses the value');
@@ -283,7 +287,11 @@ test('ottl backend: redact in the pipeline; a spam filter drops whole points at 
   assert.equal(right.key, 'pipeline');
   const text = plain(right.label + right.why);
   for (const w of ['pipeline', 'spam filter', 'whole', 'one attribute', 'ingest', 'cannot be recovered', 'charge']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf(OTTL, 'ottl-backend'), ['filter-processor', 'pipeline', 'spam-drop-all', 'spam-strip']);
+  // #390: a pool (draw 4) of three right answers and nine wrong ones; the old four are among them and the filter processor is the near-miss the 50/50 keeps.
+  assert.equal(stepOf(OTTL, 'choice', 'ottl-backend').draw, 4);
+  assert.deepEqual(rightKeys(OTTL, 'ottl-backend'), ['attributes-delete', 'pipeline', 'transform-first']);
+  assert.deepEqual(wrongKeys(OTTL, 'ottl-backend'), ['dash0-runs-processors', 'exporter-exclude', 'filter-processor', 'rotate-token', 'spam-cleans-stored', 'spam-drop-all', 'spam-mask', 'spam-strip', 'view-hide']);
+  assert.deepEqual(choiceOf(OTTL, 'ottl-backend').filter((c) => c.keep).map((c) => c.key), ['filter-processor']);
   const filt = plain(choiceOf(OTTL, 'ottl-backend').find((c) => c.key === 'filter-processor').why);
   for (const w of ['filter processor', 'whole', 'drop', 'transform processor']) assert.equal(filt.includes(w), true, `filter option says "${w}"`);
   assert.equal(OTTL_SRC.includes('filterprocessor/README.md'), true, 'the filter processor README is cited on a Docs line');
@@ -309,7 +317,10 @@ test('distributions: a config that names a component the binary does not contain
   assert.equal(right.key, 'refuses-to-start');
   const text = plain(right.label + right.why);
   for (const w of ['core', 'k8sattributes', 'unknown type', 'not compiled', 'contrib']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf(DIST, 'dist-unknown'), ['ignored', 'loads-on-demand', 'refuses-to-start']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf(DIST, 'choice', 'dist-unknown').draw, 3);
+  assert.deepEqual(rightKeys(DIST, 'dist-unknown'), ['fails-before-data', 'refuses-to-start', 'rejected-at-startup']);
+  assert.deepEqual(wrongKeys(DIST, 'dist-unknown'), ['core-has-all', 'drops-data', 'ignored', 'loads-on-demand', 'no-cluster', 'reduced-mode']);
 });
 
 // The relevant component lists of each pre-built distribution, copied from its manifest.yaml
@@ -376,7 +387,10 @@ test('distributions: a component nobody ships is built in with OCB, from a manif
   assert.equal(right.key, 'ocb');
   const text = plain(right.label + right.why);
   for (const w of ['OpenTelemetry Collector Builder', 'manifest', 'custom', 'smaller']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf(DIST, 'dist-build'), ['contrib-config', 'ocb', 'otlp-distro']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf(DIST, 'choice', 'dist-build').draw, 3);
+  assert.deepEqual(rightKeys(DIST, 'dist-build'), ['ocb', 'ocb-chosen', 'ocb-manifest']);
+  assert.deepEqual(wrongKeys(DIST, 'dist-build'), ['contrib-config', 'core-module-path', 'edit-manifest', 'otlp-distro', 'plugin-dir', 'set-flag']);
 });
 
 // ---- facts and sources --------------------------------------------------------------
