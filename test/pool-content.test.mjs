@@ -362,9 +362,9 @@ function sortTellScores(spec) {
 }
 /**
  * A pair is the best of thousands of ORs chosen after the fact, so its mean may sit further above the guess than a single feature's
- * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both.
+ * (the best of a few dozen) before it says anything; the share of boards sorted for 5 stars has the same limit for both. C6 and C7
+ * share one PAIR_BAND (declared above), as both read the best of many ORs.
  */
-const PAIR_BAND = 0.25;
 const sortTellProblems = (p) => {
   if (p.kind !== 'sort') return [];
   const { chance, scores } = sortTellScores(p.spec);
@@ -396,8 +396,8 @@ test('C7 has teeth: a word, a closing word, a two-word phrase, a comma and code 
   assert.ok(sortTellProblems(other[0]).some((m) => m.includes('word "golden" means b')), 'a word on every item of the other bucket');
   const last = withSort((pool) => { for (const it of pool.items) it.label = it.bucket === 'a' ? `${it.label} today` : `${it.label} soon`; });
   assert.ok(sortTellProblems(last[0]).some((m) => m.includes('last word "today"')), 'a closing word that differs by bucket');
-  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} in the end`; });
-  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "in the" means b')), 'a phrase on every item of one bucket');
+  const phrase = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `${it.label} once more`; });
+  assert.ok(sortTellProblems(phrase[0]).some((m) => m.includes('phrase "once more" means b')), 'a phrase on every item of one bucket');
   const comma = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'a') it.label = `${it.label}, then more`; });
   assert.ok(sortTellProblems(comma[0]).some((m) => m.includes('mark ","')), 'a comma on every item of one bucket');
   const code = withSort((pool) => { for (const it of pool.items) if (it.bucket === 'b') it.label = `<code>${it.id}</code>`; });
