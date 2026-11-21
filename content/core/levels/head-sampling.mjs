@@ -105,7 +105,7 @@ export default {
             },
             {
               "key": "nine-in-ten",
-              "label": "Storefront lets 1 in 10 traces through, but downstream services still send spans for the other nine, as the sampler never asks upstream",
+              "label": "Storefront lets 1 in 10 traces through, but downstream services still send spans for the other nine, as the sampler does not look at the parent's flag",
               "why": "The root decides once and the sampled flag in <code>traceparent</code> carries its decision, but <code>always_on</code> does not read the flag. For the nine traces in ten that the root dropped, the backend gets checkout and payments spans with no storefront span above them."
             },
             {
@@ -115,12 +115,12 @@ export default {
             },
             {
               "key": "always-ignored",
-              "label": "Only a root span reads the sampler setting, so a child disregards it, and the default ParentBased sampler follows the root",
+              "label": "A child ignores <code>OTEL_TRACES_SAMPLER</code> and falls back to the default ParentBased sampler, which follows the parent's flag",
               "why": "<code>OTEL_TRACES_SAMPLER</code> sets the sampler of the whole SDK, root or not, and AlwaysOn returns RECORD_AND_SAMPLE for every span it is asked about. Had the default run instead, <code>parentbased_always_on</code> would have followed the sampled flag and the traces would have no holes."
             },
             {
               "key": "new-trace-id",
-              "label": "A child on <code>always_on</code> starts a new trace ID, so its spans no longer belong to the root's trace",
+              "label": "A child on <code>always_on</code> starts a new trace ID, so its spans no longer belong to the parent's trace",
               "why": "The SDK takes the trace ID from the parent when there is one, and only then asks the sampler, which returns a decision, attributes and a tracestate and never a trace ID. The spans still carry the root's trace ID, which is why they show up as traces whose root is missing."
             },
             {
@@ -131,7 +131,7 @@ export default {
             {
               "key": "backend-sheds",
               "label": "The backend is over its budget of 760 spans a second and sheds the root spans of storefront first",
-              "why": "A backend does not pick spans by service, and nothing in this setup says it sheds any. The roots are missing because the root sampler dropped them in storefront, before any export, while the children of those traces are sent anyway."
+              "why": "Nothing in this setup says the backend sheds any spans, and shedding there would not leave exactly the children of the dropped traces. The roots are missing because the root sampler dropped them in storefront, before any export, while the children of those traces are sent anyway."
             },
             {
               "key": "needs-arg",
@@ -140,8 +140,8 @@ export default {
             },
             {
               "key": "blind-root",
-              "label": "Head sampling does not see the whole trace, so failed and slow ones follow the same 1 in 10, and the ones the flag dropped have holes",
-              "why": "Deciding before the trace has happened means 1 in 10 of the failures is kept too, which is a cost of head sampling and not a hole. A trace the root kept is whole when every service follows the sampled flag."
+              "label": "Head sampling cannot tell failed or slow traces from healthy ones, so it drops some of the interesting ones at random",
+              "why": "That is a real cost of head sampling: it decides before the trace has happened, so it keeps 1 in 10 of the failures too. It would not leave children without parents, though, because a trace the root kept is whole when every service follows the sampled flag."
             }
           ]
         }
