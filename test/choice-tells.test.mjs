@@ -132,8 +132,15 @@ function strayed(qs) {
 // The fixed questions and the pooled ones are summed apart, each at BAND: a pool is held to chance in expectation (its own sum),
 // and the fixed set cannot hide behind it, nor a pool behind the fixed set.
 test('no blind option-shape rule strays from chance by more than a few points over the fixed questions, either way', async () => {
-  const qs = (await allQuestions()).filter((q) => q.draw === undefined);
-  assert.ok(qs.length >= 70, `found ${qs.length} fixed questions`);
+  const all = await allQuestions();
+  const qs = all.filter((q) => q.draw === undefined);
+  // The floor comes from the registry, so pooling a level never edits it: every declarative choice step without `draw` must be found
+  // here (the scan also reads run levels, so it may find more), and the fixed and pooled sets must add up to what was scanned.
+  const steps = Object.values(liveRegistry().levels).flatMap((l) => (l.play?.steps ?? []).filter((s) => s.choice));
+  const declaredFixed = steps.filter((s) => s.choice.draw === undefined).length;
+  assert.ok(declaredFixed > 0, 'the registry has fixed choice steps');
+  assert.ok(qs.length >= declaredFixed, `found ${qs.length} fixed questions, the registry declares ${declaredFixed}`);
+  assert.equal(qs.length + all.filter((q) => q.draw !== undefined).length, all.length);
   const chance = qs.reduce((s, q) => s + 1 / shownOf(q), 0);
   if (process.env.TELLS) for (const [name, mark] of Object.entries(STRATEGIES)) console.log(`TELLS fixed ${name} ${score(qs, mark).toFixed(1)} of ${qs.length} (chance ${chance.toFixed(1)})`);
   if (process.env.TELLS) {
