@@ -131,6 +131,8 @@ const BAD = {
   'C5 cross-quotes': withChoice((pool) => { pool.choices[0].why = `Not like ${pool.choices[1].label}.`; }),
   'C8 marking word': withChoice((pool) => { for (const c of pool.choices) if (c.right) c.label = `${c.label} golden`; }),
 };
+/** What a check's report must name for its bad fixture, where the fault is one planted thing (any report line otherwise). */
+const NAMES = { 'C8 marking word': (m) => m.includes('"golden"') };
 
 for (const [name, check] of Object.entries(CHECKS)) {
   test(`${name}: every live pooled step passes, and so does the fixture`, () => {
@@ -140,7 +142,7 @@ for (const [name, check] of Object.entries(CHECKS)) {
   });
   test(`${name}: has teeth, a pool with the fault is reported`, () => {
     assert.ok(BAD[name].length > 0, 'the bad fixture is there');
-    for (const p of BAD[name]) assert.ok(check(p).length > 0, `${name} missed its fault`);
+    for (const p of BAD[name]) assert.ok(check(p).some(NAMES[name] ?? (() => true)), `${name} missed its fault`);
   });
 }
 
@@ -292,6 +294,7 @@ const reportLine = (p, r) => `${p.kind === 'choice' ? 'C6' : 'C7'} ${p.level ?? 
 test('C6 and C7 are advisory: the report of a pooled question lists its top features, scored and ordered, and TELLS=1 prints every live one', () => {
   for (const p of good) {
     const r = tellReport(p);
+    assert.deepEqual(r.flagged, [], `${p.id}: the clean fixture has nothing past the band`);
     assert.equal(r.top.length, REPORT_TOP, p.id);
     for (const s of r.top) assert.ok(typeof s.name === 'string' && Number.isFinite(s.score), `${p.id} ${s.name}`);
     const away = r.top.map((s) => (p.kind === 'choice' ? Math.abs(s.score - r.chance) : s.score));
