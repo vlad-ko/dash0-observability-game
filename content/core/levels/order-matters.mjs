@@ -84,8 +84,8 @@ export default {
             },
             {
               "key": "only-sees",
-              "label": "Whatever sits ahead of it handles traffic the limiter cannot hold back, whatever the load",
-              "why": "The limiter returns an error to the component before it in the pipeline. Processors listed ahead of it handle the data first and may hold on to it, and that memory is outside what the limiter can protect."
+              "label": "Anything listed before it can already be holding data that the limiter cannot refuse",
+              "why": "The limiter refuses data by returning an error to the component before it in the pipeline, so it can only refuse what that component hands it. Processors listed ahead of it handle the data first and may hold on to it."
             },
             {
               "key": "sizes-batches",
@@ -94,7 +94,7 @@ export default {
             },
             {
               "key": "gc-each",
-              "label": "It triggers garbage collection around every stage, which counts correctly at the very front",
+              "label": "It forces garbage collection after every processor, which only works if it is first in the list",
               "why": "The limiter checks memory use periodically and forces garbage collection only when usage is above the hard limit. It does not run after each processor."
             },
             {
@@ -133,7 +133,7 @@ export default {
             },
             {
               "key": "after-filters",
-              "label": "Behind every filter and transform, and behind <code>k8sattributes</code>, whose request context batching clears for good",
+              "label": "After the filters and transforms, and after <code>k8sattributes</code>, as batching clears the request context it reads",
               "why": "Processors that rely on the request context, such as k8sattributes, must run before batching, because batching clears the context. Filtering and transforming come first so the processor batches only data that will be exported."
             },
             {
@@ -158,7 +158,7 @@ export default {
             },
             {
               "key": "shared-instance",
-              "label": "In one shared slot for every pipeline, as a lone instance serves traces, metrics and logs together",
+              "label": "In one shared place for every pipeline, because a single instance serves traces, metrics and logs together",
               "why": "When a processor is referenced in several pipelines, each pipeline gets a separate instance of it, and each pipeline has its own list."
             }
           ]

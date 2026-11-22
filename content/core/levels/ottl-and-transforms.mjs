@@ -31,7 +31,7 @@ export default {
             },
             {
               "key": "replace-key",
-              "label": "A single <code>replace_all_patterns(span.attributes, \"key\", \"^cust$\", \"app.customer.id\")</code> on the key",
+              "label": "A single <code>replace_all_patterns(span.attributes, \"key\", \"^cust$\", \"app.customer.id\")</code> that renames the key",
               "why": "In <code>key</code> mode the function replaces the part of a key that matches the pattern, so the anchored pattern turns <code>cust</code> into the new name in one statement. The transform processor README shows the same call to rename a resource attribute."
             },
             {
@@ -41,7 +41,7 @@ export default {
             },
             {
               "key": "value-mode",
-              "label": "A single <code>replace_all_patterns(span.attributes, \"value\", \"cust\", \"app.customer.id\")</code> that works on the value, not on the key",
+              "label": "A single <code>replace_all_patterns(span.attributes, \"value\", \"cust\", \"app.customer.id\")</code>, which changes values and leaves the key",
               "why": "In <code>value</code> mode the function replaces text inside the values of the map. The key stays <code>cust</code>, and a value that contains the word is changed."
             },
             {
@@ -173,7 +173,7 @@ export default {
             {
               "key": "dash0-runs-processors",
               "label": "The platform runs the Collector's processors, and a transform can handle the email of a span there",
-              "why": "The Collector's processors run in the Collector. At ingestion Dash0 applies its own controls, such as spam filters, which drop whole data."
+              "why": "The Collector's processors run in the Collector, which you operate. Dash0's spam filter page describes filters that drop data during ingestion, and it does not describe running processors there."
             },
             {
               "key": "exporter-exclude",

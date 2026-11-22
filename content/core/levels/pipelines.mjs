@@ -35,7 +35,7 @@ export default {
             },
             {
               "key": "joins-two",
-              "label": "A part joining the traces pipeline to the metrics pipeline, which takes spans from the first and passes them on",
+              "label": "A component that joins the traces pipeline to the metrics pipeline, taking data in from one and emitting it into the other",
               "why": "Connecting two pipelines is what a connector is for. It may consume and emit data of the same type or of different types, and it may summarise what it consumes, as the count connector does."
             },
             {
@@ -60,7 +60,7 @@ export default {
             },
             {
               "key": "named-pipeline",
-              "label": "A pipeline named <code>traces/metrics</code>, read as both the traces pipeline and the metrics pipeline at once, in the file",
+              "label": "A pipeline named <code>traces/metrics</code>, which the Collector reads as one pipeline for both signals",
               "why": "The part after the slash is only a name, there to tell two pipelines of one type apart, as in <code>traces/2</code>. The type of a pipeline is the part before it."
             },
             {
@@ -88,12 +88,12 @@ export default {
           "choices": [
             {
               "key": "in-pipeline",
-              "label": "The extension is missing from a pipeline under <code>service.pipelines</code>, among the components",
+              "label": "The extension is missing from a pipeline under <code>service.pipelines</code>, among the other components",
               "why": "Extensions are not part of a pipeline: they sit beside the data path. A pipeline lists receivers, processors and exporters (and connectors), not extensions."
             },
             {
               "key": "service-extensions",
-              "label": "It is defined in <code>extensions</code>, yet <code>service.extensions</code> skips it, and nothing answers the probe",
+              "label": "It is defined in <code>extensions</code>, yet <code>service.extensions</code> skips it, so nothing answers the probe",
               "why": "Configuring an [[extension]] does not enable it. Extensions are enabled by listing them under <code>service.extensions</code>, not in a pipeline. Defined but not listed, <code>health_check</code> is not enabled, so nothing answers."
             },
             {
@@ -103,17 +103,17 @@ export default {
             },
             {
               "key": "service-line",
-              "label": "An <code>extensions: [health_check]</code> line under <code>service</code>, by the service <code>pipelines</code> item",
+              "label": "An <code>extensions: [health_check]</code> line under <code>service</code>, alongside the <code>pipelines</code> section",
               "why": "Extensions are enabled in the <code>extensions</code> list of the <code>service</code> section. A component that is configured but not named there is not enabled."
             },
             {
               "key": "own-list",
-              "label": "Its enabling in the service section, where an extension has a place to itself, unlike a receiver",
+              "label": "Its own entry in the service section, where extensions have their own list, apart from pipelines",
               "why": "Receivers, processors and exporters are enabled by the pipelines that list them. An extension has no pipeline, so it is enabled by the <code>service.extensions</code> list."
             },
             {
               "key": "http-receiver",
-              "label": "An <code>http</code> receiver under the pipelines, needed by the extension to respond to the probe in the service, as an input",
+              "label": "An <code>http</code> receiver in a pipeline, which the extension needs in order to answer the probe",
               "why": "The health check extension publishes an HTTP URL of its own that can be probed. No receiver or pipeline takes part in answering it."
             },
             {

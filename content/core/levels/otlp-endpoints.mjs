@@ -15,7 +15,7 @@ export default {
           "choices": [
             {
               "key": "http-port",
-              "label": "4317 is the OTLP/gRPC port, and OTLP/HTTP uses 4318, hence use <code>http://collector:4318</code> in its place",
+              "label": "4317 is the OTLP/gRPC port, and OTLP/HTTP uses 4318, so use <code>http://collector:4318</code> in its place",
               "why": "OTLP has two transports with their own default ports: 4317 for OTLP/[[gRPC]] and 4318 for OTLP/HTTP. An HTTP exporter pointed at the gRPC port is not understood by it. Also remember the difference in shape: a gRPC endpoint is a host and a port with no path, while an HTTP base endpoint gets the signal path added."
             },
             {
@@ -25,22 +25,22 @@ export default {
             },
             {
               "key": "needs-path",
-              "label": "The port suits the HTTP protocol, but the endpoint has to end in <code>/v1/traces</code>, unlike gRPC on 4318 itself",
+              "label": "The endpoint has to end in <code>/v1/traces</code>, so add that path to the URL the exporter sends to",
               "why": "With <code>OTEL_EXPORTER_OTLP_ENDPOINT</code> an OTLP/HTTP exporter adds the signal path itself, so the general variable is a base URL. The wrong port is the problem here."
             },
             {
               "key": "mismatch",
-              "label": "The protocol and the port disagree, as http/protobuf is served on 4318 while 4317 listens for gRPC, so it fails",
+              "label": "The protocol and the port disagree, so http/protobuf has to use 4318 while port 4317 listens for gRPC on the Collector",
               "why": "OTLP/gRPC and OTLP/HTTP have separate default ports, 4317 and 4318, and a client has to use the port of its own protocol. The variables name OTLP/HTTP and the gRPC port."
             },
             {
               "key": "port-or-protocol",
-              "label": "Either fix the port to 4318 for HTTP, or switch the protocol to grpc and keep port 4317 as it is",
+              "label": "Either fix the port to 4318 for HTTP, or switch the protocol to grpc and keep port 4317",
               "why": "The two settings do not match, and fixing either side makes them match: OTLP/HTTP is on 4318 and OTLP/gRPC on 4317."
             },
             {
               "key": "protocol-invalid",
-              "label": "The protocol value is wrong: only grpc and http/json exist, sitting on ports 4317 as well as 4318",
+              "label": "The protocol value is invalid: only <code>grpc</code> and <code>http/json</code> exist, so <code>http/protobuf</code> is rejected",
               "why": "The accepted values are <code>grpc</code>, <code>http/protobuf</code> and <code>http/json</code>. The OTLP exporter specification also makes <code>http/protobuf</code> the default transport."
             },
             {
@@ -74,7 +74,7 @@ export default {
             },
             {
               "key": "adds-path",
-              "label": "To <code>http://otel:4318/v1/traces</code>, as the general variable does, with the path added",
+              "label": "To <code>http://collector:4318/v1/traces</code>, as the general variable does, with the path added",
               "why": "The exporter adds <code>/v1/traces</code> only for the general variable, <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>. A per-signal variable takes precedence over it and its URL is used without any change."
             },
             {
@@ -137,22 +137,22 @@ export default {
             },
             {
               "key": "url",
-              "label": "In the endpoint URL as a query parameter on the request line and no Authorization at all, nothing else carrying it",
+              "label": "In the endpoint URL, as a query parameter that the exporter sends instead of a header",
               "why": "The endpoint is only an address. Dash0 reads the token from the <code>Authorization</code> header, and a token in a URL tends to end up in logs and config files."
             },
             {
               "key": "resource",
-              "label": "As a field on the <code>Resource</code> and sent without an Authorization header present in the telemetry",
+              "label": "As an attribute on the service's <code>Resource</code>, which travels with the data and has no Authorization header",
               "why": "Resource attributes describe what produces the telemetry and travel with it as data, so the token would be sent along with every batch. Authentication is a header on the request, not part of the data."
             },
             {
               "key": "bearer-pairs",
-              "label": "Attached by the client as a one-off Authorization header with the scheme word",
+              "label": "In a request header rather than in the data, as the Authorization pair of the exporter's headers",
               "why": "The headers setting takes key=value pairs separated by commas. Dash0's own examples set <code>Authorization=Bearer</code> followed by the token there."
             },
             {
               "key": "collector-auth",
-              "label": "In the Collector config, where <code>headers_setter</code> adds the Authorization credential to all it forwards",
+              "label": "In the Collector config, where <code>headers_setter</code> adds the Authorization credential to all traffic",
               "why": "The <code>headers_setter</code> extension can add a header such as <code>Authorization</code> to the exporter's requests, and its value can come from the environment. The SDK sets the same header with its own headers setting."
             },
             {
@@ -172,8 +172,8 @@ export default {
             },
             {
               "key": "api-key-header",
-              "label": "In a header called <code>X-Api-Key</code>, the way many backends read a key, rather than Authorization",
-              "why": "Dash0 reads the token from the <code>Authorization</code> header as a bearer value, not from a custom key header."
+              "label": "In a header called <code>X-Api-Key</code>, the way many backends read a key, rather than in Authorization",
+              "why": "Dash0's examples send the token as <code>Authorization: Bearer</code>, so that is the header to use rather than a custom key header."
             }
           ]
         }

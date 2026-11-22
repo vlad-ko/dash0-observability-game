@@ -25,17 +25,17 @@ export default {
             },
             {
               "key": "embedded",
-              "label": "A Collector built into the application itself as a library, with no separate Collector to run, upgrade, scale",
+              "label": "A Collector built into the application as a library, with nothing separate to run, upgrade or scale",
               "why": "Neither deployment pattern is a Collector inside the application. The application's SDK sends OTLP to a Collector that runs beside it (an agent) or to a central one (a gateway)."
             },
             {
               "key": "single-endpoint",
-              "label": "Collector instances that run behind a shared address, so every client delivers telemetry",
+              "label": "Several Collector instances behind one shared address, so every client delivers its telemetry to that address",
               "why": "In the gateway pattern the applications or other Collectors send telemetry to a single OTLP endpoint. One or more Collector instances run as a standalone service behind it, for example in a Kubernetes Deployment."
             },
             {
               "key": "central-policy",
-              "label": "A central Collector tier where credentials and filtering are managed in a lone spot, away from the nodes",
+              "label": "A central Collector tier where credentials and filtering are managed once",
               "why": "Two advantages of a gateway are the separation of concerns, such as centrally managed credentials, and centralised policy management, for example filtering certain logs or sampling."
             },
             {
@@ -50,8 +50,8 @@ export default {
             },
             {
               "key": "one-replica",
-              "label": "A Collector <code>Deployment</code> with a single replica, because a gateway doing sampling cannot be scaled out",
-              "why": "A gateway is one or more Collector instances. A load balancer can distribute the load among them, which is how a single-tier gateway scales."
+              "label": "A Collector <code>Deployment</code> with just one replica, because a gateway doing sampling cannot be scaled out",
+              "why": "A gateway does scale out. With tail sampling it needs two layers of Collectors: a first tier with the load-balancing exporter sends every span of a trace to one replica of the second tier, which runs the tail sampling processor."
             },
             {
               "key": "receiver-name",
@@ -74,7 +74,7 @@ export default {
             },
             {
               "key": "wait",
-              "label": "decision_wait is set short for lengthy requests, so a replica decides before the late spans of a trace arrive",
+              "label": "<code>decision_wait</code> is too short for slow requests, so one replica decides before the late spans of a trace arrive",
               "why": "<code>decision_wait</code> is how long the processor waits before it decides on a trace, and a longer wait helps with late spans. It does not help when the spans are not at that Collector at all because they went to another replica."
             },
             {
@@ -84,12 +84,12 @@ export default {
             },
             {
               "key": "partial-view",
-              "label": "Spread across replicas, each gets a share of the spans of the traces and rules on fragments",
+              "label": "Each replica receives only part of every trace and decides on that fragment alone, without the rest of it",
               "why": "The tail sampling processor needs all the spans of a trace at one Collector instance. A Service that spreads requests gives every replica a share of each trace, and every replica decides on its own share."
             },
             {
               "key": "requests-not-traces",
-              "label": "Balancing hands the spans of a trace to different replicas, while the sampler wants the spans together, whatever the load",
+              "label": "A Service balances requests, not traces, so a trace's spans reach different replicas",
               "why": "An ordinary load balancer sends the spans of one trace to different replicas. The routing has to be done by trace, which is what the load-balancing exporter is for."
             },
             {
@@ -104,12 +104,12 @@ export default {
             },
             {
               "key": "out-of-order",
-              "label": "Spans of a trace reach a replica out of order, and the filter works just on spans in time order",
+              "label": "The spans of a trace arrive out of order, and the processor needs time order",
               "why": "The processor groups spans by trace ID and waits before it decides, so the order in which they arrive does not matter. What matters is that they all arrive at the same instance."
             },
             {
               "key": "clock-drift",
-              "label": "The clocks of the replicas drift, and a replica judges the duration of a trace using its spans differently",
+              "label": "The clocks of the replicas drift, so each replica measures the duration of a trace differently",
               "why": "A latency policy uses the earliest start and the latest end among the spans it holds. Replicas judge differently because they hold different spans, not because of their clocks."
             }
           ]
@@ -142,17 +142,17 @@ export default {
             },
             {
               "key": "round-robin",
-              "label": "Round robin: send the next batch of spans to the next replica in turn and spreads each trace evenly",
+              "label": "Round robin: send each batch of spans to the next replica in turn, spreading every trace evenly",
               "why": "The exporter does not round-robin batches: it hashes a routing key to choose the replica, so the same key always goes to the same one. Spreading batches evenly would split traces."
             },
             {
               "key": "default-key",
-              "label": "Unset works: the exporter already hashes the trace ID for traces, and keeps the spans on one replica anyway",
+              "label": "Leave it unset: for traces the exporter already hashes the trace ID by default, which keeps the spans of a trace on one replica",
               "why": "If no routing key is configured, the default for traces is <code>traceID</code>. Spans with the same trace ID go to the same backend, which is what tail-based sampling needs."
             },
             {
               "key": "hash-trace",
-              "label": "A hash of the trace identifier picks the replica and the spans making up a trace always meet at a shared place",
+              "label": "A hash of the trace ID picks the replica, so all the spans of a trace end up at the same gateway replica",
               "why": "A trace ID is shared by every span of the trace, so hashing it sends all of them to the same replica. The exporter does not look at the load of the replicas, but the spread stays close to even."
             },
             {
@@ -162,12 +162,12 @@ export default {
             },
             {
               "key": "span-id",
-              "label": "The span ID is unique and every trace is scattered perfectly over the replicas however many exist",
+              "label": "The span ID, which is unique, so every span goes to a different replica and a trace is spread over all of them",
               "why": "Every span has its own span ID, so each span is sent to a replica of its own choosing, and a trace's spans are scattered. The key has to be the one every span of a trace shares."
             },
             {
               "key": "sending-node",
-              "label": "The node that sent the span and an agent uses the same gateway replica for whichever trace those spans belong to",
+              "label": "The node that sent the span, so each agent keeps using the same gateway replica for all of its spans",
               "why": "A trace crosses services that run on different nodes, so its spans reach the gateway from several agents and would land on different replicas."
             },
             {

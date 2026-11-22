@@ -51,7 +51,7 @@ export default {
             },
             {
               "key": "no-cluster",
-              "label": "It cannot start, but only as the laptop lacks a Kubernetes cluster for <code>k8sattributes</code> in the core build to read",
+              "label": "It cannot start, but only because the laptop has no Kubernetes cluster for <code>k8sattributes</code> in the core build to read",
               "why": "The config fails because the core binary does not contain the processor. It would fail the same way on a machine inside a cluster."
             },
             {
@@ -187,7 +187,7 @@ export default {
           "choices": [
             {
               "key": "contrib-config",
-              "label": "Run contrib and list your processor in the Collector setup, since contrib ships every component already",
+              "label": "Run the contrib distribution and add your processor to its config, since contrib ships every component already",
               "why": "The contrib distribution holds the components of the Collector repositories, not every component that exists. A config can only enable what is compiled in, and your processor is not."
             },
             {
@@ -202,7 +202,7 @@ export default {
             },
             {
               "key": "ocb-manifest",
-              "label": "Compile a custom Collector of your own that has your processor built in from the Go sources",
+              "label": "Run OCB with a manifest that lists <code>acme_scrubber</code>, and compile a custom Collector from it",
               "why": "OCB configures a build from a YAML manifest with a <code>dist</code> section and lists of modules by type, such as processors. It needs Go to compile the result."
             },
             {
