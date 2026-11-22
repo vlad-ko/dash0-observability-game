@@ -137,22 +137,22 @@ export default {
             },
             {
               "key": "observable-updown",
-              "label": "An observable <code>UpDownCounter</code>: the callback reports the absolute heap size, and heap sizes add up across processes",
+              "label": "An observable <code>UpDownCounter</code>, since heap sizes add up across processes",
               "why": "Heap sizes from several processes add up to the total heap in use, which makes the value additive. Observable is the other name for asynchronous: the SDK runs the callback only when metrics are collected, and the API's own example for it is the process heap size."
             },
             {
               "key": "on-demand-additive",
-              "label": "The additive instrument for values like the heap size (its callback runs when the SDK collects)",
+              "label": "The additive instrument for values like the heap size (its callback runs each time the SDK collects)",
               "why": "That is the asynchronous UpDownCounter. Its callback reports the absolute value, not an increment, and the heap sizes of several processes add up to the total heap in use."
             },
             {
               "key": "sync-gauge",
-              "label": "A synchronous <code>Gauge</code>, with <code>record()</code> receiving the new heap size when it moves, so the SDK keeps the last value",
+              "label": "A synchronous <code>Gauge</code>, with <code>record()</code> receiving the new heap size when it moves, so the SDK keeps the last one",
               "why": "A Gauge is for values that make no sense to add up, and heap sizes from several processes add up to the total heap in use, so the API points additive values to an UpDownCounter. The synchronous Gauge is also meant for values you hear about through change events, and the runtime can simply be asked."
             },
             {
               "key": "async-counter",
-              "label": "An asynchronous <code>Counter</code>, its callback reading the absolute value of the heap size when the SDK collects",
+              "label": "An asynchronous <code>Counter</code>, its callback reading the absolute heap size when the SDK collects",
               "why": "A Counter, in either form, is for values that only grow, such as CPU time. A heap size falls when memory is released, so it does not fit."
             },
             {
@@ -167,7 +167,7 @@ export default {
             },
             {
               "key": "async-add-change",
-              "label": "An <code>UpDownCounter</code> observed asynchronously, whose callback hands <code>add()</code> the difference in heap size since the SDK's previous collection",
+              "label": "An <code>UpDownCounter</code> observed asynchronously, whose callback passes <code>add()</code> the change since the last collection",
               "why": "The callback of an asynchronous instrument reports the absolute value, not an increment. The change between two collections is worked out afterwards from successive values."
             }
           ]
