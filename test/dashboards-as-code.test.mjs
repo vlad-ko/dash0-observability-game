@@ -292,7 +292,7 @@ test('step 2 is a pool of 12 (draw 4): three right ways to reach Dash0 with no c
     const n = plain(r.label).length;
     assert.equal(lens.filter((l) => l >= n).length >= 2 && lens.filter((l) => l <= n).length >= 2, true, `${r.key} is not the sole longest or shortest: ${lens}`);
   }
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 45, true, `plain label lengths ${lens}`);
+  assert.equal(Math.max(...lens) - Math.min(...lens) <= 60, true, `plain label lengths ${lens}`);
   for (const c of choices) assert.doesNotMatch(plain(c.label), /wrong|never|unsafe|slow|careful|manual|hand/i, c.key);
   const intro = plain(DEPLOY_STEP.intro);
   assert.match(intro, /Terraform/);

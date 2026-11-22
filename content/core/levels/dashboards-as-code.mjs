@@ -120,7 +120,7 @@ export default {
             },
             {
               "key": "operator-kubectl",
-              "label": "Install the operator where the pipeline runs and let it apply each <code>PersesDashboard</code> with <code>kubectl</code>",
+              "label": "Install the operator where the pipeline runs, apply each <code>PersesDashboard</code> with <code>kubectl</code> and let the operator create the dashboard",
               "why": "<code>kubectl apply</code> sends a <code>PersesDashboard</code> to a Kubernetes cluster, and the operator watches the namespaces of that cluster that have a Dash0 monitoring resource. Payments has no cluster, so there is nothing for <code>kubectl</code> to apply to and nothing for the operator to watch. The Terraform resource <code>dash0_dashboard</code> takes the YAML directly and needs no cluster."
             },
             {
