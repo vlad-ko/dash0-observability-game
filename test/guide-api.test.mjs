@@ -11,8 +11,8 @@ const IP = '203.0.113.77';
 const URL_ = 'https://game.test/api/guide';
 const REG = liveRegistry();
 // A choice step the guide may speak on, a step that has no hint ladder, and a level that runs its own code.
-const LEVEL = 'correlation';
-const STEP = 'cor-why';
+const LEVEL = 'histograms';
+const STEP = 'hist-kind';
 const RIGHT = REG.levels[LEVEL].play.steps.map((s) => s.choice).find((c) => c?.id === STEP).choices.find((c) => c.right).label;
 // A sort with no hint ladder that is not pooled (a pooled step answers 400 `shown` before 404 unavailable; avm-sort used to be the example).
 const HINTLESS = ['instruments', 'instr-sort'];

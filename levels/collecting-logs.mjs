@@ -7,9 +7,9 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/logs/ , https://opentelemetry.io/docs/specs/otel/logs/data-model/
 // Spec: https://opentelemetry.io/docs/collector/components/receiver/ , https://opentelemetry.io/docs/collector/configuration/#receivers
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
-// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/parsers.md
+// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/parsers.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
 // RE2 syntax (not an allowed Spec host): https://github.com/google/re2/wiki/Syntax
-// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing , https://www.dash0.com/docs/dash0/telemetry/logging/log-severities , https://www.dash0.com/docs/dash0/telemetry/logging/patterns , https://www.dash0.com/docs/dash0/telemetry/logging/json-log-processing
+// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing , https://www.dash0.com/docs/dash0/telemetry/logging/log-severities , https://www.dash0.com/docs/dash0/telemetry/logging/patterns , https://www.dash0.com/docs/dash0/telemetry/logging/json-log-processing , https://www.dash0.com/docs/dash0/telemetry/logging/use-ai-in-logs/pattern-hover
 //
 // Facts used, each from the pages above. The logs spec describes two ways to collect the logs of an
 // application: via files or standard output, and direct to the Collector over OTLP. The first needs
@@ -124,7 +124,11 @@ const SKELETON = {
     steps: [
       {
         qid: 'col-q-route',
-        choice: { id: 'col-route', choices: [{ key: 'otlp-appender', right: true }] },
+        choice: {
+          id: 'col-route',
+          draw: 3,
+          choices: [{ key: 'otlp-appender', right: true }, { key: 'sdk-and-appender', right: true }, { key: 'otlp-target', right: true }, { key: 'structured-over-otlp', right: true }],
+        },
       },
       {
         qid: 'col-q-config',
@@ -132,15 +136,27 @@ const SKELETON = {
       },
       {
         qid: 'col-q-multiline',
-        choice: { id: 'col-multiline', choices: [{ key: 'line-start', right: true }] },
+        choice: {
+          id: 'col-multiline',
+          draw: 3,
+          choices: [{ key: 'line-start', right: true }, { key: 'start-on-timestamp', right: true }, { key: 'frames-join-above', right: true }, { key: 'split-while-reading', right: true }],
+        },
       },
       {
         qid: 'col-q-parse',
-        choice: { id: 'col-parse', choices: [{ key: 'collector-regex', right: true }] },
+        choice: {
+          id: 'col-parse',
+          draw: 3,
+          choices: [{ key: 'collector-regex', right: true }, { key: 'receiver-operators', right: true }, { key: 'regex-to-number', right: true }, { key: 'where-it-is-read', right: true }],
+        },
       },
       {
         qid: 'col-q-dash0',
-        choice: { id: 'col-dash0', choices: [{ key: 'log-ai', right: true }] },
+        choice: {
+          id: 'col-dash0',
+          draw: 3,
+          choices: [{ key: 'log-ai', right: true }, { key: 'severity-and-one-pattern', right: true }, { key: 'finds-the-pattern', right: true }, { key: 'fills-the-gap', right: true }],
+        },
       },
     ],
   },

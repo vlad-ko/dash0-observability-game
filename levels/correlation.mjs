@@ -92,15 +92,27 @@ const SKELETON = {
       { build: BUILD },
       {
         qid: 'cor-q-why',
-        choice: { id: 'cor-why', choices: [{ key: 'no-active-span', right: true }] },
+        choice: {
+          id: 'cor-why',
+          draw: 3,
+          choices: [{ key: 'no-active-span', right: true }, { key: 'no-span-current', right: true }, { key: 'start-up-and-workers', right: true }, { key: 'read-at-the-call', right: true }],
+        },
       },
       {
         qid: 'cor-q-fix',
-        choice: { id: 'cor-fix', choices: [{ key: 'run-in-span', right: true }] },
+        choice: {
+          id: 'cor-fix',
+          draw: 3,
+          choices: [{ key: 'run-in-span', right: true }, { key: 'span-per-attempt', right: true }, { key: 'carry-context-over', right: true }, { key: 'bring-back-context', right: true }],
+        },
       },
       {
         qid: 'cor-q-dash0',
-        choice: { id: 'cor-dash0', choices: [{ key: 'resource-mode', right: true }] },
+        choice: {
+          id: 'cor-dash0',
+          draw: 3,
+          choices: [{ key: 'resource-mode', right: true }, { key: 'trace-mode-default', right: true }, { key: 'switch-to-resource', right: true }, { key: 'nothing-ties-it', right: true }],
+        },
       },
     ],
   },

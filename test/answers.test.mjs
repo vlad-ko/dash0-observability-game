@@ -75,15 +75,15 @@ const ANSWERS = {
   ],
   'structured-logs': [
     'sort sl-sort: msg-declined=body order-id=attributes severity-text=severity service-name=resource trace-id=trace msg-retry=body payment-method=attributes severity-number=severity pod-name=resource span-id=trace retry-attempt=attributes trace-flags=trace',
-    'choice sl-attrs: short-message',
-    'choice sl-severity: number',
-    'choice sl-bridge: keep-logger',
+    'choice sl-attrs: facts-out-of-text|named-attrs|pairs-on-record|short-message',
+    'choice sl-severity: number|number-from-warn|number-range|severity-range',
+    'choice sl-bridge: appender-and-sdk|keep-logger|leave-calls|library-bridge',
   ],
   correlation: [
     'build cor-build: startup=none cart=00f067aa0ba902b7 other-order=b7ad6b7169203331 provider-slow=3ee05e5bb0f1ae0c retry-worker=none email=none',
-    'choice cor-why: no-active-span',
-    'choice cor-fix: run-in-span',
-    'choice cor-dash0: resource-mode',
+    'choice cor-why: no-active-span|no-span-current|read-at-the-call|start-up-and-workers',
+    'choice cor-fix: bring-back-context|carry-context-over|run-in-span|span-per-attempt',
+    'choice cor-dash0: nothing-ties-it|resource-mode|switch-to-resource|trace-mode-default',
   ],
   pipelines: [
     'choice pipe-connector: connector',
@@ -108,11 +108,11 @@ const ANSWERS = {
     'choice agw-key: trace-id',
   ],
   'collecting-logs': [
-    'choice col-route: otlp-appender',
+    'choice col-route: otlp-appender|otlp-target|sdk-and-appender|structured-over-otlp',
     'configure col-config: receivers: otlp: protocols: grpc: filelog/shipping: include: [/var/log/shipping/agent.log] processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [filelog/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
-    'choice col-multiline: line-start',
-    'choice col-parse: collector-regex',
-    'choice col-dash0: log-ai',
+    'choice col-multiline: frames-join-above|line-start|split-while-reading|start-on-timestamp',
+    'choice col-parse: collector-regex|receiver-operators|regex-to-number|where-it-is-read',
+    'choice col-dash0: fills-the-gap|finds-the-pattern|log-ai|severity-and-one-pattern',
   ],
   'the-3am-errors': [
     'incident the-3am-errors: error-patterns,trace-of-error > inventory-reply',

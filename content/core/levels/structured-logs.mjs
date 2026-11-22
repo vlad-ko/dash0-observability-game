@@ -191,6 +191,71 @@ export default {
               "key": "on-resource",
               "label": "As resource attributes, set once on the Resource, so the records of the service carry them",
               "why": "A Resource is fixed for a source: every record from it has the same Resource. An order and a payment method differ from record to record, so they cannot be set once on the source."
+            },
+            {
+              "key": "named-attrs",
+              "label": "Write one message for each decline, and give the order and the payment method fields of their own",
+              "why": "The Body carries the message, and the Attributes carry additional information about this specific event, which can differ from record to record. Support can filter on one named field and group by another without taking the text apart."
+            },
+            {
+              "key": "pairs-on-record",
+              "label": "Log <code>Payment declined</code> and add details such as order 8841 and the card used as key and value pairs",
+              "why": "Key and value pairs on the record are its Attributes. Each decline is then one record with a short message and facts that can be filtered, counted and grouped on."
+            },
+            {
+              "key": "facts-out-of-text",
+              "label": "Make the facts attributes of the record, so Support can filter on them and count by them",
+              "why": "A fact you want to filter or count by should be a field of its own. The Attributes of a log record hold such facts as named values, and the Body is left for the message a person reads."
+            },
+            {
+              "key": "regex-in-dashboard",
+              "label": "Keep the message in the Body and pull the facts out as attributes with a dashboard regular expression",
+              "why": "A regular expression has to be kept in step with the wording of every message, and a reworded message breaks it. The record has Attributes for facts like these, so they can be queried as they are."
+            },
+            {
+              "key": "pairs-in-body",
+              "label": "Write key and value pairs into the Body text, for example <code>order.id=8841 payment.method=card</code>",
+              "why": "The Body is still one string, so the pairs have to be parsed out again before anyone can filter or group on them. Semistructured text like this does not guarantee a stable schema either. Attributes are the fields of the record for facts like these."
+            },
+            {
+              "key": "order-as-trace-id",
+              "label": "Put the order number in the TraceId field, so that every record of one order shares an ID",
+              "why": "TraceId is the ID of a trace, as defined by W3C Trace Context, and it is set for logs that are part of request processing. An order number is not a trace ID, so a backend that follows it to a trace finds nothing."
+            },
+            {
+              "key": "method-as-severity",
+              "label": "Put the payment method in SeverityText, such as <code>CARD</code>, so that it has a field of its own",
+              "why": "SeverityText is the original string of the level at the source, such as WARN. A payment method says nothing about severity, and a filter on the level would then return payment methods."
+            },
+            {
+              "key": "three-records",
+              "label": "Write three records for a decline: one for the order, one for the method and one for the message",
+              "why": "One decline is one event, so it should be one record. Split in three, the facts are no longer tied together, and a count of records would count every decline three times."
+            },
+            {
+              "key": "count-in-metric",
+              "label": "Count the declines in a metric, with the payment method as an attribute",
+              "why": "A metric keeps counts, not the individual declines that Support wants for one order. Facts about single events are what the Attributes of a log record hold."
+            },
+            {
+              "key": "scope-attributes",
+              "label": "Set the facts <code>order.id</code> and <code>payment.method</code> as attributes of the InstrumentationScope of the logger",
+              "why": "The InstrumentationScope describes the scope that emitted the log, and all records from one scope share it. An order and a method differ from record to record, so they cannot be set once on it."
+            },
+            {
+              "key": "service-per-order",
+              "label": "Give the service a new name, for example <code>service.name = order-8841</code>, as a resource attribute for the order",
+              "why": "The service name is part of the Resource, which describes the source of the log, so it is the same for every record from that source. Naming a source after one order would need a new source for every order."
+            },
+            {
+              "key": "message-per-method",
+              "label": "Write a different message in the Body for each payment method, such as <code>Card declined</code>, and group on it",
+              "why": "Grouping on message text breaks when the wording changes, and the order is still missing from the record. A method is a value, and values belong in the Attributes."
+            },
+            {
+              "key": "raise-to-error",
+              "label": "Raise the declines to ERROR, so that Support can find them by severity and count them",
+              "why": "Severity says how serious a record is, not which order or method it is about. A filter on ERROR returns every error from every service, and still gives no count by payment method."
             }
           ]
         }
@@ -204,7 +269,7 @@ export default {
             {
               "key": "text",
               "label": "Filter on <code>SeverityText</code> equal to <code>WARN</code> in uppercase",
-              "why": "SeverityText is the original string from the source: one library writes <code>WARN</code>, another <code>warning</code>, another <code>Warn</code>. A filter on one spelling misses the others."
+              "why": "SeverityText is the original string from the source: one library writes <code>WARN</code>, another <code>warning</code>, another <code>Warn</code>. A filter on one spelling misses every other spelling."
             },
             {
               "key": "number",
@@ -215,6 +280,71 @@ export default {
               "key": "body",
               "label": "Search the Body for the word <code>warn</code>, in any letter case",
               "why": "The Body is the message, which can be any text and can say \"warn\" about something harmless, or not say it at all. Severity has fields of its own."
+            },
+            {
+              "key": "number-range",
+              "label": "Filter on <code>SeverityNumber</code> from 13 to 24, which keeps WARN at 13 to 16 and everything higher",
+              "why": "The data model normalises severity to a number from 1 to 24: WARN is 13 to 16, ERROR 17 to 20 and FATAL 21 to 24. A range from 13 up is every record at warning or worse, whatever each library calls its level."
+            },
+            {
+              "key": "number-from-warn",
+              "label": "Compare the numeric severity from <code>WARN</code> upwards in any service",
+              "why": "Every source maps its own level onto the same numbers, so a query on the number does not care whether a record said WARN, warning or Warn. The data model says comparisons of severity should use SeverityNumber."
+            },
+            {
+              "key": "severity-range",
+              "label": "Filter on the <code>WARN</code> severity range and the ranges above it in Dash0",
+              "why": "Dash0 groups logs into severity ranges, from FATAL down to TRACE, and OpenTelemetry specifies those ranges by the severity number. Picking the three upper ranges gives warning or worse across all sources."
+            },
+            {
+              "key": "lower-case-text",
+              "label": "Lower-case the severity text and filter on <code>warn</code>",
+              "why": "The Python services write <code>warning</code>, and lower-casing only settles the capitals of <code>Warn</code> and <code>WARN</code>. Records that say <code>warning</code>, and everything worse than a warning, are still missed. The number does not depend on any spelling."
+            },
+            {
+              "key": "number-equals-13",
+              "label": "Filter on <code>SeverityNumber</code> equal to 13",
+              "why": "13 is only the first number of the WARN range, which runs from 13 to 16. Records at 14, 15 and 16 are missed, and so are all the errors and fatals."
+            },
+            {
+              "key": "number-at-most-16",
+              "label": "Filter on <code>SeverityNumber</code> of 16 or less, the range up to the end of WARN",
+              "why": "Smaller numbers are less severe. This keeps the debug and info records and drops every error, so the comparison runs the wrong way for warning or worse."
+            },
+            {
+              "key": "number-warn-only",
+              "label": "Filter on the severity number of 13 to 16 for the whole WARN range and nothing above it",
+              "why": "13 to 16 is the WARN range alone. Warning or worse also includes ERROR at 17 to 20 and FATAL at 21 to 24, which this filter drops."
+            },
+            {
+              "key": "number-from-17",
+              "label": "Filter on <code>SeverityNumber</code> of 17 or more and skip the 13 to 16 range",
+              "why": "17 is the first number of the ERROR range, so this drops every warning. The dashboard is meant to show warnings as well."
+            },
+            {
+              "key": "number-from-9",
+              "label": "Filter on the severity number from 9 and above, which lets every INFO record in",
+              "why": "9 to 12 is the INFO range, for an event that happened. A filter from 9 up lets informational records in, and they are not warnings."
+            },
+            {
+              "key": "text-as-strings",
+              "label": "Compare the severity text as strings, from <code>WARN</code> upwards",
+              "why": "Text has no order that follows how serious a record is. In alphabetical order FATAL and ERROR sort before WARN, so they are left out. The data model says comparisons of severity should use the number."
+            },
+            {
+              "key": "has-exception",
+              "label": "Filter for any record that carries an <code>exception.type</code> attribute, the mark of a problem",
+              "why": "Exception attributes describe an error or exception attached to a record. Many warnings carry none, so they are missed, and an error logged without an exception is missed as well."
+            },
+            {
+              "key": "event-name",
+              "label": "Filter on <code>EventName</code> of <code>warning</code> or <code>error</code>",
+              "why": "EventName identifies the class or type of an event, and it is optional. It is not a level, so it says nothing about how serious a record is."
+            },
+            {
+              "key": "trace-flags-level",
+              "label": "Read the severity from <code>TraceFlags</code>, where <code>01</code> marks any warning or worse",
+              "why": "TraceFlags holds the W3C trace flags, and the only flag defined is the sampled flag. It says nothing about severity."
             }
           ]
         }
@@ -239,6 +369,71 @@ export default {
               "key": "collector-only",
               "label": "Nothing in the application: logs only reach OpenTelemetry through the Collector reading files",
               "why": "Reading files or standard output with the Collector is one route. The other is an appender in the application, which sends records to OpenTelemetry and can attach the trace context."
+            },
+            {
+              "key": "leave-calls",
+              "label": "Leave each <code>logger.warn</code> call in checkout alone, and connect OpenTelemetry once when the application starts",
+              "why": "Application developers only need to configure the appender and the SDK at start-up. The appender uses the Logs API to bridge the library's records onto the OpenTelemetry log data model, so no logging statement has to change."
+            },
+            {
+              "key": "appender-and-sdk",
+              "label": "Configure the OpenTelemetry integration for the service, and every log statement gains the trace context too",
+              "why": "A log appender bridges an existing logging library to OpenTelemetry. With the SDK it can add the trace context of the active span to each record and send the records over OTLP, and the logging statements stay as they are."
+            },
+            {
+              "key": "library-bridge",
+              "label": "Let the library's appender do the bridging, since that API is for library authors",
+              "why": "Logging library authors use the Logs Bridge API to build appenders. As an application developer you use your preferred logging library and configure its appender, instead of calling the API yourself."
+            },
+            {
+              "key": "api-for-legacy",
+              "label": "Call the OpenTelemetry Logs API directly in every service, because log appenders are only meant for legacy code",
+              "why": "The Logs API was primarily designed for library authors to build appenders. For applications that already use a logging library, an appender is the simplest way to emit logs with their trace context."
+            },
+            {
+              "key": "own-bridge",
+              "label": "Write your own appender from your library's logger to OpenTelemetry for checkout",
+              "why": "Building appenders is the job of the logging library authors, who use the Logs Bridge API for it. The OpenTelemetry language SDKs already offer an appender, so an application only configures it."
+            },
+            {
+              "key": "own-logger-provider",
+              "label": "Configure a <code>LoggerProvider</code> and a <code>Logger</code> in checkout, and call them beside each <code>logger.warn</code>",
+              "why": "The Logger Provider and the Logger are part of the Logs Bridge API, and they should only be used by the author of a logging library. Calling them beside every logging call would also add a second call to each line."
+            },
+            {
+              "key": "json-printing-library",
+              "label": "Configure your logging library to print JSON, and OpenTelemetry reads the records from the process",
+              "why": "Printing JSON sends nothing to OpenTelemetry. Records reach it through a log appender in the application, or through a Collector that reads the files or standard output."
+            },
+            {
+              "key": "span-around-call",
+              "label": "Wrap each <code>logger.warn</code> in a span, so that the record is exported together with the span",
+              "why": "A span belongs to the trace signal and does not carry log records. Log records are sent by a log record exporter, which an appender feeds."
+            },
+            {
+              "key": "appender-in-collector",
+              "label": "Install a log appender in the Collector, which then turns the application's log calls into OpenTelemetry records",
+              "why": "An appender belongs to the application's logging library, where the log call is made. The Collector only sees what is sent to it or written to a file, so it never sees the call."
+            },
+            {
+              "key": "api-replaces-library",
+              "label": "Replace your logging library with the OpenTelemetry Logs API in every service, to get its full set of features",
+              "why": "Existing logging libraries generally provide a much richer set of features than the Logs API defines. Replacing them gives those up, and an appender gets the records into OpenTelemetry without that cost."
+            },
+            {
+              "key": "debug-level",
+              "label": "Configure the logger at DEBUG level and every record it writes reaches OpenTelemetry without further setup",
+              "why": "A level decides which records the library emits, not where they go. Nothing reaches OpenTelemetry until an appender is configured."
+            },
+            {
+              "key": "dependency-only",
+              "label": "Add the Logs Bridge API as a dependency of checkout (no other change)",
+              "why": "A dependency alone connects nothing. Records are bridged only when a log appender is configured with the SDK at start-up, and the Bridge API itself is meant for library authors."
+            },
+            {
+              "key": "hand-written-post",
+              "label": "Post each warning to the OTLP endpoint with a hand-written HTTP call beside the log line",
+              "why": "That adds new code at every call site, which is what an appender avoids. The appender and the SDK already convert the records, enrich them and send them over OTLP."
             }
           ]
         }
