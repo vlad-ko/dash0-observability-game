@@ -577,6 +577,7 @@ const KEEP_PICKS = new Set([
   'good-alerts:for-1h',
   'frontend-rum:page-origin-otlp-header',
   'what-costs-money:drop-debug',
+  'ottl-and-transforms:filter-processor',
 ]);
 
 /** Press the 50/50 of the question `answer` belongs to, if it has one that is enabled. */

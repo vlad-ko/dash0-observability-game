@@ -15,6 +15,16 @@
 // level shows both directions of the same rule: listed but not defined stops the Collector,
 // defined but not listed does nothing. Where memory_limiter sits in each list is level 5.2.
 //
+// The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 11 answers each (3 right, 8 wrong) and a showing
+// draws 3. Their extra answers rest on pages read 2026-11-21 (Collector v0.164.0 unless noted): the connector README
+// (https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/connector/README.md: a connector is an exporter at the end of one pipeline and a
+// receiver at the start of another, data types may differ, every pipeline has one data type), the count connector README
+// (https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/countconnector/README.md: traces to metrics) and the forward
+// connector README (.../opentelemetry-collector/blob/v0.164.0/connector/forwardconnector/README.md: pipelines of the same type), the configuration page
+// (https://opentelemetry.io/docs/collector/configuration/: type[/name] ids, a configured component is not enabled until the service section names it, a
+// processor in several pipelines gets one instance each) and the health check extension README
+// (.../opentelemetry-collector-contrib/blob/v0.164.0/extension/healthcheckextension/README.md: its own HTTP URL, default localhost:13133, path /).
+//
 // The words are in content/core/levels/pipelines.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/pipelines.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -105,7 +115,23 @@ const SKELETON = {
     steps: [
       {
         qid: 'pipe-q-connector',
-        choice: { id: 'pipe-connector', choices: [{ key: 'connector', right: true }] },
+        choice: {
+          id: 'pipe-connector',
+          draw: 3,
+          choices: [
+            { key: 'connector', right: true },
+            { key: 'connector-both', right: true },
+            { key: 'joins-two', right: true },
+            { key: 'processor' },
+            { key: 'extension' },
+            { key: 'define-only' },
+            { key: 'forward' },
+            { key: 'pipeline-as-receiver' },
+            { key: 'prometheus-exporter' },
+            { key: 'named-pipeline' },
+            { key: 'same-receiver' },
+          ],
+        },
       },
       {
         qid: 'pipe-q-config',
@@ -113,7 +139,23 @@ const SKELETON = {
       },
       {
         qid: 'pipe-q-extension',
-        choice: { id: 'pipe-extension', choices: [{ key: 'service-extensions', right: true }] },
+        choice: {
+          id: 'pipe-extension',
+          draw: 3,
+          choices: [
+            { key: 'service-extensions', right: true },
+            { key: 'service-line', right: true },
+            { key: 'own-list', right: true },
+            { key: 'in-pipeline' },
+            { key: 'start-order' },
+            { key: 'http-receiver' },
+            { key: 'health-pipeline' },
+            { key: 'health-exporter' },
+            { key: 'needs-receivers' },
+            { key: 'otlp-port' },
+            { key: 'telemetry-section' },
+          ],
+        },
       },
     ],
   },

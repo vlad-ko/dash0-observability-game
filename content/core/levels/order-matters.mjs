@@ -76,6 +76,36 @@ export default {
               "key": "any-position",
               "label": "It does not matter: it only watches memory, and works anywhere in the processor list",
               "why": "It watches memory, but it can only refuse what passes through it. Placed after other processors, those handle and may hold the data first, which makes it likelier that data is dropped when the limiter triggers."
+            },
+            {
+              "key": "backpressure",
+              "label": "A refusal reaches the senders as backpressure, so less is lost when the limit is hit",
+              "why": "The best practice is to make it the first processor in a pipeline. That way a refusal can reach the receivers, which may apply [[backpressure]] to their own data sources, and fewer data are dropped when the limiter triggers."
+            },
+            {
+              "key": "only-sees",
+              "label": "Anything listed before it can already be holding data that the limiter cannot refuse",
+              "why": "The limiter refuses data by returning an error to the component before it in the pipeline, so it can only refuse what that component hands it. Processors listed ahead of it handle the data first and may hold on to it."
+            },
+            {
+              "key": "sizes-batches",
+              "label": "It sets the batch size for what follows, so downstream steps know their budget in advance",
+              "why": "The memory limiter does not configure other processors. It checks the Collector's memory use at intervals and refuses data when the limits are exceeded."
+            },
+            {
+              "key": "gc-each",
+              "label": "It forces garbage collection after every processor, which only works if it is first in the list",
+              "why": "The limiter checks memory use periodically and forces garbage collection only when usage is above the hard limit. It does not run after each processor."
+            },
+            {
+              "key": "drops-oldest",
+              "label": "When space runs short it discards the oldest items before the newest ones arrive",
+              "why": "In memory limited mode the processor refuses incoming data by returning errors to the component before it. It does not choose old data to drop."
+            },
+            {
+              "key": "scales-up",
+              "label": "Above its soft limit it asks Kubernetes for another replica, so it needs the first slot",
+              "why": "The limiter does not scale anything. Above its limits it refuses data, and the receivers retry it."
             }
           ]
         }
@@ -88,18 +118,48 @@ export default {
           "choices": [
             {
               "key": "early",
-              "label": "Early, right after memory_limiter in the list",
+              "label": "Early in the list, and it groups what the other processors then receive",
               "why": "Batching before the processors that drop or change data batches telemetry that may be discarded or changed straight afterwards. It also clears the request context, which a processor like k8sattributes reads."
             },
             {
               "key": "late",
-              "label": "Late, after the processors that drop, change or enrich data, and the exporter may batch too",
+              "label": "Late, after the processors that drop, change or enrich data, and the exporter can batch too",
               "why": "Batching helps compress data and reduces the number of outgoing connections, and it belongs after memory_limiter and after anything that drops or changes data, so it never batches what is discarded afterwards. Processors that read the request context, such as k8sattributes, go before it. The processor docs also say to prefer an exporter's own batching where it has one, for example the <code>batch</code> setting of an exporter's <code>sending_queue</code>, which is off unless you turn it on."
             },
             {
               "key": "removed",
-              "label": "Nowhere: the batch processor was removed from the Collector",
+              "label": "Nowhere: the batch processor was removed from the Collector, and exporters do all the batching now",
               "why": "The batch processor is still there: it is part of the core, contrib and Kubernetes [[distributions]]. What changed is the advice to prefer batching in the exporter where the exporter supports it."
+            },
+            {
+              "key": "after-filters",
+              "label": "After the filters and transforms, and after <code>k8sattributes</code>, as batching clears the request context it reads",
+              "why": "Processors that rely on the request context, such as k8sattributes, must run before batching, because batching clears the context. Filtering and transforming come first so the processor batches only data that will be exported."
+            },
+            {
+              "key": "last-in-list",
+              "label": "Down at the tail of the list, past sampling and enrichment, so earlier work is never batched in vain",
+              "why": "Batching after filtering and transformation means you are not batching data that will be discarded or mutated further. The Collector docs also say to prefer the exporter's batching capabilities when available."
+            },
+            {
+              "key": "ahead-of-limiter",
+              "label": "At the very top, ahead of <code>memory_limiter</code>, to let the limiter measure whole batches, not single items",
+              "why": "The batch processor should be defined after the memory limiter. The limiter measures the Collector's memory use, not the size of batches, and it works best in first position."
+            },
+            {
+              "key": "exporter-cannot",
+              "label": "Anywhere in the list, as no exporter can batch by itself and the processor is the only way to get it",
+              "why": "Position matters for the processor. An exporter's sending queue can also batch, and the docs prefer that where the exporter supports it."
+            },
+            {
+              "key": "send-size-max",
+              "label": "Late, and <code>send_batch_size</code> is the largest batch it will ever send, whatever the timeout or the data rate says",
+              "why": "The position is right, but <code>send_batch_size</code> is only a trigger: a batch is sent when it is reached or at the timeout. The upper limit is <code>send_batch_max_size</code>."
+            },
+            {
+              "key": "shared-instance",
+              "label": "In one shared place for every pipeline, because a single instance serves traces, metrics and logs together",
+              "why": "When a processor is referenced in several pipelines, each pipeline gets a separate instance of it, and each pipeline has its own list."
             }
           ]
         }

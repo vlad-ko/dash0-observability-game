@@ -30,7 +30,8 @@ const stepOf = (levelId, key, widgetId) =>
   LIVE.levels[levelId].play.steps.find((s) => s[key] && s[key].id === widgetId)[key];
 const choiceOf = (levelId, widgetId) => stepOf(levelId, 'choice', widgetId).choices;
 const rightOf = (levelId, widgetId) => choiceOf(levelId, widgetId).find((c) => c.right);
-const keysOf = (levelId, widgetId) => choiceOf(levelId, widgetId).map((c) => c.key).sort();
+const rightKeys = (levelId, widgetId) => choiceOf(levelId, widgetId).filter((c) => c.right).map((c) => c.key).sort();
+const wrongKeys = (levelId, widgetId) => choiceOf(levelId, widgetId).filter((c) => !c.right).map((c) => c.key).sort();
 const textOf = (c) => plain(c.label + c.why);
 
 // ---- level fields, scoring and lights -----------------------------------------------
@@ -124,7 +125,10 @@ test('otlp-endpoints: OTLP/HTTP listens on 4318 and 4317 is the gRPC port; a gRP
   assert.equal(right.key, 'http-port');
   const text = textOf(right);
   for (const w of ['4318', '4317', 'gRPC', 'HTTP']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf('otlp-endpoints', 'otlp-port'), ['http-port', 'needs-path', 'same-port']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf('otlp-endpoints', 'choice', 'otlp-port').draw, 3);
+  assert.deepEqual(rightKeys('otlp-endpoints', 'otlp-port'), ['http-port', 'mismatch', 'port-or-protocol']);
+  assert.deepEqual(wrongKeys('otlp-endpoints', 'otlp-port'), ['needs-https', 'needs-path', 'ports-swapped', 'protocol-invalid', 'same-port', 'set-on-collector']);
   const wrongText = choiceOf('otlp-endpoints', 'otlp-port').filter((c) => !c.right).map(textOf).join(' ');
   assert.equal(/own default port|each has its own/.test(wrongText), true, 'the same-port option is corrected');
   assert.equal(/no path/.test(wrongText + text), true, 'the gRPC endpoint has no path');
@@ -138,7 +142,10 @@ test('otlp-endpoints: the nuance is graded: a per-signal variable is used as is,
   assert.equal(right.key, 'as-is');
   const text = textOf(right);
   for (const w of ['as is', 'OTEL_EXPORTER_OTLP_ENDPOINT', '/v1/traces', 'root path']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf('otlp-endpoints', 'otlp-signal'), ['adds-path', 'as-is', 'rejected']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(step.draw, 3);
+  assert.deepEqual(rightKeys('otlp-endpoints', 'otlp-signal'), ['as-is', 'exactly-written', 'no-path-root']);
+  assert.deepEqual(wrongKeys('otlp-endpoints', 'otlp-signal'), ['adds-path', 'default-endpoint', 'https-upgrade', 'needs-general', 'rejected', 'signal-name']);
   const adds = choiceOf('otlp-endpoints', 'otlp-signal').find((c) => c.key === 'adds-path');
   assert.equal(adds.right, undefined);
   assert.equal(/only the general|only .*OTEL_EXPORTER_OTLP_ENDPOINT/.test(plain(adds.why)), true, 'the wrong option says where /v1/traces is added');
@@ -151,7 +158,10 @@ test('otlp-endpoints: the auth token goes in an Authorization: Bearer header, no
   for (const w of ['Authorization', 'Bearer', 'OTEL_EXPORTER_OTLP_HEADERS', 'auth_token_example', 'headers_setter']) {
     assert.equal(text.includes(w), true, w);
   }
-  assert.deepEqual(keysOf('otlp-endpoints', 'otlp-token'), ['header', 'resource', 'url']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf('otlp-endpoints', 'choice', 'otlp-token').draw, 3);
+  assert.deepEqual(rightKeys('otlp-endpoints', 'otlp-token'), ['bearer-pairs', 'collector-auth', 'header']);
+  assert.deepEqual(wrongKeys('otlp-endpoints', 'otlp-token'), ['baggage', 'dataset-header', 'resource', 'span-attribute', 'url', 'api-key-header'].sort());
 });
 
 // ---- 5.3 OTLP endpoints: the config -------------------------------------------------
@@ -268,7 +278,10 @@ test('agent-vs-gateway: a gateway is a standalone Collector service that apps or
   assert.equal(right.key, 'gateway');
   const text = textOf(right);
   for (const w of ['standalone', 'Deployment', 'cluster', 'region']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf('agent-vs-gateway', 'agw-pattern'), ['agent', 'embedded', 'gateway']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf('agent-vs-gateway', 'choice', 'agw-pattern').draw, 3);
+  assert.deepEqual(rightKeys('agent-vs-gateway', 'agw-pattern'), ['central-policy', 'gateway', 'single-endpoint']);
+  assert.deepEqual(wrongKeys('agent-vs-gateway', 'agw-pattern'), ['agent', 'embedded', 'one-replica', 'plain-balancer', 'receiver-name', 'sdk-direct']);
   const agent = choiceOf('agent-vs-gateway', 'agw-pattern').find((c) => c.key === 'agent');
   assert.equal(/DaemonSet/.test(agent.label) && /sidecar/.test(agent.label), true, 'the agent option is the DaemonSet or sidecar description');
 });
@@ -278,7 +291,10 @@ test('agent-vs-gateway: tail sampling needs all spans of a trace in one Collecto
   assert.equal(right.key, 'same-instance');
   const text = textOf(right);
   for (const w of ['all spans', 'same Collector', 'tail', 'load balancer']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf('agent-vs-gateway', 'agw-why'), ['same-instance', 'unsupported', 'wait']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf('agent-vs-gateway', 'choice', 'agw-why').draw, 3);
+  assert.deepEqual(rightKeys('agent-vs-gateway', 'agw-why'), ['partial-view', 'requests-not-traces', 'same-instance']);
+  assert.deepEqual(wrongKeys('agent-vs-gateway', 'agw-why'), ['clock-drift', 'num-traces', 'out-of-order', 'stateless', 'unsupported', 'wait']);
 });
 
 test('agent-vs-gateway: the exporter routes by trace ID; service keeps a service together but splits traces; it hashes, it does not round-robin', () => {
@@ -286,7 +302,10 @@ test('agent-vs-gateway: the exporter routes by trace ID; service keeps a service
   assert.equal(right.key, 'trace-id');
   const text = textOf(right);
   for (const w of ['routing_key', 'traceID', 'default']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(keysOf('agent-vs-gateway', 'agw-key'), ['round-robin', 'service', 'trace-id']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  assert.equal(stepOf('agent-vs-gateway', 'choice', 'agw-key').draw, 3);
+  assert.deepEqual(rightKeys('agent-vs-gateway', 'agw-key'), ['default-key', 'hash-trace', 'trace-id']);
+  assert.deepEqual(wrongKeys('agent-vs-gateway', 'agw-key'), ['metric-key', 'round-robin', 'sending-node', 'service', 'session-affinity', 'span-id']);
   const byService = choiceOf('agent-vs-gateway', 'agw-key').find((c) => c.key === 'service');
   assert.equal(/split/.test(plain(byService.why)), true);
   const rr = choiceOf('agent-vs-gateway', 'agw-key').find((c) => c.key === 'round-robin');

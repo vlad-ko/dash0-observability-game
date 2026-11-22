@@ -20,6 +20,16 @@
 // grade `endpoint`, `auth` or `headers` was not worth it: those are free-form per component, so grading one key would
 // special-case one component in the shared schema. The port and path nuances are graded by the Choice steps instead.
 //
+// The three Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9, 9 and 9 answers (3 right, 6 wrong) and a showing
+// draws 3. Their extra answers rest on pages read 2026-11-21: the OTLP exporter specification
+// (https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md: per-signal URLs used as they are, root
+// path for a URL without one, v1/traces added only for the general variable, protocol values grpc, http/protobuf and http/json, the default
+// http/protobuf, OTEL_EXPORTER_OTLP_HEADERS as key=value pairs, insecure only for gRPC), the OTLP specification
+// (https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md: 4317 for gRPC, 4318 for HTTP, protobuf and JSON content
+// types, default path /v1/traces), the OTLP receiver README (.../opentelemetry-collector/blob/v0.164.0/receiver/otlpreceiver/README.md: traces_url_path
+// defaults to /v1/traces), Dash0's Python configuration page (https://www.dash0.com/docs/dash0/opentelemetry/distributions/python/configuration:
+// OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <token>,Dash0-Dataset=default) and its website proxy page (the headers_setter example).
+//
 // The words are in content/core/levels/otlp-endpoints.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/otlp-endpoints.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -89,11 +99,39 @@ const SKELETON = {
     steps: [
       {
         qid: 'otlp-q-port',
-        choice: { id: 'otlp-port', choices: [{ key: 'http-port', right: true }] },
+        choice: {
+          id: 'otlp-port',
+          draw: 3,
+          choices: [
+            { key: 'http-port', right: true },
+            { key: 'mismatch', right: true },
+            { key: 'port-or-protocol', right: true },
+            { key: 'same-port' },
+            { key: 'needs-path' },
+            { key: 'protocol-invalid' },
+            { key: 'ports-swapped' },
+            { key: 'needs-https' },
+            { key: 'set-on-collector' },
+          ],
+        },
       },
       {
         qid: 'otlp-q-signal',
-        choice: { id: 'otlp-signal', choices: [{ key: 'as-is', right: true }] },
+        choice: {
+          id: 'otlp-signal',
+          draw: 3,
+          choices: [
+            { key: 'as-is', right: true },
+            { key: 'exactly-written', right: true },
+            { key: 'no-path-root', right: true },
+            { key: 'adds-path' },
+            { key: 'rejected' },
+            { key: 'needs-general' },
+            { key: 'default-endpoint' },
+            { key: 'https-upgrade' },
+            { key: 'signal-name' },
+          ],
+        },
       },
       {
         qid: 'otlp-q-config',
@@ -101,7 +139,21 @@ const SKELETON = {
       },
       {
         qid: 'otlp-q-token',
-        choice: { id: 'otlp-token', choices: [{ key: 'header', right: true }] },
+        choice: {
+          id: 'otlp-token',
+          draw: 3,
+          choices: [
+            { key: 'header', right: true },
+            { key: 'bearer-pairs', right: true },
+            { key: 'collector-auth', right: true },
+            { key: 'url' },
+            { key: 'resource' },
+            { key: 'span-attribute' },
+            { key: 'baggage' },
+            { key: 'dataset-header' },
+            { key: 'api-key-header' },
+          ],
+        },
       },
     ],
   },

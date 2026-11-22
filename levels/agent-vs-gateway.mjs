@@ -22,6 +22,15 @@
 // all pass. The task therefore promises only the wiring ("every name its pipelines list is defined", never "starts"), and the
 // reference leaves `routing_key` out (traceID is the default for traces) so the tier 3 apply does not answer the next question.
 //
+// The three Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9, 9 and 9 answers (3 right, 6 wrong) and a showing
+// draws 3. Their extra answers rest on pages read 2026-11-21: the agent and gateway pages (https://opentelemetry.io/docs/collector/deploy/agent/ and
+// .../gateway/: sidecar or DaemonSet beside the workload, a standalone service with one OTLP endpoint per cluster, data center or region, centrally
+// managed credentials and policies, one or more instances behind a load balancer), the load balancing exporter README
+// (.../opentelemetry-collector-contrib/blob/v0.164.0/exporter/loadbalancingexporter/README.md: the default routing key for traces is traceID, service
+// keeps a service together, metric and streamID route metrics, consistent hashing, not round robin) and the tail sampling processor README
+// (.../processor/tailsamplingprocessor/README.md: all spans of a trace must reach one instance, stateful, num_traces 50000 and decision_wait 30s by
+// default, groups spans by trace ID itself).
+//
 // The words are in content/core/levels/agent-vs-gateway.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/agent-vs-gateway.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -99,11 +108,39 @@ const SKELETON = {
     steps: [
       {
         qid: 'agw-q-pattern',
-        choice: { id: 'agw-pattern', choices: [{ key: 'gateway', right: true }] },
+        choice: {
+          id: 'agw-pattern',
+          draw: 3,
+          choices: [
+            { key: 'gateway', right: true },
+            { key: 'single-endpoint', right: true },
+            { key: 'central-policy', right: true },
+            { key: 'agent' },
+            { key: 'embedded' },
+            { key: 'sdk-direct' },
+            { key: 'plain-balancer' },
+            { key: 'one-replica' },
+            { key: 'receiver-name' },
+          ],
+        },
       },
       {
         qid: 'agw-q-why',
-        choice: { id: 'agw-why', choices: [{ key: 'same-instance', right: true }] },
+        choice: {
+          id: 'agw-why',
+          draw: 3,
+          choices: [
+            { key: 'same-instance', right: true },
+            { key: 'partial-view', right: true },
+            { key: 'requests-not-traces', right: true },
+            { key: 'wait' },
+            { key: 'unsupported' },
+            { key: 'num-traces' },
+            { key: 'stateless' },
+            { key: 'out-of-order' },
+            { key: 'clock-drift' },
+          ],
+        },
       },
       {
         qid: 'agw-q-config',
@@ -111,7 +148,21 @@ const SKELETON = {
       },
       {
         qid: 'agw-q-key',
-        choice: { id: 'agw-key', choices: [{ key: 'trace-id', right: true }] },
+        choice: {
+          id: 'agw-key',
+          draw: 3,
+          choices: [
+            { key: 'trace-id', right: true },
+            { key: 'default-key', right: true },
+            { key: 'hash-trace', right: true },
+            { key: 'service' },
+            { key: 'round-robin' },
+            { key: 'metric-key' },
+            { key: 'span-id' },
+            { key: 'sending-node' },
+            { key: 'session-affinity' },
+          ],
+        },
       },
     ],
   },

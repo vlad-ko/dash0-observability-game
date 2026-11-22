@@ -16,18 +16,48 @@ export default {
           "choices": [
             {
               "key": "ignored",
-              "label": "It starts, and the pipeline that lists <code>k8sattributes</code> just passes the data through unchanged",
+              "label": "It starts anyway on core itself, and the pipeline that lists <code>k8sattributes</code> just passes the data through unchanged",
               "why": "The Collector checks every component id in the config against the components compiled into the binary. A component it does not have is an error, not something to skip."
             },
             {
               "key": "refuses-to-start",
-              "label": "The Collector refuses to start with an unknown type error: <code>k8sattributes</code> is not compiled into the core distribution",
-              "why": "A distribution is a set of components compiled into one binary. <code>k8sattributes</code> is in the [[contrib]] and k8s distributions, not in core, so the core binary has no processor of that type and the config is rejected at startup."
+              "label": "It refuses to start with an unknown component error, as <code>k8sattributes</code> is never part of core",
+              "why": "A distribution is a set of components compiled into one binary. <code>k8sattributes</code> is in the [[contrib]] and k8s distributions and is not compiled into core, so the core binary has no processor of that type. The Collector stops with an unknown type error and the config is rejected at startup."
             },
             {
               "key": "loads-on-demand",
-              "label": "It starts, and downloads the processor from the contrib repository the first time a pipeline needs it",
+              "label": "It starts normally, and the core distribution downloads <code>k8sattributes</code> from the contrib repository the first time it is needed",
               "why": "The Collector does not fetch components at run time. Everything it can run is compiled in, so a missing one means a different distribution or a custom build."
+            },
+            {
+              "key": "rejected-at-startup",
+              "label": "The config is rejected when the Collector starts, since the core binary has no processor of the type <code>k8sattributes</code>",
+              "why": "The Collector can only run the components compiled into its binary, and the core manifest does not list <code>k8sattributes</code>. The contrib and k8s manifests do."
+            },
+            {
+              "key": "fails-before-data",
+              "label": "It fails to start before any data flows, as the core build holds only what was compiled in and <code>k8sattributes</code> is not among it",
+              "why": "A distribution is a fixed set of components in one binary, listed in its <code>manifest.yaml</code>. A config that names a component outside that set cannot be started."
+            },
+            {
+              "key": "drops-data",
+              "label": "It starts happily with core alone, so the data of anything using <code>k8sattributes</code> is dropped",
+              "why": "The Collector does not start with a component it does not have. The config is rejected, so no pipeline runs and nothing is dropped."
+            },
+            {
+              "key": "core-has-all",
+              "label": "It starts, because core ships every processor, <code>k8sattributes</code> included, and only receivers differ",
+              "why": "The core manifest does not list <code>k8sattributes</code>, and the contrib and k8s manifests do. The distributions differ in processors too."
+            },
+            {
+              "key": "no-cluster",
+              "label": "It cannot start, but only because the laptop has no Kubernetes cluster for <code>k8sattributes</code> in the core build to read",
+              "why": "The config fails because the core binary does not contain the processor. It would fail the same way on a machine inside a cluster."
+            },
+            {
+              "key": "reduced-mode",
+              "label": "It starts fine on the core build, and <code>k8sattributes</code> runs in a reduced mode that adds nothing",
+              "why": "A component is either compiled into the binary or not. There is no reduced mode for a processor the binary does not have."
             }
           ]
         }
@@ -157,18 +187,48 @@ export default {
           "choices": [
             {
               "key": "contrib-config",
-              "label": "Run the contrib distribution and list <code>acme_scrubber</code> in the config: contrib ships every component, and it is already there",
+              "label": "Run the contrib distribution and add your processor to its config, since contrib ships every component already",
               "why": "The contrib distribution holds the components of the Collector repositories, not every component that exists. A config can only enable what is compiled in, and your processor is not."
             },
             {
               "key": "ocb",
-              "label": "Build a custom distribution with OCB, the OpenTelemetry Collector Builder: list your processor in a manifest",
-              "why": "ocb takes a manifest that lists the components to include, yours among them, and builds a Collector binary with exactly those. The same tool gives you a smaller binary and a smaller attack surface than contrib, which the contrib README suggests for production."
+              "label": "Run the Collector Builder (OCB) with a manifest that lists your processor as a component to include",
+              "why": "ocb, the OpenTelemetry Collector Builder, takes a manifest that lists the components to include, yours among them, and builds a custom Collector binary with exactly those. The same tool gives you a smaller binary and a smaller attack surface than contrib, which the contrib README suggests for production."
             },
             {
               "key": "otlp-distro",
-              "label": "Use the otlp distribution: it is made for custom processors, and loads them by name at startup",
+              "label": "Use the otlp distribution (made for custom processors) which loads your processor by name when the Collector boots",
               "why": "The otlp distribution is a minimal one, with the OTLP receiver and exporters. It has no way to load your processor either: you need a build that compiles it in."
+            },
+            {
+              "key": "ocb-manifest",
+              "label": "Run OCB with a manifest that lists <code>acme_scrubber</code>, and compile a custom Collector from it",
+              "why": "OCB configures a build from a YAML manifest with a <code>dist</code> section and lists of modules by type, such as processors. It needs Go to compile the result."
+            },
+            {
+              "key": "ocb-chosen",
+              "label": "Generate a tailored Collector distribution holding only the components you choose, your processor among them, ready for deployment",
+              "why": "The builder exists for custom distributions with custom components, upstream components and other publicly available ones."
+            },
+            {
+              "key": "plugin-dir",
+              "label": "Put the compiled file of your processor in a plugin directory and point the Collector at it",
+              "why": "Everything the Collector can run is compiled in, so a file added later is not something it loads."
+            },
+            {
+              "key": "core-module-path",
+              "label": "Run the core distribution and give the Go module path of your processor as the type in the Collector config",
+              "why": "A config can only enable what the binary contains. A module path in the config does not download or compile anything."
+            },
+            {
+              "key": "edit-manifest",
+              "label": "Take the shipped binary and edit its <code>manifest.yaml</code> to add your processor as a component of the Collector build",
+              "why": "The manifest describes what a distribution was built from. It is an input to the build, and changing the text does not change the compiled binary."
+            },
+            {
+              "key": "set-flag",
+              "label": "Start the stock Collector with a flag that enables your processor as an extra component",
+              "why": "A config can only enable what is compiled in, and a flag does not add a component to a binary."
             }
           ]
         }

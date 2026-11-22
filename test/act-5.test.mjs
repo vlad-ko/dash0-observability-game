@@ -155,8 +155,12 @@ test('pipelines: a connector is what ends one pipeline and starts another; a pro
   assert.equal(right.key, 'connector');
   const text = plain(right.label + right.why);
   for (const w of ['connector', 'exporter', 'receiver', 'both']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(choiceOf('pipelines', 'pipe-connector').map((c) => c.key).sort(), ['connector', 'extension', 'processor']);
-  const processor = choiceOf('pipelines', 'pipe-connector').find((c) => c.key === 'processor');
+  // #390: the step is a pool (draw 3): three right phrasings of the one fact and eight wrong answers, the old three among them.
+  const pool = choiceOf('pipelines', 'pipe-connector');
+  assert.equal(stepOf('pipelines', 'choice', 'pipe-connector').draw, 3);
+  assert.deepEqual(pool.filter((c) => c.right).map((c) => c.key).sort(), ['connector', 'connector-both', 'joins-two']);
+  assert.deepEqual(pool.filter((c) => !c.right).map((c) => c.key).sort(), ['define-only', 'extension', 'forward', 'named-pipeline', 'pipeline-as-receiver', 'processor', 'prometheus-exporter', 'same-receiver']);
+  const processor = pool.find((c) => c.key === 'processor');
   assert.equal(/within a pipeline|inside one pipeline/.test(processor.why), true);
 });
 
@@ -271,7 +275,11 @@ test('pipelines: an extension is enabled under service.extensions, not in a pipe
   assert.equal(right.key, 'service-extensions');
   const text = plain(right.label + right.why);
   for (const w of ['service', 'extensions', 'health_check', 'pipeline']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(choiceOf('pipelines', 'pipe-extension').map((c) => c.key).sort(), ['in-pipeline', 'service-extensions', 'start-order']);
+  // #390: a pool (draw 3) of three right phrasings and eight wrong answers; the old three are among them.
+  const pool = choiceOf('pipelines', 'pipe-extension');
+  assert.equal(stepOf('pipelines', 'choice', 'pipe-extension').draw, 3);
+  assert.deepEqual(pool.filter((c) => c.right).map((c) => c.key).sort(), ['own-list', 'service-extensions', 'service-line']);
+  assert.deepEqual(pool.filter((c) => !c.right).map((c) => c.key).sort(), ['health-exporter', 'health-pipeline', 'http-receiver', 'in-pipeline', 'needs-receivers', 'otlp-port', 'start-order', 'telemetry-section']);
 });
 
 // ---- 5.2 Order matters --------------------------------------------------------------
@@ -323,7 +331,11 @@ test('order-matters: memory_limiter goes first so it can refuse data early and r
   assert.equal(right.key, 'refuse-early');
   const text = plain(right.label + right.why);
   for (const w of ['memory', 'refuse', 'receivers', 'retry', 'backpressure']) assert.equal(text.includes(w), true, w);
-  assert.deepEqual(choiceOf('order-matters', 'order-why').map((c) => c.key).sort(), ['any-position', 'cleans-data', 'refuse-early']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  const pool = choiceOf('order-matters', 'order-why');
+  assert.equal(stepOf('order-matters', 'choice', 'order-why').draw, 3);
+  assert.deepEqual(pool.filter((c) => c.right).map((c) => c.key).sort(), ['backpressure', 'only-sees', 'refuse-early']);
+  assert.deepEqual(pool.filter((c) => !c.right).map((c) => c.key).sort(), ['any-position', 'cleans-data', 'drops-oldest', 'gc-each', 'scales-up', 'sizes-batches']);
 });
 
 test('order-matters: batch goes late, and exporter-side batching is an option the docs prefer where it exists; batch itself is still shipped', () => {
@@ -333,7 +345,11 @@ test('order-matters: batch goes late, and exporter-side batching is an option th
   for (const w of ['Late', 'discarded', 'context', 'exporter', 'sending_queue']) assert.equal(text.includes(w), true, w);
   const removed = choiceOf('order-matters', 'order-batch').find((c) => c.key === 'removed');
   assert.equal(/core|contrib/.test(removed.why), true, 'the wrong option is corrected: the processor is still in the distributions');
-  assert.deepEqual(choiceOf('order-matters', 'order-batch').map((c) => c.key).sort(), ['early', 'late', 'removed']);
+  // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
+  const pool = choiceOf('order-matters', 'order-batch');
+  assert.equal(stepOf('order-matters', 'choice', 'order-batch').draw, 3);
+  assert.deepEqual(pool.filter((c) => c.right).map((c) => c.key).sort(), ['after-filters', 'last-in-list', 'late']);
+  assert.deepEqual(pool.filter((c) => !c.right).map((c) => c.key).sort(), ['ahead-of-limiter', 'early', 'exporter-cannot', 'removed', 'send-size-max', 'shared-instance']);
 });
 
 // ---- both levels --------------------------------------------------------------------
