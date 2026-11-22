@@ -31,17 +31,17 @@ const ANSWERS = {
   ],
   instruments: [
     'sort instr-sort: orders-placed=counter warehouse-temp=gauge queue-length=up-down-counter checkout-duration=histogram payment-declines=counter cache-hit-ratio=gauge active-requests=up-down-counter response-bytes=histogram',
-    'choice instr-async: async-updown',
-    'choice instr-gauge: sampled-not-sum',
+    'choice instr-async: async-updown|observable-updown|on-demand-additive',
+    'choice instr-gauge: no-aggregation|sampled-not-sum|start-time',
   ],
   temporality: [
     'spot temp-spot: emails-sent,checkout-duration,payments-declined',
-    'choice temp-convert: deltatocumulative',
+    'choice temp-convert: accumulate|deltatocumulative|running-total-processor',
     'choice temp-restart: reset',
-    'choice temp-dash0: both',
+    'choice temp-dash0: both|histogram-catch|not-every|send-as-is',
   ],
   histograms: [
-    'choice hist-kind: exponential',
+    'choice hist-kind: exponential|merge|same-error|wider',
     'query hist-avg: checkout-http@3600 sum(rate(http_server_request_duration_seconds_sum{route="/pay"}[5m])) / sum(rate(http_server_request_duration_seconds_count{route="/pay"}[5m]))',
     'query hist-p99: checkout-http@3600 histogram_quantile(0.99, sum by (le) (rate(http_server_request_duration_seconds_bucket{route="/pay"}[5m])))',
     'choice hist-buckets: top-bucket',
@@ -52,7 +52,7 @@ const ANSWERS = {
     'choice pql-total: total',
     'query pql-rate: checkout-http@3600 sum by (route) (rate(http_server_requests_total{service="checkout", status="500"}[5m]))',
     'query pql-increase: checkout-http@2700 sum(increase(http_server_requests_total{route="/pay"}[10m]))',
-    'choice pql-dash0: both-names',
+    'choice pql-dash0: both-names|stable-selector|type-label|wrapped-increase',
   ],
   cardinality: [
     'choice cdn-combos: product',
