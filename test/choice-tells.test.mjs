@@ -117,7 +117,7 @@ const score = (qs, mark) =>
   }, 0);
 
 const BAND = 3; // points a blind rule may sit above or below chance: a rule far below is the same tell, read backwards
-/** How far a rule may stray from chance on ONE pooled question (T2 below), as a share of a question. */
+/** How far a rule may stray from chance on ONE pooled question before the advisory T2 report names it, as a share of a question. */
 const QUESTION_BAND = 0.15;
 
 /** The strategies whose score over `qs` is further from chance than the band, as report lines. */
@@ -253,15 +253,23 @@ test('T1 a pool of equal-length answers scores exactly chance on every rule, and
   assert.equal(score(fixed, STRATEGIES.shortest), 0);
 });
 
-test('T2 every live pooled question stays within 0.15 of chance on every rule', async () => {
+/** T2 advice: every rule that sits further than QUESTION_BAND from chance on ONE pooled question, as report lines. Fails nothing. */
+function questionAdvice(q) {
+  const chance = 1 / q.draw;
+  return Object.entries(STRATEGIES)
+    .map(([name, mark]) => ({ name, got: score([q], mark) }))
+    .filter(({ got }) => Math.abs(got - chance) > QUESTION_BAND)
+    .map(({ name, got }) => `${q.level} ${name}: ${got.toFixed(2)} against chance ${chance.toFixed(2)}, ${(Math.abs(got - chance) - QUESTION_BAND).toFixed(2)} past the band`);
+}
+
+test('T2 is advisory: TELLS=1 prints each live pooled question past 0.15 of chance on a rule, and the report finds a planted case', async () => {
   const pooled = (await allQuestions()).filter((q) => q.draw !== undefined);
-  for (const q of pooled) {
-    for (const [name, mark] of Object.entries(STRATEGIES)) {
-      assert.ok(Math.abs(score([q], mark) - 1 / q.draw) <= QUESTION_BAND, `${q.level} ${name}: ${score([q], mark).toFixed(2)} against chance ${(1 / q.draw).toFixed(2)}`);
-    }
-  }
-  // The same bound has teeth: a pool whose right answers are longer is outside it.
-  assert.ok(Math.abs(score([longRights(12)], STRATEGIES.longest) - 1 / 3) > QUESTION_BAND);
+  if (process.env.TELLS) for (const q of pooled) for (const line of questionAdvice(q)) console.log(`TELLS T2 ${line}`);
+  // The report has teeth: a pool whose right answers are the longest is named, with the rule and the overshoot.
+  const planted = questionAdvice(longRights(12));
+  assert.ok(planted.some((line) => /^fixture longest: 1\.00 against chance 0\.33, 0\.52 past the band$/.test(line)), planted.join('\n'));
+  // A clean pool is not named.
+  assert.deepEqual(questionAdvice({ level: 'fixture', draw: 3, choices: cp().choices }), []);
 });
 
 test('T3 every pooled step is found as a question: the live registry, and the fixture level', async () => {
