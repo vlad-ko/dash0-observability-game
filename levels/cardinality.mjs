@@ -7,6 +7,9 @@
 // Spec: https://opentelemetry.io/docs/specs/semconv/http/http-metrics/ , https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 // Spec: https://prometheus.io/docs/practices/naming/#labels , https://prometheus.io/docs/practices/instrumentation/#do-not-overuse-labels
 // Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/metrics/identify-high-cardinality-metrics , https://www.dash0.com/docs/dash0/cost-control/spam-filters
+// Answer pool of the Dash0 step (#390): the extra answers use only the pages above and these Collector READMEs, the filter processor
+// (it drops telemetry) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md
+// and the attributes processor (its delete action removes an attribute) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md
 //
 // The words are in content/core/levels/cardinality.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
 import CORE from '../content/core/levels/cardinality.mjs';
@@ -135,7 +138,17 @@ const SKELETON = {
         },
       },
       { qid: 'cdn-q-budget', tradeoff: BUDGET },
-      { qid: 'cdn-q-dash0', choice: { id: 'cdn-dash0', choices: [{ key: 'fix-source', right: true }] } },
+      {
+        // Step 4 is an answer pool (docs/CONTENT.md section 10): the content lists 12 answers, a showing draws 4 (one of
+        // the 3 right, 3 of the 9 wrong). Every right answer is marked here. Step 1 stays fixed: its answer is a number
+        // computed from the figures printed in the intro, which another board would have to reprint.
+        qid: 'cdn-q-dash0',
+        choice: {
+          id: 'cdn-dash0',
+          draw: 4,
+          choices: [{ key: 'fix-source', right: true }, { key: 'change-instrumentation', right: true }, { key: 'user-on-span', right: true }],
+        },
+      },
     ],
   },
 };

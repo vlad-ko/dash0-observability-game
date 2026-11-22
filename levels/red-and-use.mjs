@@ -11,6 +11,9 @@
 // Source (USE method, Brendan Gregg): https://www.brendangregg.com/usemethod.html
 // Source (RED method, Tom Wilkie, as presented at GrafanaCon EU 2018): https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/services/built-in-metrics , https://www.dash0.com/docs/dash0/telemetry/metrics/understand-synthetic-metrics
+// Answer pools (#390, the four choices below): the extra answers use only the pages above and these Collector READMEs, the
+// filter processor (it drops telemetry, it makes no metrics) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md
+// and the host metrics receiver (metrics about the host system) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md
 //
 // The words are in content/core/levels/red-and-use.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
 // The PromQL references stay here: the query widget's grader runs them against the dataset.
@@ -28,9 +31,33 @@ const SKELETON = {
   play: {
     prefix: 'ru',
     steps: [
-      { qid: 'ru-q-methods', choice: { id: 'ru-methods', choices: [{ key: 'red-services-use-resources', right: true }] } },
-      { qid: 'ru-q-saturation', choice: { id: 'ru-saturation', choices: [{ key: 'saturation', right: true }] } },
-      { qid: 'ru-q-connector', choice: { id: 'ru-connector', choices: [{ key: 'spanmetrics', right: true }] } },
+      // The four choices are answer pools (docs/CONTENT.md section 10), each with 3 right answers marked here: a showing
+      // draws 3 answers (1 right, 2 of 7 wrong) for the methods, saturation and Dash0 questions, and 4 (1 right, 3 of 9
+      // wrong) for the connector. A right answer added in the content file without `right: true` would be graded wrong.
+      {
+        qid: 'ru-q-methods',
+        choice: {
+          id: 'ru-methods',
+          draw: 3,
+          choices: [{ key: 'red-services-use-resources', right: true }, { key: 'red-requests-use-machines', right: true }, { key: 'red-count-use-busy', right: true }],
+        },
+      },
+      {
+        qid: 'ru-q-saturation',
+        choice: {
+          id: 'ru-saturation',
+          draw: 3,
+          choices: [{ key: 'saturation', right: true }, { key: 'scheduler-latency', right: true }, { key: 'queue-length', right: true }],
+        },
+      },
+      {
+        qid: 'ru-q-connector',
+        choice: {
+          id: 'ru-connector',
+          draw: 4,
+          choices: [{ key: 'spanmetrics', right: true }, { key: 'connector-count', right: true }, { key: 'contrib-connector-red', right: true }],
+        },
+      },
       {
         qid: 'ru-q-rate',
         query: {
@@ -64,7 +91,14 @@ const SKELETON = {
           helps: { hints: true },
         },
       },
-      { qid: 'ru-q-dash0', choice: { id: 'ru-dash0', choices: [{ key: 'derived', right: true }] } },
+      {
+        qid: 'ru-q-dash0',
+        choice: {
+          id: 'ru-dash0',
+          draw: 3,
+          choices: [{ key: 'derived', right: true }, { key: 'red-histogram', right: true }, { key: 'count-spans', right: true }],
+        },
+      },
     ],
   },
 };

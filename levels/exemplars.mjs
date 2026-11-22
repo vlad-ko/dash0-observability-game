@@ -26,6 +26,9 @@
 // exemplars in the UI; the only mention is the quota of 8 exemplars per data point on
 // https://www.dash0.com/docs/dash0/cost-control/quotas-and-limits . So the level states no Dash0
 // behaviour and has no Dash0 step. OUTLINE is not edited here.
+// Answer pool of the second step (#390): the extra answers use only the sources above, the SDK page (the three filters, the
+// TraceBased default, exemplar sampling on by default, the built-in reservoirs chosen by aggregation) and the data model page
+// (an exemplars field on Sum, Gauge, Histogram and ExponentialHistogram points). No Dash0 claim is made.
 //
 // The words are in content/core/levels/exemplars.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
 import CORE from '../content/core/levels/exemplars.mjs';
@@ -64,7 +67,17 @@ const SKELETON = {
     prefix: 'exm',
     steps: [
       { qid: 'exm-q-spot', spot: SPOT },
-      { qid: 'exm-q-why', choice: { id: 'exm-why', choices: [{ key: 'unsampled-or-no-span', right: true }] } },
+      {
+        // An answer pool (docs/CONTENT.md section 10): the content lists 10 answers, a showing draws 3 (one of the 3
+        // right, 2 of the 7 wrong). Every right answer is marked here. The question asks about the SDK's filter, not
+        // about a figure on the board, so another board changes no data.
+        qid: 'exm-q-why',
+        choice: {
+          id: 'exm-why',
+          draw: 3,
+          choices: [{ key: 'unsampled-or-no-span', right: true }, { key: 'trace-based-default', right: true }, { key: 'job-and-unsampled', right: true }],
+        },
+      },
     ],
   },
 };

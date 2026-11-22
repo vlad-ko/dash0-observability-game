@@ -27,6 +27,41 @@ export default {
               "key": "red-everything",
               "label": "RED for everything: Rate, Errors, Duration fit a service, a CPU or a disk alike, as every component takes requests",
               "why": "RED came out of microservices, because the USE method does not fit a service. The reverse holds too: a CPU, disk or interface is checked by how busy it is and how much work queues for it, which RED does not ask."
+            },
+            {
+              "key": "red-requests-use-machines",
+              "label": "RED on the requests of every service, taken from its traces or metrics, USE on the CPU, memory and network interfaces under it",
+              "why": "[[RED]] reads requests: how many a service gets, how many fail and how long they take. [[USE]] reads a [[resource|system-resource]]: how busy it is, how much work waits for it and how many errors it throws. RED can be worked out from spans or from metrics, and Brendan Gregg's list of resources starts with CPUs, memory and network interfaces."
+            },
+            {
+              "key": "red-count-use-busy",
+              "label": "RED covers the errors, rate and duration of a service while USE covers how busy, queued and faulty a resource is",
+              "why": "RED is the method for a service: rate, errors and duration of its requests. USE is the method for a resource: utilisation, saturation and errors. Tom Wilkie recommends both together, RED for how happy your users are and USE for how happy your machines are."
+            },
+            {
+              "key": "use-everything",
+              "label": "USE for every service and every resource, such as a CPU or a disk: any of them can be busy, queued or failing",
+              "why": "USE was written for resources such as CPUs, disks and network interfaces. Brendan Gregg allows only small software parts, such as a lock or a thread pool, and says to leave whole applications to other methods. Tom Wilkie made RED because USE does not really apply to services."
+            },
+            {
+              "key": "same-checklist",
+              "label": "RED and USE are one checklist for a service or a resource, with two names: Rate is Utilisation, Duration is Saturation and Errors is Errors",
+              "why": "The two ask different questions. RED counts requests, failed requests and the time they take. USE asks how busy a resource is, how much work waits for it and how many errors it throws. Tom Wilkie calls them two different views on the same system."
+            },
+            {
+              "key": "signal-split",
+              "label": "RED reads the traces of a service and USE reads its metrics, so the method follows the signal and not the thing being checked",
+              "why": "Neither method belongs to a signal. RED can be worked out from spans, as the span metrics connector in this level does, or from metrics, and USE is usually read from metrics. What picks the method is whether you check a service's requests or a resource."
+            },
+            {
+              "key": "user-facing-split",
+              "label": "RED for the part customers see, such as the shop front end. USE for the part they never see, such as a disk or a CPU",
+              "why": "The split is by what you read, not by who sees it. Tom Wilkie models RED for every single service in an architecture, internal ones too, and USE is for the resources under them."
+            },
+            {
+              "key": "traces-enough",
+              "label": "Neither RED nor USE is needed once traces flow, as spans give the rate, errors and duration of every service and resource",
+              "why": "Spans describe requests, so they can give RED for a service, as the connector in this level shows. A CPU or a disk takes no requests and writes no spans, so its utilisation, saturation and errors come from resource metrics."
             }
           ]
         }
@@ -51,6 +86,41 @@ export default {
               "key": "errors",
               "label": "Errors: the count of error events on that machine, such as failed disk writes",
               "why": "Errors matter, since a failed and retried operation can slow things down without being noticed. But nothing failed here: the requests wait, and waiting is what saturation measures."
+            },
+            {
+              "key": "scheduler-latency",
+              "label": "Scheduler latency: how long runnable work waits before it gets onto any CPU",
+              "why": "Brendan Gregg names scheduler latency as a saturation metric of a CPU: the time work spends ready and waiting for a core. That is what the requests to cart are doing."
+            },
+            {
+              "key": "queue-length",
+              "label": "Queue length: how many tasks sit ready and waiting for a core",
+              "why": "Brendan Gregg names the run-queue length as a saturation metric of a CPU, and saturation is often a queue. It can build up in a burst of full utilisation even when the average over a long interval is low."
+            },
+            {
+              "key": "rate",
+              "label": "Rate: how fast work arrives at the service on that host, before any queue",
+              "why": "Rate is the R of RED, a count of requests. It says how much work arrives, not whether work is queued at the CPU. Saturation is the signal for work that waits."
+            },
+            {
+              "key": "duration",
+              "label": "Duration: how long each request takes, which grows when work queues up",
+              "why": "Duration shows that requests are slow, not where the time goes: it could be the CPU, a database or the network. The queue at the CPU is what shows that work is waiting for it."
+            },
+            {
+              "key": "longer-window",
+              "label": "Hourly CPU figures: a long window shows the bursts that queue work",
+              "why": "A longer window smooths bursts out more, not less. Brendan Gregg's CPU sat at 100% for seconds inside a five-minute average that never passed 80%, and an hour would have hidden it better still."
+            },
+            {
+              "key": "idle",
+              "label": "Idle time: the share of the day that the CPU did nothing and no queue formed",
+              "why": "Idle time is utilisation seen from the other side: it says how busy the CPU was, not whether work waited. A CPU can be idle for most of a window and still queue work in a burst."
+            },
+            {
+              "key": "memory-free",
+              "label": "Memory capacity: how much is still free",
+              "why": "That is the utilisation of another resource, memory. The question is about the CPU, and work that waits for a CPU shows as a run queue and not as free memory."
             }
           ]
         }
@@ -68,7 +138,7 @@ export default {
             },
             {
               "key": "processor",
-              "label": "Add the <code>spanmetrics</code> processor to the traces pipeline, writing the metrics beside the spans",
+              "label": "Add the <code>spanmetrics</code> processor that the connector replaced to the traces pipeline: the metrics stay with the spans",
               "why": "The connector replaced that processor. A processor stays inside one pipeline, and turning traces into metrics means crossing from a traces pipeline into a metrics one, which is what a connector does."
             },
             {
@@ -78,8 +148,48 @@ export default {
             },
             {
               "key": "raw-url",
-              "label": "Name the spans with the full URL, giving every request path its own metric series",
+              "label": "Use the full URL for every span so that the connector makes a metric series for every request path that users visit",
               "why": "Every distinct span name is a new series in each metric, which is the [[cardinality]] of 3.5. HTTP server span names are the method and <code>http.route</code>, and instrumentation must not default to the URI path. The connector README names raw URIs in span names as the usual cause of exploding span metrics, and offers an <code>aggregation_cardinality_limit</code> as a circuit breaker, not a fix."
+            },
+            {
+              "key": "connector-count",
+              "label": "Let a connector count and time the spans a service produces so that counts and timings become metrics you can query",
+              "why": "The span metrics connector counts the spans seen for each set of dimensions, which are the calls, and records how long each span took in a duration histogram. Errors are the calls with an error status. It aggregates request, error and duration metrics from span data."
+            },
+            {
+              "key": "contrib-connector-red",
+              "label": "Wire the contrib span_metrics connector between two pipelines with traces going in and the rate and errors taken off what it writes",
+              "why": "The connector supports a traces pipeline as the exporter side and a metrics pipeline as the receiver side, and the contrib distribution has it. Calls give the rate, the calls with an error status the errors, and the duration histogram the duration."
+            },
+            {
+              "key": "metrics-only",
+              "label": "Put the connector in a metrics pipeline of the Collector alone and keep sending the traces of cart and checkout straight to the backend",
+              "why": "A connector joins two pipelines: the spans have to enter it as the exporter of a traces pipeline, and the metrics leave it as the receiver of a metrics pipeline. With no traces pipeline feeding it, no span reaches it and nothing is counted."
+            },
+            {
+              "key": "filter-processor",
+              "label": "Add a <code>filter</code> for server spans in the traces pipeline, which counts them and their errors in place of a connector",
+              "why": "The filter processor drops spans, span events, metrics, data points or logs that meet its conditions. It makes no metrics. Counting spans into calls and a duration histogram is what the span metrics connector does."
+            },
+            {
+              "key": "exemplars-only",
+              "label": "Switch on the exemplars option of the connector: each span lands on a metric in your backend as a data point",
+              "why": "An exemplar attaches a span to a metric the connector already writes, at most 5 for each data point by default, and it is off by default. It links a point to a trace. The calls and duration metrics are what make RED, and exemplars add neither."
+            },
+            {
+              "key": "host-metrics",
+              "label": "Scrape the hosts of cart and checkout with the host metrics receiver: a busy machine means a busy service",
+              "why": "Host metrics describe the machine: its utilisation, saturation and errors, the USE view. They do not count a service's requests or time them, and several services can share one host."
+            },
+            {
+              "key": "drop-service-name",
+              "label": "Leave <code>service.name</code> out of the dimensions of the connector, so that the calls metric stays small",
+              "why": "RED is read for each service, so <code>service.name</code> has to stay a dimension. Without it the calls of every service land in one series and the rate of each service is gone. Keep cardinality in check by bounding the span names, not by removing the dimension the question needs."
+            },
+            {
+              "key": "second-traces-pipeline",
+              "label": "Route the output of the connector into a second traces pipeline of the Collector, so the rate and errors sit next to the spans",
+              "why": "The span metrics connector takes a traces pipeline in and puts metrics out, so what it writes can only enter a metrics pipeline. Its output is not spans."
             }
           ]
         }
@@ -131,6 +241,41 @@ export default {
               "key": "service-metrics",
               "label": "They come from each service's own metrics, and a service with no metrics instrumentation shows nothing",
               "why": "The service views are built from spans. A service that sends traces and no metrics still gets rate, errors and duration."
+            },
+            {
+              "key": "red-histogram",
+              "label": "Dash0 builds a histogram from the spans it ingests, and each service view draws its rate and errors from it",
+              "why": "<code>dash0.spans.red</code> is an exponential histogram that Dash0 builds from your spans. It captures all three RED signals for each service and operation, and it is the metric behind every request rate, error rate and latency percentile in the service views."
+            },
+            {
+              "key": "count-spans",
+              "label": "They come from the traces the backend gets: the rate and errors for each service with no setup and no code changes",
+              "why": "Rate is the histogram's count over time, and errors are the spans whose status code is ERROR. Nobody has to emit these metrics or configure a connector, because Dash0 generates them from the spans it receives."
+            },
+            {
+              "key": "log-lines",
+              "label": "Dash0 counts the log lines a service writes for each request, and takes the rate, errors and duration with no spans",
+              "why": "The service views are built from spans, not logs. A service that sends traces and no logs still gets rate, errors and duration."
+            },
+            {
+              "key": "custom-metrics",
+              "label": "They are metrics that somebody must have sent: the rate and the errors for each service",
+              "why": "Dash0 generates them itself from spans, for the Service Catalog and the Service Map. Nobody has to emit them."
+            },
+            {
+              "key": "client-spans",
+              "label": "Dash0 derives the rate and errors from CLIENT spans in the traces: what each app sends out to other systems",
+              "why": "The operations of a service are what it serves, taken from SERVER and CONSUMER spans and from root spans. CLIENT and PRODUCER spans, the outbound calls, are not treated as operations of the calling service."
+            },
+            {
+              "key": "raw-span-names",
+              "label": "Dash0 groups the numbers by the raw span name in each trace and every URL path that a user visits becomes a series",
+              "why": "The histogram is grouped by operation name, which turns <code>GET /users/123</code> into <code>GET /users/{id}</code>. That keeps its cardinality bounded and stable over time, which a series for every URL path would not."
+            },
+            {
+              "key": "synthetic-calls",
+              "label": "Synthetic checks in Dash0 measure the rate and errors: each endpoint is probed from outside on a schedule",
+              "why": "The service views come from the spans of the requests your services handled, which Dash0 turns into a histogram. A scheduled call from outside would measure one probe, not the traffic your users send."
             }
           ]
         }

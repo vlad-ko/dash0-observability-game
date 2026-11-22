@@ -664,7 +664,7 @@ test('cardinality: the Dash0 tie-in is graded: fix the source, and a spam filter
   const t = plain(right.label + right.why);
   for (const w of ['tree map', 'instrumentation layer', 'cannot be recovered', 'ingest charge', 'not what you send', 'Collector filter processor']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('cardinality', 'cdn-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['leave', 'spam-attribute', 'spam-free']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['filter-processor', 'hash-user', 'leave', 'query-only', 'recover-later', 'spam-attribute', 'spam-free', 'spam-service', 'tree-resources']);
   assert.equal(/does not strip one attribute/.test(plain(wrong.find((c) => c.key === 'spam-attribute').why)), true);
   assert.equal(/ingest charge/.test(plain(wrong.find((c) => c.key === 'spam-free').why)), true);
   assert.equal(/prompt to ask/.test(plain(wrong.find((c) => c.key === 'leave').why)), true);
@@ -690,7 +690,7 @@ test('red-and-use: RED reads a service and USE reads a resource, and the swaps a
   assert.equal(right.key, 'red-services-use-resources');
   const t = plain(right.label);
   for (const w of ['Rate, Errors, Duration', 'Utilisation, Saturation, Errors', 'CPU or a disk']) assert.equal(t.includes(w), true, w);
-  assert.deepEqual(choiceOf('red-and-use', 'ru-methods').filter((c) => !c.right).map((c) => c.key).sort(), ['red-everything', 'swapped']);
+  assert.deepEqual(choiceOf('red-and-use', 'ru-methods').filter((c) => !c.right).map((c) => c.key).sort(), ['red-everything', 'same-checklist', 'signal-split', 'swapped', 'traces-enough', 'use-everything', 'user-facing-split']);
   assert.equal(/microservices/.test(plain(choiceOf('red-and-use', 'ru-methods').find((c) => c.key === 'red-everything').why)), true);
 });
 
@@ -710,7 +710,7 @@ test('red-and-use: the spanmetrics connector is graded: calls and duration, name
   const t = plain(right.label + right.why);
   for (const w of ['traces pipeline', 'metrics pipeline', 'traces.span.metrics.calls', 'traces.span.metrics.duration', 'milliseconds by default', 'connector.spanmetrics.legacyMetricNames', 'span_metrics', 'check what your version emits']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('red-and-use', 'ru-connector').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['errors-metric', 'processor', 'raw-url']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['drop-service-name', 'errors-metric', 'exemplars-only', 'filter-processor', 'host-metrics', 'metrics-only', 'processor', 'raw-url', 'second-traces-pipeline']);
   assert.equal(/STATUS_CODE_ERROR/.test(plain(wrong.find((c) => c.key === 'errors-metric').why)) && /otel\.status_code/.test(plain(wrong.find((c) => c.key === 'errors-metric').why)), true);
   const raw = plain(wrong.find((c) => c.key === 'raw-url').why);
   for (const w of ['http.route', 'must not default to the URI path', 'aggregation_cardinality_limit', 'cardinality of 3.5']) assert.equal(raw.includes(w), true, w);
@@ -799,7 +799,7 @@ test('red-and-use: the Dash0 tie-in is graded: RED derived from spans, not bille
   const t = plain(right.label + right.why);
   for (const w of ['dash0.spans.red', 'Service Catalog and Service Map', 'not billed as a custom metric', 'status code ERROR', 'GET /users/{id}', 'cardinality bounded']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('red-and-use', 'ru-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['connector-needed', 'service-metrics']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['client-spans', 'connector-needed', 'custom-metrics', 'log-lines', 'raw-span-names', 'service-metrics', 'synthetic-calls']);
   assert.equal(/derivation itself/.test(plain(wrong.find((c) => c.key === 'connector-needed').why)), true);
   assert.equal(/still gets rate, errors and duration/.test(plain(wrong.find((c) => c.key === 'service-metrics').why)), true);
 });
@@ -912,7 +912,7 @@ test('exemplars: the nuance is graded: only measurements recorded in a sampled s
   const t = plain(right.label + right.why);
   for (const w of ['outside any span', 'not sampled', 'TraceBased', 'sampled span', 'OTEL_METRICS_EXEMPLAR_FILTER', 'always_on', 'always_off', 'reservoir']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('exemplars', 'exm-why').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['backend-dropped', 'errors-only']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['backend-dropped', 'counters-only', 'errors-only', 'folded-away', 'off-by-default', 'otlp-no-slot', 'reservoir-unsized']);
   assert.equal(/AlwaysOn, AlwaysOff and TraceBased/.test(plain(wrong.find((c) => c.key === 'errors-only').why)), true);
   assert.equal(/SDK/.test(plain(wrong.find((c) => c.key === 'backend-dropped').why)) && /reservoir/.test(plain(wrong.find((c) => c.key === 'backend-dropped').why)), true);
   for (const c of choiceOf('exemplars', 'exm-why')) assert.equal(typeof c.why, 'string', c.key);
