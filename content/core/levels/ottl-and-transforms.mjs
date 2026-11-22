@@ -173,7 +173,7 @@ export default {
             {
               "key": "dash0-runs-processors",
               "label": "The platform runs the Collector's processors, and a transform can handle the email of a span there",
-              "why": "The Collector's processors run in the Collector, which you operate. Dash0's spam filter page describes filters that drop data during ingestion, and it does not describe running processors there."
+              "why": "At ingestion Dash0 applies its own controls, such as spam filters that drop data; the Collector's processors are ones you run in the Collector."
             },
             {
               "key": "exporter-exclude",

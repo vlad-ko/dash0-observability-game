@@ -89,7 +89,7 @@ export default {
             },
             {
               "key": "requests-not-traces",
-              "label": "A Service balances requests, not traces, so a trace's spans reach different replicas",
+              "label": "A plain load balancer spreads connections or requests, not traces",
               "why": "An ordinary load balancer sends the spans of one trace to different replicas. The routing has to be done by trace, which is what the load-balancing exporter is for."
             },
             {
@@ -163,7 +163,7 @@ export default {
             {
               "key": "span-id",
               "label": "The span ID, which is unique, so every span goes to a different replica and a trace is spread over all of them",
-              "why": "Every span has its own span ID, so each span is sent to a replica of its own choosing, and a trace's spans are scattered. The key has to be the one every span of a trace shares."
+              "why": "Every span has its own span ID, so each span is hashed on its own and goes to its own replica, and a trace's spans are scattered. The key has to be the one every span of a trace shares."
             },
             {
               "key": "sending-node",
