@@ -217,7 +217,7 @@ export default {
             },
             {
               "key": "change-instrumentation",
-              "label": "Stop recording the unbounded attribute so the tile shrinks, ingestion falls and queries speed up for all who read it",
+              "label": "Never record the unbounded attribute so the tile shrinks, ingestion falls and queries speed up",
               "why": "Dash0's guidance is that reducing random or unbounded values at the instrumentation layer lowers ingestion overhead and improves query performance. A spam filter acts only after the data has been sent."
             },
             {
@@ -227,12 +227,12 @@ export default {
             },
             {
               "key": "recover-later",
-              "label": "Create a spam filter on the metric and recover what it filtered out from the dataset if the team ever needs it back",
+              "label": "Create a spam filter on the metric and recover what it filtered out if the team ever needs it back",
               "why": "Data dropped by a spam filter cannot be recovered, so a filter has to be made with care. It does not take the attribute out at the source either."
             },
             {
               "key": "query-only",
-              "label": "Group every dashboard by route only so that no chart shows the user id attribute any more and the counter looks smaller",
+              "label": "Group every dashboard by route only so that no chart shows the user id attribute any more",
               "why": "A query only decides what a chart shows. The series with a user id are still sent, stored and counted in the tile. Dash0 points at the instrumentation layer for random or unbounded values."
             },
             {
