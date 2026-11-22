@@ -137,12 +137,12 @@ export default {
             },
             {
               "key": "observable-updown",
-              "label": "An observable <code>UpDownCounter</code> rather than a <code>Gauge</code>, as the SDK takes the absolute heap size, not an amount to add",
+              "label": "An observable <code>UpDownCounter</code>: the callback reports the absolute heap size, and heap sizes add up across processes",
               "why": "Heap sizes from several processes add up to the total heap in use, which makes the value additive. Observable is the other name for asynchronous: the SDK runs the callback only when metrics are collected, and the API's own example for it is the process heap size."
             },
             {
               "key": "on-demand-additive",
-              "label": "The additive instrument for values like the heap size (available on request)",
+              "label": "The additive instrument for values like the heap size (its callback runs when the SDK collects)",
               "why": "That is the asynchronous UpDownCounter. Its callback reports the absolute value, not an increment, and the heap sizes of several processes add up to the total heap in use."
             },
             {
@@ -158,7 +158,7 @@ export default {
             {
               "key": "span-attribute",
               "label": "Put the heap size on the spans as an attribute and chart it from the traces",
-              "why": "A span attribute exists only while a request runs, so the chart has no point when traffic stops, and the values cannot be added up into a total. A metric is read at every collection, whether requests arrive or not."
+              "why": "A span attribute exists only while a request runs, so the chart has no point when traffic stops. A metric is read at every collection, whether requests arrive or not."
             },
             {
               "key": "add-per-minute",

@@ -99,7 +99,7 @@ Each level lists **concept** / **OTel nuance** / **Dash0 tie-in** / **mechanic**
 | Level | Concept | Nuance | Dash0 tie-in | Mechanic |
 | --- | --- | --- | --- | --- |
 | 3.1 Instruments | Counter, UpDownCounter, Gauge, Histogram; sync vs async | Using a gauge for a count loses rate math | n/a | Sort it |
-| 3.2 Temporality | Cumulative vs delta | Prometheus-style backends need cumulative; the `deltatocumulative` processor; restarts reset counters | Dash0 accepts both and queries with PromQL | Spot it |
+| 3.2 Temporality | Cumulative vs delta | Prometheus-style backends need cumulative; the `deltatocumulative` processor; restarts reset counters | Dash0 can query both with PromQL | Spot it |
 | 3.3 Histograms | Explicit buckets vs exponential histograms; percentiles | Averages hide tails; default buckets may not fit your latencies | `histogram_quantile` in Dash0 | Query it |
 | 3.4 PromQL basics | `rate`, `sum by`, ranges, `increase` | OTel to Prometheus name translation: dots to underscores, unit suffixes, `_total` | Dash0 speaks PromQL for metrics **and** for logs and spans | Query it |
 | 3.5 Cardinality | Series = every unique label combination | `user.id` or a raw URL as a label is a bill and an outage; use `http.route` | Dash0 shows what drives volume; spam filters drop it at ingest | Spot it + Trade-off |

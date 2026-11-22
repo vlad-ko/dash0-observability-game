@@ -5,7 +5,7 @@ export default {
   "sub": "Total or change",
   "rewardTitle": "Temporality translator",
   "play": {
-    "finish": "You can tell delta from cumulative, you know Prometheus-style backends need cumulative and a restart resets a counter, and that Dash0 takes both.",
+    "finish": "You can tell delta from cumulative, you know Prometheus-style backends need cumulative and a restart resets a counter, and that Dash0 can query both.",
     "steps": [
       {
         "intro": "Every [[Sum]] and [[Histogram]] point comes in one of two temporalities: <b>cumulative</b>, the total since the process started, or <b>delta</b>, only the change since the last report. The infra team wants Kettle & Co's metrics in their [[Prometheus]]-style backend too, and it stores cumulative totals. A debug view lists seven series, with the temporality of each.",
@@ -66,7 +66,7 @@ export default {
             {
               "key": "deltatocumulative",
               "label": "Add the <code>deltatocumulative</code> processor to the Collector's metrics pipeline",
-              "why": "It adds each delta onto a running total and exports a cumulative series. It is stateful: it keeps every series in memory, so all the points of one series must reach the same instance. It ships in Collector contrib."
+              "why": "It adds each delta onto a running total and exports a cumulative series. It keeps each series' running total in the memory of one Collector, so that instance has to see every point of the series. It ships in Collector contrib."
             },
             {
               "key": "suffix",
@@ -76,17 +76,17 @@ export default {
             {
               "key": "nothing",
               "label": "Nothing: the backend adds the deltas up as they arrive",
-              "why": "A Prometheus-style backend stores the samples it is sent. It does not accumulate deltas, so something upstream has to."
+              "why": "A Prometheus-style backend stores the samples it is sent and, by default, does not accumulate deltas, so something upstream has to."
             },
             {
               "key": "accumulate",
               "label": "Let the Collector accumulate the deltas in memory, and send cumulative series to the backend",
-              "why": "That is what the <code>deltatocumulative</code> processor does: it converts metrics from delta to cumulative by accumulating samples in memory, and a Prometheus-style backend can store what the Collector then exports. Because it keeps that state, all the points of one series must reach the same instance."
+              "why": "That is what the <code>deltatocumulative</code> processor does: it converts metrics from delta to cumulative by accumulating samples in memory, and a Prometheus-style backend can store what the Collector then exports. It keeps each series' running total in the memory of one Collector, so that instance has to see every point of the series."
             },
             {
               "key": "running-total-processor",
               "label": "Insert a processor between the receiver and the exporter, which holds a running total for every series",
-              "why": "That is the Collector's <code>deltatocumulative</code> processor: it adds every delta onto the total of its series and exports a cumulative one. It keeps all series in memory, so all the points of one series must reach the same instance."
+              "why": "That is the Collector's <code>deltatocumulative</code> processor: it adds every delta onto the total of its series and exports a cumulative one. It keeps each series' running total in the memory of one Collector, so that instance has to see every point of the series."
             },
             {
               "key": "after-exporter",
@@ -131,7 +131,7 @@ export default {
             {
               "key": "e-backend",
               "label": "Export the series through the Collector's metrics pipeline and let the backend keep a running total per series",
-              "why": "A Prometheus-style backend stores the samples it is sent and does not accumulate deltas, so the running total has to be built before the series reach it."
+              "why": "In this scenario the backend stores only cumulative totals, so the running total has to be built before the series reach it."
             },
             {
               "key": "cumulativetodelta",
@@ -194,67 +194,67 @@ export default {
             {
               "key": "convert-all",
               "label": "Yes: every backend needs cumulative sums",
-              "why": "That is the Prometheus-style rule, not a universal one. OTLP supports both temporalities, and Dash0 accepts both."
+              "why": "That is the Prometheus-style rule, not a universal one. OTLP supports both temporalities, and Dash0 can query both."
             },
             {
               "key": "both",
-              "label": "No: Dash0 accepts both temporalities, and you query with PromQL",
-              "why": "Dash0 takes delta and cumulative series, and you query metrics with [[PromQL]]. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram."
+              "label": "No: Dash0 can query both temporalities, and you query with PromQL",
+              "why": "Dash0 can query delta and cumulative series, and you query metrics with [[PromQL]]. The conversion matters for Prometheus-style backends. On a cumulative counter, use <code>rate()</code> or <code>increase()</code> in PromQL. The Dash0 docs name one catch, a delta histogram: you cannot query it through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, you query it as a native histogram."
             },
             {
               "key": "processor",
               "label": "Yes: put the <code>deltatocumulative</code> processor in front of Dash0 in the Collector",
-              "why": "Dash0 accepts both, so you would add a stateful component that keeps every series in memory for no gain. Add it where a backend needs it."
+              "why": "Dash0 can query both, so you would add a stateful component that keeps every series in memory for no gain. Add it where a backend needs it."
             },
             {
               "key": "send-as-is",
               "label": "Send the delta counters as they are, and use <code>rate()</code> or <code>increase()</code> in PromQL on the cumulative ones",
-              "why": "Dash0 accepts both temporalities, so nothing has to be converted for it. A raw cumulative counter only goes up, so in PromQL mode you apply <code>rate()</code> or <code>increase()</code> yourself."
+              "why": "Dash0 can query both temporalities, so nothing has to be converted for it. A raw cumulative counter only goes up, so in PromQL mode you apply <code>rate()</code> or <code>increase()</code> yourself."
             },
             {
               "key": "histogram-catch",
-              "label": "Only a delta histogram calls for care, because Dash0 expects it to be queried as a native histogram",
-              "why": "Dash0 accepts both temporalities. The Dash0 docs name one catch: a delta histogram cannot be queried through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, so you query it as a native histogram."
+              "label": "A delta histogram calls for care, because Dash0 expects it to be queried as a native histogram",
+              "why": "Dash0 can query both temporalities. The Dash0 docs name one catch: a delta histogram cannot be queried through <code>_bucket</code>, <code>_sum</code> and <code>_count</code>, so you query it as a native histogram."
             },
             {
               "key": "not-every",
-              "label": "Not every backend needs it: Dash0 takes delta and cumulative series alike",
-              "why": "Prometheus-style backends store cumulative totals, so they need the conversion. OTLP supports both temporalities, and Dash0 accepts both, so its delta and cumulative series need nothing done first."
+              "label": "Not every backend needs it: Dash0 can query delta and cumulative series alike",
+              "why": "Prometheus-style backends store cumulative totals, so they need the conversion. OTLP supports both temporalities, and Dash0 can query both, so its delta and cumulative series need nothing done first."
             },
             {
               "key": "every-delta",
               "label": "Every delta series has to be converted, since PromQL reads cumulative counters only",
-              "why": "PromQL reads whatever series a backend stores, and Dash0 accepts both temporalities. What changes by temporality is how you query: you apply <code>rate()</code> or <code>increase()</code> to a cumulative counter."
+              "why": "PromQL reads whatever series a backend stores, and Dash0 can query both temporalities. What changes by temporality is how you query: you apply <code>rate()</code> or <code>increase()</code> to a cumulative counter."
             },
             {
               "key": "histograms-only",
-              "label": "Only the delta histograms: Dash0 takes delta counters but refuses delta histograms",
-              "why": "Dash0 accepts both temporalities for counters and for histograms. A delta histogram is queried as a native histogram, which is a different way to query it, not a refusal."
+              "label": "Only the delta histograms: Dash0 queries delta counters but refuses delta histograms",
+              "why": "Dash0 can query both temporalities: a delta histogram is queried as a native histogram, which is a different way to query it, not a refusal."
             },
             {
               "key": "cumulativetodelta",
               "label": "Add the <code>cumulativetodelta</code> processor to the Collector in front of Dash0, which wants cumulative rather than delta data",
-              "why": "Dash0 accepts both temporalities, so no conversion is needed, and that processor converts the other way, from cumulative to delta."
+              "why": "Dash0 can query both temporalities, so no conversion is needed, and that processor converts the other way, from cumulative to delta."
             },
             {
               "key": "own-language",
-              "label": "No: Dash0 accepts both temporalities, though PromQL is not what you use to query them",
-              "why": "Dash0 accepts both temporalities, and you query metrics there with [[PromQL]], the same language as for Prometheus-style backends."
+              "label": "No: Dash0 can query both temporalities, though PromQL is not the language you use for it",
+              "why": "Dash0 can query both temporalities, and you query metrics there with [[PromQL]], the same language as for Prometheus-style backends."
             },
             {
               "key": "no-start-time",
               "label": "A delta point has no start time, so Dash0 cannot place it on a chart",
-              "why": "Dash0 accepts both temporalities. A delta point covers a window of time with a start and an end, so it can be placed on a chart like any other."
+              "why": "Dash0 can query both temporalities. A delta point covers a window of time with a start and an end, so it can be placed on a chart like any other."
             },
             {
               "key": "auto-increase",
               "label": "Dash0 wraps every cumulative counter in <code>increase()</code> for you, in PromQL mode too",
-              "why": "Dash0 accepts both temporalities, and it applies <code>increase()</code> by itself only in the visual query tabs and data previews. In PromQL mode you apply <code>rate()</code> or <code>increase()</code> to a cumulative counter explicitly."
+              "why": "Dash0 can query both temporalities, and it applies <code>increase()</code> by itself only in the visual query tabs and data previews. In PromQL mode you apply <code>rate()</code> or <code>increase()</code> to a cumulative counter explicitly."
             },
             {
               "key": "rate-delta-only",
-              "label": "No: Dash0 accepts both temporalities, but <code>rate()</code> and <code>increase()</code> work only on delta series",
-              "why": "Dash0 accepts both temporalities. A raw cumulative counter only goes up, which is why you apply <code>rate()</code> or <code>increase()</code> to it in PromQL mode."
+              "label": "No: Dash0 can query both temporalities, but <code>rate()</code> and <code>increase()</code> work only on delta series",
+              "why": "Dash0 can query both temporalities. A raw cumulative counter only goes up, which is why you apply <code>rate()</code> or <code>increase()</code> to it in PromQL mode."
             }
           ]
         }

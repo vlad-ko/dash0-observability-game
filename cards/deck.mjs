@@ -183,7 +183,7 @@ export const DECK = [
       'start times treats as a reset, not as a drop.',
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
-      'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
+      'Dash0 can query both temporalities with PromQL, so the conversion is for Prometheus-style ' +
       'backends, not for Dash0. Its docs name one catch: a delta histogram ' +
       'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },

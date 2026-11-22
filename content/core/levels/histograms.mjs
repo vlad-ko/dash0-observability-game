@@ -40,7 +40,7 @@ export default {
             },
             {
               "key": "merge",
-              "label": "Exponential: a backend can lower the resolution by merging buckets, and no error is added",
+              "label": "Exponential: a backend can lower the scale by merging buckets, and no error is added",
               "why": "The buckets of an exponential histogram map exactly into those of a histogram with a lesser scale, which the data model calls perfect subsetting. A consumer can therefore lower the resolution without introducing error."
             },
             {

@@ -45,7 +45,7 @@ export default {
             {
               "key": "double-total",
               "label": "<code>http_server_requests_total_total</code>",
-              "why": "A [[monotonic]] [[Sum]] becomes a Prometheus counter, and the translation adds <code>_total</code> only once: not if the name already ends with it."
+              "why": "A [[monotonic]] [[Sum]] becomes a Prometheus counter, and the translation adds <code>_total</code> once, so a doubled suffix cannot occur."
             },
             {
               "key": "total",

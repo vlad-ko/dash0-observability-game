@@ -158,7 +158,7 @@ const CARDS = {
       'start times treats as a reset, not as a drop.',
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
-      'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
+      'Dash0 can query both temporalities with PromQL, so the conversion is for Prometheus-style ' +
       'backends, not for Dash0. Its docs name one catch: a delta histogram ' +
       'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },
@@ -327,7 +327,7 @@ test('temporality: the Prometheus-style rule, the deltatocumulative processor an
   const right = rightOf('temporality', 'temp-convert');
   assert.equal(right.key, 'deltatocumulative');
   assert.equal(right.label.includes('<code>deltatocumulative</code>'), true);
-  assert.equal(/stateful|same instance/i.test(right.why), true, 'the cost is stated');
+  assert.equal(/memory|every point/i.test(right.why), true, 'the cost is stated');
   const explain = stepOf('temporality', 'spot', 'temp-spot').explain;
   assert.equal(/Prometheus/.test(explain) && /convert/i.test(explain), true);
 });
@@ -340,12 +340,12 @@ test('temporality: a restart resets a cumulative counter, and the new start time
   assert.deepEqual(wrong.map((c) => c.key).sort(), ['negative', 'survives']);
 });
 
-test('temporality: Dash0 accepts both temporalities and you query with PromQL (no conversion needed for Dash0)', () => {
+test('temporality: Dash0 can query both temporalities with PromQL (no conversion needed for Dash0)', () => {
   const right = rightOf('temporality', 'temp-dash0');
   assert.equal(right.key, 'both');
   assert.equal(/both/.test(right.label) && /PromQL/.test(right.label), true);
   for (const c of choiceOf('temporality', 'temp-dash0').filter((x) => !x.right)) {
-    assert.equal(/Dash0 accepts both/.test(c.why), true, `${c.key} is corrected with what Dash0 does`);
+    assert.equal(/Dash0 can query both/.test(c.why), true, `${c.key} is corrected with what Dash0 does`);
   }
 });
 
