@@ -66,11 +66,11 @@ test('G2 a pooled step needs a valid shown: missing, the wrong size, an unknown 
 
 test('G2 a fixed step takes no shown', async () => {
   const { guide, calls } = setup();
-  const res = await ask(guide, { levelId: 'histograms', stepId: 'hist-kind', shown: ['a', 'b'] });
+  const res = await ask(guide, { levelId: 'temporality', stepId: 'temp-restart', shown: ['a', 'b'] });
   assert.equal(res.status, 400);
   assert.deepEqual(res.json, { ok: false, error: 'bad-request', field: 'shown' });
   assert.equal(calls.length, 0);
-  const plain = await ask(guide, { levelId: 'histograms', stepId: 'hist-kind' });
+  const plain = await ask(guide, { levelId: 'temporality', stepId: 'temp-restart' });
   assert.equal(plain.status, 200);
 });
 

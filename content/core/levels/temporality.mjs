@@ -174,7 +174,7 @@ export default {
             },
             {
               "key": "reset",
-              "label": "A reset: the sum started over, and the new start time marks it",
+              "label": "A reset: the cumulative sum started over from zero, and the new start time marks it",
               "why": "A cumulative sum lives in the process, so after a restart it begins again from zero, with a new start time. A backend that reads start times treats that as a reset and counts the rate from zero, not as a drop."
             },
             {
