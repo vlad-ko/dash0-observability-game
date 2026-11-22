@@ -258,12 +258,22 @@ test('head sampling: the nuance is graded: the wrong options say why a child tha
 
 test('head sampling: the closing Choice grades the nuance in words: a child that decides on its own, not the root\'s flag, breaks traces', () => {
   const choices = stepOf('head-sampling', 'choice', 'hs-why').choices;
-  assert.deepEqual(choices.map((c) => c.key).sort(), ['header-lost', 'own-decision', 'ratio-stacks']);
-  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['own-decision']);
-  const rightChoice = choices.find((c) => c.right);
-  const right = plain(rightChoice.label + rightChoice.why);
+  // An answer pool (#390): 3 right and 9 wrong, a showing draws 3 (one right).
+  assert.deepEqual(choices.map((c) => c.key).sort(), [
+    'always-ignored', 'backend-sheds', 'blind-root', 'header-lost', 'needs-arg', 'new-trace-id', 'nine-in-ten', 'no-parentbased',
+    'own-decision', 'ratio-stacks', 'root-arrives-late', 'root-reapplied',
+  ]);
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key).sort(), ['nine-in-ten', 'no-parentbased', 'own-decision']);
+  assert.equal(stepOf('head-sampling', 'choice', 'hs-why').draw, 3);
+  const own = choices.find((c) => c.key === 'own-decision');
+  const right = plain(own.label + own.why);
   for (const w of ['always_on', 'sampled flag', 'traceparent', 'ParentBased', 'root', 'holes', 'ignore']) assert.equal(right.includes(w), true, w);
-  for (const w of ['traceidratio', 'TraceIdRatioBased', 'never specified', 'and so does']) assert.equal(right.includes(w), false, `the right answer is about always_on only: ${w}`);
+  // Every right answer is about always_on on a child, whichever way it is put.
+  for (const c of choices.filter((x) => x.right)) {
+    const t = plain(c.label + c.why);
+    assert.equal(t.includes('always_on'), true, `${c.key} names always_on`);
+    for (const w of ['traceidratio', 'TraceIdRatioBased', 'never specified', 'and so does']) assert.equal(t.includes(w), false, `${c.key}: the right answer is about always_on only: ${w}`);
+  }
   const lost = plain(choices.find((c) => c.key === 'header-lost').why);
   for (const w of ['propagat', 'sampler']) assert.equal(lost.includes(w), true, w);
   const stacks = plain(choices.find((c) => c.key === 'ratio-stacks').why);

@@ -124,7 +124,7 @@ const ANSWERS = {
   ],
   'head-sampling': [
     'tradeoff hs-plan: checkout=follow payments=follow',
-    'choice hs-why: own-decision',
+    'choice hs-why: nine-in-ten|no-parentbased|own-decision',
   ],
   'tail-sampling': [
     'tradeoff ts-budget: wait=wait-25s policies=errors-slow-baseline',

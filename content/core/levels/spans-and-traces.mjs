@@ -43,7 +43,7 @@ export default {
       },
       {
         "key": "other-request",
-        "label": "A span from another request, in a trace of its own",
+        "label": "A span from another request, in its own trace",
         "why": "Its trace ID is <code>0af76519</code>, not <code>4bf92f35</code>. It ran at the same time on the same service, but it belongs to another request, so no span of this trace can be its parent."
       }
     ],

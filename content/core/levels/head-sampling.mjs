@@ -97,6 +97,51 @@ export default {
               "key": "ratio-stacks",
               "label": "Each service applies its own ratio on top of the root's, so the chances multiply and the children keep too little",
               "why": "Ratios do not multiply. Under ParentBased the ratio belongs to the root sampler, which never runs for a span that has a parent, so a child follows the flag. A child set to <code>always_on</code> keeps too much, not too little."
+            },
+            {
+              "key": "no-parentbased",
+              "label": "The children left ParentBased behind, so nobody tells them to defer to the root's call, and they act alone",
+              "why": "ParentBased is what makes a child follow the parent's sampled flag in <code>traceparent</code>. <code>always_on</code> replaces it with a sampler that returns RECORD_AND_SAMPLE for every span, so the children export spans of traces whose root was dropped, and no storefront span is there to be their parent."
+            },
+            {
+              "key": "nine-in-ten",
+              "label": "Storefront lets 1 in 10 traces through, but downstream services still send spans for the other nine, as the sampler does not look at the parent's flag",
+              "why": "The root decides once and the sampled flag in <code>traceparent</code> carries its decision, but <code>always_on</code> does not read the flag. For the nine traces in ten that the root dropped, the backend gets checkout and payments spans with no storefront span above them."
+            },
+            {
+              "key": "root-reapplied",
+              "label": "Storefront's ParentBased sampler applies the 1 in 10 ratio again to each span it makes, so some spans in kept traces are dropped",
+              "why": "The ratio belongs to the root sampler of ParentBased, which is called only for a span with no parent. Every other storefront span follows its parent's sampled flag, so a trace the root kept has all of its storefront spans. The gaps here are above the children, where the dropped roots should be."
+            },
+            {
+              "key": "always-ignored",
+              "label": "A child ignores <code>OTEL_TRACES_SAMPLER</code> and falls back to the default ParentBased sampler, which follows the parent's flag",
+              "why": "<code>OTEL_TRACES_SAMPLER</code> sets the sampler of the whole SDK, root or not, and AlwaysOn returns RECORD_AND_SAMPLE for every span it is asked about. Had the default run instead, <code>parentbased_always_on</code> would have followed the sampled flag and the traces would have no holes."
+            },
+            {
+              "key": "new-trace-id",
+              "label": "A child on <code>always_on</code> starts a new trace ID, so its spans no longer belong to the parent's trace",
+              "why": "The SDK takes the trace ID from the parent when there is one, and only then asks the sampler, which returns a decision, attributes and a tracestate and never a trace ID. The spans still carry the root's trace ID, which is why they show up as traces whose root is missing."
+            },
+            {
+              "key": "root-arrives-late",
+              "label": "Storefront's span ends last and is exported after the spans below it, and the backend lists the children of the trace before the root's sampled flag has arrived",
+              "why": "A root span that was sampled is exported when it ends, and then it is there. Here the root sampler dropped these traces, and an exporter is not meant to receive a span that was not sampled, so those roots never arrive."
+            },
+            {
+              "key": "backend-sheds",
+              "label": "The backend is over its budget of 760 spans a second and sheds the root spans of storefront first",
+              "why": "Nothing in this setup says the backend sheds any spans, and shedding there would not leave exactly the children of the dropped traces. The roots are missing because the root sampler dropped them in storefront, before any export, while the children of those traces are sent anyway."
+            },
+            {
+              "key": "needs-arg",
+              "label": "<code>always_on</code> needs <code>OTEL_TRACES_SAMPLER_ARG</code> to know what share to keep, such as 1 in 10, and with that unset the children's spans are picked at random",
+              "why": "<code>always_on</code> takes no argument: the value is read by the ratio samplers, and with it unset <code>traceidratio</code> samples every trace. AlwaysOn records every span and not a random part of them."
+            },
+            {
+              "key": "blind-root",
+              "label": "Head sampling cannot tell failed or slow traces from healthy ones, so it drops some of the interesting ones at random",
+              "why": "That is a real cost of head sampling: it decides before the trace has happened, so it keeps 1 in 10 of the failures too. It would not leave children without parents, though, because a trace the root kept is whole when every service follows the sampled flag."
             }
           ]
         }

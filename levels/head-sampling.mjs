@@ -4,6 +4,7 @@
 // Spec: docs/OUTLINE.md §4 Act 6.
 // Spec: https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/ , https://opentelemetry.io/docs/specs/otel/trace/sdk/#parentbased , https://opentelemetry.io/docs/specs/otel/trace/sdk/#traceidratiobased
 // Spec: https://www.w3.org/TR/trace-context-2/#sampled-flag , https://opentelemetry.io/docs/concepts/sampling/#head-sampling
+// Spec: https://opentelemetry.io/docs/specs/otel/trace/sdk/#sdk-span-creation , https://opentelemetry.io/docs/specs/otel/trace/sdk/#shouldsample , https://opentelemetry.io/docs/specs/otel/trace/sdk/#alwayson
 //
 // Facts used (each read on the page above): OTEL_TRACES_SAMPLER defaults to parentbased_always_on; parentbased_traceidratio is
 // ParentBased(root=TraceIdRatioBased) and OTEL_TRACES_SAMPLER_ARG is its ratio, a number in [0..1]. ParentBased calls its root
@@ -15,6 +16,12 @@
 // teach the disagreement and makes no claim either way. The spec also marks TraceIdRatioBased as deprecated in favour of
 // the ProbabilitySampler (Development), which this level does not teach. The sampled flag travels in the W3C traceparent header.
 // Head sampling decides without looking at the whole trace, so it cannot ensure that traces with an error are kept (the sampling concepts page).
+//
+// The closing Choice is an answer pool (#390). Its extra answers use only these facts (each read on the SDK page above): AlwaysOn
+// returns RECORD_AND_SAMPLE always; the default sampler is ParentBased(root=AlwaysOn); the SDK uses a valid parent trace ID and
+// then queries the sampler, whose result is a decision, attributes and a tracestate; a span exporter SHOULD NOT receive a span
+// that was not sampled; OTEL_TRACES_SAMPLER_ARG is read by the ratio samplers, with a default of 1.0 if unset (the SDK
+// environment variables page above). The 760 spans a second backend budget and the 1 in 10 ratio are this level's own table.
 //
 // Widget: Trade-off. It grades the option the player picks against authored costs and keeps; it does not simulate a
 // sampler. A child's cost depends on the root's ratio and the widget adds the costs of the knobs, so the root is not a
@@ -129,8 +136,18 @@ const SKELETON = {
       { qid: 'hs-q-plan', tradeoff: PLAN },
       {
         qid: 'hs-q-why',
-        // Step 2: the nuance in words. Only the answer is marked; every choice's text is in the content file.
-        choice: { id: 'hs-why', choices: [{ key: 'own-decision', right: true }] },
+        // Step 2: the nuance in words, an answer pool (docs/CONTENT.md section 10): the content lists 12 answers, a showing
+        // draws 3 (one of the 3 right, 2 of the 9 wrong). Every right answer is marked here, and a right answer added in the
+        // content file without `right: true` would be graded wrong. Every choice's text is in the content file.
+        choice: {
+          id: 'hs-why',
+          draw: 3,
+          choices: [
+            { key: 'own-decision', right: true },
+            { key: 'no-parentbased', right: true },
+            { key: 'nine-in-ten', right: true },
+          ],
+        },
       },
     ],
   },
