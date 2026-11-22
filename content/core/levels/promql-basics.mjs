@@ -43,9 +43,9 @@ export default {
           "id": "pql-total",
           "choices": [
             {
-              "key": "bare",
-              "label": "<code>http_server_requests</code>",
-              "why": "A [[monotonic]] [[Sum]] becomes a Prometheus counter, and the translation adds <code>_total</code> unless the name already ends with it."
+              "key": "double-total",
+              "label": "<code>http_server_requests_total_total</code>",
+              "why": "A [[monotonic]] [[Sum]] becomes a Prometheus counter, and the translation adds <code>_total</code> only once: not if the name already ends with it."
             },
             {
               "key": "total",
