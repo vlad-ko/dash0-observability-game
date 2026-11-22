@@ -81,7 +81,7 @@ export default {
             },
             {
               "key": "trace-based-default",
-              "label": "By default the SDK takes exemplars from sampled traces, so every other histogram point lacks one that links it to a trace you could open",
+              "label": "By default the SDK takes exemplars from sampled traces, so every point whose measurements came from unsampled traces has no exemplar",
               "why": "The default exemplar filter is TraceBased: it makes eligible only the measurements recorded in the context of a sampled parent span. Every other measurement is out, whatever its value or its place on the spike. The reservoir then makes the final decision among the eligible ones."
             },
             {
@@ -91,7 +91,7 @@ export default {
             },
             {
               "key": "off-by-default",
-              "label": "Exemplar sampling is off by default, so a point gets one when its service turned it on for spans that are sampled",
+              "label": "Exemplar sampling is off by default, so a point only gets one if its service turned it on and the span is sampled",
               "why": "An SDK should have exemplar sampling on by default, with the TraceBased filter. Three of the points here carry exemplars and nothing was changed, so it was on."
             },
             {

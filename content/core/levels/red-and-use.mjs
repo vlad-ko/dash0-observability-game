@@ -153,12 +153,12 @@ export default {
             },
             {
               "key": "connector-count",
-              "label": "Let a connector count and time everything a service does so that counts and timings become metrics you can query",
+              "label": "Let a connector count and time the spans a service produces so that counts and timings become metrics you can query",
               "why": "The span metrics connector counts the spans seen for each set of dimensions, which are the calls, and records how long each span took in a duration histogram. Errors are the calls with an error status. It aggregates request, error and duration metrics from span data."
             },
             {
               "key": "contrib-connector-red",
-              "label": "Wire the contrib connector in the Collector across two pipelines with traces going in and the rate and errors taken off what it writes",
+              "label": "Wire the contrib span_metrics connector between two pipelines with traces going in and the rate and errors taken off what it writes",
               "why": "The connector supports a traces pipeline as the exporter side and a metrics pipeline as the receiver side, and the contrib distribution has it. Calls give the rate, the calls with an error status the errors, and the duration histogram the duration."
             },
             {
@@ -244,12 +244,12 @@ export default {
             },
             {
               "key": "red-histogram",
-              "label": "Each service view draws its rate and errors via a histogram that Dash0 builds using the spans it ingests on arrival",
+              "label": "Dash0 builds a histogram from the spans it ingests, and each service view draws its rate and errors from it",
               "why": "<code>dash0.spans.red</code> is an exponential histogram that Dash0 builds from your spans. It captures all three RED signals for each service and operation, and it is the metric behind every request rate, error rate and latency percentile in the service views."
             },
             {
               "key": "count-spans",
-              "label": "They come from the traces the backend gets: the rate and errors for each one with no setup and no code changes",
+              "label": "They come from the traces the backend gets: the rate and errors for each service with no setup and no code changes",
               "why": "Rate is the histogram's count over time, and errors are the spans whose status code is ERROR. Nobody has to emit these metrics or configure a connector, because Dash0 generates them from the spans it receives."
             },
             {
@@ -259,8 +259,8 @@ export default {
             },
             {
               "key": "custom-metrics",
-              "label": "They are custom metrics that Dash0 bills for and somebody must have sent the rate and the errors for each team to the service pages",
-              "why": "Dash0 generates them itself from spans, for the Service Catalog and the Service Map, and they are not billed as custom metrics. Nobody has to emit them."
+              "label": "They are metrics that somebody must have sent: the rate and the errors for each service",
+              "why": "Dash0 generates them itself from spans, for the Service Catalog and the Service Map. Nobody has to emit them."
             },
             {
               "key": "client-spans",

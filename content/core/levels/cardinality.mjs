@@ -217,12 +217,12 @@ export default {
             },
             {
               "key": "change-instrumentation",
-              "label": "Never record the unbounded attribute so the Metric Explorer shows a smaller tile while ingestion falls and queries speed up",
+              "label": "Stop recording the unbounded attribute so the tile shrinks, ingestion falls and queries speed up for all who read it",
               "why": "Dash0's guidance is that reducing random or unbounded values at the instrumentation layer lowers ingestion overhead and improves query performance. A spam filter acts only after the data has been sent."
             },
             {
               "key": "user-on-span",
-              "label": "Add <code>user_id</code> to the span and take it off the counter: a span is made for each request",
+              "label": "Add <code>user_id</code> to the span and take it off the counter: a span is made for every request",
               "why": "Prometheus advises against labels that hold user IDs or other unbounded sets of values, because every unique combination is a new time series. A span is one record for each request, so a user id fits there and nothing multiplies."
             },
             {
@@ -238,7 +238,7 @@ export default {
             {
               "key": "spam-service",
               "label": "Put a spam filter on the whole recommendations service, so that nothing with a user id is kept",
-              "why": "A spam filter drops the data that matches its criteria, so one on the service drops its spans, logs and metrics alike, including the counts you want to keep. It does not take the attribute out of a point."
+              "why": "A spam filter drops the data that matches its criteria, so one on the service would drop the counts you want to keep along with the rest. It does not take the attribute out of a point."
             },
             {
               "key": "filter-processor",
