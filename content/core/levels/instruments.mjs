@@ -153,7 +153,7 @@ export default {
             },
             {
               "id": "bytes-received",
-              "label": "Bytes received by the payments service, in total",
+              "label": "Running total of bytes the payments service has received",
               "why": "Every request adds the bytes it brought in, and the total never goes down. That is a Counter.",
               "whyNot": {
                 "up-down-counter": "Bytes that were received stay received, so nothing is ever subtracted from the total.",
