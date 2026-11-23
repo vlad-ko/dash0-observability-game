@@ -568,10 +568,7 @@ test('the 6.1 and 6.2 level files cite the pages their facts come from: Spec lin
     'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/spanmetricsconnector/README.md',
     'https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/connector/README.md',
   ]) assert.equal(docs.includes(u), true, u);
-  for (const f of ['head-sampling', 'tail-sampling']) {
-    for (const u of [...urls(f, '// Spec: ')]) assert.equal(['opentelemetry.io', 'www.w3.org', 'prometheus.io'].includes(new URL(u).host), true, `${f} Spec line ${u}`);
-    assert.equal(/^\/\/ Spec: .*github\.com/m.test(levelSource(f)), false, `${f}: GitHub is a Docs source, not a Spec source`);
-  }
+  // The allowed Spec hosts and GitHub off Spec lines are one repo-wide check (test/content.test.mjs, #484).
 });
 
 test('the level headers say which widget grades what, and why Spot it stands in for a config check', () => {

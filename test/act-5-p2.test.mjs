@@ -412,7 +412,8 @@ test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec 
     'https://opentelemetry.io/docs/collector/deploy/gateway/',
   ]) assert.equal(ag.includes(u), true, u);
   for (const f of ['otlp-endpoints', 'agent-vs-gateway']) {
-    for (const u of urls(f, '// Spec: ')) assert.equal(new URL(u).host, 'opentelemetry.io', `${f} Spec line ${u}`);
+    // Act-specific: 5.3 and 5.4 cite opentelemetry.io only, on a Spec line of any form (#484).
+    for (const u of urls(f, '// Spec')) assert.equal(new URL(u).host, 'opentelemetry.io', `${f} Spec line ${u}`);
     const src = levelSource(f);
     assert.equal(/\bthe spec says\b/i.test(src), false, f);
   }

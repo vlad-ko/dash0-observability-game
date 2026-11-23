@@ -28,7 +28,8 @@ import avm, { CONTENT as AVM } from '../levels/auto-vs-manual.mjs';
 import { b1Spec } from './fixtures/build-b1.mjs';
 
 const LIVE = liveRegistry();
-const SPEC_HOSTS = ['opentelemetry.io', 'www.w3.org'];
+// Act-specific: Act 2's cards cite the OpenTelemetry and W3C pages only. The repo-wide Spec hosts are in test/content.test.mjs.
+const ACT2_CARD_HOSTS = ['opentelemetry.io', 'www.w3.org'];
 const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&gt;/g, '>');
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8');
 
@@ -561,7 +562,7 @@ test('Act 2 card fronts match docs/M1-DESIGN.md §6 and fit a card (<=140)', () 
     const card = DECK.find((c) => c.id === id);
     assert.equal(card?.front, front, id);
     assert.equal(front.length <= 140, true, `${id} front is ${front.length} characters`);
-    assert.equal(SPEC_HOSTS.includes(new URL(card.specUrl).host), true, `${id} specUrl ${card.specUrl}`);
+    assert.equal(ACT2_CARD_HOSTS.includes(new URL(card.specUrl).host), true, `${id} specUrl ${card.specUrl}`);
   }
 });
 
