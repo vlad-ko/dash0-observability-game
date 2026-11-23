@@ -286,7 +286,7 @@ test('dash0 step: Log AI infers severity and extracts patterns for unstructured 
   const right = rightOf('col-dash0');
   assert.equal(right.key, 'log-ai');
   const text = plain(right.label + right.why);
-  for (const w of ['infers a severity', 'patterns', 'named attributes', 'never overrides', 'JSON', 'resource attributes', 'k8sattributes', 'dash0.log.pattern']) {
+  for (const w of ['infers a severity', 'patterns', 'named attributes', 'never overrides', 'JSON', 'resource attributes', 'k8s_attributes', 'dash0.log.pattern']) {
     assert.equal(text.includes(w), true, w);
   }
   assert.equal(keepsWrong('col-dash0', ['needs-parser', 'rewrites-all']), true);

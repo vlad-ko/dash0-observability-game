@@ -9,54 +9,54 @@ export default {
     "finish": "You know a Collector can only run what is compiled into it: check the manifest, and when no distribution has your component, build your own with OCB.",
     "steps": [
       {
-        "intro": "The project publishes pre-built [[Collector]] <b>distributions</b>: core, contrib, k8s, otlp and one for eBPF profiling. A distribution is a fixed set of components compiled into one binary, listed in its <code>manifest.yaml</code>. The platform team copied a config that uses <code>k8sattributes</code> from a [[cluster]] running contrib and deployed it on a laptop with the core distribution.",
+        "intro": "The project publishes pre-built [[Collector]] <b>distributions</b>: core, contrib, k8s, otlp and one for eBPF profiling. A distribution is a fixed set of components compiled into one binary, listed in its <code>manifest.yaml</code>. The platform team copied a config that uses <code>k8s_attributes</code> from a [[cluster]] running contrib and deployed it on a laptop with the core distribution.",
         "question": "What happens?",
         "choice": {
           "id": "dist-unknown",
           "choices": [
             {
               "key": "ignored",
-              "label": "It starts anyway on core itself, and the pipeline that lists <code>k8sattributes</code> just passes the data through unchanged",
+              "label": "It starts anyway on core itself, and the pipeline that lists <code>k8s_attributes</code> just passes the data through unchanged",
               "why": "The Collector checks every component id in the config against the components compiled into the binary. A component it does not have is an error, not something to skip."
             },
             {
               "key": "refuses-to-start",
-              "label": "It refuses to start with an unknown component error, as <code>k8sattributes</code> is never part of core",
-              "why": "A distribution is a set of components compiled into one binary. <code>k8sattributes</code> is in the [[contrib]] and k8s distributions and is not compiled into core, so the core binary has no processor of that type. The Collector stops with an unknown type error and the config is rejected at startup."
+              "label": "It refuses to start with an unknown component error, as <code>k8s_attributes</code> is never part of core",
+              "why": "A distribution is a set of components compiled into one binary. <code>k8s_attributes</code> is in the [[contrib]] and k8s distributions and is not compiled into core, so the core binary has no processor of that type. The Collector stops with an unknown type error and the config is rejected at startup."
             },
             {
               "key": "loads-on-demand",
-              "label": "It starts normally, and the core distribution downloads <code>k8sattributes</code> from the contrib repository the first time it is needed",
+              "label": "It starts normally, and the core distribution downloads <code>k8s_attributes</code> from the contrib repository the first time it is needed",
               "why": "The Collector does not fetch components at run time. Everything it can run is compiled in, so a missing one means a different distribution or a custom build."
             },
             {
               "key": "rejected-at-startup",
-              "label": "The config is rejected when the Collector starts, since the core binary has no processor of the type <code>k8sattributes</code>",
-              "why": "The Collector can only run the components compiled into its binary, and the core manifest does not list <code>k8sattributes</code>. The contrib and k8s manifests do."
+              "label": "The config is rejected when the Collector starts, since the core binary has no processor of the type <code>k8s_attributes</code>",
+              "why": "The Collector can only run the components compiled into its binary, and the core manifest does not list <code>k8s_attributes</code>. The contrib and k8s manifests do."
             },
             {
               "key": "fails-before-data",
-              "label": "It fails to start before any data flows, as the core build holds only what was compiled in and <code>k8sattributes</code> is not among it",
+              "label": "It fails to start before any data flows, as the core build holds only what was compiled in and <code>k8s_attributes</code> is not among it",
               "why": "A distribution is a fixed set of components in one binary, listed in its <code>manifest.yaml</code>. A config that names a component outside that set cannot be started."
             },
             {
               "key": "drops-data",
-              "label": "It starts happily with core alone, so the data of anything using <code>k8sattributes</code> is dropped",
+              "label": "It starts happily with core alone, so the data of anything using <code>k8s_attributes</code> is dropped",
               "why": "The Collector does not start with a component it does not have. The config is rejected, so no pipeline runs and nothing is dropped."
             },
             {
               "key": "core-has-all",
-              "label": "It starts, because core ships every processor, <code>k8sattributes</code> included, and only receivers differ",
-              "why": "The core manifest does not list <code>k8sattributes</code>, and the contrib and k8s manifests do. The distributions differ in processors too."
+              "label": "It starts, because core ships every processor, <code>k8s_attributes</code> included, and only receivers differ",
+              "why": "The core manifest does not list <code>k8s_attributes</code>, and the contrib and k8s manifests do. The distributions differ in processors too."
             },
             {
               "key": "no-cluster",
-              "label": "It cannot start, but only because the laptop has no Kubernetes cluster for <code>k8sattributes</code> in the core build to read",
+              "label": "It cannot start, but only because the laptop has no Kubernetes cluster for <code>k8s_attributes</code> in the core build to read",
               "why": "The config fails because the core binary does not contain the processor. It would fail the same way on a machine inside a cluster."
             },
             {
               "key": "reduced-mode",
-              "label": "It starts fine on the core build, and <code>k8sattributes</code> runs in a reduced mode that adds nothing",
+              "label": "It starts fine on the core build, and <code>k8s_attributes</code> runs in a reduced mode that adds nothing",
               "why": "A component is either compiled into the binary or not. There is no reduced mode for a processor the binary does not have."
             }
           ]
@@ -88,7 +88,7 @@ export default {
           "items": [
             {
               "id": "k8sattributes",
-              "label": "k8sattributes (processor)",
+              "label": "k8s_attributes (processor)",
               "why": "It is in the contrib distribution and in k8s, which is made for running in a cluster, but not core.",
               "whyNot": {
                 "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",

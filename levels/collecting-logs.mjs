@@ -31,7 +31,7 @@
 // flag lets `.` match a newline, and it is off by default. The Collector configuration page names
 // components `type` or `type/name`. Dash0: Log AI infers a severity for unstructured messages and
 // extracts patterns with named attributes, does not override a severity already set, does not modify
-// structured JSON logs, and depends on resource attributes (the k8sattributes processor for Kubernetes
+// structured JSON logs, and depends on resource attributes (the k8s_attributes processor for Kubernetes
 // workloads); records collected without a severity number get the UNSPECIFIED range, which is common
 // for pod logs read with the receiver (the Dash0 page calls it filelogreceiver).
 //
@@ -40,7 +40,7 @@
 // keyed by the type part of an id such as `file_log/shipping`, which is a change to the schema format and
 // the checker for one level, so the step grades the wiring (defined, the Collector would start, and
 // `uses` requires the logs pipeline to list `file_log/shipping` and `otlp_grpc/dash0`) and the settings
-// (`multiline`, `operators`) are taught in the Choice steps, as level 1.3 does for k8sattributes.
+// (`multiline`, `operators`) are taught in the Choice steps, as level 1.3 does for k8s_attributes.
 //
 // The words are in content/core/levels/collecting-logs.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/collecting-logs.mjs';

@@ -19,7 +19,7 @@ export default {
             {
               "id": "alert-resource",
               "label": "Resource of the alert's spans",
-              "html": "<p>The resource on a span from the alerting service:</p><table><caption>Resource attributes</caption><thead><tr><th scope=\"col\">Attribute</th><th scope=\"col\">Value</th></tr></thead><tbody><tr><td><code>service.name</code></td><td><code>unknown_service:node</code></td></tr><tr><td><code>process.executable.name</code></td><td><code>node</code></td></tr><tr><td><code>telemetry.sdk.language</code></td><td><code>nodejs</code></td></tr><tr><td><code>service.namespace</code></td><td><code>comms</code></td></tr><tr><td><code>service.version</code></td><td><code>5.2.0</code></td></tr><tr><td><code>deployment.environment.name</code></td><td><code>production</code></td></tr><tr><td><code>k8s.namespace.name</code></td><td><code>comms</code></td></tr><tr><td><code>k8s.deployment.name</code></td><td><code>notifications</code></td></tr><tr><td><code>k8s.pod.name</code></td><td><code>notifications-7c5d8f6b9-q4m2x</code></td></tr></tbody></table><p>The name is the fallback, <code>unknown_service:</code> plus <code>process.executable.name</code>, yet the <code>k8s.*</code> attributes, added by the Collector's <code>k8sattributes</code> processor, still name the deployment <code>notifications</code>.</p>"
+              "html": "<p>The resource on a span from the alerting service:</p><table><caption>Resource attributes</caption><thead><tr><th scope=\"col\">Attribute</th><th scope=\"col\">Value</th></tr></thead><tbody><tr><td><code>service.name</code></td><td><code>unknown_service:node</code></td></tr><tr><td><code>process.executable.name</code></td><td><code>node</code></td></tr><tr><td><code>telemetry.sdk.language</code></td><td><code>nodejs</code></td></tr><tr><td><code>service.namespace</code></td><td><code>comms</code></td></tr><tr><td><code>service.version</code></td><td><code>5.2.0</code></td></tr><tr><td><code>deployment.environment.name</code></td><td><code>production</code></td></tr><tr><td><code>k8s.namespace.name</code></td><td><code>comms</code></td></tr><tr><td><code>k8s.deployment.name</code></td><td><code>notifications</code></td></tr><tr><td><code>k8s.pod.name</code></td><td><code>notifications-7c5d8f6b9-q4m2x</code></td></tr></tbody></table><p>The name is the fallback, <code>unknown_service:</code> plus <code>process.executable.name</code>, yet the <code>k8s.*</code> attributes, added by the Collector's <code>k8s_attributes</code> processor, still name the deployment <code>notifications</code>.</p>"
             },
             {
               "id": "deploy-history",
@@ -53,7 +53,7 @@ export default {
             },
             {
               "id": "k8s-warnings",
-              "label": "Collector k8sattributes warnings",
+              "label": "Collector k8s_attributes warnings",
               "html": "<p>The Collector logs <code>pod association failed</code> about 40 times a day for spans from a batch job that sends no pod identity. It has done so for a month. The alerting service's spans were associated with their pod.</p>"
             }
           ],

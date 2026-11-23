@@ -464,7 +464,7 @@ test('the underscore measure: it solves the 6.2 board as first reviewed (sampler
       ['mr', 'service: {pipelines: {metrics/spans: {receivers: [span_metrics]}}}'],
       ['cd', 'connectors: {span_metrics: {histogram: {explicit: {buckets: [100ms, 1s]}}}}'],
       ['tp', 'service: {pipelines: {traces: {processors: [memory_limiter, tail_sampling, batch]}}}'],
-      ['lp', 'service: {pipelines: {logs: {processors: [memory_limiter, k8sattributes, batch]}}}'],
+      ['lp', 'service: {pipelines: {logs: {processors: [memory_limiter, k8s_attributes, batch]}}}'],
       ['sd', 'processors: {tail_sampling: {decision_wait: 30s, policies: [{name: errors, type: status_code, status_code: {status_codes: [ERROR]}}, {name: slow, type: latency, latency: {threshold_ms: 2000}}, {name: baseline, type: probabilistic, probabilistic: {sampling_percentage: 5}}]}}'],
       ['te', 'service: {pipelines: {traces: {exporters: [otlp_grpc/dash0, span_metrics]}}}'],
       ['mp', 'service: {pipelines: {metrics: {processors: [memory_limiter, resource, batch]}}}'],

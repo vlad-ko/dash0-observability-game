@@ -8,7 +8,7 @@
 //
 // What is taught is the part of the recommended order that is stated without a condition:
 // memory_limiter first; batch after the processors that drop or change data and after those that
-// read the request context (k8sattributes); the order between those middle processors is not
+// read the request context (k8s_attributes); the order between those middle processors is not
 // graded, so no line depends on it. A pipeline without batch is fine.
 //
 // The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9 answers each (3 right, 6 wrong) and a showing draws 3.
