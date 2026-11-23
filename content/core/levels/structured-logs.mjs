@@ -9,7 +9,7 @@ export default {
     "finish": "You can read a log record by its fields: message in the Body, facts in Attributes, the source in the Resource, and the level as a number you can filter on. You keep your logger and add an appender.",
     "steps": [
       {
-        "intro": "Payments at Kettle &amp; Co declined a card, and the logs tell you. A log record is more than a line of text: the data model gives it separate fields. Here are twelve pieces of one record.",
+        "intro": "Payments at Kettle &amp; Co declined a card, and the logs tell you. A log record is more than a line of text: the data model gives it separate fields. Here are twelve pieces of the records it wrote.",
         "question": "Pick a piece, then say which field of the record it belongs in.",
         "sort": {
           "id": "sl-sort",
@@ -61,7 +61,7 @@ export default {
             {
               "id": "severity-text",
               "label": "SeverityText: WARN",
-              "why": "The level as the source wrote it, the original string. It is one of the two severity fields of a record.",
+              "why": "The level as the source wrote it, the original string. The data model gives it a severity field of its own, SeverityText.",
               "whyNot": {
                 "body": "The Body is the message. WARN is one short level label, not a message that explains the event.",
                 "resource": "WARN on one record can be ERROR on the next.",
@@ -164,6 +164,138 @@ export default {
               "whyNot": {
                 "body": "01 is one flag byte, not text for a person.",
                 "severity": "01 is one flag byte. It carries no level.",
+                "resource": "These flags can differ from one request to the next.",
+                "attributes": "The record has a field of its own for the flags, as it does for the trace ID and the span ID. It is not a key you add."
+              }
+            },
+            {
+              "id": "msg-timeout",
+              "label": "\"Card provider did not answer in time\"",
+              "why": "A message a person reads, about what happened. The Body holds the message of the record.",
+              "whyNot": {
+                "severity": "Severity is a short level label such as WARN or ERROR. This is a sentence about what happened.",
+                "resource": "A Resource is the same for every record from a source. This sentence is about one event.",
+                "trace": "Trace context holds IDs that tie a record to a request. It holds no message text.",
+                "attributes": "Attributes are key and value pairs. This is a sentence for a person to read, with no key and no value."
+              }
+            },
+            {
+              "id": "payment-amount",
+              "label": "payment.amount = 42.50",
+              "why": "A fact about this one payment, as a key and a value. The next record can carry another amount, which is what Attributes are for.",
+              "whyNot": {
+                "severity": "An amount is not a level such as WARN or ERROR.",
+                "trace": "An amount is a business fact, not a trace or span ID.",
+                "body": "It is a number you may want to filter or add up. Inside a sentence it is text to search, not a field you can query.",
+                "resource": "Each payment has its own amount. A Resource is the same for every record from the source, so it cannot go there."
+              }
+            },
+            {
+              "id": "severity-text-error",
+              "label": "SeverityText: ERROR",
+              "why": "The level as the source wrote it, the original string. The data model gives it a severity field of its own, SeverityText.",
+              "whyNot": {
+                "body": "The Body is the message. ERROR is one short level label, not a message that explains the event.",
+                "resource": "ERROR on one record can be INFO on the next.",
+                "trace": "ERROR is not the ID of a trace or a span.",
+                "attributes": "The level of a record has fields of its own in the data model, so it is not added as one more key and value."
+              }
+            },
+            {
+              "id": "service-version",
+              "label": "service.version = 3.2.0",
+              "why": "The version of the payments code that emitted the record. It is the same on every record that process emits, so it describes the source: the Resource.",
+              "whyNot": {
+                "body": "This is a key and a value, not a sentence.",
+                "severity": "A version says nothing about how serious a record is.",
+                "trace": "A version is not a trace or span ID.",
+                "attributes": "It does not describe this event. It describes the source, and it is the same for every record from it."
+              }
+            },
+            {
+              "id": "trace-id-other",
+              "label": "TraceId: 0af7651916cd43dd8448eb211c80319c",
+              "why": "The ID of the trace another record was written in, as defined by W3C Trace Context. Each request has its own, and it is a field of the record.",
+              "whyNot": {
+                "body": "A trace ID is 32 hex characters that machines use to match records, not a sentence.",
+                "severity": "Nothing in a trace ID says how serious anything is.",
+                "resource": "Each request has its own trace ID, so it is not fixed for a source the way a Resource is.",
+                "attributes": "The record has a field of its own for this ID, so it is not a key you add."
+              }
+            },
+            {
+              "id": "msg-refund",
+              "label": "\"Refund sent to the customer\"",
+              "why": "Another message for a person to read, so it goes in the Body.",
+              "whyNot": {
+                "severity": "This is a sentence, not a level such as WARN.",
+                "resource": "A refund message is about one event, so it is not the same on every record.",
+                "trace": "A sentence is not an ID.",
+                "attributes": "Attributes are key and value facts. This is a sentence for a reader, with no key and no value."
+              }
+            },
+            {
+              "id": "payment-currency",
+              "label": "payment.currency = EUR",
+              "why": "Another fact about this one payment. It can be EUR on one record and another currency on the next, so it is an attribute.",
+              "whyNot": {
+                "severity": "EUR is a currency, not a level such as WARN or ERROR.",
+                "trace": "EUR is not a trace or span ID.",
+                "body": "It is a fact you may want to filter and count by. Words in a message are text to search, not a field you can query.",
+                "resource": "It varies from payment to payment. A Resource stays the same for the source, so it cannot go there."
+              }
+            },
+            {
+              "id": "severity-number-error",
+              "label": "SeverityNumber: 17",
+              "why": "The normalised level: an integer from 1 to 24. 17 is the first number of the ERROR range, 17 to 20.",
+              "whyNot": {
+                "body": "17 is an integer, not a message for a person.",
+                "resource": "17 can be 9 on the next record.",
+                "trace": "17 is not the ID of a trace or a span.",
+                "attributes": "It is the other half of the level, which has fields of its own in the record. It is not a key you add."
+              }
+            },
+            {
+              "id": "namespace",
+              "label": "k8s.namespace.name = shop",
+              "why": "The namespace the payments pod runs in. It is the same on every record the process emits, so it is part of the source: a resource attribute.",
+              "whyNot": {
+                "body": "A namespace is not a sentence about what happened.",
+                "severity": "A namespace says nothing about how serious a record is.",
+                "trace": "A namespace is not a trace or span ID.",
+                "attributes": "The namespace is the same for every record the process emits. It describes the producer, not this event."
+              }
+            },
+            {
+              "id": "span-id-other",
+              "label": "SpanId: b7ad6b7169203331",
+              "why": "The ID of the span another record was written in. Each operation has its own, and like TraceId it is a field of the record.",
+              "whyNot": {
+                "body": "A span ID is 16 hex characters for machines, not a sentence to read.",
+                "severity": "A span ID is just 16 hex characters. It carries no level.",
+                "resource": "A span ID changes with each operation.",
+                "attributes": "The record has a field of its own for this ID. It is not a key you add."
+              }
+            },
+            {
+              "id": "customer-id",
+              "label": "customer.id = 5512",
+              "why": "The customer this payment is for, a fact about this one event. The next record can name another customer.",
+              "whyNot": {
+                "severity": "A customer ID is not a level such as WARN or ERROR.",
+                "trace": "A customer ID is a business fact, not a trace or span ID.",
+                "body": "An ID you may want to filter on is hard to use as a word in a sentence.",
+                "resource": "It changes from one payment to the next, and a Resource does not."
+              }
+            },
+            {
+              "id": "trace-flags-unsampled",
+              "label": "TraceFlags: 00",
+              "why": "The trace flags of the request the record was written in, as defined by W3C Trace Context. 00 leaves the sampled flag unset. It is still a field of the record, with TraceId and SpanId.",
+              "whyNot": {
+                "body": "00 is one flag byte, not text for a person.",
+                "severity": "00 is one flag byte. It carries no level.",
                 "resource": "These flags can differ from one request to the next.",
                 "attributes": "The record has a field of its own for the flags, as it does for the trace ID and the span ID. It is not a key you add."
               }

@@ -252,13 +252,14 @@ test('Act 3 cards: front, back, spec URL and Dash0 angle are pinned; fronts fit 
 
 const instr = () => stepOf('instruments', 'sort', 'instr-sort');
 
-test('instruments: the four instruments are the buckets, two measurements each', () => {
+test('instruments: the four instruments are the buckets, a pool of four measurements each that shows two', () => {
   const sort = instr();
   assert.deepEqual(
     sort.buckets.map((b) => `${b.id}=${b.label}`),
     ['counter=Counter', 'up-down-counter=UpDownCounter', 'gauge=Gauge', 'histogram=Histogram'],
   );
-  for (const b of sort.buckets) assert.equal(sort.items.filter((it) => it.bucket === b.id).length, 2, b.id);
+  for (const b of sort.buckets) assert.equal(sort.items.filter((it) => it.bucket === b.id).length, 4, b.id);
+  assert.deepEqual(sort.draw, { counter: 2, 'up-down-counter': 2, gauge: 2, histogram: 2 });
 });
 
 test('instruments: every wrong-bucket hint that exists is for a bucket the item is not in, and a count never fits a Gauge', () => {
@@ -266,7 +267,7 @@ test('instruments: every wrong-bucket hint that exists is for a bucket the item 
     for (const key of Object.keys(it.whyNot ?? {})) assert.notEqual(key, it.bucket, `${it.id} whyNot ${key}`);
   }
   const counts = instr().items.filter((it) => it.bucket === 'counter');
-  assert.equal(counts.length, 2);
+  assert.equal(counts.length, 4);
   for (const it of counts) assert.equal(/\bgauge\b/i.test(it.whyNot?.gauge ?? ''), true, `${it.id} says why not a Gauge`);
 });
 

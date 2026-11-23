@@ -26,6 +26,9 @@
 // Pooled answers (#390): the data model fields above for the sl-attrs and sl-severity pools (Attributes, Resource, InstrumentationScope,
 // EventName, TraceId, SeverityNumber comparison); https://opentelemetry.io/docs/concepts/signals/logs/ for semistructured text and the
 // Logger Provider and Logger of the Bridge API; https://opentelemetry.io/docs/specs/otel/logs/ for the richer feature set of logging libraries.
+// The sl-sort pool (#390), read 2026-11-22: the data model fields above (ERROR is SeverityNumber 17 to 20); W3C Trace Context for the
+// sampled flag, which 00 leaves unset; service.version and k8s.namespace.name as resource attributes. The messages, IDs and values are invented.
+// Spec: https://opentelemetry.io/docs/specs/semconv/resource/service/ , https://opentelemetry.io/docs/specs/semconv/resource/k8s/ , https://www.w3.org/TR/trace-context/#sampled-flag
 //
 // The words are in content/core/levels/structured-logs.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/structured-logs.mjs';
@@ -34,13 +37,15 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Step 1. One record from Kettle & Co's payments service, as twelve pieces. Buckets are the fields of the
+// Step 1. Pieces of the records Kettle & Co's payments service wrote, twelve to a board. Buckets are the fields of the
 // data model (their ids and labels are in the content file). Labels must not give the bucket away
 // (test/sort-tells.test.mjs). `whyNot` (in the content file) is shown for the buckets an item is
-// likely to be confused with.
+// likely to be confused with. An answer pool (#390, docs/CONTENT.md section 10): the content lists 24 pieces and a
+// showing draws half of each bucket, 2/3/2/2/3 (what it showed before the pool). Every item needs its bucket here.
 const SORT = {
   id: 'sl-sort',
   helps: { hints: false },
+  draw: { body: 2, attributes: 3, severity: 2, resource: 2, trace: 3 },
   buckets: [{ id: 'body' }, { id: 'attributes' }, { id: 'severity' }, { id: 'resource' }, { id: 'trace' }],
   items: [
     { id: 'msg-declined', bucket: 'body' },
@@ -55,6 +60,18 @@ const SORT = {
     { id: 'span-id', bucket: 'trace' },
     { id: 'retry-attempt', bucket: 'attributes' },
     { id: 'trace-flags', bucket: 'trace' },
+    { id: 'msg-timeout', bucket: 'body' },
+    { id: 'payment-amount', bucket: 'attributes' },
+    { id: 'severity-text-error', bucket: 'severity' },
+    { id: 'service-version', bucket: 'resource' },
+    { id: 'trace-id-other', bucket: 'trace' },
+    { id: 'msg-refund', bucket: 'body' },
+    { id: 'payment-currency', bucket: 'attributes' },
+    { id: 'severity-number-error', bucket: 'severity' },
+    { id: 'namespace', bucket: 'resource' },
+    { id: 'span-id-other', bucket: 'trace' },
+    { id: 'customer-id', bucket: 'attributes' },
+    { id: 'trace-flags-unsampled', bucket: 'trace' },
   ],
 };
 

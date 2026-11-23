@@ -377,8 +377,10 @@ test('the panel is on every allowed live step type with a hint, and never on a h
 
 test('MAX_QUESTION is the server\'s limit: the longest is taken, one more is refused', async () => {
   const live = liveRegistry();
-  const level = Object.values(live.levels).find((l) => l.play && stepsOf(l).some(({ type: t, spec }) => guideAllowed(t, spec)));
-  const { type: t, spec } = stepsOf(level).find(({ type: ty, spec: sp }) => guideAllowed(ty, sp));
+  // A fixed step: a pooled one (#390) answers 400 for a missing `shown` before it reads the question.
+  const fixed = (t, spec) => guideAllowed(t, spec) && spec.draw === undefined;
+  const level = Object.values(live.levels).find((l) => l.play && stepsOf(l).some(({ type: t, spec }) => fixed(t, spec)));
+  const { type: t, spec } = stepsOf(level).find(({ type: ty, spec: sp }) => fixed(ty, sp));
   const server = createGuide({
     env: { ANTHROPIC_API_KEY: 'k' },
     fetch: async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'Re-read what the question asks.' }] })),

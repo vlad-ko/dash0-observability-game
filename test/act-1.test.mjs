@@ -170,12 +170,14 @@ test('Act 1 cards: front, back, spec URL and Dash0 angle are pinned; fronts fit 
 
 // ---- 1.1 Resources ------------------------------------------------------------------
 
-const RESOURCE_ATTRS = ['service.name', 'k8s.pod.name', 'host.name', 'cloud.region'];
-const SIGNAL_ATTRS = ['http.request.method', 'http.route', 'http.response.status_code', 'url.path'];
+const RESOURCE_ATTRS = ['service.name', 'k8s.pod.name', 'host.name', 'cloud.region', 'service.version', 'k8s.namespace.name', 'cloud.provider', 'host.arch'];
+const SIGNAL_ATTRS = ['http.request.method', 'http.route', 'http.response.status_code', 'url.path', 'url.query', 'user_agent.original', 'client.address', 'db.collection.name'];
 
-test('resources: the resource attributes are service, pod, host and cloud region; HTTP request facts are signal attributes', () => {
+test('resources: the resource attributes describe the service, its pod, host and cloud; request and call facts are signal attributes', () => {
   const sort = stepOf('resources', 'sort', 'res-sort');
   assert.deepEqual(sort.buckets.map((b) => `${b.id}=${b.label}`), ['resource=Resource attribute', 'signal=Signal attribute']);
+  // An answer pool (#390): 8 items a bucket, 4 of each shown, as before the pool.
+  assert.deepEqual(sort.draw, { resource: 4, signal: 4 });
   const nameOf = (it) => it.label.split(' = ')[0];
   assert.deepEqual(sort.items.filter((it) => it.bucket === 'resource').map(nameOf).sort(), [...RESOURCE_ATTRS].sort());
   assert.deepEqual(sort.items.filter((it) => it.bucket === 'signal').map(nameOf).sort(), [...SIGNAL_ATTRS].sort());

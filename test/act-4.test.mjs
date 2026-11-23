@@ -172,7 +172,7 @@ test('Act 4 cards: front, back, spec URL and Dash0 angle are pinned; fronts fit 
 const sortSpec = () => stepOf('structured-logs', 'sort', 'sl-sort');
 const inBucket = (id) => sortSpec().items.filter((it) => it.bucket === id).map((it) => it.id).sort();
 
-test('structured logs: the five buckets are the log record fields, 12 items split 2/3/2/2/3', () => {
+test('structured logs: the five buckets are the log record fields, a pool of 24 that shows 12 split 2/3/2/2/3', () => {
   assert.deepEqual(sortSpec().buckets.map((b) => `${b.id}=${b.label}`), [
     'body=Body',
     'attributes=Attributes',
@@ -180,30 +180,37 @@ test('structured logs: the five buckets are the log record fields, 12 items spli
     'resource=Resource',
     'trace=Trace context',
   ]);
-  assert.equal(sortSpec().items.length, 12);
+  assert.equal(sortSpec().items.length, 24);
   assert.deepEqual(
     ['body', 'attributes', 'severity', 'resource', 'trace'].map((b) => inBucket(b).length),
-    [2, 3, 2, 2, 3],
+    [4, 6, 4, 4, 6],
   );
+  assert.deepEqual(sortSpec().draw, { body: 2, attributes: 3, severity: 2, resource: 2, trace: 3 });
 });
 
 test('structured logs: the sort puts messages in the body, per-event facts in attributes, the source in the resource, ids in trace context', () => {
-  assert.deepEqual(inBucket('body'), ['msg-declined', 'msg-retry']);
-  assert.deepEqual(inBucket('attributes'), ['order-id', 'payment-method', 'retry-attempt']);
-  assert.deepEqual(inBucket('severity'), ['severity-number', 'severity-text']);
-  assert.deepEqual(inBucket('resource'), ['pod-name', 'service-name']);
-  assert.deepEqual(inBucket('trace'), ['span-id', 'trace-flags', 'trace-id']);
+  assert.deepEqual(inBucket('body'), ['msg-declined', 'msg-refund', 'msg-retry', 'msg-timeout']);
+  assert.deepEqual(inBucket('attributes'), ['customer-id', 'order-id', 'payment-amount', 'payment-currency', 'payment-method', 'retry-attempt']);
+  assert.deepEqual(inBucket('severity'), ['severity-number', 'severity-number-error', 'severity-text', 'severity-text-error']);
+  assert.deepEqual(inBucket('resource'), ['namespace', 'pod-name', 'service-name', 'service-version']);
+  assert.deepEqual(inBucket('trace'), ['span-id', 'span-id-other', 'trace-flags', 'trace-flags-unsampled', 'trace-id', 'trace-id-other']);
 });
 
-test('structured logs: the severity items agree with the data model (WARN is 13 to 16), and the trace ids have the W3C lengths', () => {
+test('structured logs: the severity items agree with the data model (WARN is 13 to 16, ERROR 17 to 20), and the trace ids have the W3C lengths', () => {
   const label = (id) => sortSpec().items.find((it) => it.id === id).label;
   assert.equal(label('severity-text').endsWith(': WARN'), true);
   const n = Number(label('severity-number').split(': ')[1]);
   assert.equal(n >= 13 && n <= 16, true, `SeverityNumber ${n} is in the WARN range`);
-  assert.equal(/: [0-9a-f]{32}$/.test(label('trace-id')), true, 'a 16-byte trace id is 32 lowercase hex characters');
-  assert.equal(/: [0-9a-f]{16}$/.test(label('span-id')), true, 'an 8-byte span id is 16 lowercase hex characters');
+  assert.equal(label('severity-text-error').endsWith(': ERROR'), true);
+  const e = Number(label('severity-number-error').split(': ')[1]);
+  assert.equal(e >= 17 && e <= 20, true, `SeverityNumber ${e} is in the ERROR range`);
+  for (const id of ['trace-id', 'trace-id-other']) {
+    assert.equal(/: [0-9a-f]{32}$/.test(label(id)), true, `${id}: a 16-byte trace id is 32 lowercase hex characters`);
+    assert.equal(/^[0]+$/.test(label(id).split(': ')[1]), false, `${id}: the example ids are valid, not all-zero`);
+  }
+  for (const id of ['span-id', 'span-id-other']) assert.equal(/: [0-9a-f]{16}$/.test(label(id)), true, `${id}: an 8-byte span id is 16 lowercase hex characters`);
   assert.equal(/: 01$/.test(label('trace-flags')), true);
-  assert.equal(/^[0]+$/.test(label('trace-id').split(': ')[1]), false, 'the example ids are valid, not all-zero');
+  assert.equal(/: 00$/.test(label('trace-flags-unsampled')), true);
 });
 
 test('structured logs: every item says why it is not in each bucket it is likely confused with, never its own', () => {
