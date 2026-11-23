@@ -306,17 +306,5 @@ test('the Act 1 level files cite the pages their facts come from', () => {
     assert.equal(/\bthe spec says\b/i.test(levelSource(f)), false, f);
   }
 });
-
-test('every Act 1 `// Spec` line, whatever its form, cites only the allowed hosts; GitHub pages sit on a `// Docs` line pinned to v0.164.0', () => {
-  const act = LIVE.acts.find((a) => a.id === 'act-1');
-  for (const f of [...act.levelIds, act.bossId]) {
-    const lines = levelSource(f).split('\n');
-    for (const l of lines.filter((x) => /^\/\/ Spec\b/.test(x))) {
-      for (const u of l.match(/https:\/\/[^\s,)]+/g) ?? []) assert.equal(['opentelemetry.io', 'www.w3.org', 'prometheus.io'].includes(new URL(u).host), true, `${f}: Spec line cites ${u}`);
-    }
-    for (const l of lines.filter((x) => /^\/\/ Docs\b/.test(x))) {
-      for (const u of (l.match(/https:\/\/github\.com[^\s,)]+/g) ?? [])) assert.equal(u.includes('/tree/v0.164.0/'), true, `${f}: GitHub source ${u} is pinned to v0.164.0`);
-    }
-    assert.equal(/github\.com[^\n]*\/tree\/main/.test(levelSource(f)), false, `${f}: no unpinned GitHub source`);
-  }
-});
+// The allowed Spec hosts, in any form of the Spec line, and the Collector pin on GitHub sources are one
+// repo-wide check now (test/content.test.mjs, #484).
