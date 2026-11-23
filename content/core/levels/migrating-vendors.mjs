@@ -165,9 +165,9 @@ export default {
             {
               "id": "free-disk-alert",
               "label": "An alert when free disk space on any host drops below 10%",
-              "why": "Free disk space is a gauge, and a gauge compared with a fixed threshold carries over as written: select the series and compare it with 10%. Nothing is computed, so the alert means the same.",
+              "why": "Free disk space as a share is a gauge, or a ratio of two gauges, compared with a fixed threshold: free bytes divided by total bytes, against 10%. That carries over as written, with nothing estimated, so the alert means the same.",
               "whyNot": {
-                "approximated": "There is no estimate in it: the alert compares the gauge's own value with 10%, so the new tool reads the same number.",
+                "approximated": "There is no estimate in it: the alert compares current gauge values, or their ratio, with 10%, so the new tool reads the same number.",
                 "manual": "Nothing needs to be built by hand: the series and the threshold convert as written.",
                 "skipped": "A host running out of disk is still worth an alert, so it is not dropped."
               }

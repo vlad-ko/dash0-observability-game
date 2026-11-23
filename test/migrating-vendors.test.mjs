@@ -86,7 +86,8 @@ test('step 1: the whys name the PromQL behaviour each translated or approximated
   assert.match(why('p95-chart'), /spread evenly inside the bucket/);
   assert.match(why('p99-alert'), /estimates a percentile from histogram buckets/);
   assert.match(why('median-panel'), /histogram_quantile/);
-  assert.match(why('free-disk-alert'), /Free disk space is a gauge/);
+  assert.match(why('free-disk-alert'), /a gauge, or a ratio of two gauges, compared with a fixed threshold/);
+  assert.doesNotMatch(why('free-disk-alert'), /Nothing is computed/);
   assert.match(why('script-panel'), /nothing for PromQL to convert/);
   assert.match(why('failed-count'), /extrapolates to cover the full window/);
   assert.match(why('failed-count'), /41\.7 where the old tool said 42/);

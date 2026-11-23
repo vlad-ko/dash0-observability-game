@@ -27,7 +27,7 @@
 // the functions page states it, not of any tool.
 //
 // The sort pool (#390) adds four constructs on the same facts: a median panel (histogram_quantile, as for the percentiles), a free-disk
-// alert on a gauge against a fixed threshold (no calculation, as for the memory chart), a panel filled by a script the old tool runs (no
+// alert on a gauge, or a ratio of two gauges, against a fixed threshold (nothing estimated), a panel filled by a script the old tool runs (no
 // query for PromQL to convert, as for the logs panel) and a test copy of a dashboard (nothing to carry over). Facts re-read 2026-11-22.
 //
 // Invented for the game: the company, the old tool, the sixteen constructs, and every number in step 2 (1,000 requests in 5 minutes, 900 at
