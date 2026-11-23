@@ -214,6 +214,46 @@ export default {
               "key": "leave",
               "label": "Leave it: storage handles a large number of series well, so a high cardinality score is a warning to ignore",
               "why": "A high score is not always a problem, but it is a prompt to ask whether all of those dimensions are needed. Here a user id is the reason for it, and nothing needs a series for every user."
+            },
+            {
+              "key": "change-instrumentation",
+              "label": "Never record the unbounded attribute so the tile shrinks, ingestion falls and queries speed up",
+              "why": "Dash0's guidance is that reducing random or unbounded values at the instrumentation layer lowers ingestion overhead and improves query performance. A spam filter acts only after the data has been sent."
+            },
+            {
+              "key": "user-on-span",
+              "label": "Add <code>user_id</code> to the span and take it off the counter: a span is made for every request",
+              "why": "Prometheus advises against labels that hold user IDs or other unbounded sets of values, because every unique combination is a new time series. A span is one record for each request, so a user id fits there and nothing multiplies."
+            },
+            {
+              "key": "recover-later",
+              "label": "Create a spam filter on the metric and recover what it filtered out if the team ever needs it back",
+              "why": "Data dropped by a spam filter cannot be recovered, so a filter has to be made with care. It does not take the attribute out at the source either."
+            },
+            {
+              "key": "query-only",
+              "label": "Group every dashboard by route only so that no chart shows the user id attribute any more",
+              "why": "A query only decides what a chart shows. The series with a user id are still sent, stored and counted in the tile. Dash0 points at the instrumentation layer for random or unbounded values."
+            },
+            {
+              "key": "spam-service",
+              "label": "Put a spam filter on the whole recommendations service, so that nothing with a user id is kept",
+              "why": "A spam filter drops the data that matches its criteria, so one on the service would drop the counts you want to keep along with the rest. It does not take the attribute out of a point."
+            },
+            {
+              "key": "filter-processor",
+              "label": "Use a Collector <code>filter</code> processor to delete the <code>user_id</code> attribute from each data point",
+              "why": "The filter processor drops telemetry that meets its conditions: spans, metrics, data points and logs. It does not edit them. Deleting an attribute is a job for the attributes processor, and the better fix is still at the source."
+            },
+            {
+              "key": "hash-user",
+              "label": "Hash the user id before the attribute is recorded: the value turns anonymous and the tile stops growing",
+              "why": "A hash still takes a different value for each user, so the number of series stays the same. A series is one for every combination of attribute values, however the values look."
+            },
+            {
+              "key": "tree-resources",
+              "label": "Switch the tree map to Resources, so that the tile for the counter gets smaller",
+              "why": "The dimension only changes what the tiles are sized by: cardinality, resources, score or data points. The series of the counter stay as they are."
             }
           ]
         }

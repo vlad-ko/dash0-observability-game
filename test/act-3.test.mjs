@@ -158,7 +158,7 @@ const CARDS = {
       'start times treats as a reset, not as a drop.',
     specUrl: 'https://opentelemetry.io/docs/specs/otel/metrics/data-model/#temporality',
     dash0Angle:
-      'Dash0 accepts both temporalities and you query metrics with PromQL, so the conversion is for Prometheus-style ' +
+      'Dash0 can query both temporalities with PromQL, so the conversion is for Prometheus-style ' +
       'backends, not for Dash0. Its docs name one catch: a delta histogram ' +
       'cannot be queried through _bucket, _sum and _count, so you query it as a native histogram.',
   },
@@ -288,6 +288,28 @@ test('instruments: the nuance is graded: a Gauge used for a count loses the sum 
   assert.equal(/nothing is lost|no order is lost|still includes/i.test(lost.why), true, 'the running total keeps every earlier order');
 });
 
+// ---- Answer pools of 3.1 to 3.4 (#390) -----------------------------------------------
+
+test('answer pools: the six pooled questions draw their old count, and the four whose answer is read off the screen stay fixed', () => {
+  const pooled = [
+    ['instruments', 'instr-async', 3, ['async-updown', 'observable-updown', 'on-demand-additive']],
+    ['instruments', 'instr-gauge', 3, ['no-aggregation', 'sampled-not-sum', 'start-time']],
+    ['temporality', 'temp-convert', 4, ['accumulate', 'deltatocumulative', 'running-total-processor']],
+    ['temporality', 'temp-dash0', 3, ['both', 'histogram-catch', 'not-every', 'send-as-is']],
+    ['histograms', 'hist-kind', 3, ['exponential', 'merge', 'same-error', 'wider']],
+    ['promql-basics', 'pql-dash0', 3, ['both-names', 'stable-selector', 'type-label', 'wrapped-increase']],
+  ];
+  for (const [level, id, draw, rights] of pooled) {
+    const step = stepOf(level, 'choice', id);
+    assert.equal(step.draw, draw, `${id} shows ${draw} answers, as it did before the pool`);
+    assert.deepEqual(step.choices.filter((c) => c.right).map((c) => c.key).sort(), rights, id);
+  }
+  // Fixed on purpose: temp-restart (8,400 then 35 on the screen), hist-buckets (the p99 and the bucket bounds on the screen), pql-unit and pql-total (a name worked out from a metric name and unit on the screen).
+  for (const [level, id] of [['temporality', 'temp-restart'], ['histograms', 'hist-buckets'], ['promql-basics', 'pql-unit'], ['promql-basics', 'pql-total']]) {
+    assert.equal(stepOf(level, 'choice', id).draw, undefined, `${id} is not pooled`);
+  }
+});
+
 // ---- 3.2 Temporality ----------------------------------------------------------------
 
 test('temporality: the spotted series are exactly the delta ones; gauges and cumulative series are not', () => {
@@ -305,7 +327,7 @@ test('temporality: the Prometheus-style rule, the deltatocumulative processor an
   const right = rightOf('temporality', 'temp-convert');
   assert.equal(right.key, 'deltatocumulative');
   assert.equal(right.label.includes('<code>deltatocumulative</code>'), true);
-  assert.equal(/stateful|same instance/i.test(right.why), true, 'the cost is stated');
+  assert.equal(/memory|every point/i.test(right.why), true, 'the cost is stated');
   const explain = stepOf('temporality', 'spot', 'temp-spot').explain;
   assert.equal(/Prometheus/.test(explain) && /convert/i.test(explain), true);
 });
@@ -318,12 +340,12 @@ test('temporality: a restart resets a cumulative counter, and the new start time
   assert.deepEqual(wrong.map((c) => c.key).sort(), ['negative', 'survives']);
 });
 
-test('temporality: Dash0 accepts both temporalities and you query with PromQL (no conversion needed for Dash0)', () => {
+test('temporality: Dash0 can query both temporalities with PromQL (no conversion needed for Dash0)', () => {
   const right = rightOf('temporality', 'temp-dash0');
   assert.equal(right.key, 'both');
   assert.equal(/both/.test(right.label) && /PromQL/.test(right.label), true);
   for (const c of choiceOf('temporality', 'temp-dash0').filter((x) => !x.right)) {
-    assert.equal(/Dash0 accepts both/.test(c.why), true, `${c.key} is corrected with what Dash0 does`);
+    assert.equal(/Dash0 can query both/.test(c.why), true, `${c.key} is corrected with what Dash0 does`);
   }
 });
 
@@ -432,7 +454,9 @@ test('histograms: explicit vs exponential is graded: scale and relative error, n
   const text = plain(right.label + right.why);
   for (const w of ['scale', 'relative error', 'no list to pick', 'dropped or converted']) assert.equal(text.includes(w), true, w);
   const wrong = choiceOf('histograms', 'hist-kind').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['exact', 'fixed']);
+  // The answer pool (#390) keeps the two original wrong answers and adds seven more; every right answer is a different phrasing of the one fact.
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['echo-one', 'echo-small', 'equal-width', 'exact', 'explicit-wide-range', 'fixed', 'fixed-scale', 'sample-values', 'unbounded']);
+  assert.deepEqual(choiceOf('histograms', 'hist-kind').filter((c) => c.right).map((c) => c.key).sort(), ['exponential', 'merge', 'same-error', 'wider']);
   assert.equal(/estimate/.test(wrong.find((c) => c.key === 'exact').why), true, 'a percentile from buckets is an estimate');
   assert.equal(/first or last bucket/.test(wrong.find((c) => c.key === 'fixed').why), true, 'explicit boundaries are fixed');
   assert.equal(/native/i.test(text), false, 'no exponential = native claim in the player copy');
@@ -526,7 +550,9 @@ test('promql-basics: the Dash0 tie-in is graded: both names, otel_metric_name, a
   const text = plain(right.label + right.why);
   for (const w of ['otel_metric_name', 'dash0.logs', 'dash0.spans', 'same PromQL']) assert.equal(text.includes(w), true, w);
   const wrong = choiceOf('promql-basics', 'pql-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['metrics-only', 'translated-only']);
+  // The answer pool (#390) keeps the two original wrong answers and adds seven more, and three more right ones.
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['echo-hist', 'echo-register', 'label-from-sdk', 'metrics-only', 'stored-counters', 'synthetic-gauge', 'translated-only', 'type-is-unit', 'unit-is-type']);
+  assert.deepEqual(choiceOf('promql-basics', 'pql-dash0').filter((c) => c.right).map((c) => c.key).sort(), ['both-names', 'stable-selector', 'type-label', 'wrapped-increase']);
   assert.equal(/otel_metric_name/.test(wrong.find((c) => c.key === 'translated-only').why), true);
   assert.equal(/dash0\.logs/.test(wrong.find((c) => c.key === 'metrics-only').why), true);
   const step = LIVE.levels['promql-basics'].play.steps[4];
@@ -664,7 +690,7 @@ test('cardinality: the Dash0 tie-in is graded: fix the source, and a spam filter
   const t = plain(right.label + right.why);
   for (const w of ['tree map', 'instrumentation layer', 'cannot be recovered', 'ingest charge', 'not what you send', 'Collector filter processor']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('cardinality', 'cdn-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['leave', 'spam-attribute', 'spam-free']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['filter-processor', 'hash-user', 'leave', 'query-only', 'recover-later', 'spam-attribute', 'spam-free', 'spam-service', 'tree-resources']);
   assert.equal(/does not strip one attribute/.test(plain(wrong.find((c) => c.key === 'spam-attribute').why)), true);
   assert.equal(/ingest charge/.test(plain(wrong.find((c) => c.key === 'spam-free').why)), true);
   assert.equal(/prompt to ask/.test(plain(wrong.find((c) => c.key === 'leave').why)), true);
@@ -690,7 +716,7 @@ test('red-and-use: RED reads a service and USE reads a resource, and the swaps a
   assert.equal(right.key, 'red-services-use-resources');
   const t = plain(right.label);
   for (const w of ['Rate, Errors, Duration', 'Utilisation, Saturation, Errors', 'CPU or a disk']) assert.equal(t.includes(w), true, w);
-  assert.deepEqual(choiceOf('red-and-use', 'ru-methods').filter((c) => !c.right).map((c) => c.key).sort(), ['red-everything', 'swapped']);
+  assert.deepEqual(choiceOf('red-and-use', 'ru-methods').filter((c) => !c.right).map((c) => c.key).sort(), ['red-everything', 'same-checklist', 'signal-split', 'swapped', 'traces-enough', 'use-everything', 'user-facing-split']);
   assert.equal(/microservices/.test(plain(choiceOf('red-and-use', 'ru-methods').find((c) => c.key === 'red-everything').why)), true);
 });
 
@@ -710,7 +736,7 @@ test('red-and-use: the spanmetrics connector is graded: calls and duration, name
   const t = plain(right.label + right.why);
   for (const w of ['traces pipeline', 'metrics pipeline', 'traces.span.metrics.calls', 'traces.span.metrics.duration', 'milliseconds by default', 'connector.spanmetrics.legacyMetricNames', 'span_metrics', 'check what your version emits']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('red-and-use', 'ru-connector').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['errors-metric', 'processor', 'raw-url']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['drop-service-name', 'errors-metric', 'exemplars-only', 'filter-processor', 'host-metrics', 'metrics-only', 'processor', 'raw-url', 'second-traces-pipeline']);
   assert.equal(/STATUS_CODE_ERROR/.test(plain(wrong.find((c) => c.key === 'errors-metric').why)) && /otel\.status_code/.test(plain(wrong.find((c) => c.key === 'errors-metric').why)), true);
   const raw = plain(wrong.find((c) => c.key === 'raw-url').why);
   for (const w of ['http.route', 'must not default to the URI path', 'aggregation_cardinality_limit', 'cardinality of 3.5']) assert.equal(raw.includes(w), true, w);
@@ -799,7 +825,7 @@ test('red-and-use: the Dash0 tie-in is graded: RED derived from spans, not bille
   const t = plain(right.label + right.why);
   for (const w of ['dash0.spans.red', 'Service Catalog and Service Map', 'not billed as a custom metric', 'status code ERROR', 'GET /users/{id}', 'cardinality bounded']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('red-and-use', 'ru-dash0').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['connector-needed', 'service-metrics']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['client-spans', 'connector-needed', 'custom-metrics', 'log-lines', 'raw-span-names', 'service-metrics', 'synthetic-calls']);
   assert.equal(/derivation itself/.test(plain(wrong.find((c) => c.key === 'connector-needed').why)), true);
   assert.equal(/still gets rate, errors and duration/.test(plain(wrong.find((c) => c.key === 'service-metrics').why)), true);
 });
@@ -912,7 +938,7 @@ test('exemplars: the nuance is graded: only measurements recorded in a sampled s
   const t = plain(right.label + right.why);
   for (const w of ['outside any span', 'not sampled', 'TraceBased', 'sampled span', 'OTEL_METRICS_EXEMPLAR_FILTER', 'always_on', 'always_off', 'reservoir']) assert.equal(t.includes(w), true, w);
   const wrong = choiceOf('exemplars', 'exm-why').filter((c) => !c.right);
-  assert.deepEqual(wrong.map((c) => c.key).sort(), ['backend-dropped', 'errors-only']);
+  assert.deepEqual(wrong.map((c) => c.key).sort(), ['backend-dropped', 'counters-only', 'errors-only', 'folded-away', 'off-by-default', 'otlp-no-slot', 'reservoir-unsized']);
   assert.equal(/AlwaysOn, AlwaysOff and TraceBased/.test(plain(wrong.find((c) => c.key === 'errors-only').why)), true);
   assert.equal(/SDK/.test(plain(wrong.find((c) => c.key === 'backend-dropped').why)) && /reservoir/.test(plain(wrong.find((c) => c.key === 'backend-dropped').why)), true);
   for (const c of choiceOf('exemplars', 'exm-why')) assert.equal(typeof c.why, 'string', c.key);

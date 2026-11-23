@@ -4,7 +4,16 @@
 // runs past the grid's width, and a layout item that names a panel the file never defines. Then one Choice: how a team with no Kubernetes
 // cluster, whose infrastructure is already in Terraform, gets reviewed dashboards into Dash0. Hints are off on the Spot it step (the
 // default ladder: hints in early acts only). Nothing is parsed or applied.
-// Spec: https://www.dash0.com/docs/dash0/dashboards/manage-dashboards-as-code , https://www.dash0.com/docs/dash0/dashboards/export-dashboards , https://perses.dev/perses/docs/api/dashboard/ , https://perses.dev/perses/docs/concepts/dashboard/
+// The Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 12 answers and a showing draws 4. Its extra
+// answers use only the pages below, read 2026-11-21: the Terraform provider `dash0hq/dash0`, the Dash0 CLI (`dash0 dashboards
+// create -f`) and "Edit as JSON" (convenient for copying dashboards across organizations and datasets, and for quick prototyping)
+// on Manage Dashboards as Code; its tip that Agent0 can generate infrastructure as code for a dashboard and raise it as a pull
+// request (after creating a dashboard you request the Terraform configuration or Kubernetes manifest); the import page
+// (https://www.dash0.com/docs/dash0/dashboards/import-dashboards: Grafana and Perses dashboards through Edit as JSON, Apply updates
+// an unsaved preview, Prometheus queries only); and the export page (More actions: Download or Copy as YAML or JSON, "for sharing,
+// version control, or migration between environments"). The same page now shows the operator's resource as `perses.dev/v1alpha2`
+// with the configuration under `spec.config`, and the Terraform format as `v1alpha1` with it directly under `spec`.
+// Spec: https://www.dash0.com/docs/dash0/dashboards/manage-dashboards-as-code , https://www.dash0.com/docs/dash0/dashboards/export-dashboards , https://www.dash0.com/docs/dash0/dashboards/import-dashboards ,https://perses.dev/perses/docs/api/dashboard/ , https://perses.dev/perses/docs/concepts/dashboard/
 // Dash0 docs: https://www.dash0.com/docs/dash0/dashboards/manage-dashboards-as-code
 //
 // Facts used (each read on the pages above, 2026-11-07). Manage Dashboards as Code: Dash0 dashboards use the Perses dashboard format;
@@ -18,7 +27,7 @@
 // The Dash0 Terraform provider (`dash0hq/dash0`) has a `dash0_dashboard` resource with a `dataset` and the Perses YAML in
 // `dashboard_yaml`, which holds the same document (`apiVersion`, `kind`, `metadata`, `spec`). The Dash0 CLI creates a dashboard from a
 // YAML or JSON file. "Edit as JSON" applies changes immediately when saved and is described as convenient for quick edits and
-// prototyping. Export Dashboards: the Source tab downloads a dashboard as Perses YAML, for sharing, version control or migration.
+// prototyping. Export Dashboards (re-read 2026-11-21): More actions downloads or copies a dashboard as Perses YAML or JSON, for sharing, version control or migration (the first reading, 2026-11-07, named the Source tab).
 //
 // Perses docs (v0.55, read 2026-11-08; the URLs redirect to perses.dev/docs/perses/latest/). API, Dashboard (perses.dev/perses/docs/api/dashboard/): a dashboard spec has the keys `display`,
 // `datasources`, `variables`, `panels` and `layouts`, all marked Optional; `panels` is a map whose key is the reference of the panel; `layouts` is a list
@@ -65,8 +74,14 @@ const SKELETON = {
       },
       {
         qid: 'dac-q-deploy',
-        // Only the answer is marked; every choice's text is in the content file.
-        choice: { id: 'dac-deploy', choices: [{ key: 'terraform', right: true }] },
+        // An answer pool: 3 right and 9 wrong in the content, a showing draws 4. Every right answer is marked here, and a right
+        // answer added in the content file without `right: true` would be graded wrong. 'operator' is the tempting near-miss the
+        // 50/50 keeps. Every choice's text is in the content file.
+        choice: {
+          id: 'dac-deploy',
+          draw: 4,
+          choices: [{ key: 'terraform', right: true }, { key: 'provider', right: true }, { key: 'agent0-pr', right: true }, { key: 'operator', keep: true }],
+        },
       },
     ],
   },

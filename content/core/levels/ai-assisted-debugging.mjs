@@ -102,7 +102,7 @@ export default {
             },
             {
               "key": "invented-name",
-              "label": "The agent made up an attribute name for the status code that OpenTelemetry does not list",
+              "label": "The agent made up a span attribute for a status code that the HTTP conventions do not list",
               "why": "http.status_code was a real OpenTelemetry name: it is the name the HTTP conventions used before http.response.status_code replaced it (the migration pair of level 8.2). The agent did not make it up, but checkout no longer sends it."
             },
             {
@@ -112,8 +112,48 @@ export default {
             },
             {
               "key": "metric-label",
-              "label": "The status code is a metric label while spans store it under a different key",
+              "label": "The HTTP status code is a metric label, while spans store it under a different key",
               "why": "Both names are span attribute names in the HTTP conventions (the migration page renames one to the other), so spans do carry the status code as an attribute. The two queries differ by the name the migration renamed, not by metric against span."
+            },
+            {
+              "key": "renamed",
+              "label": "The HTTP status code was renamed, and no span carries the key that the query named any more",
+              "why": "The failed-requests query filters on http.status_code and the versions query on http.response.status_code, on the same service and window, and only the second found failures: {{failed-after}} failed from {{window}}. The conventions renamed that key (the migration pair of level 8.2), so spans that carry the stable key have nothing under the old one and the filter matches no span."
+            },
+            {
+              "key": "stable-key",
+              "label": "The failing spans carry the current status code attribute, not the old one",
+              "why": "Checkout sends http.response.status_code (its opt-in is http, level 8.2), and the versions query counted {{failed-after}} failed from {{window}} by that key. The failed-requests query asked for http.status_code, which no checkout span carries now, so it matched nothing while orders failed."
+            },
+            {
+              "key": "value-type",
+              "label": "The HTTP conventions store the status code as text on spans, and the query used a number",
+              "why": "The HTTP spans page lists http.response.status_code as an int, and both queries compare it with 500. The versions query found {{failed-after}} failed spans that way, so the value matches. The two queries differ in the attribute name, not in how the value is written."
+            },
+            {
+              "key": "sampling",
+              "label": "Sampling dropped the spans with a failing status code and the query never saw them",
+              "why": "The versions query read the same spans for {{window}} and counted {{failed-after}} failed, so the failing spans were there to be found. Sampling that dropped them would have emptied both queries, not one."
+            },
+            {
+              "key": "underscores",
+              "label": "Dash0 wants the status code name written with underscores, and the query used dots",
+              "why": "Both queries write the key with dots, and the one that found {{failed-after}} failed spans is the one with the stable name. Underscores are how a chart's PromQL writes an attribute in Dash0 (<code>service.name</code> is <code>service_name</code>), not how these span queries write it."
+            },
+            {
+              "key": "logs",
+              "label": "A failing HTTP status code is recorded in logs, not on spans, so a span query finds none",
+              "why": "The versions query read spans and found {{failed-after}} failed checkout requests from {{window}}, so the failures are on spans. The failed-requests query asked spans the same question and used a name those spans no longer carry."
+            },
+            {
+              "key": "refused",
+              "label": "The backend refuses attribute names the HTTP conventions deprecated, and returned nothing at all",
+              "why": "The answer was 0 spans, which is what a query returns when no span matches, not a refusal. Nothing on the migration page says a backend rejects the old names: the query ran, and no span carried that key."
+            },
+            {
+              "key": "lag",
+              "label": "The failing status code spans had not been ingested when the query ran",
+              "why": "The versions query read the same window, {{window}}, and counted {{failed-after}} failed, so the spans had arrived. Spans that were late would be missing from both queries."
             }
           ]
         }

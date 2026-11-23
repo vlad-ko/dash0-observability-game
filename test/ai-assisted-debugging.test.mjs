@@ -586,9 +586,13 @@ test('8.5: opening a view again costs neither time nor a mistake, so repeat open
 const pick = LEVEL.play.steps[1].choice.choices;
 const choice = (key) => pick.find((c) => c.key === key);
 
-test('8.5: step 2 asks why the failed-requests query found nothing: one right cause, three wrong ones that are all about the name, each with a why', () => {
-  assert.deepEqual(pick.filter((c) => c.right).map((c) => c.key), ['old-name']);
-  assert.deepEqual(pick.filter((c) => !c.right).map((c) => c.key), ['invented-name', 'newer-name', 'metric-label']);
+test('8.5: step 2 is a pool of 12 (draw 4): three right causes (the old name, the rename, the spans carrying the current name), the three original decoys stay and six more are added, each with a why', () => {
+  assert.equal(LEVEL.play.steps[1].choice.draw, 4);
+  assert.equal(pick.length, 12);
+  assert.deepEqual(pick.filter((c) => c.right).map((c) => c.key), ['old-name', 'renamed', 'stable-key']);
+  assert.deepEqual(pick.filter((c) => !c.right).map((c) => c.key), ['invented-name', 'newer-name', 'metric-label', 'value-type', 'sampling', 'underscores', 'logs', 'refused', 'lag']);
+  assert.deepEqual(pick.filter((c) => c.keep).map((c) => c.key), ['newer-name'], 'the near-miss the 50/50 keeps');
+  for (const c of pick) assert.equal(typeof c.why === 'string' && c.why.length > 0, true, `${c.key} has a why`);
   assert.equal(plain(LEVEL.play.steps[1].question), "Why did the agent's failed-requests query return nothing?");
   const right = plain(choice('old-name').why);
   for (const w of [STABLE, LEGACY, 'level 8.2', 'Agent0 reads telemetry in the OpenTelemetry semantic conventions it was produced in', 'getAttributeKeys', 'Dash0 MCP Server', 'Use the names the spans carry', `${fmt(failed)} failed from ${WINDOW}`]) assert.equal(right.includes(w), true, w);
@@ -598,13 +602,20 @@ test('8.5: step 2 asks why the failed-requests query found nothing: one right ca
   for (const w of [LEGACY, STABLE, 'older name', 'level 8.2'.replace('level ', ''), `${fmt(failed)} failed from ${WINDOW}`]) assert.equal(mirror.includes(w), true, `the mirror decoy is refuted by the pair: ${w}`);
   const metric = plain(choice('metric-label').why);
   for (const w of ['span attribute names', 'HTTP conventions', 'migration']) assert.equal(metric.includes(w), true, w);
+  // The added rights and wrongs hold for the two queries on the step's own board.
+  for (const k of ['renamed', 'stable-key']) for (const w of [STABLE, 'level 8.2', `${fmt(failed)} failed`]) assert.equal(plain(choice(k).why).includes(w), true, `${k}: ${w}`);
+  for (const k of ['value-type', 'sampling', 'underscores', 'logs', 'lag']) assert.equal(plain(choice(k).why).includes(`${fmt(failed)} failed`), true, `${k} is refuted by the versions query's count`);
+  assert.equal(plain(choice('value-type').why).includes('int'), true, 'the status code is an int on the HTTP spans page');
+  assert.equal(plain(choice('value-type').why).includes('500'), true, 'both queries compare with 500');
+  assert.equal(plain(choice('underscores').why).includes('service_name'), true, 'underscores are the PromQL form, from the drilldown page');
+  assert.equal(plain(choice('refused').why).includes('0 spans'), true, '0 spans is a result, not a refusal');
 });
 
-test('8.5: no step 2 decoy is ruled out by the step text alone: none mentions case, and the right label and a mirror decoy claim opposite directions of the rename', () => {
+test('8.5: no step 2 decoy is ruled out by the step text alone: none mentions case, and the old-name right label and a mirror decoy claim opposite directions of the rename', () => {
   for (const c of pick) assert.equal(/\b(case|upper|lower|spell\w*)\b/i.test(c.label), false, `${c.key}: nothing about case`);
   assert.equal(/\b(before|older)\b/.test(choice('old-name').label), true);
   assert.equal(/\bnewer\b/.test(choice('newer-name').label), true, 'the mirror decoy claims the opposite direction');
-  for (const c of pick.filter((x) => !x.right)) assert.equal(/\b(before|older|earlier)\b/.test(c.label), false, `${c.key}: only the right label states the rename direction`);
+  for (const c of pick.filter((x) => !x.right)) assert.equal(/\b(before|older|earlier)\b/.test(c.label), false, `${c.key}: only a right label states the rename direction`);
   assert.equal(plain(LEVEL.play.steps[1].code).includes(`the ${WINDOW} column of the step 1 versions query`), true);
   assert.equal(plain(view('failed-requests').label), `Agent: failed requests, ${WINDOW}`);
 });
@@ -631,15 +642,19 @@ test('8.5: step 2 shows the two queries side by side over one explicit window an
   assert.equal(/getAttributeKeys/.test(plain(LEVEL.play.finish)) && /Dash0 MCP Server/.test(plain(LEVEL.play.finish)), true);
 });
 
-test('8.5: step 2 labels are balanced: the right one is neither the longest nor the shortest, within 15 characters of the others, attribute or name in more than one label, varied openings, no verify tail', () => {
+// Rewritten for the pool (#390): the fixed-set pins "the right label is neither the longest nor the shortest, within 15 characters" and "no
+// comma" become checks over the whole pool (no right label is the pool's longest or shortest, labels within 30 characters), and the
+// comma and every other punctuation mark are scored over every board by C6 in test/pool-content.test.mjs.
+test('8.5: step 2 labels are balanced across the pool: no right label is the longest or the shortest, within 30 characters, every label is about the status code or a name, varied openings, no verify tail', () => {
   const lens = pick.map((c) => plain(c.label).length);
-  const right = plain(choice('old-name').label);
-  assert.equal(right.length < Math.max(...lens) && right.length > Math.min(...lens), true, lens.join());
-  assert.equal(Math.max(...lens) - Math.min(...lens) <= 15, true, lens.join());
-  assert.equal(pick.filter((c) => /\b(attribute|name)\b/i.test(c.label)).length >= 3, true, 'attribute or name is not the right label alone');
-  assert.equal(pick.every((c) => /\b(name|status code)\b/.test(c.label)), true, 'every label is about the name');
-  assert.equal(new Set(pick.map((c) => c.label.split(' ').slice(0, 2).join(' '))).size >= 3, true, 'the labels do not all open alike');
-  assert.equal(pick.every((c) => !/,/.test(c.label)), true, 'one shape: no clause after a comma');
+  for (const r of pick.filter((c) => c.right)) {
+    const n = plain(r.label).length;
+    assert.equal(lens.filter((l) => l >= n).length >= 2 && lens.filter((l) => l <= n).length >= 2, true, `${r.key} is not the sole longest or shortest: ${lens.join()}`);
+  }
+  assert.equal(Math.max(...lens) - Math.min(...lens) <= 30, true, lens.join());
+  assert.equal(pick.filter((c) => /\b(attribute|name)\b/i.test(c.label)).length >= 3, true, 'attribute or name is not a right label alone');
+  assert.equal(pick.every((c) => /\b(names?|status code)\b/.test(c.label)), true, 'every label is about the name or the status code');
+  assert.equal(new Set(pick.map((c) => c.label.split(' ').slice(0, 2).join(' '))).size >= 6, true, 'the labels do not all open alike');
   for (const c of pick) assert.equal(/\b(verify|check|make sure|confirm)\b/i.test(c.label), false, `${c.key}: no verify tail`);
   for (const c of pick) assert.equal(c.label.includes(LEGACY) || c.label.includes(STABLE), false, `${c.key}: no label repeats the query text`);
   for (const v of S.views) assert.equal(/attribute|no longer sends/i.test(v.label), false, 'no view tile echoes a label');

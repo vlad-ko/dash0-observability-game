@@ -3,6 +3,13 @@
 // The player reads eight attributes of one server span and spots the three old names that stop arriving when the opt-in goes to
 // `http` (Spot it), then answers what has to happen first (Choice): move every query, alert and dashboard to the stable names, then
 // switch. Hints are off (the default ladder: hints in early acts only).
+// The Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 11 answers and a showing draws 3. Its extra
+// answers use only the pages below, re-read 2026-11-21: on the migration page, `http/dup` is "for a phased rollout", `http` stops
+// emitting the old names, the variable "is only intended to be used when migrating", `http.route` is "No change", and more names
+// are renamed than the eight shown (`http.method` to `http.request.method`, `http.scheme` to `url.scheme`, `net.host.name` to
+// `server.address`); on the Dash0 drilldown page, a chart's PromQL filters and series labels are OpenTelemetry attributes. Not
+// claimed: that a backend (Dash0 included) reads the old and the stable names as one, which the wrong answer "the backend treats
+// them as the same attribute" rests on as reasoning (a filter matches the key it names).
 // Spec: https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/ , https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 // Dash0 docs: https://www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation
 //
@@ -53,8 +60,13 @@ const SKELETON = {
       },
       {
         qid: 'scv-q-switch',
-        // Only the answer is marked; every choice's text is in the content file.
-        choice: { id: 'scv-switch', choices: [{ key: 'move-queries', right: true }] },
+        // An answer pool: 3 right and 8 wrong in the content, a showing draws 3. Every right answer is marked here, and a right
+        // answer added in the content file without `right: true` would be graded wrong. Every choice's text is in the content file.
+        choice: {
+          id: 'scv-switch',
+          draw: 3,
+          choices: [{ key: 'move-queries', right: true }, { key: 'rewrite-filters', right: true }, { key: 'dup-until-unread', right: true }],
+        },
       },
     ],
   },

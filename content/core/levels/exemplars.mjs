@@ -78,6 +78,41 @@ export default {
               "key": "backend-dropped",
               "label": "The backend dropped the exemplars after the points arrived",
               "why": "Exemplars are chosen in the SDK while measurements are recorded: the filter decides which measurements are eligible and the reservoir which are kept, and the kept ones leave the SDK in the metric data point. A point that left the SDK with none has none to lose."
+            },
+            {
+              "key": "trace-based-default",
+              "label": "By default the SDK takes exemplars from sampled traces, so every point whose measurements came from unsampled traces has no exemplar",
+              "why": "The default exemplar filter is TraceBased: it makes eligible only the measurements recorded in the context of a sampled parent span. Every other measurement is out, whatever its value or its place on the spike. The reservoir then makes the final decision among the eligible ones."
+            },
+            {
+              "key": "job-and-unsampled",
+              "label": "A scheduled job has no span and a skipped request has an unsampled span: neither gives a point an exemplar",
+              "why": "The trace ID and span ID of an exemplar are those of the active span when the measurement is recorded. With no span there are none to attach, and a span that is not sampled does not pass the TraceBased filter, which is the default."
+            },
+            {
+              "key": "off-by-default",
+              "label": "Exemplar sampling is off by default, so a point only gets one if its service turned it on and the span is sampled",
+              "why": "An SDK should have exemplar sampling on by default, with the TraceBased filter. Three of the points here carry exemplars and nothing was changed, so it was on."
+            },
+            {
+              "key": "otlp-no-slot",
+              "label": "OTLP has no field for a span_id beside a histogram point, so a recorded exemplar from a sampled span never leaves the exporter",
+              "why": "A histogram data point has an exemplars field, and an exemplar holds the trace ID and span ID of the span it was recorded in. A point that left the SDK with none had none, and the three points on this list that carry one arrived with it."
+            },
+            {
+              "key": "folded-away",
+              "label": "A histogram folds every recorded measurement into counts and a sum: no sampled request or span is left at all",
+              "why": "Exemplars exist for exactly that case: they keep a few recorded measurements beside the aggregate, with the attributes the aggregation dropped and the ids of the span. A point can hold several, as the spike points here do."
+            },
+            {
+              "key": "counters-only",
+              "label": "Just counters and gauges can carry an exemplar: a histogram point has no slot for one, whatever span it came from",
+              "why": "Sum, gauge, histogram and exponential histogram data points all have an exemplars field. The points in this level are histogram points, and three of them carry exemplars."
+            },
+            {
+              "key": "reservoir-unsized",
+              "label": "Even a measurement made inside a span that is sampled is lost, because the reservoir has to be sized by hand and no size was set",
+              "why": "An SDK includes two built-in reservoirs and picks one by the aggregation, so no hand sizing is needed. With the settings left alone, a measurement from a sampled span can be kept, as three points here show."
             }
           ]
         }

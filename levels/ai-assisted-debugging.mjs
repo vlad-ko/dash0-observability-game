@@ -11,6 +11,12 @@
 // one declarative `incident` step (lib/widgets/incident.mjs, docs/M1-DESIGN.md §4.3, docs/DECLARATIVE-LEVELS.md §2), then one
 // closing Choice on why the failed-requests query found nothing, which the incident step does not grade.
 // The scenario is designed for this game (issue #138).
+// The closing Choice is an answer pool (#390, docs/CONTENT.md section 10): the content lists 12 answers and a showing draws 4. Its extra
+// answers rest on the migration page below and, read 2026-11-21, on the HTTP spans page (opentelemetry.io/docs/specs/semconv/http/http-spans/:
+// `http.response.status_code` is an `int`) and on the Dash0 drilldown page (www.dash0.com/docs/dash0/dashboards/reference-drilldown-filter-translation:
+// a chart's PromQL filters name OpenTelemetry attributes, with dots written as underscores); the rest is the two queries on the step's
+// own board, which every wrong answer is checked against (same service, same window, same value 500, only the attribute name differs).
+// Not claimed: what any backend does with a filter that matches nothing, beyond the board ("0 spans" is a result, not a refusal).
 // Spec: https://opentelemetry.io/docs/specs/semconv/non-normative/http-migration/
 // Dash0 docs: https://www.dash0.com/docs/dash0/ai/mcp , https://www.dash0.com/docs/dash0/ai/agent0/overview , https://www.dash0.com/docs/dash0/ai/agent0/overview/use-agent0/query-telemetry-via-mcp
 //
@@ -150,7 +156,17 @@ const SKELETON = {
     prefix: 'aad',
     steps: [
       { incident: SCENARIO },
-      { qid: 'aad-q-why', choice: { id: 'aad-why', choices: [{ key: 'old-name', right: true }] } },
+      {
+        qid: 'aad-q-why',
+        // An answer pool: 3 right and 9 wrong in the content, a showing draws 4. Every right answer is marked here, and a right
+        // answer added in the content file without `right: true` would be graded wrong. 'newer-name' is the tempting near-miss the
+        // 50/50 keeps. Every wrong answer holds for the two queries shown on the step's `code` board, which does not change.
+        choice: {
+          id: 'aad-why',
+          draw: 4,
+          choices: [{ key: 'old-name', right: true }, { key: 'renamed', right: true }, { key: 'stable-key', right: true }, { key: 'newer-name', keep: true }],
+        },
+      },
     ],
   },
 };
