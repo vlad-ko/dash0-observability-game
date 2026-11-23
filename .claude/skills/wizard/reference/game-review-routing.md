@@ -35,6 +35,10 @@ parallel** every reviewer whose row matches:
 touches several rows gets every matching reviewer; one reviewer is never stretched across a
 second lane to save a dispatch.
 
+**Content builds go to `content-author`** (`.claude/agents/content-author.md`), not a generic
+builder; its head is still reviewed by `content-fact-checker` and every other matching row, and
+its claim-to-source table goes in the PR body for that review to check against.
+
 ## The base brief (identical for every reviewer)
 
 Each reviewer gets the same base, then its one-line focus from the table above:
