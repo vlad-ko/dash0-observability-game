@@ -90,7 +90,7 @@ test('the secrets of a step are derived from its reference, not empty', () => {
   const known = secrets(STEPS.find((s) => s.level === 'pipelines').spec);
   assert.ok(known.has('memory_limiter') && known.has('health_check'));
   assert.ok(secrets(STEPS.find((s) => s.level === 'agent-vs-gateway').spec).has('gateway-collector-headless'), 'a scalar the reference writes');
-  assert.ok(secrets(STEPS.find((s) => s.level === 'collecting-logs').spec).has('filelog'), 'a name the fix renames away');
+  assert.ok(secrets(STEPS.find((s) => s.level === 'collecting-logs').spec).has('file_log'), 'a name the fix renames away');
 });
 
 test('tier 1 names nothing the reference adds to the starting config', () => {
@@ -150,7 +150,7 @@ function definedAsConnector(spec, id) {
   return JSON.stringify(doc);
 }
 
-for (const [level, pipeline, id] of [['two-vendors-one-weekend', 'traces', 'otlp_grpc/dash0'], ['otlp-endpoints', 'traces', 'otlp_grpc/dash0'], ['collecting-logs', 'logs', 'filelog/shipping']]) {
+for (const [level, pipeline, id] of [['two-vendors-one-weekend', 'traces', 'otlp_grpc/dash0'], ['otlp-endpoints', 'traces', 'otlp_grpc/dash0'], ['collecting-logs', 'logs', 'file_log/shipping']]) {
   test(`${level}: ${id} listed in its stage but defined under connectors: wrong, and tier 2 names the section, not a stage and not the id`, () => {
     const spec = STEPS.find((s) => s.level === level).spec;
     assert.ok(Object.values(spec.uses).flat().includes(id), `${id} is a uses id of ${level}`);

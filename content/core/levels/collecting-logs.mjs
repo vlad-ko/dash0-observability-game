@@ -5,7 +5,7 @@ export default {
   "sub": "Files, lines and records",
   "rewardTitle": "Log collector",
   "play": {
-    "finish": "You can get logs into the pipeline: an appender and OTLP for code you own, the filelog receiver for files you cannot change, wired into a logs pipeline, split with multiline and parsed with operators.",
+    "finish": "You can get logs into the pipeline: an appender and OTLP for code you own, the file_log receiver for files you cannot change, wired into a logs pipeline, split with multiline and parsed with operators.",
     "steps": [
       {
         "intro": "Two Kettle &amp; Co services log in different ways. Orders is the team's own code and prints one JSON object per line to standard output. Shipping runs a vendor's label-printer agent that nobody can change: it writes plain text lines to <code>/var/log/shipping/agent.log</code>. The platform team wants both in Dash0, and wants orders' records linked to their [[traces]].",
@@ -20,7 +20,7 @@ export default {
             },
             {
               "key": "tail-adds-context",
-              "label": "Tail its stdout file with <code>filelog</code>: the Collector can tell which trace a line belongs to",
+              "label": "Tail its stdout file with <code>file_log</code>: the Collector can tell which trace a line belongs to",
               "why": "A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but a trace ID is there only if the application wrote it into the line, as a <code>trace_id</code> field in the JSON, and the Collector then parses it out. Matching by time alone is the most basic form of correlation, not the trace context."
             },
             {
@@ -40,7 +40,7 @@ export default {
             },
             {
               "key": "structured-over-otlp",
-              "label": "Send structured records over OTLP, so there is no file, no line parsing and no rotation for <code>filelog</code>",
+              "label": "Send structured records over OTLP, so there is no file, no line parsing and no rotation for <code>file_log</code>",
               "why": "For code you own, OTLP removes the parsers and the tailing and keeps the trace context. Tailing is the route for code you cannot change, like the vendor's agent."
             },
             {
@@ -65,7 +65,7 @@ export default {
             },
             {
               "key": "same-route-as-shipping",
-              "label": "Use shipping's route, tailing a file with <code>filelog</code>, so that one setup serves both services",
+              "label": "Use shipping's route, tailing a file with <code>file_log</code>, so that one setup serves both services",
               "why": "Tailing a file is the route for code you cannot change, like the vendor's agent. For code the team owns, an appender needs no files and no parsing, and it carries the trace context, which tailing a file would not add unless the app wrote it into the line."
             },
             {
@@ -90,19 +90,19 @@ export default {
             },
             {
               "key": "start-at-beginning",
-              "label": "Keep standard output and set <code>start_at</code> to <code>beginning</code> on the <code>filelog</code> receiver, so that nothing is missed",
+              "label": "Keep standard output and set <code>start_at</code> to <code>beginning</code> on the <code>file_log</code> receiver, so that nothing is missed",
               "why": "start_at only says where the receiver begins reading, and the default is the end of the file. It does not change what the lines contain, so they still carry no trace context."
             }
           ]
         }
       },
       {
-        "intro": "Shipping's file has to be read by the [[Collector]]. The platform team defined a <code>filelog/shipping</code> [[receiver]] and wired a <code>logs</code> [[pipeline]] to Dash0, but no shipping record arrives: the Collector would not start.",
-        "question": "Fix the config so <code>filelog/shipping</code> feeds the logs pipeline, which exports to Dash0.",
+        "intro": "Shipping's file has to be read by the [[Collector]]. The platform team defined a <code>file_log/shipping</code> [[receiver]] and wired a <code>logs</code> [[pipeline]] to Dash0, but no shipping record arrives: the Collector would not start.",
+        "question": "Fix the config so <code>file_log/shipping</code> feeds the logs pipeline, which exports to Dash0.",
         "configure": {
           "id": "col-config",
           "hint": "A pipeline list must match a receiver's id exactly. The id is the type, plus a slash and a name when there is one. Compare the id where the receiver is defined with the one the logs pipeline lists, character by character, and change the list, not the definition. Keep the file receiver; do not swap in another.",
-          "explain": "A receiver reads nothing until a pipeline lists it, and a pipeline can only list what is defined, spelled the same: <code>filelog</code> and <code>filelog/shipping</code> are different components, because the part after the slash names an instance. Defined but not listed, the receiver reads nothing; listed but not defined, the Collector refuses to start. Pointing the logs pipeline at <code>otlp</code> instead would start the Collector too, but shipping's file would never be read, so the task needs <code>filelog/shipping</code> in the logs pipeline, which exports to Dash0. The receiver produces logs, so it belongs in a logs pipeline, and it is a [[contrib]] component. Its settings do the reading: <code>include</code> says which files, and <code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped). This game checks the wiring, not the settings; the next steps are about two more of them."
+          "explain": "A receiver reads nothing until a pipeline lists it, and a pipeline can only list what is defined, spelled the same: <code>file_log</code> and <code>file_log/shipping</code> are different components, because the part after the slash names an instance. Defined but not listed, the receiver reads nothing; listed but not defined, the Collector refuses to start. Pointing the logs pipeline at <code>otlp</code> instead would start the Collector too, but shipping's file would never be read, so the task needs <code>file_log/shipping</code> in the logs pipeline, which exports to Dash0. The receiver produces logs, so it belongs in a logs pipeline, and it is a [[contrib]] component. Older configs call it <code>filelog</code>: the receiver was renamed to <code>file_log</code>, and the old name is kept as a deprecated alias. Its settings do the reading: <code>include</code> says which files, and <code>start_at</code> where to begin (the default is the end of the file, so lines already there are skipped). This game checks the wiring, not the settings; the next steps are about two more of them."
         }
       },
       {
@@ -213,8 +213,8 @@ export default {
             },
             {
               "key": "receiver-knows",
-              "label": "Nowhere: the <code>filelog</code> receiver reads the word <code>ERROR</code> and sets the severity on its own",
-              "why": "The receiver reads text and does nothing with it. With no operator that parses the level, the record has no severity number: the line is the Body. Dash0 documents UNSPECIFIED as the severity range of records that arrive without one, which is common for pod logs read with the filelog receiver."
+              "label": "Nowhere: the <code>file_log</code> receiver reads the word <code>ERROR</code> and sets the severity on its own",
+              "why": "The receiver reads text and does nothing with it. With no operator that parses the level, the record has no severity number: the line is the Body. Dash0 documents UNSPECIFIED as the severity range of records that arrive without one, which is common for pod logs read with the file_log receiver."
             },
             {
               "key": "receiver-operators",

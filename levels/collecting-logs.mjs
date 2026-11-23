@@ -1,5 +1,5 @@
 // Level 4.3: Collecting logs. The player says how a service they own should send its logs (an OTLP
-// appender, not a tailed file), fixes a Collector config so the `filelog/shipping` receiver is defined
+// appender, not a tailed file), fixes a Collector config so the `file_log/shipping` receiver is defined
 // and feeds the logs pipeline, says how to keep a stack trace in one record (`multiline`), says where
 // to parse a plain text line into a severity (a `regex_parser` operator in the Collector), and says
 // what Dash0 does for unstructured logs nobody parsed (Log AI).
@@ -7,7 +7,7 @@
 // Spec: https://opentelemetry.io/docs/specs/otel/logs/ , https://opentelemetry.io/docs/specs/otel/logs/data-model/
 // Spec: https://opentelemetry.io/docs/collector/components/receiver/ , https://opentelemetry.io/docs/collector/configuration/#receivers
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/logging_trace_context/
-// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/parsers.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
+// Collector contrib docs (not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/filelogreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/filelogreceiver/metadata.yaml , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/CHANGELOG.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/stanza/docs/operators/regex_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/stanza/docs/operators/json_parser.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/stanza/docs/types/parsers.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
 // RE2 syntax (not an allowed Spec host): https://github.com/google/re2/wiki/Syntax
 // Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing , https://www.dash0.com/docs/dash0/telemetry/logging/log-severities , https://www.dash0.com/docs/dash0/telemetry/logging/patterns , https://www.dash0.com/docs/dash0/telemetry/logging/json-log-processing , https://www.dash0.com/docs/dash0/telemetry/logging/use-ai-in-logs/pattern-hover
 //
@@ -19,7 +19,9 @@
 // highly structured" records, removes "all complexity associated with file logs, such as parsers, log
 // tailing and rotation", at the cost of changing the app and of the local file. Correlation by time is
 // "the most basic form"; by trace context needs TraceId and SpanId in the record. A non-OTLP format
-// records them as trace_id and span_id fields. The filelog receiver README: `include` is required,
+// records them as trace_id and span_id fields. The receiver's metadata.yaml at v0.164.0: `type: file_log`,
+// `deprecated_type: filelog`; the contrib CHANGELOG (v0.149.0): "Rename `filelog` receiver to `file_log`
+// with deprecated alias `filelog`" (read 2026-11-22). The file_log receiver README: `include` is required,
 // `start_at` is `end` or `beginning` (default `end`), `multiline` holds exactly one of
 // `line_start_pattern` or `line_end_pattern` and "instructs the file_input operator to split log
 // entries on a pattern other than newlines", `operators` chain parsers such as `json_parser` and
@@ -31,13 +33,13 @@
 // extracts patterns with named attributes, does not override a severity already set, does not modify
 // structured JSON logs, and depends on resource attributes (the k8sattributes processor for Kubernetes
 // workloads); records collected without a severity number get the UNSPECIFIED range, which is common
-// for pod logs read with the filelog receiver.
+// for pod logs read with the receiver (the Dash0 page calls it filelogreceiver).
 //
 // The configure step grades the config through COLLECTOR_SCHEMA (docs/M1-DESIGN.md §4.8), which does not
-// model component settings. A schema that knew filelog's settings would need per-component-type schemas,
-// keyed by the type part of an id such as `filelog/shipping`, which is a change to the schema format and
+// model component settings. A schema that knew file_log's settings would need per-component-type schemas,
+// keyed by the type part of an id such as `file_log/shipping`, which is a change to the schema format and
 // the checker for one level, so the step grades the wiring (defined, the Collector would start, and
-// `uses` requires the logs pipeline to list `filelog/shipping` and `otlp_grpc/dash0`) and the settings
+// `uses` requires the logs pipeline to list `file_log/shipping` and `otlp_grpc/dash0`) and the settings
 // (`multiline`, `operators`) are taught in the Choice steps, as level 1.3 does for k8sattributes.
 //
 // The words are in content/core/levels/collecting-logs.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
@@ -47,7 +49,7 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Step 2: the config. The logs pipeline lists `filelog`, but the receiver is defined as `filelog/shipping`:
+// Step 2: the config. The logs pipeline lists `file_log`, but the receiver is defined as `file_log/shipping`:
 // the Collector would refuse to start. The reference lists the defined id and nothing more: the settings
 // the next steps ask about (`multiline`, `operators`) stay out, so the tier 3 apply answers none of them (#381).
 const GIVEN = [
@@ -55,7 +57,7 @@ const GIVEN = [
   '  otlp:',
   '    protocols:',
   '      grpc:',
-  '  filelog/shipping:',
+  '  file_log/shipping:',
   '    include: [/var/log/shipping/agent.log]',
   'processors:',
   '  batch:',
@@ -69,7 +71,7 @@ const GIVEN = [
   '      processors: [batch]',
   '      exporters: [otlp_grpc/dash0]',
   '    logs:',
-  '      receivers: [filelog]',
+  '      receivers: [file_log]',
   '      processors: [batch]',
   '      exporters: [otlp_grpc/dash0]',
   '',
@@ -80,7 +82,7 @@ const REFERENCE = [
   '  otlp:',
   '    protocols:',
   '      grpc:',
-  '  filelog/shipping:',
+  '  file_log/shipping:',
   '    include: [/var/log/shipping/agent.log]',
   'processors:',
   '  batch:',
@@ -94,7 +96,7 @@ const REFERENCE = [
   '      processors: [batch]',
   '      exporters: [otlp_grpc/dash0]',
   '    logs:',
-  '      receivers: [filelog/shipping]',
+  '      receivers: [file_log/shipping]',
   '      processors: [batch]',
   '      exporters: [otlp_grpc/dash0]',
   '',
@@ -105,7 +107,7 @@ const CONFIG = {
   schema: 'collector',
   given: GIVEN,
   reference: REFERENCE,
-  uses: { logs: ['filelog/shipping', 'otlp_grpc/dash0'] },
+  uses: { logs: ['file_log/shipping', 'otlp_grpc/dash0'] },
   withhold: [['start_at', 'beginning'], ['regex_parser', 'operator'], ['line_start_pattern', 'multiline'], ['line_start_pattern', 'timestamp'], ['multiline', 'timestamp'], ['regex_parser'], ['^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}']], // settings left out of the reference that the Guide must not give (#381)
   helps: { hints: true },
 };
