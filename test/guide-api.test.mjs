@@ -5,18 +5,26 @@ import assert from 'node:assert/strict';
 import { liveRegistry } from '../app.mjs';
 import { createGuide } from '../api/guide.mjs';
 import { createLimiter } from '../lib/guide/limit.mjs';
+import { guideAllowed } from '../lib/guide/context.mjs';
+import { STEP_TYPES } from '../lib/play.mjs';
 
 const KEY = 'sk-ant-test-key-0123456789';
 const IP = '203.0.113.77';
 const URL_ = 'https://game.test/api/guide';
 const REG = liveRegistry();
-// A choice step the guide may speak on, a step that has no hint ladder, and a level that runs its own code.
-const LEVEL = 'temporality';
-const STEP = 'temp-restart';
-const RIGHT = REG.levels[LEVEL].play.steps.map((s) => s.choice).find((c) => c?.id === STEP).choices.find((c) => c.right).label;
-// A sort with no hint ladder that is not pooled (a pooled step answers 400 `shown` before 404 unavailable; avm-sort and then
-// instr-sort used to be the example).
-const HINTLESS = ['distributions', 'dist-sort'];
+// Every step of the live play levels, in registry order, that is not an answer pool: a pooled step (#390) answers 400 for a
+// missing `shown` before anything else, so the examples below are taken from the registry, not named (a named step can be
+// pooled later; avm-sort and instr-sort each used to be one).
+const FIXED = Object.values(REG.levels)
+  .filter((level) => level.play)
+  .flatMap((level) => level.play.steps.flatMap((step) => Object.values(STEP_TYPES).filter((type) => Object.hasOwn(step, type.key)).map((type) => ({ level: level.id, type, spec: step[type.key] }))))
+  .filter(({ spec }) => spec.draw === undefined);
+// A choice step the guide may speak on, a sort that has no hint ladder, and a level that runs its own code.
+const CHOICE = FIXED.find(({ type, spec }) => type.key === 'choice' && guideAllowed(type, spec));
+const LEVEL = CHOICE.level;
+const STEP = CHOICE.spec.id;
+const RIGHT = CHOICE.spec.choices.find((c) => c.right).label;
+const HINTLESS = (({ level, spec }) => [level, spec.id])(FIXED.find(({ type, spec }) => type.key === 'sort' && !guideAllowed(type, spec)));
 const RUN_LEVEL = 'the-signals';
 const NEUTRAL = 'Re-read what the question asks.';
 

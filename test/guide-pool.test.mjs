@@ -65,12 +65,15 @@ test('G2 a pooled step needs a valid shown: missing, the wrong size, an unknown 
 });
 
 test('G2 a fixed step takes no shown', async () => {
+  // The first fixed choice of the live registry, found rather than named, so pooling a named step cannot break this.
+  const level = Object.values(LIVE.levels).find((l) => l.play?.steps.some((s) => s.choice && s.choice.draw === undefined));
+  const fixed = { levelId: level.id, stepId: level.play.steps.find((s) => s.choice && s.choice.draw === undefined).choice.id };
   const { guide, calls } = setup();
-  const res = await ask(guide, { levelId: 'temporality', stepId: 'temp-restart', shown: ['a', 'b'] });
+  const res = await ask(guide, { ...fixed, shown: ['a', 'b'] });
   assert.equal(res.status, 400);
   assert.deepEqual(res.json, { ok: false, error: 'bad-request', field: 'shown' });
   assert.equal(calls.length, 0);
-  const plain = await ask(guide, { levelId: 'temporality', stepId: 'temp-restart' });
+  const plain = await ask(guide, fixed);
   assert.equal(plain.status, 200);
 });
 
