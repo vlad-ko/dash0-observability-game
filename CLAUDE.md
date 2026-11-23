@@ -83,5 +83,6 @@ The wizard skill (`/wizard`) lives at `.claude/skills/wizard`, its agent roster 
 - Each agent pins its default model in frontmatter (opus only for architect, qa-engineer and level-design-reviewer, cheaper tiers elsewhere); a dispatch may override per task with a stated reason.
 - Claude may merge at the full merge-ready bar (merge commit only), overriding the skill's and pr-manager's human-merges default.
 - PR review is split per head and routed by the diff: `.claude/skills/wizard/reference/game-review-routing.md`.
+- Level content (copy, answer pools, whys, cards, primers) is written by `content-author` (`.claude/agents/content-author.md`: research first, a claim-to-source table for the PR body), then reviewed as usual.
 - Before finishing a task, run `tools/homeostasis --check` and include the result. When the owner asks to clean up the local repo (bring it back to homeostasis), run `--check`, show the report, then run `--apply`.
 - Never force-delete worktrees or branches (no `--force`, no `-D`); clean up with `tools/homeostasis --apply`, which skips anything dirty or unclear. Items the report marks KEEP-DIRTY or INCONCLUSIVE are the owner's call.
