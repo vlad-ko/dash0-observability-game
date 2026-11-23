@@ -47,7 +47,7 @@ export default {
               "label": "An alert when the error ratio stays above 2% for 5 minutes",
               "why": "Failed requests divided by all requests over the same window means the same thing in PromQL, and the \"for 5 minutes\" condition has a counterpart in an alert rule. The meaning survives the move.",
               "whyNot": {
-                "approximated": "It is a ratio of two <code>rate</code>s, and both extrapolate the same way over the same window, so the extrapolation cancels and the ratio is unchanged in practice. That is why it differs from the exact count, which has no second number to cancel against.",
+                "approximated": "It is a ratio of two <code>rate</code>s, and both extrapolate the same way over the same window, so the extrapolation cancels and the ratio is unchanged in practice. A single count has no second number to cancel against, but a ratio does.",
                 "manual": "Nothing here is left to rebuild: the ratio and the \"for 5 minutes\" condition both convert as written.",
                 "skipped": "An error-ratio alert is still needed in the new tool, so it is not left behind."
               }
@@ -85,7 +85,7 @@ export default {
             {
               "id": "p99-alert",
               "label": "An alert on the 99th percentile of checkout latency above 1.2 seconds",
-              "why": "It is the same estimate as the p95 chart, now deciding whether someone is paged, and 1.2 s sits inside a bucket, not on a boundary, so the estimate is interpolated there. Step 2 shows a window where the estimate and the raw-sample percentile land on opposite sides of a threshold.",
+              "why": "The new tool estimates a percentile from histogram buckets, and here the estimate decides whether someone is paged. 1.2 s sits inside a bucket, not on a boundary, so the estimate is interpolated there. Step 2 shows a window where the estimate and the raw-sample percentile land on opposite sides of a threshold.",
               "whyNot": {
                 "skipped": "Someone still needs to be paged when checkout gets slow, so the alert is not dropped.",
                 "translated": "A percentile estimated from buckets does not mean the same as one taken from raw samples. Step 2 shows them landing on opposite sides of a threshold.",
@@ -150,6 +150,46 @@ export default {
                 "skipped": "The panel is still useful, because it puts request counts next to a search of the logs. Dropping it would lose that view.",
                 "translated": "PromQL reaches logs through derived metrics such as <code>dash0.logs</code>, and a text search over log lines is not something a derived metric can express, so a query that mixes the two cannot carry over as written.",
                 "approximated": "No number here is a rough copy of an old one: the query that mixes the two signals does not come over in any form."
+              }
+            },
+            {
+              "id": "median-panel",
+              "label": "A panel of median checkout latency, which the old tool takes from every raw sample",
+              "why": "The new tool receives latency as histogram buckets, so the median is estimated with <code>histogram_quantile</code>, which interpolates inside the bucket the median falls in. The panel comes out close to the old one, not equal.",
+              "whyNot": {
+                "translated": "A median taken from every raw sample and one estimated from buckets do not mean exactly the same, so the number can shift.",
+                "manual": "The query converts on its own. What changes is how the median is worked out, not who has to write it.",
+                "skipped": "The median is still wanted in the new tool, so the panel is carried over."
+              }
+            },
+            {
+              "id": "free-disk-alert",
+              "label": "An alert when free disk space on any host drops below 10%",
+              "why": "Free disk space is a gauge, and a gauge compared with a fixed threshold carries over as written: select the series and compare it with 10%. Nothing is computed, so the alert means the same.",
+              "whyNot": {
+                "approximated": "There is no estimate in it: the alert compares the gauge's own value with 10%, so the new tool reads the same number.",
+                "manual": "Nothing needs to be built by hand: the series and the threshold convert as written.",
+                "skipped": "A host running out of disk is still worth an alert, so it is not dropped."
+              }
+            },
+            {
+              "id": "style-copy",
+              "label": "A copy of the checkout dashboard someone made to try out new colours",
+              "why": "It only repeats the checkout dashboard with other colours, so carrying it over adds a dashboard to maintain and nothing to read.",
+              "whyNot": {
+                "translated": "It could be carried over, but it only repeats another dashboard, so the effort buys nothing.",
+                "approximated": "Whether its numbers come out close or exact does not matter: it is a copy made to test colours.",
+                "manual": "Rebuilding a test copy by hand is effort with no reader, so it stays behind."
+              }
+            },
+            {
+              "id": "script-panel",
+              "label": "A panel filled by a script the old tool runs every hour against the billing database",
+              "why": "The numbers come from a script the old tool runs, not from a query over metrics, so there is nothing for PromQL to convert. Someone rebuilds it, for instance by sending those numbers as a metric and charting that.",
+              "whyNot": {
+                "translated": "PromQL queries metrics, and this panel has no query, only a script inside the old tool, so there is nothing to convert as written.",
+                "approximated": "No number here is a rough copy of an old one: the script does not come over in any form.",
+                "skipped": "The billing numbers are still wanted, so the panel is rebuilt, not dropped."
               }
             }
           ]

@@ -110,6 +110,54 @@ export default {
               "whyNot": {
                 "spans": "The load balancer answers on its own and forwards nothing, so checkout makes no server span for those requests."
               }
+            },
+            {
+              "id": "inventory-timeout",
+              "label": "Checkout's calls to the inventory service time out after 5 seconds",
+              "why": "The calls leave checkout and get no answer in time, so checkout's client span for each call records the error. The HTTP spans page gives timeout as an example error type.",
+              "whyNot": {
+                "probe": "The failure is on the way out of your service, and checkout's client span for each call records the timeout."
+              }
+            },
+            {
+              "id": "firewall-block",
+              "label": "A firewall change blocks all incoming traffic to checkout",
+              "why": "Visitors' connections are dropped before any HTTP request is sent, so nothing reaches checkout and it has no server span for them. A probe connects the way a visitor does and fails.",
+              "whyNot": {
+                "spans": "The connection is dropped before any HTTP request is sent, so checkout never handles one and makes no server span."
+              }
+            },
+            {
+              "id": "db-disk-full",
+              "label": "The database rejects checkout's writes because its disk is full",
+              "why": "The requests reach checkout, and the database client span for each write records the error the database sent back, under checkout's server span.",
+              "whyNot": {
+                "probe": "The requests reach checkout, and the database client span under each one records the rejected write."
+              }
+            },
+            {
+              "id": "tls-wrong-name",
+              "label": "Checkout's hostname serves a TLS certificate issued for a different name",
+              "why": "Clients reject the certificate during the handshake, before any HTTP request is sent, so checkout has no server span for those visits. A probe that does the handshake itself fails the same way.",
+              "whyNot": {
+                "spans": "The handshake fails before any HTTP request is sent, so checkout never handles one and makes no server span."
+              }
+            },
+            {
+              "id": "big-basket",
+              "label": "Checkout returns 500 for every basket with more than 50 items",
+              "why": "The requests reach checkout and its own code fails them, so each one is a server span with a 5xx status code, which the HTTP spans page says should set the span status to Error.",
+              "whyNot": {
+                "probe": "Your own code returns the 500s after the requests get in, so the error is already on your server spans."
+              }
+            },
+            {
+              "id": "cdn-origin",
+              "label": "The CDN forwards requests to an origin address that was retired",
+              "why": "The CDN sends visitors' requests to an address that no longer serves checkout, so none reaches your code and there is nothing to trace. A probe fetches the page through the CDN like a visitor and sees the failure.",
+              "whyNot": {
+                "spans": "Requests go from the CDN to an address that no longer serves checkout, so none reaches your code and no server span is made."
+              }
             }
           ]
         }

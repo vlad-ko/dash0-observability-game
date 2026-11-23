@@ -1,5 +1,5 @@
 // Level 7.4: Synthetic checks. Act 7 "Alerting and SLOs". Kettle & Co's checkout is fully instrumented, and customers still tell the team
-// about outages first. The player sorts eleven failures into "your spans record the failure" and "your spans record nothing, a probe sees it" (Sort it),
+// about outages first. The player sorts eleven failures (drawn from a pool of seventeen) into "your spans record the failure" and "your spans record nothing, a probe sees it" (Sort it),
 // then chooses the alert that would have paged for an expired TLS certificate, where the spans read healthy (Choice). No synthetic run is
 // simulated. Hints are off on the sort (the default ladder: hints in early acts only).
 // Spec: https://opentelemetry.io/docs/specs/otel/trace/api/#spankind , https://opentelemetry.io/docs/specs/semconv/http/http-spans/
@@ -24,7 +24,13 @@
 // server span of your service, because a server span is made by the code that handles the request. The copy scopes it to your
 // service's spans: an instrumented proxy or ingress has spans of its own, and a failed call out of your service is a client span.
 //
-// Invented for the game: the company, the eleven failures, and every number in step 2 (3,000 requests against a usual 4,000 at that hour, 0 errors, 180 ms, a 10-second health check).
+// The sort pool (#390) adds six failures on the same facts and reasoning, plus, read 2026-11-22 on the HTTP spans page: error.type
+// lists timeout as an example value, and for status codes in the 5xx range span status should be set to Error. The firewall, the
+// certificate for another name and the CDN's retired origin stop the request before it reaches checkout, as above; the inventory
+// timeout is a failed call out of checkout (a client span); a write the database rejects is recorded on the database client span under
+// checkout's server span (reasoning, as for the slow query).
+//
+// Invented for the game: the company, the seventeen failures, and every number in step 2 (3,000 requests against a usual 4,000 at that hour, 0 errors, 180 ms, a 10-second health check).
 //
 // The words are in content/core/levels/synthetic-checks.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/synthetic-checks.mjs';
@@ -33,10 +39,12 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Only the ids and the bucket each item belongs to; every label and explanation is in the content file.
+// Only the ids and the bucket each item belongs to; every label and explanation is in the content file. An answer pool (#390,
+// docs/CONTENT.md section 10): 9 span items and 8 probe items, and a showing draws 6 and 5 (the eleven it showed before the pool).
 const SORT = {
   id: 'sc-sort',
   helps: { hints: false },
+  draw: { spans: 6, probe: 5 },
   buckets: [{ id: 'spans' }, { id: 'probe' }],
   items: [
     { id: 'handler-throws', bucket: 'spans' },
@@ -50,6 +58,12 @@ const SORT = {
     { id: 'cdn-stale', bucket: 'probe' },
     { id: 'bad-deploy', bucket: 'spans' },
     { id: 'lb-no-targets', bucket: 'probe' },
+    { id: 'inventory-timeout', bucket: 'spans' },
+    { id: 'firewall-block', bucket: 'probe' },
+    { id: 'db-disk-full', bucket: 'spans' },
+    { id: 'tls-wrong-name', bucket: 'probe' },
+    { id: 'big-basket', bucket: 'spans' },
+    { id: 'cdn-origin', bucket: 'probe' },
   ],
 };
 
