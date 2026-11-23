@@ -109,7 +109,7 @@ const ANSWERS = {
   ],
   'collecting-logs': [
     'choice col-route: otlp-appender|otlp-target|sdk-and-appender|structured-over-otlp',
-    'configure col-config: receivers: otlp: protocols: grpc: filelog/shipping: include: [/var/log/shipping/agent.log] processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [filelog/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
+    'configure col-config: receivers: otlp: protocols: grpc: file_log/shipping: include: [/var/log/shipping/agent.log] processors: batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [batch] exporters: [otlp_grpc/dash0] logs: receivers: [file_log/shipping] processors: [batch] exporters: [otlp_grpc/dash0]',
     'choice col-multiline: frames-join-above|line-start|split-while-reading|start-on-timestamp',
     'choice col-parse: collector-regex|receiver-operators|regex-to-number|where-it-is-read',
     'choice col-dash0: fills-the-gap|finds-the-pattern|log-ai|severity-and-one-pattern',

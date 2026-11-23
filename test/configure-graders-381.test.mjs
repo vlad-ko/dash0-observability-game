@@ -87,7 +87,7 @@ test('a withheld single word does not block what the step itself asks: load_bala
   for (const ok of ['Define load_balancing and list it in the traces pipeline.', 'Metrics keep otlp_grpc/gateway.', 'Every span of a trace has to reach the same replica, so look at the trace ID.']) {
     assert.equal(withholds(ok, agw), false, ok);
   }
-  for (const ok of ['List filelog/shipping in the logs pipeline.', 'The receiver id must match the definition exactly.']) assert.equal(withholds(ok, col), false, ok);
+  for (const ok of ['List file_log/shipping in the logs pipeline.', 'The receiver id must match the definition exactly.']) assert.equal(withholds(ok, col), false, ok);
   for (const no of ['Route by traceID.', 'Add a regex_parser.', 'Start each entry at ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.']) {
     assert.equal(withholds(no, no.includes('traceID') ? agw : col), true, no);
   }

@@ -66,9 +66,9 @@ test('collecting-logs: lights Shipping (shared with 3.4: a node lit by either le
 
 const CARD = {
   id: 'filelog-tails-files',
-  front: 'filelog tails files from the end by default and splits on newlines; multiline needs a pattern for where an entry starts.',
+  front: 'file_log tails files from the end by default and splits on newlines; multiline needs a pattern for where an entry starts.',
   back:
-    'The filelog receiver (contrib and Kubernetes distributions, beta for logs) reads the files that match include. start_at ' +
+    'The file_log receiver (contrib and Kubernetes distributions, beta for logs) reads the files that match include. start_at ' +
     'defaults to end, so lines already in a file are skipped unless you set beginning. Entries split at newlines unless ' +
     'multiline gives a line_start_pattern or a line_end_pattern, which is how a stack trace stays one record; the split happens ' +
     'as the file is read, before any operator runs. Operators such as json_parser and regex_parser turn each entry into fields, ' +
@@ -103,12 +103,12 @@ test('route: orders (code the team owns) should export over OTLP through an appe
 
 // ---- step 2: the configure step -----------------------------------------------------
 
-test('config: the given does not start (the logs pipeline names "filelog", which is not defined); the reference starts and flows both pipelines', () => {
+test('config: the given does not start (the logs pipeline names "file_log", which is not defined); the reference starts and flows both pipelines', () => {
   const spec = config();
   const given = checkConfig(spec.given, COLLECTOR_SCHEMA);
   assert.equal(given.ok, false);
   assert.deepEqual(given.errors.map((e) => `${e.kind} ${e.path}`), ['unknown-ref service.pipelines.logs.receivers[0]']);
-  assert.deepEqual(Object.keys(given.doc.receivers), ['otlp', 'filelog/shipping'], 'the receiver is defined as filelog/shipping');
+  assert.deepEqual(Object.keys(given.doc.receivers), ['otlp', 'file_log/shipping'], 'the receiver is defined as file_log/shipping');
   const ref = checkConfig(spec.reference, COLLECTOR_SCHEMA);
   assert.equal(ref.ok, true);
   assert.equal(ref.verdict.flowing, true);
@@ -117,10 +117,10 @@ test('config: the given does not start (the logs pipeline names "filelog", which
   assert.equal(Object.hasOwn(spec, 'target'), false, '`uses` names the logs pipeline, so it is also the target');
 });
 
-test('config: `uses` requires the logs pipeline to list filelog/shipping and the Dash0 exporter', () => {
-  assert.deepEqual(config().uses, { logs: ['filelog/shipping', 'otlp_grpc/dash0'] });
+test('config: `uses` requires the logs pipeline to list file_log/shipping and the Dash0 exporter', () => {
+  assert.deepEqual(config().uses, { logs: ['file_log/shipping', 'otlp_grpc/dash0'] });
   const logs = docOf(config().reference).service.pipelines.logs;
-  assert.deepEqual(logs.receivers, ['filelog/shipping']);
+  assert.deepEqual(logs.receivers, ['file_log/shipping']);
   assert.deepEqual(logs.exporters, ['otlp_grpc/dash0']);
   assert.deepEqual(docOf(config().reference).service.pipelines.traces.receivers, ['otlp'], 'traces keeps the OTLP receiver');
 });
@@ -133,13 +133,13 @@ const cases = () => {
   };
   return {
     // The logs pipeline reads OTLP instead: the Collector starts, the file is never read.
-    'delete the receiver from the logs pipeline': swap('      receivers: [filelog/shipping]', '      receivers: [otlp]'),
+    'delete the receiver from the logs pipeline': swap('      receivers: [file_log/shipping]', '      receivers: [otlp]'),
     // Remove the logs pipeline altogether.
     'delete the logs pipeline': ref.replace(/ {4}logs:\n(?: {6}.*\n)+/, ''),
-    // The filelog receiver moves to the traces pipeline and logs reads OTLP.
-    'wrong pipeline: filelog in traces, otlp in logs': swap('      receivers: [otlp]\n      processors: [batch]\n      exporters: [otlp_grpc/dash0]\n    logs:\n      receivers: [filelog/shipping]', '      receivers: [otlp, filelog/shipping]\n      processors: [batch]\n      exporters: [otlp_grpc/dash0]\n    logs:\n      receivers: [otlp]'),
+    // The file_log receiver moves to the traces pipeline and logs reads OTLP.
+    'wrong pipeline: file_log in traces, otlp in logs': swap('      receivers: [otlp]\n      processors: [batch]\n      exporters: [otlp_grpc/dash0]\n    logs:\n      receivers: [file_log/shipping]', '      receivers: [otlp, file_log/shipping]\n      processors: [batch]\n      exporters: [otlp_grpc/dash0]\n    logs:\n      receivers: [otlp]'),
     // Rename the definition to match the pipeline's spelling: valid, but not the receiver the task names.
-    'rename the receiver to filelog': swap('  filelog/shipping:', '  filelog:').replace('receivers: [filelog/shipping]', 'receivers: [filelog]'),
+    'rename the receiver to file_log': swap('  file_log/shipping:', '  file_log:').replace('receivers: [file_log/shipping]', 'receivers: [file_log]'),
     // A different exporter: the logs never reach Dash0.
     'export logs to debug': swap('  otlp_grpc/dash0:\n', '  debug:\n  otlp_grpc/dash0:\n').replace(/(logs:\n(?: {6}.*\n)*? {6}exporters: )\[otlp_grpc\/dash0\]/, '$1[debug]'),
   };
@@ -157,14 +157,14 @@ test('config shortcuts: each passes the Collector\'s own checker, and each is st
   assert.deepEqual(got, {
     'delete the receiver from the logs pipeline': 'wrong/uses/logs',
     'delete the logs pipeline': 'wrong/target/logs',
-    'wrong pipeline: filelog in traces, otlp in logs': 'wrong/uses/logs',
-    'rename the receiver to filelog': 'wrong/uses/logs',
+    'wrong pipeline: file_log in traces, otlp in logs': 'wrong/uses/logs',
+    'rename the receiver to file_log': 'wrong/uses/logs',
     'export logs to debug': 'wrong/uses/logs',
   });
 });
 
-test('config shortcut: moving the receiver and leaving the logs pipeline pointing at "filelog" is a config the Collector refuses', () => {
-  const text = config().given.replace('      receivers: [otlp]\n', '      receivers: [otlp, filelog/shipping]\n');
+test('config shortcut: moving the receiver and leaving the logs pipeline pointing at "file_log" is a config the Collector refuses', () => {
+  const text = config().given.replace('      receivers: [otlp]\n', '      receivers: [otlp, file_log/shipping]\n');
   const r = runConfigure(config(), newConfigureState(), text);
   assert.deepEqual({ outcome: r.outcome, reason: r.reason }, { outcome: 'wrong', reason: 'invalid' });
 });
@@ -204,11 +204,16 @@ test('config: the settings are taught but not graded: the reference carries none
   for (const w of ['checks the wiring, not the settings', 'include', 'start_at', 'contrib']) {
     assert.equal(text.includes(w), true, w);
   }
+  // #474: the config teaches the receiver's type, file_log, and names the old spelling once as a deprecated alias.
+  assert.equal(/Older configs call it filelog: the receiver was renamed to file_log, and the old name is kept as a deprecated alias\./.test(text), true, 'the explain names both spellings');
+  const levelText = JSON.stringify(steps());
+  assert.equal(levelText.match(/<code>filelog<\/code>/g).length, 1, 'filelog appears once, as the alias');
+  assert.equal(/filelog\//.test(levelText), false, 'no id uses the deprecated type');
   assert.equal(/multiline|operators/.test(text), false, 'the next steps ask about those');
 });
 
 test('config: the receiver is read from the start of the file, split on timestamps and parsed with a regex_parser that sets severity', () => {
-  const r = docOf(TAUGHT()).receivers['filelog/shipping'];
+  const r = docOf(TAUGHT()).receivers['file_log/shipping'];
   assert.deepEqual(r.include, ['/var/log/shipping/agent.log']);
   assert.equal(r.start_at, 'beginning');
   assert.deepEqual(Object.keys(r.multiline), ['line_start_pattern'], 'exactly one of line_start_pattern and line_end_pattern');
@@ -230,7 +235,7 @@ const entries = (startPattern) => {
 };
 
 test('multiline: the reference line_start_pattern keeps the stack trace as one entry of four lines; a frame pattern glues the next record on', () => {
-  const start = asJs(docOf(TAUGHT()).receivers['filelog/shipping'].multiline.line_start_pattern);
+  const start = asJs(docOf(TAUGHT()).receivers['file_log/shipping'].multiline.line_start_pattern);
   assert.deepEqual(entries(start).map((e) => e.length), [4, 1]);
   assert.equal(entries(start)[1][0].includes('INFO'), true);
   const frames = entries(/^\s+at /);
@@ -239,9 +244,9 @@ test('multiline: the reference line_start_pattern keeps the stack trace as one e
 });
 
 test('regex_parser: the reference regex reads time, level and message from a whole multiline entry; without (?s) it misses it', () => {
-  const regex = docOf(TAUGHT()).receivers['filelog/shipping'].operators[0].regex;
+  const regex = docOf(TAUGHT()).receivers['file_log/shipping'].operators[0].regex;
   assert.equal(regex.startsWith('(?s)'), true);
-  const entry = entries(asJs(docOf(TAUGHT()).receivers['filelog/shipping'].multiline.line_start_pattern))[0].join('\n');
+  const entry = entries(asJs(docOf(TAUGHT()).receivers['file_log/shipping'].multiline.line_start_pattern))[0].join('\n');
   const m = asJs(regex).exec(entry);
   assert.deepEqual(
     { time: m.groups.time, sev: m.groups.sev, first: m.groups.msg.split('\n')[0], lines: m.groups.msg.split('\n').length },
@@ -307,8 +312,9 @@ test('the level file cites the pages its facts come from: Spec lines on opentele
   for (const u of spec) assert.equal(new URL(u).host, 'opentelemetry.io', u);
   const other = src.split('\n').filter((l) => /^\/\/ (Collector contrib docs|Dash0 docs|RE2 syntax)/.test(l)).join('\n');
   for (const u of [
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/filelogreceiver/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/filelogreceiver/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/filelogreceiver/metadata.yaml',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/stanza/docs/operators/regex_parser.md',
     'https://www.dash0.com/docs/dash0/telemetry/logging/log-ai-processing',
     'https://www.dash0.com/docs/dash0/telemetry/logging/log-severities',
     'https://github.com/google/re2/wiki/Syntax',

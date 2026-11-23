@@ -126,7 +126,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "The Collector has [[receivers]] (components that accept telemetry) that parse logs from known sources, and a receiver named filelog that reads logs from any file and can parse different formats or use a regular expression. [[Processors]] are components that modify telemetry on its way through. The transform processor, for example, can parse nested data and add, remove or update values."
+          "text": "The Collector has [[receivers]] (components that accept telemetry) that parse logs from known sources, and a receiver named file_log that reads logs from any file and can parse different formats or use a regular expression. [[Processors]] are components that modify telemetry on its way through. The transform processor, for example, can parse nested data and add, remove or update values."
         },
         {
           "type": "paragraph",

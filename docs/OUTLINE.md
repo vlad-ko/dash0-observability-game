@@ -112,7 +112,7 @@ Each level lists **concept** / **OTel nuance** / **Dash0 tie-in** / **mechanic**
 | --- | --- | --- | --- | --- |
 | 4.1 Structured logs | Body vs attributes; severity number and text | The Logs Bridge API is for appender authors, not app code; keep your logger | n/a | Sort it |
 | 4.2 Correlation | `trace_id` / `span_id` on log records | Only automatic when the log call happens inside an active span with a bridged logger | Logs shown in the Trace View, and the reverse | Build it |
-| 4.3 Collecting logs | `filelog` receiver, parsing, multiline | stdout JSON vs OTLP export; parsing in the Collector vs the app | Dash0 log AI: pattern grouping and severity inference for unstructured logs | Configure it |
+| 4.3 Collecting logs | `file_log` receiver (formerly `filelog`), parsing, multiline | stdout JSON vs OTLP export; parsing in the Collector vs the app | Dash0 log AI: pattern grouping and severity inference for unstructured logs | Configure it |
 | Boss: "The 3 a.m. errors" | Error burst; correlate logs to the trace to the deploy | n/a | One query language across signals | Incident |
 
 ### Act 5: The Collector ("The plumbing")

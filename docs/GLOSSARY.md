@@ -151,9 +151,9 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Logs API**: The OpenTelemetry API for producing log records. Application code can call it directly, or reach it through logging libraries and bridges. (Act 4)
 - **Logs Bridge API**: The API logging-library appenders use to emit OpenTelemetry logs. (Act 4)
 - **Logging bridge**: The piece that connects an existing logging library to OpenTelemetry, through the Logs API. Log bridge and log appender are two names for it. (Act 4)
-- **filelog receiver**: The Collector receiver that tails and parses logs from files, a contrib component. Its type is file_log; filelog is its deprecated alias. (Act 4)
-- **multiline**: A filelog receiver setting that splits a file into entries on a pattern, such as the line that starts each entry, instead of at every newline, so one entry can span several lines. (Act 4)
-- **Filelog operator**: One step of log processing in the filelog receiver, such as parsing JSON or a timestamp. Operators are chained, each passing entries to the next; not the Dash0 filter operator. (Act 4)
+- **file_log receiver**: The Collector receiver that tails and parses logs from files, a contrib component. Its type is file_log; filelog is its deprecated alias. (Act 4)
+- **multiline**: A file_log receiver setting that splits a file into entries on a pattern, such as the line that starts each entry, instead of at every newline, so one entry can span several lines. (Act 4)
+- **file_log operator**: One step of log processing in the file_log receiver, such as parsing JSON or a timestamp. Operators are chained, each passing entries to the next; not the Dash0 filter operator. (Act 4)
 - **Correlation**: Linking logs, metrics and traces through shared IDs and resources. (Act 4)
 
 ## Collector

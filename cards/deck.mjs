@@ -397,9 +397,9 @@ export const DECK = [
   },
   {
     id: 'filelog-tails-files',
-    front: 'filelog tails files from the end by default and splits on newlines; multiline needs a pattern for where an entry starts.',
+    front: 'file_log tails files from the end by default and splits on newlines; multiline needs a pattern for where an entry starts.',
     back:
-      'The filelog receiver (contrib and Kubernetes distributions, beta for logs) reads the files that match include. start_at ' +
+      'The file_log receiver (contrib and Kubernetes distributions, beta for logs) reads the files that match include. start_at ' +
       'defaults to end, so lines already in a file are skipped unless you set beginning. Entries split at newlines unless ' +
       'multiline gives a line_start_pattern or a line_end_pattern, which is how a stack trace stays one record; the split happens ' +
       'as the file is read, before any operator runs. Operators such as json_parser and regex_parser turn each entry into fields, ' +

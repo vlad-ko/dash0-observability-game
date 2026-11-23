@@ -147,7 +147,7 @@ export default {
             },
             {
               "key": "write-to-file",
-              "label": "Send the output to a file and let the filelog receiver tie it back to the right trace",
+              "label": "Send the output to a file and let the file_log receiver tie it back to the right trace",
               "why": "A line in a file has no execution context of its own. The Collector can add resource attributes such as the pod, but a trace context is there only if the application wrote it into the line."
             },
             {
