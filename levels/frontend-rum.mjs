@@ -6,7 +6,7 @@
 // Hints are off on the Build it step (the default ladder: hints in early acts only). Nothing is sent or parsed.
 // Spec: https://www.w3.org/TR/trace-context/#traceparent-header , https://opentelemetry.io/docs/languages/js/exporters/ , https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/websites/website-monitoring , https://www.dash0.com/docs/dash0/monitoring/websites/correlate-sessions-backend-traces , https://www.dash0.com/docs/dash0/monitoring/websites/proxying-the-ingestion-endpoint , https://www.dash0.com/docs/dash0/monitoring/websites/understand-web-vitals
-// Docs (GitHub README, not an allowed Spec host; the Collector's CORS settings): https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/otlpreceiver/README.md#cors-cross-origin-resource-sharing
+// Docs (GitHub README, not an allowed Spec host; the Collector's CORS settings): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/receiver/otlpreceiver/README.md#cors-cross-origin-resource-sharing
 //
 // Facts used (each read on the page named, 2026-11-07). W3C Trace Context: `traceparent` is `version-trace-id-parent-id-trace-flags`, and
 // the parent-id is the ID of the caller's span. OpenTelemetry JS exporters page, "Usage in the Browser": a browser exporter must use

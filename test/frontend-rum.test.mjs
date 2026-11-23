@@ -292,7 +292,7 @@ test('sources: W3C and OpenTelemetry on the Spec line, four Dash0 pages, the Col
   for (const page of ['monitoring/websites/website-monitoring', 'monitoring/websites/correlate-sessions-backend-traces', 'monitoring/websites/proxying-the-ingestion-endpoint', 'monitoring/websites/understand-web-vitals']) {
     assert.equal(dash0.includes(`https://www.dash0.com/docs/dash0/${page}`), true, page);
   }
-  assert.match(SRC, /^\/\/ Docs \(GitHub README, not an allowed Spec host; the Collector's CORS settings\): https:\/\/github\.com\/open-telemetry\/opentelemetry-collector\/blob\/main\/receiver\/otlpreceiver\/README\.md#cors-cross-origin-resource-sharing$/m);
+  assert.match(SRC, /^\/\/ Docs \(GitHub README, not an allowed Spec host; the Collector's CORS settings\): https:\/\/github\.com\/open-telemetry\/opentelemetry-collector\/blob\/v0\.164\.0\/receiver\/otlpreceiver\/README\.md#cors-cross-origin-resource-sharing$/m);
   assert.match(SRC, /Facts used/);
   assert.match(SRC, /Stated as reasoning, with no source \(MDN does not say it in these words\)/);
   assert.match(SRC, /Invented for the game/);

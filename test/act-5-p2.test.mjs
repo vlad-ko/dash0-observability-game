@@ -421,8 +421,8 @@ test('the 5.3 and 5.4 level files cite the pages their facts come from, on Spec 
   for (const u of [
     'https://www.dash0.com/docs/dash0/monitoring/websites/proxying-the-ingestion-endpoint',
     'https://www.dash0.com/docs/dash0/opentelemetry/distributions/python/exporters',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/loadbalancingexporter/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/exporter/loadbalancingexporter/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/tailsamplingprocessor/README.md',
   ]) assert.equal(docs.includes(u), true, u);
 });
 

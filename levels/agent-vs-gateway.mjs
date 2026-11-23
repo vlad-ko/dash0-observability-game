@@ -3,7 +3,7 @@
 // exporter into an agent's traces pipeline so the Collector starts, and says what the exporter routes by (traceID).
 // Spec: docs/OUTLINE.md §4 Act 5.
 // Spec: https://opentelemetry.io/docs/collector/deploy/agent/ , https://opentelemetry.io/docs/collector/deploy/gateway/
-// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/loadbalancingexporter/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md
+// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/exporter/loadbalancingexporter/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/tailsamplingprocessor/README.md
 //
 // Facts used: an agent runs close to the application or on the same host, as a sidecar or a DaemonSet; a gateway is one or
 // more Collector instances running as a standalone service, such as a Deployment, with typically one endpoint per cluster,

@@ -6,14 +6,14 @@
 // Spec: docs/OUTLINE.md §4 Act 3.
 // Spec: https://opentelemetry.io/docs/collector/components/connector/ , https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 // Spec: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#otlp-metric-points-to-prometheus , https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile
-// Source (spanmetrics connector README, names, dimensions, units, status codes and the feature gates): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/spanmetricsconnector/README.md
+// Source (spanmetrics connector README, names, dimensions, units, status codes and the feature gates): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/spanmetricsconnector/README.md
 // Docs (component type at v0.164.0: `span_metrics`; `spanmetrics` is the deprecated alias): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/spanmetricsconnector/metadata.yaml
 // Source (USE method, Brendan Gregg): https://www.brendangregg.com/usemethod.html
 // Source (RED method, Tom Wilkie, as presented at GrafanaCon EU 2018): https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/services/built-in-metrics , https://www.dash0.com/docs/dash0/telemetry/metrics/understand-synthetic-metrics
 // Answer pools (#390, the four choices below): the extra answers use only the pages above and these Collector READMEs, the
-// filter processor (it drops telemetry, it makes no metrics) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md
-// and the host metrics receiver (metrics about the host system) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md
+// filter processor (it drops telemetry, it makes no metrics) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
+// and the host metrics receiver (metrics about the host system) https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/hostmetricsreceiver/README.md
 //
 // The words are in content/core/levels/red-and-use.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
 // The PromQL references stay here: the query widget's grader runs them against the dataset.

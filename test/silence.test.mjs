@@ -193,9 +193,9 @@ test('sources: Spec lines are opentelemetry.io, Docs lines are GitHub, the inven
   const docs = lines.filter((l) => /^\/\/ Docs/.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.equal(docs.length > 0 && docs.every((u) => new URL(u).host === 'github.com'), true);
   for (const u of [
-    'https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/config.go',
-    'https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/otelcol/config.go',
+    'https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/confmap/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/memorylimiterprocessor/README.md',
   ]) assert.equal(docs.includes(u), true, u);
   assert.equal(lines.some((l) => /^\/\/ Invented for the game:/.test(l)), true, 'the made-up parts are named');
   assert.equal(lines.some((l) => /^\/\/ Dash0 tie-in: n\/a/.test(l)), true);

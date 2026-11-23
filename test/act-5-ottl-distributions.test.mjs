@@ -415,10 +415,10 @@ test('the 5.5 and 5.6 level files cite the pages their facts come from, and neve
   for (const u of [
     'https://opentelemetry.io/docs/collector/transforming-telemetry/',
     'https://opentelemetry.io/docs/collector/components/processor/',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/redactionprocessor/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/transformprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/attributesprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/redactionprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/ottl/ottlfuncs/README.md',
     'https://www.dash0.com/docs/dash0/cost-control/spam-filters',
   ]) assert.equal(ottl.includes(u), true, u);
   const dist = urls(DIST);
@@ -426,9 +426,9 @@ test('the 5.5 and 5.6 level files cite the pages their facts come from, and neve
     'https://opentelemetry.io/docs/collector/distributions/',
     'https://opentelemetry.io/docs/collector/extend/ocb/',
     'https://opentelemetry.io/docs/collector/components/processor/',
-    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol/manifest.yaml',
-    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml',
-    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-k8s/manifest.yaml',
+    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol/manifest.yaml',
+    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-contrib/manifest.yaml',
+    'https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-k8s/manifest.yaml',
   ]) assert.equal(dist.includes(u), true, u);
   for (const f of [OTTL, DIST]) {
     const src = levelSource(f);

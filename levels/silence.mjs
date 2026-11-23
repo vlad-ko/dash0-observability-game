@@ -12,9 +12,9 @@
 // Spec: https://opentelemetry.io/docs/collector/configuration/#service , https://opentelemetry.io/docs/collector/configuration/#pipelines
 // Spec: https://opentelemetry.io/docs/collector/configuration/#configuration-structure
 // Spec: https://opentelemetry.io/docs/specs/semconv/registry/attributes/k8s/ , https://opentelemetry.io/docs/specs/semconv/system/k8s-metrics/
-// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/config.go , https://github.com/open-telemetry/opentelemetry-collector/blob/main/otelcol/collector.go
-// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md
-// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/documentation.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlpexporter/README.md
+// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/otelcol/config.go , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/otelcol/collector.go
+// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/confmap/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/memorylimiterprocessor/README.md
+// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/memorylimiterprocessor/documentation.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/exporter/otlpexporter/README.md
 // Dash0 tie-in: n/a. No Dash0 docs page was found that says what a Collector does with a config whose pipeline
 // lists an exporter that is not defined, and OUTLINE §4 gives the Act 5 levels 5.1, 5.2, 5.4 and 5.6 no
 // Dash0 tie-in either; nothing below names a Dash0 feature.
