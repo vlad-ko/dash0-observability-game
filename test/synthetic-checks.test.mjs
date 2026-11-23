@@ -9,9 +9,9 @@ import { liveRegistry } from '../app.mjs';
 import { ACT_REGIONS, COUNTRY_NAMES, LEVEL_COUNTRY } from '../hub/globe-map.mjs';
 import { freshlyLit, litText } from '../lib/globe-ignite.mjs';
 import { emptyProgress } from '../lib/progress.mjs';
-import { newSortState, place, validateSortSpec } from '../lib/widgets/sort-it.mjs';
+import { newSortState, place } from '../lib/widgets/sort-it.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
-import { choiceBoards } from '../lib/pool.mjs';
+import { choiceBoards, validateSortPool } from '../lib/pool.mjs';
 
 const ID = 'synthetic-checks';
 const LIVE = liveRegistry();
@@ -60,17 +60,19 @@ test('card synthetics-see-the-edge: scoped front, fits a card, a spec page as so
 const WANT = {
   'handler-throws': 'spans', 'tls-expired': 'probe', 'payment-dns': 'spans', 'slow-query': 'spans', 'dns-dropout': 'probe', 'inventory-loop': 'spans',
   'dns-stale': 'probe', 'payment-tls': 'spans', 'cdn-stale': 'probe', 'bad-deploy': 'spans', 'lb-no-targets': 'probe',
+  'inventory-timeout': 'spans', 'firewall-block': 'probe', 'db-disk-full': 'spans', 'tls-wrong-name': 'probe', 'big-basket': 'spans', 'cdn-origin': 'probe',
 };
 
-test('step 1: a valid sort of eleven failures into two buckets that say what the spans record, hints off, six recorded and five not', () => {
+test('step 1: a valid sort pool of seventeen failures into two buckets that say what the spans record, hints off, nine recorded and eight not, a showing of six and five', () => {
   assert.equal(SORT_STEP.qid, 'sc-q-sort');
-  assert.deepEqual(validateSortSpec(sort), []);
+  assert.deepEqual(validateSortPool(sort), []);
+  assert.deepEqual(sort.draw, { spans: 6, probe: 5 });
   assert.equal(sort.id, 'sc-sort');
   assert.deepEqual(sort.helps, { hints: false });
   assert.deepEqual(sort.buckets.map((b) => [b.id, b.label]), [['spans', 'Your spans record the failure'], ['probe', 'Your spans record nothing; a probe sees it']]);
   for (const b of sort.buckets) assert.equal(b.label.length <= 45, true, `${b.id} label fits a bucket: ${b.label.length}`);
   assert.deepEqual(Object.fromEntries(sort.items.map((i) => [i.id, i.bucket])), WANT);
-  assert.deepEqual(['spans', 'probe'].map((b) => sort.items.filter((i) => i.bucket === b).length), [6, 5]);
+  assert.deepEqual(['spans', 'probe'].map((b) => sort.items.filter((i) => i.bucket === b).length), [9, 8]);
   for (const i of sort.items) assert.equal(plain(i.why).length > 40, true, `${i.id} has a why`);
 });
 
@@ -83,8 +85,12 @@ test('step 1: the probe items fail before the request reaches the service, the s
   assert.match(why('cdn-stale'), /never travels to your service/);
   assert.match(why('cdn-stale'), /the spans of your service/);
   assert.match(why('lb-no-targets'), /forwards nothing to checkout/);
-  for (const id of ['handler-throws', 'slow-query', 'inventory-loop', 'bad-deploy']) assert.match(why(id), /server span|trace/, id);
-  for (const id of ['payment-dns', 'payment-tls']) assert.match(why(id), /client span/, id);
+  for (const id of ['handler-throws', 'slow-query', 'inventory-loop', 'bad-deploy', 'db-disk-full', 'big-basket']) assert.match(why(id), /server span|trace/, id);
+  for (const id of ['payment-dns', 'payment-tls', 'inventory-timeout', 'db-disk-full']) assert.match(why(id), /client span/, id);
+  for (const id of ['firewall-block', 'tls-wrong-name']) assert.match(why(id), /before any HTTP request is sent/, id);
+  assert.match(why('cdn-origin'), /none reaches your code/);
+  assert.match(why('inventory-timeout'), /gives timeout as an example error type/);
+  assert.match(why('big-basket'), /5xx status code/);
   assert.match(why('payment-tls'), /as with a DNS error/);
   assert.match(why('payment-dns'), /the HTTP spans page gives/);
   const intro = plain(SORT_STEP.intro);

@@ -1,5 +1,5 @@
 // Level 8.3: Migrating vendors. Act 8 "Operating at scale". Kettle & Co moves its dashboards and alerts from a proprietary monitoring
-// tool (invented, never named) to a tool that queries with PromQL over OpenTelemetry metrics. The player sorts twelve constructs by
+// tool (invented, never named) to a tool that queries with PromQL over OpenTelemetry metrics. The player sorts twelve constructs (drawn from a pool of sixteen) by
 // what the move does to them: translated, approximated, manual or skipped (Sort it), then decides what to do with a converted p99 alert
 // whose estimate pages where the old tool stayed quiet (Choice). Nothing is translated or run. Hints are off on the sort (the default
 // ladder: hints in early acts only).
@@ -26,7 +26,11 @@
 // A big-number "exact count" is placed in "approximated" because `increase` extrapolates; that is a property of PromQL's `increase` as
 // the functions page states it, not of any tool.
 //
-// Invented for the game: the company, the old tool, the twelve constructs, and every number in step 2 (1,000 requests in 5 minutes, 900 at
+// The sort pool (#390) adds four constructs on the same facts: a median panel (histogram_quantile, as for the percentiles), a free-disk
+// alert on a gauge, or a ratio of two gauges, against a fixed threshold (nothing estimated), a panel filled by a script the old tool runs (no
+// query for PromQL to convert, as for the logs panel) and a test copy of a dashboard (nothing to carry over). Facts re-read 2026-11-22.
+//
+// Invented for the game: the company, the old tool, the sixteen constructs, and every number in step 2 (1,000 requests in 5 minutes, 900 at
 // or under 0.5 s, 985 at or under 1 s, 1,000 at or under 2.5 s, the 15 slowest between 1.0 and 1.1 s, a 1.2 s threshold). The estimate
 // 1 + (990 - 985) / (1000 - 985) * (2.5 - 1) = 1.5 s, and 1.067 s with a boundary at 1.2 s, are recomputed in test/migrating-vendors.test.mjs.
 //
@@ -37,10 +41,12 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Step 1: the bucket of each item. Every bucket and item label, and every explanation, is in the content file.
+// Step 1: the bucket of each item. Every bucket and item label, and every explanation, is in the content file. An answer pool (#390,
+// docs/CONTENT.md section 10): 4 items in each bucket, and a showing draws 3 of each (the twelve it showed before the pool).
 const SORT = {
   id: 'mv-sort',
   helps: { hints: false },
+  draw: { translated: 3, approximated: 3, manual: 3, skipped: 3 },
   buckets: [{ id: 'translated' }, { id: 'approximated' }, { id: 'manual' }, { id: 'skipped' }],
   items: [
     { id: 'p95-chart', bucket: 'approximated' },
@@ -55,6 +61,10 @@ const SORT = {
     { id: 'unused-dashboard', bucket: 'skipped' },
     { id: 'disk-alert', bucket: 'translated' },
     { id: 'logs-panel', bucket: 'manual' },
+    { id: 'median-panel', bucket: 'approximated' },
+    { id: 'free-disk-alert', bucket: 'translated' },
+    { id: 'style-copy', bucket: 'skipped' },
+    { id: 'script-panel', bucket: 'manual' },
   ],
 };
 

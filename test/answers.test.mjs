@@ -142,7 +142,7 @@ const ANSWERS = {
     'choice br-rule: both',
   ],
   'synthetic-checks': [
-    'sort sc-sort: handler-throws=spans tls-expired=probe payment-dns=spans slow-query=spans dns-dropout=probe inventory-loop=spans dns-stale=probe payment-tls=spans cdn-stale=probe bad-deploy=spans lb-no-targets=probe',
+    'sort sc-sort: handler-throws=spans tls-expired=probe payment-dns=spans slow-query=spans dns-dropout=probe inventory-loop=spans dns-stale=probe payment-tls=spans cdn-stale=probe bad-deploy=spans lb-no-targets=probe inventory-timeout=spans firewall-block=probe db-disk-full=spans tls-wrong-name=probe big-basket=spans cdn-origin=probe',
     'choice sc-alert: outside-200|probe|synthetic-check',
   ],
   'everything-is-green': [
@@ -157,7 +157,7 @@ const ANSWERS = {
   ],
   'semantic-convention-versions': ['spot scv-spot: http-target,net-host-port,http-status-code', 'choice scv-switch: dup-until-unread|move-queries|rewrite-filters'],
   'migrating-vendors': [
-    'sort mv-sort: p95-chart=approximated ratio-alert=translated agent-panel=skipped anomaly-chart=manual memory-chart=translated p99-alert=approximated retired-alert=skipped failed-count=approximated paging-alert=manual unused-dashboard=skipped disk-alert=translated logs-panel=manual',
+    'sort mv-sort: p95-chart=approximated ratio-alert=translated agent-panel=skipped anomaly-chart=manual memory-chart=translated p99-alert=approximated retired-alert=skipped failed-count=approximated paging-alert=manual unused-dashboard=skipped disk-alert=translated logs-panel=manual median-panel=approximated free-disk-alert=translated style-copy=skipped script-panel=manual',
     'choice mv-fix: boundary',
   ],
   'filter-or-sampler': ['choice fos-verdict: wrong', 'sort fos-sort: errors-whole=tail healthz=filter slow-no-cache=both slow=tail debug-logs=filter many-spans=tail production-only=filter via-payments=tail errors-no-keepalive=both'],
@@ -193,7 +193,7 @@ const ANSWERS = {
   ],
   distributions: [
     'choice dist-unknown: fails-before-data|refuses-to-start|rejected-at-startup',
-    'sort dist-sort: k8sattributes=contrib-k8s batch=all-three awss3-exporter=contrib-only memory-limiter=all-three redaction=contrib-k8s acme-scrubber=none tail-sampling=contrib-k8s otlp-exporter=all-three awsxray-exporter=contrib-only',
+    'sort dist-sort: k8sattributes=contrib-k8s batch=all-three awss3-exporter=contrib-only memory-limiter=all-three redaction=contrib-k8s acme-scrubber=none tail-sampling=contrib-k8s otlp-exporter=all-three awsxray-exporter=contrib-only host-metrics=all-three kubelet-stats=contrib-k8s ledger-queue=none postgresql=contrib-only health-check=all-three k8s-cluster=contrib-k8s orders-archive=none',
     'choice dist-build: ocb|ocb-chosen|ocb-manifest',
   ],
   'what-costs-money': [

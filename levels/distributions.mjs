@@ -1,5 +1,5 @@
 // Level 5.6: Distributions. The player says what happens when a config names a component the
-// Collector binary does not contain, sorts nine components into the pre-built distributions that ship
+// Collector binary does not contain, sorts ten components (drawn from a pool of sixteen) into the pre-built distributions that ship
 // them (core, contrib and k8s; contrib and k8s but not core; contrib only; none), and says how to get a
 // component nobody ships: build a custom distribution with OCB, the OpenTelemetry Collector Builder.
 // Spec: docs/OUTLINE.md §4 Act 5.
@@ -25,6 +25,14 @@
 // per distribution, ocb for custom ones) and the OCB guide (https://opentelemetry.io/docs/collector/extend/ocb/: a manifest with a dist section and
 // lists of modules, needs Go), plus the contrib distribution README (limit a production Collector to the components it needs).
 //
+// The sort pool (#390) adds components read 2026-11-22, each with the same distribution list in its README's Distributions row, on the
+// receivers or extensions page of the docs and in the v0.164.0 manifests: host_metrics and health_check (core, contrib, k8s), kubelet_stats and
+// k8s_cluster (contrib, k8s), postgresql (contrib only; it queries PostgreSQL's statistics). Their type names are the `type` in each
+// metadata.yaml at v0.164.0 (host_metrics and kubelet_stats list hostmetrics and kubeletstats as deprecated types). spanmetrics is left out:
+// its README says contrib only while the k8s manifest lists it. ledger_queue and orders_archive, like acme_scrubber, are invented in-house components.
+// Spec: https://opentelemetry.io/docs/collector/components/receiver/ , https://opentelemetry.io/docs/collector/components/extension/
+// Docs (GitHub READMEs and metadata at v0.164.0): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/hostmetricsreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/extension/healthcheckextension/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/kubeletstatsreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/k8sclusterreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/receiver/postgresqlreceiver/README.md , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-contrib/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-k8s/manifest.yaml
+//
 // The words are in content/core/levels/distributions.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/distributions.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
@@ -32,11 +40,13 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Step 2: nine components, interleaved. `whyNot` has one line for each of the other three buckets.
-// The buckets (ids and labels) and every item's text are in the content file.
+// Step 2: an answer pool (#390, docs/CONTENT.md section 10) of sixteen components, interleaved: 5 in all three, 5 in contrib
+// and k8s, 3 in contrib only and 3 in none, and a showing draws 3, 3, 2 and 2 (ten, about the nine it showed before the pool).
+// `whyNot` has one line for each of the other three buckets. The buckets (ids and labels) and every item's text are in the content file.
 const SORT = {
   id: 'dist-sort',
   helps: { hints: false },
+  draw: { 'all-three': 3, 'contrib-k8s': 3, 'contrib-only': 2, none: 2 },
   buckets: [{ id: 'all-three' }, { id: 'contrib-k8s' }, { id: 'contrib-only' }, { id: 'none' }],
   items: [
     { id: 'k8sattributes', bucket: 'contrib-k8s' },
@@ -48,6 +58,13 @@ const SORT = {
     { id: 'tail-sampling', bucket: 'contrib-k8s' },
     { id: 'otlp-exporter', bucket: 'all-three' },
     { id: 'awsxray-exporter', bucket: 'contrib-only' },
+    { id: 'host-metrics', bucket: 'all-three' },
+    { id: 'kubelet-stats', bucket: 'contrib-k8s' },
+    { id: 'ledger-queue', bucket: 'none' },
+    { id: 'postgresql', bucket: 'contrib-only' },
+    { id: 'health-check', bucket: 'all-three' },
+    { id: 'k8s-cluster', bucket: 'contrib-k8s' },
+    { id: 'orders-archive', bucket: 'none' },
   ],
 };
 

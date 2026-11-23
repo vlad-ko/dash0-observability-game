@@ -9,8 +9,9 @@ import { liveRegistry } from '../app.mjs';
 import { ACT_REGIONS, COUNTRY_NAMES, LEVEL_COUNTRY } from '../hub/globe-map.mjs';
 import { freshlyLit, litText } from '../lib/globe-ignite.mjs';
 import { emptyProgress } from '../lib/progress.mjs';
-import { newSortState, place, validateSortSpec } from '../lib/widgets/sort-it.mjs';
+import { newSortState, place } from '../lib/widgets/sort-it.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
+import { validateSortPool } from '../lib/pool.mjs';
 
 const ID = 'migrating-vendors';
 const LIVE = liveRegistry();
@@ -59,17 +60,19 @@ const WANT = {
   'p95-chart': 'approximated', 'ratio-alert': 'translated', 'agent-panel': 'skipped', 'anomaly-chart': 'manual',
   'memory-chart': 'translated', 'p99-alert': 'approximated', 'retired-alert': 'skipped', 'failed-count': 'approximated',
   'paging-alert': 'manual', 'unused-dashboard': 'skipped', 'disk-alert': 'translated', 'logs-panel': 'manual',
+  'median-panel': 'approximated', 'free-disk-alert': 'translated', 'style-copy': 'skipped', 'script-panel': 'manual',
 };
 
-test('step 1: a valid sort of twelve constructs into the four generic buckets, three each, hints off, each with a why', () => {
+test('step 1: a valid sort pool of sixteen constructs into the four generic buckets, four each and a showing of three each, hints off, each with a why', () => {
   assert.equal(SORT_STEP.qid, 'mv-q-sort');
-  assert.deepEqual(validateSortSpec(sort), []);
+  assert.deepEqual(validateSortPool(sort), []);
+  assert.deepEqual(sort.draw, { translated: 3, approximated: 3, manual: 3, skipped: 3 });
   assert.equal(sort.id, 'mv-sort');
   assert.deepEqual(sort.helps, { hints: false });
   assert.deepEqual(sort.buckets.map((b) => b.id), ['translated', 'approximated', 'manual', 'skipped']);
   assert.deepEqual(sort.buckets.map((b) => b.label.split(':')[0]), ['Translated', 'Approximated', 'Manual', 'Skipped']);
   assert.deepEqual(Object.fromEntries(sort.items.map((i) => [i.id, i.bucket])), WANT);
-  assert.deepEqual(sort.buckets.map((b) => sort.items.filter((i) => i.bucket === b.id).length), [3, 3, 3, 3]);
+  assert.deepEqual(sort.buckets.map((b) => sort.items.filter((i) => i.bucket === b.id).length), [4, 4, 4, 4]);
   for (const i of sort.items) assert.equal(plain(i.why).length > 40, true, `${i.id} has a why`);
   const intro = plain(SORT_STEP.intro);
   for (const w of ['Translated: it means the same thing in the new tool', 'Approximated: it converts to something close, and the numbers can differ', 'Manual: it is still needed and nothing converts it, so someone rebuilds it', 'Skipped: nothing in the new tool needs it', 'counters, gauges and histograms, here with fixed bucket boundaries']) {
@@ -81,7 +84,11 @@ test('step 1: the whys name the PromQL behaviour each translated or approximated
   const why = (id) => plain(sort.items.find((i) => i.id === id).why);
   assert.match(why('p95-chart'), /histogram_quantile/);
   assert.match(why('p95-chart'), /spread evenly inside the bucket/);
-  assert.match(why('p99-alert'), /same estimate as the p95 chart/);
+  assert.match(why('p99-alert'), /estimates a percentile from histogram buckets/);
+  assert.match(why('median-panel'), /histogram_quantile/);
+  assert.match(why('free-disk-alert'), /a gauge, or a ratio of two gauges, compared with a fixed threshold/);
+  assert.doesNotMatch(why('free-disk-alert'), /Nothing is computed/);
+  assert.match(why('script-panel'), /nothing for PromQL to convert/);
   assert.match(why('failed-count'), /extrapolates to cover the full window/);
   assert.match(why('failed-count'), /41\.7 where the old tool said 42/);
   assert.match(why('disk-alert'), /predict_linear/);
@@ -121,7 +128,7 @@ test('finish: part translation, not mostly translation', () => {
 });
 
 test('step 1: the same kind of thing lands in different buckets, so an alert, a chart or a panel is no tell', () => {
-  const kinds = { alert: [/\balert\b/i, 4], chart: [/\bchart\b/i, 3], panel: [/\bpanel\b/i, 2] };
+  const kinds = { alert: [/\balert\b/i, 4], chart: [/\bchart\b/i, 3], panel: [/\bpanel\b/i, 3] };
   for (const [kind, [re, want]] of Object.entries(kinds)) {
     const buckets = new Set(sort.items.filter((i) => re.test(plain(i.label))).map((i) => i.bucket));
     assert.equal(buckets.size, want, `${kind} items span ${want} buckets: ${[...buckets]}`);
@@ -156,13 +163,13 @@ test('step 1: the honest sort scores 5 stars, and named surface rules through pl
     'latency to approximated, nobody or retired or learned or own to skipped, the rest translated': (it) => (/latency/i.test(text(it)) ? 'approximated' : /nobody|retired|learned|own/i.test(text(it)) ? 'skipped' : 'translated'),
     'a number, count or exactly to approximated, the rest to translated': (it) => (/number|count|exact/i.test(text(it)) ? 'approximated' : 'translated'),
     'a time span (hour, year, minutes, seconds, hours) to approximated, the rest to skipped': (it) => (/hour|year|minutes|seconds/i.test(text(it)) ? 'approximated' : 'skipped'),
-    'the shortest three to skipped, the next three to translated, then approximated, the longest manual': (it) => {
+    'the shortest four to skipped, the next four to translated, then approximated, the longest manual': (it) => {
       const ranked = [...sort.items].sort((a, b) => text(a).length - text(b).length).map((x) => x.id);
-      return ['skipped', 'translated', 'approximated', 'manual'][Math.floor(ranked.indexOf(it.id) / 3)];
+      return ['skipped', 'translated', 'approximated', 'manual'][Math.floor(ranked.indexOf(it.id) / 4)];
     },
-    'the longest three to skipped, the next three to translated, then approximated, the shortest manual': (it) => {
+    'the longest four to skipped, the next four to translated, then approximated, the shortest manual': (it) => {
       const ranked = [...sort.items].sort((a, b) => text(b).length - text(a).length).map((x) => x.id);
-      return ['skipped', 'translated', 'approximated', 'manual'][Math.floor(ranked.indexOf(it.id) / 3)];
+      return ['skipped', 'translated', 'approximated', 'manual'][Math.floor(ranked.indexOf(it.id) / 4)];
     },
     'round robin in the order shown': (it) => ids[sort.items.indexOf(it) % 4],
     'everything to translated': () => 'translated',

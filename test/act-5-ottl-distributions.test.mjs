@@ -327,11 +327,15 @@ test('distributions: a config that names a component the binary does not contain
 // (opentelemetry-collector-releases, distributions/<name>/manifest.yaml, v0.164.0) and cross-checked
 // against the component pages' Distributions rows. Only components the three distributions agree on are used.
 const MANIFEST = {
-  core: ['batchprocessor', 'memorylimiterprocessor', 'otlpexporter'],
-  k8s: ['batchprocessor', 'memorylimiterprocessor', 'otlpexporter', 'k8sattributesprocessor', 'redactionprocessor', 'tailsamplingprocessor'],
+  core: ['batchprocessor', 'memorylimiterprocessor', 'otlpexporter', 'hostmetricsreceiver', 'healthcheckextension'],
+  k8s: [
+    'batchprocessor', 'memorylimiterprocessor', 'otlpexporter', 'k8sattributesprocessor', 'redactionprocessor', 'tailsamplingprocessor',
+    'hostmetricsreceiver', 'healthcheckextension', 'kubeletstatsreceiver', 'k8sclusterreceiver',
+  ],
   contrib: [
     'batchprocessor', 'memorylimiterprocessor', 'otlpexporter', 'k8sattributesprocessor', 'redactionprocessor',
-    'tailsamplingprocessor', 'awss3exporter', 'awsxrayexporter',
+    'tailsamplingprocessor', 'awss3exporter', 'awsxrayexporter', 'hostmetricsreceiver', 'healthcheckextension',
+    'kubeletstatsreceiver', 'k8sclusterreceiver', 'postgresqlreceiver',
   ],
 };
 const COMPONENT = {
@@ -343,6 +347,11 @@ const COMPONENT = {
   'tail-sampling': 'tailsamplingprocessor',
   'awss3-exporter': 'awss3exporter',
   'awsxray-exporter': 'awsxrayexporter',
+  'host-metrics': 'hostmetricsreceiver',
+  'health-check': 'healthcheckextension',
+  'kubelet-stats': 'kubeletstatsreceiver',
+  'k8s-cluster': 'k8sclusterreceiver',
+  postgresql: 'postgresqlreceiver',
 };
 const bucketFor = (id) => {
   const c = COMPONENT[id];
@@ -353,12 +362,16 @@ const bucketFor = (id) => {
 };
 const SORT = () => stepOf(DIST, 'sort', 'dist-sort');
 
-test('distributions sort: every item sits in the bucket its distribution manifests put it in; the one custom component is in none', () => {
+test('distributions sort: every item sits in the bucket its distribution manifests put it in; the custom components are in none', () => {
   const sort = SORT();
   assert.deepEqual(sort.buckets.map((b) => b.id), ['all-three', 'contrib-k8s', 'contrib-only', 'none']);
-  assert.equal(sort.items.length, 9);
+  assert.equal(sort.items.length, 16);
   for (const item of sort.items) assert.equal(item.bucket, bucketFor(item.id), item.id);
-  assert.deepEqual(sort.items.map((i) => i.bucket).sort(), ['all-three', 'all-three', 'all-three', 'contrib-k8s', 'contrib-k8s', 'contrib-k8s', 'contrib-only', 'contrib-only', 'none']);
+  const count = (b) => sort.items.filter((i) => i.bucket === b).length;
+  assert.deepEqual(sort.buckets.map((b) => count(b.id)), [5, 5, 3, 3]);
+  // #390: a pool that shows 3, 3, 2 and 2.
+  assert.deepEqual(sort.draw, { 'all-three': 3, 'contrib-k8s': 3, 'contrib-only': 2, none: 2 });
+  assert.deepEqual(sort.items.filter((i) => i.bucket === 'none').map((i) => i.id), ['acme-scrubber', 'ledger-queue', 'orders-archive']);
 });
 
 test('distributions sort: k8sattributes is in contrib and k8s, not core; batch, memory_limiter and otlp are in core; the item copy says so', () => {
@@ -372,7 +385,7 @@ test('distributions sort: k8sattributes is in contrib and k8s, not core; batch, 
     for (const e of ['otlp_grpc', 'otlp_http', 'otelarrow', 'load_balancing', 'nop', 'debug', 'file']) assert.equal(w.includes(e), true, `${id} names ${e}`);
     assert.equal(plain(by(id).whyNot['all-three']).includes('(otlp_grpc, debug, file'), true, `${id}: the core list names otlp_grpc`);
   }
-  assert.equal(/ocb|OCB|build/.test(plain(by('acme-scrubber').why)), true, 'a component nobody ships is built with OCB');
+  for (const id of ['acme-scrubber', 'ledger-queue', 'orders-archive']) assert.equal(/OCB/.test(plain(by(id).why)), true, `${id}: a component nobody ships is built with OCB`);
 });
 
 test('distributions sort: every wrong bucket a player can pick says why not', () => {

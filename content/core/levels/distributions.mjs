@@ -91,7 +91,7 @@ export default {
               "label": "k8sattributes (processor)",
               "why": "It is in the contrib distribution and in k8s, which is made for running in a cluster, but not core.",
               "whyNot": {
-                "all-three": "One of the three does not ship it. Its Distributions row lists only the other two.",
+                "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",
                 "contrib-only": "The k8s distribution is for monitoring Kubernetes, and enriching telemetry with pod metadata is what it is for, so it ships it too.",
                 "none": "Two of the pre-built distributions ship it, so no custom build is needed."
               }
@@ -99,7 +99,7 @@ export default {
             {
               "id": "batch",
               "label": "batch (processor)",
-              "why": "It is part of the core distribution, so it is in contrib and k8s as well.",
+              "why": "It is part of the core distribution, and the contrib and k8s manifests list it as well.",
               "whyNot": {
                 "contrib-k8s": "A third distribution ships it too, so the pair is not the whole list.",
                 "contrib-only": "More than one distribution ships it, so it is not exclusive to a single one.",
@@ -119,7 +119,7 @@ export default {
             {
               "id": "memory-limiter",
               "label": "memory_limiter (processor)",
-              "why": "It is part of the core distribution, so it is in contrib and k8s as well.",
+              "why": "It is part of the core distribution, and the contrib and k8s manifests list it as well.",
               "whyNot": {
                 "contrib-k8s": "A third distribution ships it too, so the pair is not the whole list.",
                 "contrib-only": "More than one distribution ships it, so it is not exclusive to a single one.",
@@ -131,7 +131,7 @@ export default {
               "label": "redaction (processor)",
               "why": "It is in contrib and k8s, but not core: the processor that masks PII is not in the core distribution.",
               "whyNot": {
-                "all-three": "One of the three does not ship it. Its Distributions row lists only the other two.",
+                "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",
                 "contrib-only": "The k8s distribution ships it too, so it is not exclusive to a single distribution.",
                 "none": "Two of the pre-built distributions ship it, so no custom build is needed."
               }
@@ -151,7 +151,7 @@ export default {
               "label": "tail_sampling (processor)",
               "why": "It is in contrib and k8s, but not core.",
               "whyNot": {
-                "all-three": "One of the three does not ship it. Its Distributions row lists only the other two.",
+                "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",
                 "contrib-only": "The k8s distribution ships it too, so it is not exclusive to a single distribution.",
                 "none": "Two of the pre-built distributions ship it, so no custom build is needed."
               }
@@ -159,7 +159,7 @@ export default {
             {
               "id": "otlp-exporter",
               "label": "otlp_grpc (exporter)",
-              "why": "The OTLP exporter is in core, so contrib and k8s have it too (the otlp distribution ships it as well).",
+              "why": "The OTLP exporter is in core, and contrib and k8s have it too (the otlp distribution ships it as well).",
               "whyNot": {
                 "contrib-k8s": "A third distribution ships it too, so the pair is not the whole list.",
                 "contrib-only": "More than one distribution ships it, so it is not exclusive to a single one.",
@@ -174,6 +174,76 @@ export default {
                 "all-three": "The core distribution has a short exporter list (otlp_grpc, debug, file and a few more), and this is not on it.",
                 "contrib-k8s": "The k8s distribution ships a short list of exporters (otlp_grpc, otlp_http, otelarrow, load_balancing, nop, debug and file), so a vendor exporter is not in it.",
                 "none": "A pre-built distribution ships it, so it is not a custom build."
+              }
+            },
+            {
+              "id": "host-metrics",
+              "label": "host_metrics (receiver)",
+              "why": "It is part of the core distribution, and the contrib and k8s manifests list it as well.",
+              "whyNot": {
+                "contrib-k8s": "A third distribution ships it too, so the pair is not the whole list.",
+                "contrib-only": "More than one distribution ships it, so it is not exclusive to a single one.",
+                "none": "The pre-built distributions ship it, so no custom build is needed."
+              }
+            },
+            {
+              "id": "kubelet-stats",
+              "label": "kubelet_stats (receiver)",
+              "why": "It is in contrib and in k8s, which is made for running in a cluster, but not core.",
+              "whyNot": {
+                "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",
+                "contrib-only": "The k8s distribution is for monitoring Kubernetes, and pulling node, pod and container metrics from the kubelet is part of that, so it ships it too.",
+                "none": "Two of the pre-built distributions ship it, so no custom build is needed."
+              }
+            },
+            {
+              "id": "ledger-queue",
+              "label": "ledger_queue (a receiver your team built for an in-house queue)",
+              "why": "No pre-built distribution can contain a component only your team has. To run it, build a distribution with OCB that includes it.",
+              "whyNot": {
+                "all-three": "The project builds these distributions from its own repositories. A component your team built is never part of those builds.",
+                "contrib-k8s": "The k8s distribution only includes components from core and contrib, and this is in neither.",
+                "contrib-only": "The contrib distribution only includes components from the Collector repositories, and this is in neither."
+              }
+            },
+            {
+              "id": "postgresql",
+              "label": "postgresql (receiver)",
+              "why": "Only the contrib distribution ships it: the receiver that queries PostgreSQL's statistics is not in core or k8s.",
+              "whyNot": {
+                "all-three": "The core distribution has a short receiver list (otlp, filelog, prometheus and five more), and this is not on it.",
+                "contrib-k8s": "The k8s manifest lists no database receiver, and this one queries PostgreSQL.",
+                "none": "A pre-built distribution ships it, so it is not a custom build."
+              }
+            },
+            {
+              "id": "health-check",
+              "label": "health_check (extension)",
+              "why": "Its Distributions row lists core, contrib and k8s, and all three manifests include it.",
+              "whyNot": {
+                "contrib-k8s": "A third distribution ships it too, so the pair is not the whole list.",
+                "contrib-only": "More than one distribution ships it, so it is not exclusive to a single one.",
+                "none": "The pre-built distributions ship it, so no custom build is needed."
+              }
+            },
+            {
+              "id": "k8s-cluster",
+              "label": "k8s_cluster (receiver)",
+              "why": "It is in contrib and k8s, but not core: the receiver for cluster-level metrics from the Kubernetes API server is not in the core distribution.",
+              "whyNot": {
+                "all-three": "One of the three does not ship it. Its Distributions row lists two pre-built distributions, not three.",
+                "contrib-only": "The k8s distribution ships it too, so it is not exclusive to a single distribution.",
+                "none": "Two of the pre-built distributions ship it, so no custom build is needed."
+              }
+            },
+            {
+              "id": "orders-archive",
+              "label": "orders_archive (an exporter another team in your company wrote)",
+              "why": "No pre-built distribution can contain a component that lives only in your company's code. To run it, build a distribution with OCB that includes it.",
+              "whyNot": {
+                "all-three": "The project builds these distributions from its own repositories. A component written inside your company is never part of those builds.",
+                "contrib-k8s": "The k8s distribution only includes components from core and contrib, and this is in neither.",
+                "contrib-only": "The contrib distribution only includes components from the Collector repositories, and this is in neither."
               }
             }
           ]
