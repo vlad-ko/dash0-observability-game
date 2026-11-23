@@ -7,6 +7,12 @@
 // Spec: https://opentelemetry.io/docs/specs/semconv/resource/k8s/#pod , https://opentelemetry.io/docs/specs/semconv/resource/cloud/ , https://opentelemetry.io/docs/specs/semconv/resource/host/ , https://opentelemetry.io/docs/specs/semconv/resource/#service
 // Spec: https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 // Spec: https://opentelemetry.io/docs/specs/semconv/resource/k8s/ , https://opentelemetry.io/docs/platforms/kubernetes/collector/components/#kubernetes-attributes-processor
+// The res-sort pool (#390) adds these, read 2026-11-22: service.version (the version string of the service component), k8s.namespace.name
+// (the namespace the pod runs in), cloud.provider, host.arch (the CPU architecture the host runs on), a Resource as an immutable
+// representation of the entity producing telemetry; the HTTP server span attributes url.query, user_agent.original (the User-Agent
+// header the client sent) and client.address; and db.collection.name on a database client span (the collection or table the call
+// worked on). The values are invented.
+// Spec: https://opentelemetry.io/docs/specs/semconv/resource/service/ , https://opentelemetry.io/docs/specs/semconv/database/database-spans/
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/resources/about-resources , https://www.dash0.com/docs/dash0/monitoring/resources/explore-resources
 //
 // The words are in content/core/levels/resources.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
@@ -16,11 +22,14 @@ import { bindLevel } from '../lib/content/bind.mjs';
 // The figures the copy quotes. This level's copy has none that a grader computes over, so there are no fill-ins.
 const VARS = {};
 
-// Step 1. Four resource attributes and four signal attributes. Label wording must not give the bucket away (test/sort-tells.test.mjs).
+// Step 1: an answer pool (#390, docs/CONTENT.md section 10). The content lists 16 items, 8 for each bucket, and a
+// showing draws 4 from each bucket (what it showed before the pool). Every item needs its bucket here. Label wording
+// must not give the bucket away: test/sort-tells.test.mjs scores every board, test/pool-content.test.mjs the pool.
 // The bucket labels and every item's text are in the content file.
 const SORT = {
   id: 'res-sort',
   helps: { hints: true },
+  draw: { resource: 4, signal: 4 },
   buckets: [{ id: 'resource' }, { id: 'signal' }],
   items: [
     { id: 'service-name', bucket: 'resource' },
@@ -31,6 +40,14 @@ const SORT = {
     { id: 'status-code', bucket: 'signal' },
     { id: 'cloud-region', bucket: 'resource' },
     { id: 'url-path', bucket: 'signal' },
+    { id: 'service-version', bucket: 'resource' },
+    { id: 'url-query', bucket: 'signal' },
+    { id: 'namespace', bucket: 'resource' },
+    { id: 'user-agent', bucket: 'signal' },
+    { id: 'cloud-provider', bucket: 'resource' },
+    { id: 'client-address', bucket: 'signal' },
+    { id: 'host-arch', bucket: 'resource' },
+    { id: 'db-collection', bucket: 'signal' },
   ],
 };
 

@@ -18,7 +18,7 @@ const ANSWERS = {
     'choice avm-fix: agent-only|drop-second-sdk|either-not-both|keep-one',
   ],
   resources: [
-    'sort res-sort: service-name=resource http-method=signal pod-name=resource http-route=signal host-name=resource status-code=signal cloud-region=resource url-path=signal',
+    'sort res-sort: service-name=resource http-method=signal pod-name=resource http-route=signal host-name=resource status-code=signal cloud-region=resource url-path=signal service-version=resource url-query=signal namespace=resource user-agent=signal cloud-provider=resource client-address=signal host-arch=resource db-collection=signal',
     'choice res-pod: all-signals|producer|repeats|set-once',
     'choice res-dash0: derived|equality|resource-attributes|signal-metadata',
   ],
@@ -30,7 +30,7 @@ const ANSWERS = {
     'choice det-dash0: attributes|hassle|operator-adds|tracing',
   ],
   instruments: [
-    'sort instr-sort: orders-placed=counter warehouse-temp=gauge queue-length=up-down-counter checkout-duration=histogram payment-declines=counter cache-hit-ratio=gauge active-requests=up-down-counter response-bytes=histogram',
+    'sort instr-sort: orders-placed=counter warehouse-temp=gauge queue-length=up-down-counter checkout-duration=histogram payment-declines=counter cache-hit-ratio=gauge active-requests=up-down-counter response-bytes=histogram accounts-created=counter fan-speed=gauge db-connections=up-down-counter query-duration=histogram bytes-received=counter noise-level=gauge provider-connections=up-down-counter request-body-size=histogram',
     'choice instr-async: async-updown|observable-updown|on-demand-additive',
     'choice instr-gauge: no-aggregation|sampled-not-sum|start-time',
   ],
@@ -74,7 +74,7 @@ const ANSWERS = {
     'choice ru-dash0: count-spans|derived|red-histogram',
   ],
   'structured-logs': [
-    'sort sl-sort: msg-declined=body order-id=attributes severity-text=severity service-name=resource trace-id=trace msg-retry=body payment-method=attributes severity-number=severity pod-name=resource span-id=trace retry-attempt=attributes trace-flags=trace',
+    'sort sl-sort: msg-declined=body order-id=attributes severity-text=severity service-name=resource trace-id=trace msg-retry=body payment-method=attributes severity-number=severity pod-name=resource span-id=trace retry-attempt=attributes trace-flags=trace msg-timeout=body payment-amount=attributes severity-text-error=severity service-version=resource trace-id-other=trace msg-refund=body payment-currency=attributes severity-number-error=severity namespace=resource span-id-other=trace customer-id=attributes trace-flags-unsampled=trace',
     'choice sl-attrs: facts-out-of-text|named-attrs|pairs-on-record|short-message',
     'choice sl-severity: number|number-from-warn|number-range|severity-range',
     'choice sl-bridge: appender-and-sdk|keep-logger|leave-calls|library-bridge',

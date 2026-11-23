@@ -13,15 +13,24 @@
 // on Sum points and optional on a Gauge, and the aggregation temporality that only Sum and Histogram points have; the Prometheus compatibility page (a monotonic
 // Sum gets `_total`, a Gauge stays a gauge): https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#otlp-metric-points-to-prometheus
 // Spec: https://opentelemetry.io/docs/specs/otel/metrics/api/#concurrency-requirements , https://opentelemetry.io/docs/specs/otel/metrics/api/#instrument-unit , https://prometheus.io/docs/prometheus/latest/querying/functions/#rate
+// The instr-sort pool (#390) adds these, read 2026-11-22: the API's example uses (Counter: bytes received, accounts created; Gauge: the background noise
+// level, where summing several rooms makes no sense, and the CPU fan speed; UpDownCounter: increments and decrements, and use Counter if the value only
+// grows; Histogram: the request duration and payload size); the semantic conventions' db.client.connection.count and http.client.open_connections
+// (UpDownCounter), db.client.operation.duration and http.server.request.body.size (Histogram). The services and places are invented.
+// Spec: https://opentelemetry.io/docs/specs/otel/metrics/api/#counter , https://opentelemetry.io/docs/specs/otel/metrics/api/#histogram
+// Spec: https://opentelemetry.io/docs/specs/semconv/database/database-metrics/ , https://opentelemetry.io/docs/specs/semconv/http/http-metrics/
 //
 // The words are in content/core/levels/instruments.mjs (docs/CONTENT.md); this file keeps the answers, the figures and the wiring.
 import CORE from '../content/core/levels/instruments.mjs';
 import { bindLevel } from '../lib/content/bind.mjs';
 
-// Step 1. Two measurements per instrument. Label wording must not give the bucket away (test/sort-tells.test.mjs).
+// Step 1: an answer pool (#390, docs/CONTENT.md section 10). The content lists 16 measurements, 4 per instrument, and a
+// showing draws 2 of each (what it showed before the pool). Every item needs its bucket here. Label wording must not give
+// the bucket away: test/sort-tells.test.mjs scores every board, test/pool-content.test.mjs the pool.
 const SORT = {
   id: 'instr-sort',
   helps: { hints: false },
+  draw: { counter: 2, 'up-down-counter': 2, gauge: 2, histogram: 2 },
   buckets: [{ id: 'counter' }, { id: 'up-down-counter' }, { id: 'gauge' }, { id: 'histogram' }],
   items: [
     { id: 'orders-placed', bucket: 'counter' },
@@ -32,6 +41,14 @@ const SORT = {
     { id: 'cache-hit-ratio', bucket: 'gauge' },
     { id: 'active-requests', bucket: 'up-down-counter' },
     { id: 'response-bytes', bucket: 'histogram' },
+    { id: 'accounts-created', bucket: 'counter' },
+    { id: 'fan-speed', bucket: 'gauge' },
+    { id: 'db-connections', bucket: 'up-down-counter' },
+    { id: 'query-duration', bucket: 'histogram' },
+    { id: 'bytes-received', bucket: 'counter' },
+    { id: 'noise-level', bucket: 'gauge' },
+    { id: 'provider-connections', bucket: 'up-down-counter' },
+    { id: 'request-body-size', bucket: 'histogram' },
   ],
 };
 

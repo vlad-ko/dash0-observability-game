@@ -88,6 +88,70 @@ export default {
               "whyNot": {
                 "resource": "It changes with every request. A resource attribute stays the same for the life of the producer."
               }
+            },
+            {
+              "id": "service-version",
+              "label": "service.version = 2.4.0",
+              "why": "The version of the checkout code that is running. Every span, metric and log from this process carries the same version, so it describes the producer: a resource attribute.",
+              "whyNot": {
+                "signal": "One request has no version of its own. The process runs one version of the code, so the version goes on the Resource, set once."
+              }
+            },
+            {
+              "id": "url-query",
+              "label": "url.query = q=kettle",
+              "why": "The query string of this one request. The next request can carry another query or none, so it is a span attribute.",
+              "whyNot": {
+                "resource": "The next request can carry another query or none. A query string is a fact about one request, not about the process that served it."
+              }
+            },
+            {
+              "id": "namespace",
+              "label": "k8s.namespace.name = checkout-prod",
+              "why": "The namespace the checkout pod runs in. It is the same for every span the process emits, so it describes where the telemetry comes from: a resource attribute.",
+              "whyNot": {
+                "signal": "Every request this pod serves is served in the same namespace. The namespace is part of the producer, so it goes on the Resource."
+              }
+            },
+            {
+              "id": "user-agent",
+              "label": "user_agent.original = curl/8.5.0",
+              "why": "The User-Agent header the client sent with this request. Another client sends another value, so it describes one operation: a span attribute.",
+              "whyNot": {
+                "resource": "Checkout is called by browsers, apps and scripts. The client of one request is not a fact about the process."
+              }
+            },
+            {
+              "id": "cloud-provider",
+              "label": "cloud.provider = aws",
+              "why": "The cloud the process runs in. It does not change from request to request, so it describes the producer: a resource attribute.",
+              "whyNot": {
+                "signal": "Every span from this process comes from the same cloud. It describes the producer, not one operation."
+              }
+            },
+            {
+              "id": "client-address",
+              "label": "client.address = 10.1.2.80",
+              "why": "The address of the client that made this request. Each request can come from a different client, so it is a span attribute.",
+              "whyNot": {
+                "resource": "It names who called, not who produced the telemetry. Requests come from many addresses, so the address belongs on each span."
+              }
+            },
+            {
+              "id": "host-arch",
+              "label": "host.arch = amd64",
+              "why": "The CPU architecture of the host the process runs on. It is the same for everything the process sends, so it is a resource attribute.",
+              "whyNot": {
+                "signal": "No request changes the CPU the process runs on. The architecture describes where the telemetry comes from, so it goes on the Resource."
+              }
+            },
+            {
+              "id": "db-collection",
+              "label": "db.collection.name = orders",
+              "why": "The table one database call worked on. The next call can query another table, so it describes one operation: an attribute of that call's span.",
+              "whyNot": {
+                "resource": "Checkout can query more than one table. The name says what one call worked on, not who produced the telemetry."
+              }
             }
           ]
         }

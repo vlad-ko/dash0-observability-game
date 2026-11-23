@@ -110,6 +110,86 @@ export default {
                 "up-down-counter": "An UpDownCounter keeps a running sum. Adding sizes up would lose the difference between small and large responses.",
                 "gauge": "A gauge keeps one sampled value, so most responses, and the largest ones, would never be seen."
               }
+            },
+            {
+              "id": "accounts-created",
+              "label": "Customer accounts created",
+              "why": "An account that was created stays created, so the total only grows. A Counter takes non-negative increments, here <code>add(1)</code> per account.",
+              "whyNot": {
+                "up-down-counter": "Creating an account never takes one away from the total, so there is no decrement to record.",
+                "histogram": "A histogram keeps the spread of many measured values. Creating an account has no size or duration to measure.",
+                "gauge": "A gauge records a reading. New accounts arrive one at a time and add up, so a gauge would lose the rate math."
+              }
+            },
+            {
+              "id": "fan-speed",
+              "label": "CPU fan speed of each server in the office, in RPM",
+              "why": "A current reading that makes no sense to add up: two fans at 2000 RPM are not one fan at 4000. That is a Gauge.",
+              "whyNot": {
+                "counter": "A counter takes only non-negative increments, and a fan slows down as well as speeds up.",
+                "histogram": "A histogram keeps a spread of many separate values. Here there is one speed for the fan at any moment.",
+                "up-down-counter": "An UpDownCounter is for values you add up across sources. Two fan speeds added together tell you nothing."
+              }
+            },
+            {
+              "id": "db-connections",
+              "label": "Connections the order database pool has open",
+              "why": "The count goes up when the pool opens a connection and down when it closes one, and the counts from several pods add up to the total open. That is an UpDownCounter.",
+              "whyNot": {
+                "gauge": "A gauge is for values that make no sense to add up. Open connections from several pods do add up to the total.",
+                "histogram": "A histogram keeps the spread of many separate values. The pool has one count of open connections at a time.",
+                "counter": "Connections get closed, and a Counter can only add non-negative amounts."
+              }
+            },
+            {
+              "id": "query-duration",
+              "label": "Duration of the order database's queries",
+              "why": "Many separate values where the spread matters, such as the slowest queries. A Histogram keeps that spread.",
+              "whyNot": {
+                "counter": "A counter can only add up. It would give the total query time, with no way to see the slow queries.",
+                "up-down-counter": "An UpDownCounter keeps a running sum. A total of durations says nothing about how the slow queries are spread.",
+                "gauge": "A gauge keeps one sampled value, so the slow queries between samples would vanish."
+              }
+            },
+            {
+              "id": "bytes-received",
+              "label": "Running total of bytes the payments service has received",
+              "why": "Every request adds the bytes it brought in, and the total never goes down. That is a Counter.",
+              "whyNot": {
+                "up-down-counter": "Bytes that were received stay received, so nothing is ever subtracted from the total.",
+                "histogram": "A histogram keeps the spread of separate values. Here you want the running total, which only grows.",
+                "gauge": "A gauge records a reading. Bytes arrive with every request and add up, so a gauge would lose the rate math."
+              }
+            },
+            {
+              "id": "noise-level",
+              "label": "Background noise level on the packing floor, in dB",
+              "why": "A reading that makes no sense to sum: noise levels from several rooms added together are not a noise level. That is a Gauge.",
+              "whyNot": {
+                "counter": "A counter takes only non-negative increments, and the noise level falls as well as rises.",
+                "histogram": "A histogram keeps a spread of many separate values. Here there is one noise level on the floor at any moment.",
+                "up-down-counter": "An UpDownCounter is for values you add up across sources. Summing the noise levels of several rooms tells you nothing."
+              }
+            },
+            {
+              "id": "provider-connections",
+              "label": "HTTP connections open to the card provider",
+              "why": "Payments opens connections to the provider and later closes them, so the count goes up and down, and the counts from several pods add up. That is an UpDownCounter.",
+              "whyNot": {
+                "gauge": "A gauge is for values that make no sense to add up. Connections open from several pods do add up to the total.",
+                "histogram": "A histogram records many separate values. This is one running count of open connections.",
+                "counter": "A connection that closes takes one away from the count, and a Counter only adds."
+              }
+            },
+            {
+              "id": "request-body-size",
+              "label": "Size of each request body received, in bytes",
+              "why": "Many separate values where the spread matters, such as the largest uploads. A Histogram keeps that spread.",
+              "whyNot": {
+                "counter": "A counter only adds up. A total of bytes would hide how big the largest request bodies are.",
+                "up-down-counter": "An UpDownCounter keeps a running sum. Adding sizes up would lose the difference between small and large bodies.",
+                "gauge": "A gauge keeps one sampled value, so most request bodies, and the largest ones, would never be seen."
+              }
             }
           ]
         }
