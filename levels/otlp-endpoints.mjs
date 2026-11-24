@@ -21,11 +21,11 @@
 // special-case one component in the shared schema. The port and path nuances are graded by the Choice steps instead.
 //
 // The three Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9, 9 and 9 answers (3 right, 6 wrong) and a showing
-// draws 3. Their extra answers rest on pages read 2026-11-21: the OTLP exporter specification
-// (https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md: per-signal URLs used as they are, root
+// draws 3. Their extra answers rest on pages read 2026-11-21 and again 2026-11-24: the OTLP exporter specification
+// (https://opentelemetry.io/docs/specs/otel/protocol/exporter/: per-signal URLs used as they are, root
 // path for a URL without one, v1/traces added only for the general variable, protocol values grpc, http/protobuf and http/json, the default
 // http/protobuf, OTEL_EXPORTER_OTLP_HEADERS as key=value pairs, insecure only for gRPC), the OTLP specification
-// (https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md: 4317 for gRPC, 4318 for HTTP, protobuf and JSON content
+// (https://opentelemetry.io/docs/specs/otlp/: 4317 for gRPC, 4318 for HTTP, protobuf and JSON content
 // types, default path /v1/traces), the OTLP receiver README (.../opentelemetry-collector/blob/v0.164.0/receiver/otlpreceiver/README.md: traces_url_path
 // defaults to /v1/traces), Dash0's Python configuration page (https://www.dash0.com/docs/dash0/opentelemetry/distributions/python/configuration:
 // OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <token>,Dash0-Dataset=default) and its website proxy page (the headers_setter example).

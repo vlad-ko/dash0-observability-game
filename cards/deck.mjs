@@ -1,7 +1,7 @@
 // Nuance cards a level can award (docs/FOUNDATION.md §2.3), checked by validateDeck:
 // { id, front (<=140 chars), back, specUrl ('https://...'), dash0Angle (text or null) }.
 // Docs (card delta-needs-converting, the delta histogram catch): https://www.dash0.com/docs/dash0/telemetry/metrics/common-metric-query-issues
-// Docs (card double-instrumentation, GitHub README, not an allowed Spec host; it says the package subscribes to diagnostics_channel and does not say a second setup doubles the spans): https://github.com/open-telemetry/opentelemetry-js-contrib/blob/main/packages/instrumentation-undici/README.md
+// Docs (card double-instrumentation, GitHub README, not an allowed Spec host; it says the package subscribes to diagnostics_channel and does not say a second setup doubles the spans): https://github.com/open-telemetry/opentelemetry-js-contrib/blob/instrumentation-undici-v0.35.1/packages/instrumentation-undici/README.md
 // Docs (card redact-in-the-pipeline, the two ways to rename, GitHub README): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/transformprocessor/README.md
 // Source (card red-and-use, Errors as "the number of failing requests"): https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/
 export const DECK = [
