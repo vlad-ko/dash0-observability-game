@@ -25,7 +25,7 @@ const ANSWERS = {
   'detectors-and-kubernetes': [
     'choice det-when: at-start|init|one-time|setup',
     'choice det-where: collector|daemonset|gateway|once-for-all',
-    'configure det-config: receivers: otlp: protocols: grpc: processors: k8sattributes: extract: metadata: - k8s.namespace.name - k8s.pod.name - k8s.pod.uid - k8s.deployment.name - k8s.node.name batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [k8sattributes, batch] exporters: [otlp_grpc/dash0]',
+    'configure det-config: receivers: otlp: protocols: grpc: processors: k8s_attributes: extract: metadata: - k8s.namespace.name - k8s.pod.name - k8s.pod.uid - k8s.deployment.name - k8s.node.name batch: exporters: otlp_grpc/dash0: endpoint: ${env:DASH0_ENDPOINT} service: pipelines: traces: receivers: [otlp] processors: [k8s_attributes, batch] exporters: [otlp_grpc/dash0]',
     'choice det-rbac: binding|cluster-wide|pods-namespaces|read-only',
     'choice det-dash0: attributes|hassle|operator-adds|tracing',
   ],

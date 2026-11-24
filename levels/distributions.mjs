@@ -12,7 +12,7 @@
 // compiled into one binary, and a config can only use what is in it. The items are components whose
 // distribution list is the same on their README, on the processors, receivers and exporters pages of
 // the docs and in the manifests (v0.164.0): batch, memory_limiter and the otlp_grpc exporter (core,
-// contrib, k8s); k8sattributes, redaction and tail_sampling (contrib, k8s); the awss3 and awsxray
+// contrib, k8s); k8s_attributes, redaction and tail_sampling (contrib, k8s); the awss3 and awsxray
 // exporters (contrib only). The core distribution has been gaining components (transform, filter and
 // attributes are in its manifest while some component pages still list contrib and k8s), and the
 // otlp and eBPF profiling distributions ship little, so no item depends on those, and the copy tells the
@@ -21,7 +21,7 @@
 // The two Choice steps are answer pools (#390, docs/CONTENT.md section 10): the content lists 9 answers each (3 right, 6 wrong) and a showing draws 3.
 // Their extra answers rest on pages read 2026-11-21: the distribution manifests of Collector v0.164.0
 // (https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol/manifest.yaml and the contrib and k8s ones:
-// k8sattributes is in contrib and k8s and not in core), the distributions page (https://opentelemetry.io/docs/collector/distributions/: a manifest.yaml
+// k8s_attributes is in contrib and k8s and not in core), the distributions page (https://opentelemetry.io/docs/collector/distributions/: a manifest.yaml
 // per distribution, ocb for custom ones) and the OCB guide (https://opentelemetry.io/docs/collector/extend/ocb/: a manifest with a dist section and
 // lists of modules, needs Go), plus the contrib distribution README (limit a production Collector to the components it needs).
 //

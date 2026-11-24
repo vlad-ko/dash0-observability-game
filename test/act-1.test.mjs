@@ -145,10 +145,10 @@ const CARDS = {
   },
   'k8sattributes-in-collector': {
     front:
-      'Add pod metadata in the Collector with k8sattributes, and list it in the pipeline: configured but not listed, it does nothing.',
+      'Add pod metadata in the Collector with k8s_attributes, and list it in the pipeline: configured but not listed, it does nothing.',
     back:
       'SDK resource detectors run once, when the SDK starts, and the Resource cannot change afterwards. Kubernetes metadata is better ' +
-      'added once in the Collector by the k8sattributes processor, which looks up the pod each piece of telemetry came from through ' +
+      'added once in the Collector by the k8s_attributes processor, which looks up the pod each piece of telemetry came from through ' +
       'the Kubernetes API (by default through the IP address of the incoming connection) and adds attributes such as ' +
       'k8s.pod.name and k8s.namespace.name as resource attributes. The Collector service account needs get, watch and list ' +
       'permissions on pods and namespaces. It is a contrib component, so use a contrib or Kubernetes distribution. ' +
@@ -225,10 +225,10 @@ test('detectors: they run once at SDK start; the Resource is fixed after that', 
   assert.equal(/cannot be changed later/.test(perSpan.why), true, 'a Resource cannot change later');
 });
 
-test('detectors: pod metadata is better added in the Collector, and k8sattributes is a contrib component', () => {
+test('detectors: pod metadata is better added in the Collector, and k8s_attributes is a contrib component', () => {
   const right = rightOf('detectors-and-kubernetes', 'det-where');
   assert.equal(right.key, 'collector');
-  assert.equal(right.label.includes('<code>k8sattributes</code>'), true);
+  assert.equal(right.label.includes('<code>k8s_attributes</code>'), true);
   assert.equal(/contrib/.test(right.why) && /not in the core one/.test(right.why), true);
 });
 
@@ -246,18 +246,18 @@ test('detectors config: the given does not start (the pipeline names a processor
   assert.equal(Object.hasOwn(spec, 'target'), false, '`uses` names the traces pipeline, so it is also the target');
 });
 
-test('detectors config: the reference lists k8sattributes in the traces pipeline, before batch, and defines it', () => {
+test('detectors config: the reference lists k8s_attributes in the traces pipeline, before batch, and defines it', () => {
   const ref = checkConfig(config().reference, COLLECTOR_SCHEMA).doc;
-  assert.deepEqual(ref.service.pipelines.traces.processors, ['k8sattributes', 'batch']);
-  assert.equal(Object.hasOwn(ref.processors, 'k8sattributes'), true);
-  assert.deepEqual(ref.processors.k8sattributes.extract.metadata.slice(0, 3), ['k8s.namespace.name', 'k8s.pod.name', 'k8s.pod.uid']);
+  assert.deepEqual(ref.service.pipelines.traces.processors, ['k8s_attributes', 'batch']);
+  assert.equal(Object.hasOwn(ref.processors, 'k8s_attributes'), true);
+  assert.deepEqual(ref.processors.k8s_attributes.extract.metadata.slice(0, 3), ['k8s.namespace.name', 'k8s.pod.name', 'k8s.pod.uid']);
   assert.deepEqual(checkConfig(config().given, COLLECTOR_SCHEMA).doc.processors, { batch: null }, 'the given only defines batch');
 });
 
-test('detectors config: deleting k8sattributes from the traces pipeline is wrong and costs one mistake; the reference is right', () => {
+test('detectors config: deleting k8s_attributes from the traces pipeline is wrong and costs one mistake; the reference is right', () => {
   const spec = config();
-  assert.deepEqual(spec.uses, { traces: ['k8sattributes'] });
-  const unlisted = spec.reference.replace('processors: [k8sattributes, batch]', 'processors: [batch]');
+  assert.deepEqual(spec.uses, { traces: ['k8s_attributes'] });
+  const unlisted = spec.reference.replace('processors: [k8s_attributes, batch]', 'processors: [batch]');
   assert.equal(checkConfig(unlisted, COLLECTOR_SCHEMA).ok, true, 'the Collector would start, so only `uses` can refuse it');
   const wrong = runConfigure(spec, newConfigureState(), unlisted);
   assert.deepEqual({ outcome: wrong.outcome, reason: wrong.reason, unmet: wrong.unmet }, { outcome: 'wrong', reason: 'uses', unmet: ['traces'] });
@@ -265,8 +265,17 @@ test('detectors config: deleting k8sattributes from the traces pipeline is wrong
   assert.equal(same.outcome, 'repeat', 'the same text again is free');
   assert.equal(runConfigure(spec, wrong.state, spec.reference).outcome, 'right');
   // Removing the reference's definition as well still does not pass: the given's error is the other way in.
-  const dropped = spec.reference.replace(/  k8sattributes:[\s\S]*?(?=  batch:)/, '');
+  const dropped = spec.reference.replace(/  k8s_attributes:[\s\S]*?(?=  batch:)/, '');
   assert.equal(runConfigure(spec, newConfigureState(), dropped).reason, 'invalid');
+});
+
+test('detectors config: the question says k8s_attributes is the type to write and k8sattributes its deprecated alias, once, and no id in the config uses the alias', () => {
+  const q = LIVE.levels['detectors-and-kubernetes'].play.steps.find((st) => st.configure && st.configure.id === 'det-config').question;
+  assert.equal(q.split('<code>k8sattributes</code>').length - 1, 1);
+  assert.equal(q.includes('<code>k8s_attributes</code>'), true);
+  assert.equal(/deprecated alias/.test(q), true);
+  const spec = config();
+  assert.equal(/k8sattributes/.test(spec.explain + spec.given + spec.reference), false);
 });
 
 test('detectors config: the copy says what is graded (wiring) and what is not (settings)', () => {

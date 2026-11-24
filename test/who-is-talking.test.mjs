@@ -125,7 +125,7 @@ test('the k8s attributes name the owner: one deployment, namespace and pod acros
   const pod = /k8s\.pod\.name (notifications-[0-9a-f]+-[a-z0-9]{5})/.exec(res)?.[1];
   assert.equal(typeof pod, 'string');
   assert.equal(plain(view('pod-env').html).includes(pod), true, 'pod-env is the env of that pod');
-  assert.equal(/Collector[^.]*k8sattributes/.test(res), true, 'the k8s attributes come from the Collector, as in 1.3');
+  assert.equal(/Collector[^.]*k8s_attributes/.test(res), true, 'the k8s attributes come from the Collector, as in 1.3');
   assert.equal(plain(view('deploy-history').html).includes('notifications 5.2.0'), true);
   assert.equal(plain(view('pod-env').html).includes('namespace comms'), true);
 });

@@ -91,7 +91,7 @@ const CARDS = {
     back:
       'The project ships pre-built Collector distributions (core, contrib, k8s, otlp and an eBPF profiling one), and each ships a ' +
       'different set of components, listed in its manifest.yaml and in the Distributions row of each component README. batch, ' +
-      'memory_limiter and the otlp_grpc exporter are in core, contrib and k8s. k8sattributes, redaction and tail_sampling are in contrib ' +
+      'memory_limiter and the otlp_grpc exporter are in core, contrib and k8s. k8s_attributes, redaction and tail_sampling are in contrib ' +
       'and k8s but not core, and vendor exporters such as awss3 and awsxray are in contrib only. A config that names a component the ' +
       'binary does not contain stops the Collector with an unknown type error. When no distribution has what you need, including a ' +
       'component your team wrote, build your own with ocb, the OpenTelemetry Collector Builder, from a manifest that lists the components ' +
@@ -316,7 +316,7 @@ test('distributions: a config that names a component the binary does not contain
   const right = rightOf(DIST, 'dist-unknown');
   assert.equal(right.key, 'refuses-to-start');
   const text = plain(right.label + right.why);
-  for (const w of ['core', 'k8sattributes', 'unknown type', 'not compiled', 'contrib']) assert.equal(text.includes(w), true, w);
+  for (const w of ['core', 'k8s_attributes', 'unknown type', 'not compiled', 'contrib']) assert.equal(text.includes(w), true, w);
   // #390: a pool (draw 3) of three right phrasings and six wrong answers; the old three are among them.
   assert.equal(stepOf(DIST, 'choice', 'dist-unknown').draw, 3);
   assert.deepEqual(rightKeys(DIST, 'dist-unknown'), ['fails-before-data', 'refuses-to-start', 'rejected-at-startup']);

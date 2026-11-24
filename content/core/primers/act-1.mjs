@@ -112,7 +112,7 @@ export default {
         },
         {
           "type": "paragraph",
-          "text": "In a Collector, the Kubernetes Attributes processor (k8sattributes in the config, a Collector component, see act 5) adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API (the cluster's interface for reading and changing its state) to discover the pods in a [[cluster]] and records their IP addresses, pod UIDs and metadata."
+          "text": "In a Collector, the Kubernetes Attributes processor (k8s_attributes in the config, a Collector component, see act 5) adds Kubernetes metadata to incoming telemetry as resource attributes. It uses the Kubernetes API (the cluster's interface for reading and changing its state) to discover the pods in a [[cluster]] and records their IP addresses, pod UIDs and metadata."
         }
       ],
       "sources": [

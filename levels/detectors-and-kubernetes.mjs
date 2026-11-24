@@ -1,6 +1,6 @@
 // Level 1.3: Detectors and Kubernetes. The player says when an SDK's resource detectors run and
 // where pod metadata is better added (the Collector), fixes a Collector config so the
-// `k8sattributes` processor is defined and listed in the traces pipeline, says what the processor
+// `k8s_attributes` processor is defined and listed in the traces pipeline, says what the processor
 // needs to look pods up, and says what the Dash0 operator adds for a workload.
 // Spec: docs/OUTLINE.md §4 Act 1.
 // Spec: https://opentelemetry.io/docs/concepts/resources/#resource-detectors , https://opentelemetry.io/docs/specs/otel/resource/sdk/#resource-detector
@@ -9,10 +9,16 @@
 // Spec: https://opentelemetry.io/docs/concepts/resources/ , https://opentelemetry.io/docs/platforms/kubernetes/collector/components/
 // Docs (GitHub, component READMEs pinned to v0.164.0): https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.0/processor/k8sattributesprocessor , https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.0/processor/transformprocessor , https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.164.0/processor/attributesprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/v0.164.0/processor/batchprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/v0.164.0/processor/memorylimiterprocessor , https://github.com/open-telemetry/opentelemetry-collector/tree/v0.164.0/receiver/otlpreceiver , https://github.com/open-telemetry/opentelemetry-collector/tree/v0.164.0/exporter/otlpexporter
 // Dash0 docs: https://www.dash0.com/docs/dash0/monitoring/kubernetes/dash0-operator/auto-instrumentation
+// Docs (GitHub, the processor's type name, pinned to v0.164.0): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/k8sattributesprocessor/metadata.yaml , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/CHANGELOG.md
+// Facts used (read 2026-11-22): the processor's metadata.yaml at v0.164.0 has `type: k8s_attributes` and
+// `deprecated_type: k8sattributes`; the contrib CHANGELOG (v0.146.0): "Rename `k8sattributes` processor to
+// `k8s_attributes` processor and add deprecated alias `k8sattributes`." The level teaches `k8s_attributes`
+// and names the old spelling once, in the config step's explain; the README path and the processor's Go
+// package keep the directory name `k8sattributesprocessor`.
 //
 // The configure step grades the config through COLLECTOR_SCHEMA (docs/M1-DESIGN.md §4.8), which
 // does not model component settings, so the step grades the wiring (defined, the Collector would
-// start, and `uses` requires the traces pipeline to list k8sattributes) and the settings are taught
+// start, and `uses` requires the traces pipeline to list k8s_attributes) and the settings are taught
 // in the choice steps. `uses` implies the traces pipeline must flow, so there is no `target`.
 //
 // The words are in content/core/levels/detectors-and-kubernetes.mjs (docs/CONTENT.md); this file keeps the answers, the configs and the wiring.
@@ -42,7 +48,7 @@ const WHERE = [
   { key: 'once-for-all', right: true },
 ];
 
-// Step 3: the config. The pipeline lists `k8sattributes`, but it is not defined: the Collector
+// Step 3: the config. The pipeline lists `k8s_attributes`, but it is not defined: the Collector
 // would refuse to start. The reference defines it, with the default metadata.
 const GIVEN = [
   'receivers:',
@@ -58,7 +64,7 @@ const GIVEN = [
   '  pipelines:',
   '    traces:',
   '      receivers: [otlp]',
-  '      processors: [k8sattributes, batch]',
+  '      processors: [k8s_attributes, batch]',
   '      exporters: [otlp_grpc/dash0]',
   '',
 ].join('\n');
@@ -69,7 +75,7 @@ const REFERENCE = [
   '    protocols:',
   '      grpc:',
   'processors:',
-  '  k8sattributes:',
+  '  k8s_attributes:',
   '    extract:',
   '      metadata:',
   '        - k8s.namespace.name',
@@ -85,7 +91,7 @@ const REFERENCE = [
   '  pipelines:',
   '    traces:',
   '      receivers: [otlp]',
-  '      processors: [k8sattributes, batch]',
+  '      processors: [k8s_attributes, batch]',
   '      exporters: [otlp_grpc/dash0]',
   '',
 ].join('\n');
@@ -95,7 +101,7 @@ const CONFIG = {
   schema: 'collector',
   given: GIVEN,
   reference: REFERENCE,
-  uses: { traces: ['k8sattributes'] },
+  uses: { traces: ['k8s_attributes'] },
   helps: { hints: true },
 };
 

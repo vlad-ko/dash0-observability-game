@@ -132,7 +132,7 @@ const CARDS = {
       'processors can be right in one pipeline and wrong in another. memory_limiter goes first: when memory runs high it ' +
       'refuses data by returning an error to the component before it, so receivers can retry and slow their senders before ' +
       'later processors pile up more. batch goes late, after the processors that drop, filter or change data, so it does not ' +
-      'batch what is discarded afterwards. A processor that reads the request context, such as k8sattributes, must run before ' +
+      'batch what is discarded afterwards. A processor that reads the request context, such as k8s_attributes, must run before ' +
       'batch, because batching clears that context. The processor docs also say to prefer an exporter\'s own batching where ' +
       'it has one.',
     specUrl: 'https://opentelemetry.io/docs/collector/configuration/#processors',
@@ -323,7 +323,7 @@ test('order-matters: a pipeline without batch is not a fault, and every correct 
 
 test('order-matters: the explanation names all four faults and the reason context readers go before batch', () => {
   const text = plain(SPOT().explain);
-  for (const w of ['memory_limiter', 'first', 'batch', 'k8sattributes', 'context', 'discard']) assert.equal(text.includes(w), true, w);
+  for (const w of ['memory_limiter', 'first', 'batch', 'k8s_attributes', 'context', 'discard']) assert.equal(text.includes(w), true, w);
 });
 
 test('order-matters: memory_limiter goes first so it can refuse data early and receivers can retry or slow down', () => {

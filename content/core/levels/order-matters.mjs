@@ -16,7 +16,7 @@ export default {
           "lines": [
             {
               "id": "traces",
-              "text": "traces: processors: [memory_limiter, k8sattributes, transform/redact, batch]"
+              "text": "traces: processors: [memory_limiter, k8s_attributes, transform/redact, batch]"
             },
             {
               "id": "metrics",
@@ -28,11 +28,11 @@ export default {
             },
             {
               "id": "traces-checkout",
-              "text": "traces/checkout: processors: [memory_limiter, transform/redact, batch, k8sattributes]"
+              "text": "traces/checkout: processors: [memory_limiter, transform/redact, batch, k8s_attributes]"
             },
             {
               "id": "logs-audit",
-              "text": "logs/audit: processors: [k8sattributes, memory_limiter, batch]"
+              "text": "logs/audit: processors: [k8s_attributes, memory_limiter, batch]"
             },
             {
               "id": "metrics-infra",
@@ -48,12 +48,12 @@ export default {
             }
           ],
           "whyNot": {
-            "traces": "memory_limiter is first, k8sattributes (which reads the request context) and the transform run before batch, and batch comes last.",
+            "traces": "memory_limiter is first, k8s_attributes (which reads the request context) and the transform run before batch, and batch comes last.",
             "logs": "memory_limiter is first, the filter that drops health-check logs runs before batch, so batch only collects what is kept.",
             "metrics-infra": "The same two processors as the faulty metrics pipeline, in the right order for this pipeline: memory_limiter first, batch last.",
             "traces-edge": "memory_limiter is first and there is nothing after it. batch is recommended, not required, and an exporter can batch on its own."
           },
-          "explain": "Four pipelines are misordered, and each has its own list: the Collector gives every pipeline its own processor instances, so <code>metrics</code> is wrong while <code>metrics/infra</code> lists the same two processors correctly. In <code>metrics</code> and <code>logs/audit</code>, <code>memory_limiter</code> is not first, so something else handles data before the limiter can refuse it. In <code>traces/checkout</code>, <code>k8sattributes</code> comes after <code>batch</code>, and batching clears the request context it reads. In <code>logs/noisy</code>, <code>batch</code> comes before the filter, so it batches logs that are discarded straight afterwards."
+          "explain": "Four pipelines are misordered, and each has its own list: the Collector gives every pipeline its own processor instances, so <code>metrics</code> is wrong while <code>metrics/infra</code> lists the same two processors correctly. In <code>metrics</code> and <code>logs/audit</code>, <code>memory_limiter</code> is not first, so something else handles data before the limiter can refuse it. In <code>traces/checkout</code>, <code>k8s_attributes</code> comes after <code>batch</code>, and batching clears the request context it reads. In <code>logs/noisy</code>, <code>batch</code> comes before the filter, so it batches logs that are discarded straight afterwards."
         }
       },
       {
@@ -119,12 +119,12 @@ export default {
             {
               "key": "early",
               "label": "Early in the list, and it groups what the other processors then receive",
-              "why": "Batching before the processors that drop or change data batches telemetry that may be discarded or changed straight afterwards. It also clears the request context, which a processor like k8sattributes reads."
+              "why": "Batching before the processors that drop or change data batches telemetry that may be discarded or changed straight afterwards. It also clears the request context, which a processor like k8s_attributes reads."
             },
             {
               "key": "late",
               "label": "Late, after the processors that drop, change or enrich data, and the exporter can batch too",
-              "why": "Batching helps compress data and reduces the number of outgoing connections, and it belongs after memory_limiter and after anything that drops or changes data, so it never batches what is discarded afterwards. Processors that read the request context, such as k8sattributes, go before it. The processor docs also say to prefer an exporter's own batching where it has one, for example the <code>batch</code> setting of an exporter's <code>sending_queue</code>, which is off unless you turn it on."
+              "why": "Batching helps compress data and reduces the number of outgoing connections, and it belongs after memory_limiter and after anything that drops or changes data, so it never batches what is discarded afterwards. Processors that read the request context, such as k8s_attributes, go before it. The processor docs also say to prefer an exporter's own batching where it has one, for example the <code>batch</code> setting of an exporter's <code>sending_queue</code>, which is off unless you turn it on."
             },
             {
               "key": "removed",
@@ -133,8 +133,8 @@ export default {
             },
             {
               "key": "after-filters",
-              "label": "After the filters and transforms, and after <code>k8sattributes</code>, as batching clears the request context it reads",
-              "why": "Processors that rely on the request context, such as k8sattributes, must run before batching, because batching clears the context. Filtering and transforming come first so the processor batches only data that will be exported."
+              "label": "After the filters and transforms, and after <code>k8s_attributes</code>, as batching clears the request context it reads",
+              "why": "Processors that rely on the request context, such as k8s_attributes, must run before batching, because batching clears the context. Filtering and transforming come first so the processor batches only data that will be exported."
             },
             {
               "key": "last-in-list",

@@ -240,10 +240,10 @@ export const DECK = [
   {
     id: 'k8sattributes-in-collector',
     front:
-      'Add pod metadata in the Collector with k8sattributes, and list it in the pipeline: configured but not listed, it does nothing.',
+      'Add pod metadata in the Collector with k8s_attributes, and list it in the pipeline: configured but not listed, it does nothing.',
     back:
       'SDK resource detectors run once, when the SDK starts, and the Resource cannot change afterwards. Kubernetes metadata is better ' +
-      'added once in the Collector by the k8sattributes processor, which looks up the pod each piece of telemetry came from through ' +
+      'added once in the Collector by the k8s_attributes processor, which looks up the pod each piece of telemetry came from through ' +
       'the Kubernetes API (by default through the IP address of the incoming connection) and adds attributes such as ' +
       'k8s.pod.name and k8s.namespace.name as resource attributes. The Collector service account needs get, watch and list ' +
       'permissions on pods and namespaces. It is a contrib component, so use a contrib or Kubernetes distribution. ' +
@@ -355,7 +355,7 @@ export const DECK = [
       'processors can be right in one pipeline and wrong in another. memory_limiter goes first: when memory runs high it ' +
       'refuses data by returning an error to the component before it, so receivers can retry and slow their senders before ' +
       'later processors pile up more. batch goes late, after the processors that drop, filter or change data, so it does not ' +
-      'batch what is discarded afterwards. A processor that reads the request context, such as k8sattributes, must run before ' +
+      'batch what is discarded afterwards. A processor that reads the request context, such as k8s_attributes, must run before ' +
       "batch, because batching clears that context. The processor docs also say to prefer an exporter's own batching where " +
       'it has one.',
     specUrl: 'https://opentelemetry.io/docs/collector/configuration/#processors',
@@ -438,7 +438,7 @@ export const DECK = [
       'The project ships pre-built Collector distributions (core, contrib, k8s, otlp and an eBPF profiling one), ' +
       'and each ships a different set of components, listed in its manifest.yaml and in the Distributions row of ' +
       'each component README. batch, memory_limiter and the otlp_grpc exporter are in core, contrib and k8s. ' +
-      'k8sattributes, redaction and tail_sampling are in contrib and k8s but not core, and vendor exporters such as ' +
+      'k8s_attributes, redaction and tail_sampling are in contrib and k8s but not core, and vendor exporters such as ' +
       'awss3 and awsxray are in contrib only. A config that names a component the binary does not contain stops the ' +
       'Collector with an unknown type error. When no distribution has what you need, including a component your ' +
       'team wrote, build your own with ocb, the OpenTelemetry Collector Builder, from a manifest that lists the ' +
