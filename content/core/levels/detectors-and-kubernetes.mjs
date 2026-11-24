@@ -114,7 +114,7 @@ export default {
             },
             {
               "key": "gateway",
-              "label": "On a gateway, applying the Kubernetes attributes processor to whatever passes through it",
+              "label": "On a gateway, enriching whatever passes through it with pod metadata from a Collector processor",
               "why": "A Collector deployed as a gateway can use the Kubernetes attributes processor too. It associates each datapoint with a pod and adds the metadata to spans, metrics and logs, so the services need no change."
             },
             {
@@ -162,11 +162,11 @@ export default {
       },
       {
         "intro": "The platform team started the Collector config, and its traces pipeline already lists the processor. The Collector would not start.",
-        "question": "Fix the config so the <code>k8s_attributes</code> processor is defined and the traces pipeline flows.",
+        "question": "Fix the config so the <code>k8s_attributes</code> processor is defined and the traces pipeline flows. Use that spelling: <code>k8sattributes</code> is its deprecated alias, and this game grades the current type.",
         "configure": {
           "id": "det-config",
           "hint": "A pipeline list holds only names, and the Collector refuses a name with no definition in its section. The task wants the traces enriched, not left alone.",
-          "explain": "A processor takes effect only when it is both defined under <code>processors</code> and listed in a pipeline. Defined but not listed, it does nothing and the Collector starts without it; listed but not defined, the Collector refuses to start. Removing it from the pipeline would start the Collector too, but then the traces carry no pod metadata, so the task needs it listed. The settings are what make it useful: <code>extract.metadata</code> picks the attributes it adds, and by default the processor matches telemetry to a pod by the IP address of the incoming connection. This game checks the wiring, not the settings. Older configs call this processor <code>k8sattributes</code>: it was renamed to <code>k8s_attributes</code>, and the old name is kept as a deprecated alias."
+          "explain": "A processor takes effect only when it is both defined under <code>processors</code> and listed in a pipeline. Defined but not listed, it does nothing and the Collector starts without it; listed but not defined, the Collector refuses to start. Removing it from the pipeline would start the Collector too, but then the traces carry no pod metadata, so the task needs it listed. The settings are what make it useful: <code>extract.metadata</code> picks the attributes it adds, and by default the processor matches telemetry to a pod by the IP address of the incoming connection. This game checks the wiring, not the settings."
         }
       },
       {

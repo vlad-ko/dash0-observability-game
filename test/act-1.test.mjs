@@ -269,12 +269,13 @@ test('detectors config: deleting k8s_attributes from the traces pipeline is wron
   assert.equal(runConfigure(spec, newConfigureState(), dropped).reason, 'invalid');
 });
 
-test('detectors config: the explain names the old spelling k8sattributes once, as a deprecated alias, and no id in the config uses it', () => {
+test('detectors config: the question says k8s_attributes is the type to write and k8sattributes its deprecated alias, once, and no id in the config uses the alias', () => {
+  const q = LIVE.levels['detectors-and-kubernetes'].play.steps.find((st) => st.configure && st.configure.id === 'det-config').question;
+  assert.equal(q.split('<code>k8sattributes</code>').length - 1, 1);
+  assert.equal(q.includes('<code>k8s_attributes</code>'), true);
+  assert.equal(/deprecated alias/.test(q), true);
   const spec = config();
-  const explain = spec.explain;
-  assert.equal(explain.split('<code>k8sattributes</code>').length - 1, 1);
-  assert.equal(/deprecated alias/.test(explain), true);
-  assert.equal(/k8sattributes/.test(spec.given + spec.reference), false);
+  assert.equal(/k8sattributes/.test(spec.explain + spec.given + spec.reference), false);
 });
 
 test('detectors config: the copy says what is graded (wiring) and what is not (settings)', () => {
