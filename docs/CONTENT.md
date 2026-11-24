@@ -136,11 +136,7 @@ A test that reads a level's source text uses `levelSource(id)` (`test/helpers/le
 
 A multiple-choice or sort step may list more answers in its content than one play shows. Each time the step is shown, the game draws a board from the pool, so a player who replays a level meets different wrong answers (and, for a choice, a different right one).
 
-**Where it applies.** Multiple-choice and sort steps only (their logic kinds are `choice` and `sort`), and only where the step is opted in. Not build, incident, spot, trade-off, query or configure steps, not boss levels, not Act 9, and not a question whose answer depends on data on the screen (a table, a trace or a config the player reads), because another board would change that data. The mechanism is in `lib/pool.mjs`. The live pools:
-
-- The pilots: `wcm-host` in what-costs-money (a choice of 20 that shows 4) and, in auto-vs-manual, `avm-sort` (a sort, 3 from each bucket of 10) with `avm-why` and `avm-fix` (choices of 20 that show 3).
-- Act 1: `res-pod` and `res-dash0` in resources, and `det-when`, `det-where`, `det-rbac` and `det-dash0` in detectors-and-kubernetes (choices of 13 or 14 with 4 right, that show 3).
-- Act 7: `ga-fix` in good-alerts (a choice of 20 that shows 4), `sl-sli` and `sl-edge` in slis-and-slos (choices of 20 that show 3), and `sc-alert` in synthetic-checks (a choice of 20 that shows 6).
+**Where it applies.** Multiple-choice and sort steps only (their logic kinds are `choice` and `sort`), and only where the step is opted in. Not build, incident, spot, trade-off, query or configure steps, not boss levels, not Act 9, and not a question whose answer depends on data on the screen (a table, a trace or a config the player reads), because another board would change that data. The mechanism is in `lib/pool.mjs`. A step is pooled when its logic file (`levels/<id>.mjs`) states `draw`, so that is the list: search the logic files for `draw:` rather than trust a list written here. The pilots were `wcm-host` in what-costs-money and, in auto-vs-manual, `avm-sort`, `avm-why` and `avm-fix`. To print every live pooled question with its scores, run `TELLS=1 node --test test/pool-content.test.mjs` (see Tests below).
 
 **The format.** The content file does not change: the pool is the full `choices` list (`items` for a sort), with a `key` (`id` for a sort), a `label` and a `why` for every entry. The logic file opts the step in by stating `draw`, and still marks the answers (`right`, `keep`, `bucket`):
 
