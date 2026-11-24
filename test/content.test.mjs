@@ -98,12 +98,6 @@ const GH = 'https://github.com/open-telemetry/opentelemetry-collector';
 const UNPINNED_KNOWN = {
   'agent-vs-gateway.mjs': [`${GH}-contrib/blob/main/exporter/loadbalancingexporter/README.md`, `${GH}-contrib/blob/main/processor/tailsamplingprocessor/README.md`],
   'cardinality.mjs': [`${GH}-contrib/blob/main/processor/filterprocessor/README.md`, `${GH}-contrib/blob/main/processor/attributesprocessor/README.md`],
-  'collecting-logs.mjs': [
-    `${GH}-contrib/blob/main/receiver/filelogreceiver/README.md`,
-    `${GH}-contrib/blob/main/pkg/stanza/docs/operators/regex_parser.md`,
-    `${GH}-contrib/blob/main/pkg/stanza/docs/operators/json_parser.md`,
-    `${GH}-contrib/blob/main/pkg/stanza/docs/types/parsers.md`,
-  ],
   'distributions.mjs': [
     `${GH}-releases/blob/main/distributions/otelcol/manifest.yaml`,
     `${GH}-releases/blob/main/distributions/otelcol-contrib/manifest.yaml`,
