@@ -4,9 +4,9 @@
 // component nobody ships: build a custom distribution with OCB, the OpenTelemetry Collector Builder.
 // Spec: docs/OUTLINE.md §4 Act 5.
 // Spec: https://opentelemetry.io/docs/collector/distributions/ , https://opentelemetry.io/docs/collector/extend/ocb/ , https://opentelemetry.io/docs/collector/components/processor/
-// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-k8s/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-k8s/README.md , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/README.md
+// Docs (GitHub, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-contrib/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-k8s/manifest.yaml , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-k8s/README.md , https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-contrib/README.md
 //
-// Docs (exporter type names, Collector v0.164.0): https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlpexporter/metadata.yaml , https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/otlphttpexporter/metadata.yaml
+// Docs (exporter type names, Collector v0.164.0): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/exporter/otlpexporter/metadata.yaml , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/exporter/otlphttpexporter/metadata.yaml
 //
 // What is taught is the part that does not change: a distribution is a fixed set of components
 // compiled into one binary, and a config can only use what is in it. The items are components whose

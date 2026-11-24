@@ -6,7 +6,7 @@
 // Spec: https://opentelemetry.io/docs/concepts/sampling/#tail-sampling , https://opentelemetry.io/docs/collector/transforming-telemetry/ ,
 // https://opentelemetry.io/docs/specs/semconv/resource/deployment-environment/
 // Docs (GitHub READMEs, not an allowed Spec host): the tailsamplingprocessor README and the filterprocessor README in
-// https://github.com/open-telemetry/opentelemetry-collector-contrib (v0.164.0)
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/tailsamplingprocessor/README.md and https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
 // Dash0 docs: https://www.dash0.com/docs/dash0/cost-control/spam-filters , https://www.dash0.com/docs/dash0/telemetry/signal-control/about-signal-control
 //
 // Facts used (read on the pages above, 2026-11-05): the filter processor evaluates its conditions on each span, span event, log

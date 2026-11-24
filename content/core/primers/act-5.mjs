@@ -213,13 +213,13 @@ export default {
         {
           "kind": "article",
           "label": "GitHub: Collector Core distro README",
-          "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol/README.md",
+          "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol/README.md",
           "audience": "public"
         },
         {
           "kind": "article",
           "label": "GitHub: Collector Contrib distro README",
-          "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/README.md",
+          "url": "https://github.com/open-telemetry/opentelemetry-collector-releases/blob/v0.164.0/distributions/otelcol-contrib/README.md",
           "audience": "public"
         },
         {

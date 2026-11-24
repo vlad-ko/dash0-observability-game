@@ -4,7 +4,7 @@
 // processor docs now prefer an exporter's own batching where it has one.
 // Spec: docs/OUTLINE.md §4 Act 5.
 // Spec: https://opentelemetry.io/docs/collector/configuration/#processors , https://opentelemetry.io/docs/collector/components/processor/
-// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/README.md#recommended-processors , https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md
+// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/README.md#recommended-processors , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/memorylimiterprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/processor/batchprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/k8sattributesprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/exporter/exporterhelper/README.md
 //
 // What is taught is the part of the recommended order that is stated without a condition:
 // memory_limiter first; batch after the processors that drop or change data and after those that

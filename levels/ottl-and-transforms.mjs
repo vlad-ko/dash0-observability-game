@@ -4,8 +4,8 @@
 // and says why a Dash0 spam filter is not the way to redact: it drops whole points at ingestion.
 // Spec: docs/OUTLINE.md §4 Act 5.
 // Spec: https://opentelemetry.io/docs/collector/transforming-telemetry/ , https://opentelemetry.io/docs/collector/components/processor/
-// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/attributesprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/redactionprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs/README.md
-// Docs (filter processor, the Collector-side drop checked in step 4): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md
+// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/transformprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/attributesprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/redactionprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/ottl/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/pkg/ottl/ottlfuncs/README.md
+// Docs (filter processor, the Collector-side drop checked in step 4): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/filterprocessor/README.md
 // Dash0 docs: https://www.dash0.com/docs/dash0/cost-control/spam-filters , https://www.dash0.com/docs/dash0/miscellaneous/glossary/auth-tokens
 //
 // What is graded. The configure step grades the wiring through COLLECTOR_SCHEMA (docs/M1-DESIGN.md

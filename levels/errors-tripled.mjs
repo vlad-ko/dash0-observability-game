@@ -9,7 +9,7 @@
 // a sampler that keeps every error does not; compute span metrics before sampling).
 // Spec: docs/OUTLINE.md §4 Act 6.
 // Spec: https://opentelemetry.io/docs/concepts/sampling/#tail-sampling , https://opentelemetry.io/docs/collector/configuration/#connectors
-// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/spanmetricsconnector/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+// Docs (GitHub READMEs, not an allowed Spec host): https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/tailsamplingprocessor/README.md , https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/spanmetricsconnector/README.md , https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/connector/README.md
 // Dash0 tie-in: n/a. No Dash0 docs page was checked for this scenario, and nothing below names a Dash0 feature.
 //
 // The gateway is one pod, on purpose: tail sampling needs all the spans of a trace at one instance, so two gateway pods would

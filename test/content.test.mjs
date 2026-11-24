@@ -91,75 +91,13 @@ test('every level file has a Spec line, and every Spec line in any form cites on
   }
 });
 
-// Collector GitHub sources found unpinned when the repo-wide check landed (#484). Content, not this
-// test, fixes them: each needs its page read at the pinned tag. The exact URLs, in file order, so a
-// new unpinned link fails, so does swapping one for another, and a pinned one must come off the list.
-const GH = 'https://github.com/open-telemetry/opentelemetry-collector';
-const UNPINNED_KNOWN = {
-  'agent-vs-gateway.mjs': [`${GH}-contrib/blob/main/exporter/loadbalancingexporter/README.md`, `${GH}-contrib/blob/main/processor/tailsamplingprocessor/README.md`],
-  'cardinality.mjs': [`${GH}-contrib/blob/main/processor/filterprocessor/README.md`, `${GH}-contrib/blob/main/processor/attributesprocessor/README.md`],
-  'distributions.mjs': [
-    `${GH}-releases/blob/main/distributions/otelcol/manifest.yaml`,
-    `${GH}-releases/blob/main/distributions/otelcol-contrib/manifest.yaml`,
-    `${GH}-releases/blob/main/distributions/otelcol-k8s/manifest.yaml`,
-    `${GH}-releases/blob/main/distributions/otelcol-k8s/README.md`,
-    `${GH}-releases/blob/main/distributions/otelcol-contrib/README.md`,
-    `${GH}/blob/main/exporter/otlpexporter/metadata.yaml`,
-    `${GH}/blob/main/exporter/otlphttpexporter/metadata.yaml`,
-  ],
-  'errors-tripled.mjs': [`${GH}-contrib/blob/main/processor/tailsamplingprocessor/README.md`, `${GH}-contrib/blob/main/connector/spanmetricsconnector/README.md`, `${GH}/blob/main/connector/README.md`],
-  'filter-or-sampler.mjs': [`${GH}-contrib`],
-  'frontend-rum.mjs': [`${GH}/blob/main/receiver/otlpreceiver/README.md#cors-cross-origin-resource-sharing`],
-  'order-matters.mjs': [
-    `${GH}/blob/main/processor/README.md#recommended-processors`,
-    `${GH}/blob/main/processor/memorylimiterprocessor/README.md`,
-    `${GH}/blob/main/processor/batchprocessor/README.md`,
-    `${GH}-contrib/blob/main/processor/k8sattributesprocessor/README.md`,
-    `${GH}/blob/main/exporter/exporterhelper/README.md`,
-  ],
-  'otlp-endpoints.mjs': [
-    `${GH}/blob/main/exporter/otlpexporter/README.md`,
-    `${GH}/blob/main/exporter/otlphttpexporter/README.md`,
-    `${GH}-contrib/blob/main/extension/headerssetterextension/README.md`,
-    `${GH}/blob/main/exporter/otlpexporter/metadata.yaml`,
-    `${GH}/blob/main/exporter/otlphttpexporter/metadata.yaml`,
-    `${GH}/blob/main/CHANGELOG.md`,
-  ],
-  'ottl-and-transforms.mjs': [
-    `${GH}-contrib/blob/main/processor/transformprocessor/README.md`,
-    `${GH}-contrib/blob/main/processor/attributesprocessor/README.md`,
-    `${GH}-contrib/blob/main/processor/redactionprocessor/README.md`,
-    `${GH}-contrib/blob/main/pkg/ottl/README.md`,
-    `${GH}-contrib/blob/main/pkg/ottl/ottlfuncs/README.md`,
-    `${GH}-contrib/blob/main/processor/filterprocessor/README.md`,
-  ],
-  'pipelines.mjs': [
-    `${GH}/blob/main/connector/README.md`,
-    `${GH}/blob/main/processor/memorylimiterprocessor/README.md`,
-    `${GH}-contrib/blob/main/extension/healthcheckextension/README.md`,
-    `${GH}/blob/main/exporter/otlpexporter/metadata.yaml`,
-    `${GH}/blob/main/exporter/otlpexporter/factory.go`,
-    `${GH}/blob/main/exporter/otlphttpexporter/metadata.yaml`,
-    `${GH}/blob/main/CHANGELOG.md`,
-  ],
-  'red-and-use.mjs': [`${GH}-contrib/blob/main/connector/spanmetricsconnector/README.md`, `${GH}-contrib/blob/main/processor/filterprocessor/README.md`, `${GH}-contrib/blob/main/receiver/hostmetricsreceiver/README.md`],
-  'silence.mjs': [
-    `${GH}/blob/main/otelcol/config.go`,
-    `${GH}/blob/main/otelcol/collector.go`,
-    `${GH}/blob/main/confmap/README.md`,
-    `${GH}/blob/main/processor/memorylimiterprocessor/README.md`,
-    `${GH}/blob/main/processor/memorylimiterprocessor/documentation.md`,
-    `${GH}/blob/main/exporter/otlpexporter/README.md`,
-  ],
-};
-
-test(`every Collector GitHub source in a level file is pinned to ${COLLECTOR_VERSION} (the URLs listed in UNPINNED_KNOWN excepted, exactly)`, () => {
+test(`every Collector GitHub source in a level file is pinned to ${COLLECTOR_VERSION}`, () => {
   const found = {};
   for (const f of LEVEL_FILES) {
     const urls = unpinnedCollectorUrls(read(`levels/${f}`));
     if (urls.length > 0) found[f] = urls;
   }
-  assert.deepEqual(found, UNPINNED_KNOWN, 'unpinned Collector GitHub links');
+  assert.deepEqual(found, {}, 'unpinned Collector GitHub links');
 });
 
 test('the Spec and pin scans have teeth: a parenthesised Spec line on a disallowed host fails, so do GitHub on a Spec line and an unpinned Collector link', () => {

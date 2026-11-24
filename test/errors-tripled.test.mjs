@@ -337,8 +337,8 @@ test('sources: Spec lines are opentelemetry.io, Docs lines are GitHub READMEs, t
   const docs = lines.filter((l) => /^\/\/ Docs/.test(l)).flatMap((l) => l.match(/https:\/\/[^\s,]+/g) ?? []);
   assert.equal(docs.length > 0 && docs.every((u) => new URL(u).host === 'github.com'), true);
   for (const u of [
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/tailsamplingprocessor/README.md',
-    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/spanmetricsconnector/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/processor/tailsamplingprocessor/README.md',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.164.0/connector/spanmetricsconnector/README.md',
   ]) assert.equal(docs.includes(u), true, u);
   assert.equal(lines.some((l) => /^\/\/ Invented for the game:/.test(l)), true);
   assert.equal(lines.some((l) => /^\/\/ Dash0 tie-in: n\/a/.test(l)), true);
