@@ -71,11 +71,22 @@ const specHostProblems = (src) => specUrls(src).filter((url) => !SPEC_HOSTS.incl
 const REPO = 'open-telemetry/opentelemetry-collector(?:-contrib|-releases)?';
 const V = COLLECTOR_VERSION.replaceAll('.', '\\.');
 const COLLECTOR_REPO = new RegExp(`^https?://(?:(?:www\\.)?github\\.com|raw\\.githubusercontent\\.com)/${REPO}(?:[/#]|$)`);
-const PINNED = new RegExp(`^https?://(?:(?:www\\.)?github\\.com/${REPO}/(?:blob|tree)|raw\\.githubusercontent\\.com/${REPO})/${V}(?:[/#]|$)`);
+const PINNED = new RegExp(`^https?://(?:(?:www\\.)?github\\.com/${REPO}/(?:blob|tree|raw)|raw\\.githubusercontent\\.com/${REPO})/${V}(?:[/#?]|$)`);
 
 /** The Collector GitHub links in a file (matched lowercased) that are not pinned to COLLECTOR_VERSION right after the repo. */
 const unpinnedCollectorUrls = (src) =>
   urlsIn(src).filter((url) => COLLECTOR_REPO.test(url.toLowerCase()) && !PINNED.test(url.toLowerCase()));
+
+/** Any other open-telemetry GitHub link (specification, proto, js-contrib, ...) whose ref is a moving branch: the page can change under the claim (#505). */
+const OTEL_GITHUB = /^https?:\/\/(?:(?:www\.)?github\.com\/open-telemetry\/[^/]+\/(?:blob|tree|raw)|raw\.githubusercontent\.com\/open-telemetry\/[^/]+)\/(?:main|master|head|refs\/heads\/[^/#?]+)(?:[/#?]|$)/;
+const branchLinkedOtelUrls = (src) => urlsIn(src).filter((url) => OTEL_GITHUB.test(url.toLowerCase()));
+
+/** Every file whose copy cites sources: the level files, the card deck and the act primers. */
+const SOURCE_FILES = [
+  ...LEVEL_FILES.map((f) => `levels/${f}`),
+  'cards/deck.mjs',
+  ...readdirSync(join(ROOT, 'content/core/primers')).filter((f) => f.endsWith('.mjs')).sort().map((f) => `content/core/primers/${f}`),
+];
 
 test('the level files are the registered levels (nothing scanned is unregistered)', () => {
   const ids = LEVEL_FILES.map((f) => f.replace(/\.mjs$/, '')).sort();
@@ -98,6 +109,17 @@ test(`every Collector GitHub source in a level file is pinned to ${COLLECTOR_VER
     if (urls.length > 0) found[f] = urls;
   }
   assert.deepEqual(found, {}, 'unpinned Collector GitHub links');
+});
+
+test(`every Collector GitHub source in a card or primer is pinned to ${COLLECTOR_VERSION}, and no open-telemetry GitHub link in any level, card or primer points at a moving branch`, () => {
+  assert.ok(SOURCE_FILES.length > 40, `the scan found the source files (${SOURCE_FILES.length})`);
+  assert.ok(SOURCE_FILES.includes('cards/deck.mjs') && SOURCE_FILES.some((f) => f.startsWith('content/core/primers/')));
+  const found = {};
+  for (const f of SOURCE_FILES) {
+    const urls = [...unpinnedCollectorUrls(read(f)), ...branchLinkedOtelUrls(read(f))];
+    if (urls.length > 0) found[f] = [...new Set(urls)];
+  }
+  assert.deepEqual(found, {}, 'unpinned open-telemetry GitHub links');
 });
 
 test('the Spec and pin scans have teeth: a parenthesised Spec line on a disallowed host fails, so do GitHub on a Spec line and an unpinned Collector link', () => {
@@ -123,6 +145,8 @@ test('the Spec and pin scans have teeth: a parenthesised Spec line on a disallow
     '// Docs: HTTP://WWW.GitHub.com/open-telemetry/opentelemetry-collector/blob/main/a.md , http://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0/b.md',
     '// Docs: https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/v0.164.0/c.md , https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/main/d.md',
     '// Docs: https://www.github.com/open-telemetry/opentelemetry-collector-releases/tree/v0.164.0/e , https://www.github.com/open-telemetry/opentelemetry-collector-releases/blob/main/f',
+    '// Docs: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.164.0?plain=1 , https://github.com/open-telemetry/opentelemetry-collector/raw/v0.164.0/g.md',
+    '// Docs: https://github.com/open-telemetry/opentelemetry-collector/blob/main?plain=1 , https://github.com/open-telemetry/opentelemetry-collector-contrib/raw/main/h.md',
   ].join('\n');
   assert.deepEqual(specUrls(fixture), [
     'https://opentelemetry.io/docs/collector/',
@@ -158,6 +182,33 @@ test('the Spec and pin scans have teeth: a parenthesised Spec line on a disallow
     'HTTP://WWW.GitHub.com/open-telemetry/opentelemetry-collector/blob/main/a.md',
     'https://raw.githubusercontent.com/open-telemetry/opentelemetry-collector-contrib/main/d.md',
     'https://www.github.com/open-telemetry/opentelemetry-collector-releases/blob/main/f',
+    'https://github.com/open-telemetry/opentelemetry-collector/blob/main?plain=1',
+    'https://github.com/open-telemetry/opentelemetry-collector-contrib/raw/main/h.md',
+  ]);
+});
+
+test('the branch-link scan flags main, master and HEAD on any open-telemetry repo and passes a tag', () => {
+  const fixture = [
+    '// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md',
+    '// https://github.com/open-telemetry/opentelemetry-proto/tree/v1.11.1/docs',
+    '// https://github.com/open-telemetry/opentelemetry-js-contrib/blob/instrumentation-undici-v0.35.1/packages/instrumentation-undici/README.md',
+    '// https://raw.githubusercontent.com/open-telemetry/opentelemetry-js-contrib/Master/README.md',
+    '// https://github.com/open-telemetry/opentelemetry-proto/blob/HEAD/README.md',
+    '// https://github.com/other-org/repo/blob/main/README.md',
+    '// https://github.com/open-telemetry/opentelemetry-specification/blob/main?plain=1',
+    '// https://github.com/open-telemetry/opentelemetry-proto/raw/main/README.md',
+    '// https://github.com/open-telemetry/opentelemetry-specification/blob/refs/heads/main/README.md',
+    '// https://github.com/open-telemetry/opentelemetry-proto/blob/v1.11.1/README.md?plain=1 , https://github.com/open-telemetry/opentelemetry-proto/raw/v1.11.1/README.md',
+    '// https://github.com/open-telemetry/opentelemetry-proto/blob/refs/tags/v1.11.1/README.md , https://github.com/open-telemetry/opentelemetry-proto/blob/mainline-v1/README.md',
+    '// https://github.com/other-org/repo/raw/main/README.md , https://github.com/other-org/repo/blob/refs/heads/main/README.md , https://github.com/other-org/repo/blob/main?plain=1',
+  ].join('\n');
+  assert.deepEqual(branchLinkedOtelUrls(fixture), [
+    'https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md',
+    'https://raw.githubusercontent.com/open-telemetry/opentelemetry-js-contrib/Master/README.md',
+    'https://github.com/open-telemetry/opentelemetry-proto/blob/HEAD/README.md',
+    'https://github.com/open-telemetry/opentelemetry-specification/blob/main?plain=1',
+    'https://github.com/open-telemetry/opentelemetry-proto/raw/main/README.md',
+    'https://github.com/open-telemetry/opentelemetry-specification/blob/refs/heads/main/README.md',
   ]);
 });
 
