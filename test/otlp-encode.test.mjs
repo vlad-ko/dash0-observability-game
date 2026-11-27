@@ -114,6 +114,10 @@ test('intValue only for safe integers and bigints: an unsafe number throws, a bi
   // A bigint beyond 2**53 (and the int64 edge) is encoded digit for digit.
   assert.deepEqual(enc(2n ** 53n + 1n), [{ intValue: '9007199254740993' }]);
   assert.deepEqual(enc(9223372036854775807n), [{ intValue: '9223372036854775807' }]);
+  assert.deepEqual(enc(-(2n ** 63n)), [{ intValue: '-9223372036854775808' }]);
+  // One past either int64 bound is refused, not sent as a wrong int.
+  assert.throws(() => enc(2n ** 63n), RangeError);
+  assert.throws(() => enc(-(2n ** 63n) - 1n), RangeError);
 });
 
 test('events encode name, time and attributes', () => {
@@ -334,6 +338,10 @@ test('metric point values: a bigint is exact asInt, a number beyond 2^53 is asDo
     encodeResourceMetrics([{ name: 'n', type: 'gauge', points: [{ value, timeMs: 1 }] }], ENV)
       .resourceMetrics[0].scopeMetrics[0].metrics[0].gauge.dataPoints[0];
   assert.equal(point(9007199254740993n).asInt, '9007199254740993');
+  assert.equal(point(2n ** 63n - 1n).asInt, '9223372036854775807');
+  assert.equal(point(-(2n ** 63n)).asInt, '-9223372036854775808');
+  assert.throws(() => point(2n ** 63n), RangeError);
+  assert.throws(() => point(-(2n ** 63n) - 1n), RangeError);
   const big = point(1e16);
   assert.equal(big.asDouble, 1e16);
   assert.equal(Object.hasOwn(big, 'asInt'), false);
