@@ -118,7 +118,7 @@ function screens(ctx, say) {
   const body = ctx.ovBody;
   const actions = ctx.ovActions;
   const $ = (sel) => body.querySelector(sel);
-  const screen = (...parts) => step({ bodyHtml: parts.join('') });
+  const screen = (...parts) => step({ surface: 'game', bodyHtml: parts.join('') });
   const bar = (buttonsHtml) => actionsBar({ buttonsHtml });
 
   if (!tele) {

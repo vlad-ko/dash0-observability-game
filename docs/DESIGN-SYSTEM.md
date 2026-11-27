@@ -67,7 +67,7 @@ each function's JSDoc for the exact markup.
 
 | Call | Module | What |
 | --- | --- | --- |
-| `step({wide, bodyHtml})`, `split({mainHtml, sideHtml})`, `actions({wide, buttonsHtml})` | layout | Step frame (narrow or wide), board plus side column (inside a wide step), actions bar. |
+| `step({surface, wide, bodyHtml})`, `split({mainHtml, sideHtml})`, `actions({wide, buttonsHtml})` | layout | Step frame (narrow or wide; `surface` is required: `'game'`, `'dash0'` or `null`; `null` is only for a frame that is not a step (the act primer) and draws no chip and no `data-surface`; otherwise it shows as `data-surface` and a chip), board plus side column (inside a wide step), actions bar. |
 | `lesson(bodyHtml)` | text | The glow lesson card ("Lesson" eyebrow, glow top left). |
 | `question({id, html})`, `stepHead({step, titleHtml, noteHtml})`, `eyebrow(text)`, `hintHead(label, subject?)` | text | The step's question; "Step N" heading; mono label; the head of every hint (the eyebrow "Hint 1 of 3", and the thing it is about on its own line in its own case: the eyebrow upper-cases, so an identifier never goes in it, #332). |
 | `note(bodyHtml)`, `prose(bodyHtml)`, `codeBlock(text)` | text | Muted small print; classless authored content (a `<pre data-wrap>` inside prose wraps, for log and command output; any other `pre` scrolls sideways; for links see "Links in prose" under Modal); escaped code; `codeBlock(text, {wrap})` soft-wraps (`data-wrap`) for env lines and output, a block that scrolls shows a fade at each edge with more behind it (#332). |

@@ -92,6 +92,7 @@ function screens(ctx, say) {
   const stepOneTrace = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.oneTraceIntro)}${question({ id: 'sat-q-one', html: say.oneTraceQuestion })}${choiceHtml(ctx, ONE_TRACE, { id: 'sat', labelledBy: 'sat-q-one' })}`,
       }),
@@ -110,6 +111,7 @@ function screens(ctx, say) {
   const stepTree = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.treeIntro)}${question({ html: say.treeQuestion })}${renderBuild(TREE_SPEC, newBuildState(TREE_SPEC), { escapeHtml: ctx.escapeHtml })}`,
       }),
@@ -127,6 +129,7 @@ function screens(ctx, say) {
   const stepOther = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.otherIntro)}${question({ id: 'sat-q-other', html: say.otherQuestion })}${choiceHtml(ctx, OTHER, { id: 'sat-e', labelledBy: 'sat-q-other' })}`,
       }),

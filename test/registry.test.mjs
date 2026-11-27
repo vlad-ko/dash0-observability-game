@@ -161,7 +161,7 @@ test('the built level holds exactly the §2.1 fields plus actId and kind', () =>
   const reg = buildRegistry(baseline(), { deck: DECK, nodeIds: ['n1'] });
   assert.deepEqual(Object.keys(reg.levels.x).sort(), [
     'actId', 'cards', 'hintless', 'icon', 'id', 'kind', 'lights', 'mechanics', 'name', 'no', 'play',
-    'rewardTitle', 'run', 'scored', 'scoring', 'sub', 'widgets',
+    'rewardTitle', 'run', 'scored', 'scoring', 'sub', 'surfaces', 'widgets',
   ]);
 });
 

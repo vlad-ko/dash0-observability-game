@@ -61,6 +61,7 @@ function screens(ctx, say) {
   const stepParts = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.partsIntro)}${question({ id: 'otel-q-parts', html: say.partsQuestion })}${renderSort(PARTS, newSortState(PARTS), { escapeHtml: ctx.escapeHtml, labelledBy: 'otel-q-parts' })}`,
       }),
@@ -79,6 +80,7 @@ function screens(ctx, say) {
   const stepDependsOn = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.dependsOnIntro)}${question({ id: 'otel-q-dep', html: say.dependsOnQuestion })}${choiceHtml(ctx, DEPENDS_ON, { id: 'otel', labelledBy: 'otel-q-dep' })}`,
       }),

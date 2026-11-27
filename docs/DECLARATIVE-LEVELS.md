@@ -148,7 +148,7 @@ Derived `mechanics`: `['build']`, as pinned (`act-2.test.mjs:46`).
 
 ## 3. The generic runner
 
-**Where it lives.** `lib/play.mjs` exports `STEP_TYPES`, `validatePlay(play) → {errors, mechanics, widgets}` and `runPlay(level, ctx)`.
+**Where it lives.** `lib/play.mjs` exports `STEP_TYPES`, `validatePlay(play, types?) → {errors, mechanics, widgets, hintless, surfaces}` and `runPlay(level, ctx, types?)`; `types` defaults to `STEP_TYPES` and is for tests only (a fixture step type).
 - `buildRegistry(acts, {deck, nodeIds, play})` takes the kit `{validatePlay, runPlay}` as an option. The registry does not import it, because widgets import `isId` from the registry (`sort-it.mjs:8`, `incident.mjs:12`), which would create a cycle.
 - `liveRegistry` (`app.mjs:26-28`) passes it in. `openLevel` is unchanged: it calls `level.run(ctx)` (`app.mjs:231`).
 
@@ -161,6 +161,7 @@ Derived `mechanics`: `['build']`, as pinned (`act-2.test.mjs:46`).
 **`runPlay`** (one closure per run, no module-level state). The sketch below is the shape after #158; `lib/play.mjs` is the source of truth.
 
 ```js
+// `steps` is play.steps filtered by ctx.dash0Task?.available?.(), read once when the level opens (#509)
 const show = (i) => {
   const step = steps[i], type = typeOf(step), spec = step[type.key], last = i === steps.length - 1;
   const qid = step.qid ?? `${type.idOf(spec)}-q`;
@@ -170,7 +171,7 @@ const show = (i) => {
     + (step.question == null ? '' : question({ id: qid, html: step.question }))  // h3.ui-question
     + type.render(ctx, spec, { labelledBy: step.question != null && type.labelled ? qid : undefined });
   ctx.renderStep(
-    kitStep({ wide: type.wide, bodyHtml: body }),
+    kitStep({ surface: type.surface, wide: type.wide, bodyHtml: body }),
     actions({ wide: type.wide, buttonsHtml: last ? finishButton(`${prefix}-finish`)   // data-finish, disabled
                                                  : nextButton(`${prefix}-next`) }));  // disabled
   const btn = ctx.ovActions.querySelector(`#${prefix}-${last ? 'finish' : 'next'}`);
@@ -187,6 +188,7 @@ STEP_TYPES[key] = {
   key, mechanic,          // a MECHANICS value, or null (choice)
   labelled,               // question required; render receives labelledBy
   wide,                   // true: a wide step (board with a side column); false: narrow (#158)
+  surface,                // 'game' | 'dash0' (#509): where the step happens; the frame shows it as a chip
   idOf(spec),             // the widget id: `${id}-q`, `${id}-feedback`
   validate(spec) → string[],  // pure, never throws, every problem; includes I7 (reference passes the checker)
                               // and "the given state is not already solved"
@@ -297,6 +299,9 @@ Run when the registry is built; all errors are collected into one `RegistryError
 - `code` and `show` are strings;
 - widget ids unique within the level;
 - `prefix` is a plain token;
+- **surface (#509), placement:** each step type has a `surface`, `'game'` (every type today) or `'dash0'`. It is never written in a step. `validatePlay` returns `surfaces` (order of first appearance); a level needs at least one `game` step, a `dash0` step is never step 1, and `mechanics`, `widgets` and `hintless` come from `game` steps only;
+- **surface (#509), running:** `runPlay` reads `ctx.dash0Task?.available?.()` once when the level opens; when it is false or absent the `dash0` steps are left out and the last game step shows Finish. The kit frame shows the surface as a chip and `data-surface`;
+- **surface (#509), vocabulary:** a `game` screen never titles a heading or panel with a Dash0 screen name (`lib/content/surface.mjs`) or "simulated Dash0"; `test/levels-play.test.mjs` pins it, with a shrink-only allowlist;
 - the `finish` text length;
 - every type's `validate`.
 

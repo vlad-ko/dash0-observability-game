@@ -23,8 +23,12 @@ const ESCAPED = '&lt;b&gt;&quot;&amp;';
 // ---- T10 exact markup, one helper family at a time ------------------------------------
 
 test('layout: step, split, actions', () => {
-  assert.equal(step({ bodyHtml: '<p>x</p>' }), '<div class="ui-step"><p>x</p></div>');
-  assert.equal(step({ wide: true, bodyHtml: 'b' }), '<div class="ui-step ui-step--wide">b</div>');
+  const game = '<span class="ui-chip" data-tone="neutral">In the game</span>';
+  const dash0 = '<span class="ui-chip" data-tone="attention">In Dash0</span>';
+  assert.equal(step({ surface: 'game', bodyHtml: '<p>x</p>' }), `<div class="ui-step" data-surface="game">${game}<p>x</p></div>`);
+  assert.equal(step({ surface: 'game', wide: true, bodyHtml: 'b' }), `<div class="ui-step ui-step--wide" data-surface="game">${game}b</div>`);
+  assert.equal(step({ surface: null, bodyHtml: 'b' }), '<div class="ui-step">b</div>');
+  assert.equal(step({ surface: 'dash0', bodyHtml: 'b' }), `<div class="ui-step" data-surface="dash0">${dash0}b</div>`);
   assert.equal(split({ mainHtml: 'm', sideHtml: 's' }),
     '<div class="ui-split"><div class="ui-split-main">m</div><div class="ui-split-side">s</div></div>');
   assert.equal(actions({ buttonsHtml: 'b' }), '<div class="ui-actions">b</div>');
@@ -285,7 +289,7 @@ test('side: help chips say on or off in words; stars; the column keeps the help-
 
 // [name, call with a text param set to `t` (or null), call with an *Html param set to `h` (or null)]
 const CASES = [
-  ['step', null, (h) => step({ bodyHtml: h })],
+  ['step', null, (h) => step({ surface: 'game', bodyHtml: h })],
   ['split', null, (h) => split({ mainHtml: h, sideHtml: h })],
   ['actions', null, (h) => actions({ buttonsHtml: h })],
   ['lesson', null, (h) => lesson(h)],
@@ -332,7 +336,7 @@ const VARIANTS = () => [
   ...BUTTON_VARIANTS.map((variant) => button({ label: 'l', variant, ...(variant === 'icon' ? { icon: 'x' } : {}) })),
   ...TONES.map((tone) => chip({ text: 't', tone, dot: true, swatch: 0, dashed: true })),
   ...DOTS_TONES.map((tone) => dots({ total: 2, on: 1, decorative: true, tone })),
-  step({ wide: true, bodyHtml: '' }), actions({ wide: true, buttonsHtml: '' }), feedback({ id: 'f', bar: true }),
+  step({ surface: 'game', wide: true, bodyHtml: '' }), step({ surface: 'dash0', bodyHtml: '' }), actions({ wide: true, buttonsHtml: '' }), feedback({ id: 'f', bar: true }),
   field({ id: 'f', label: 'l', kind: 'code', noteHtml: 'n' }), field({ id: 'f', label: 'l' }),
   radio({ name: 'r', value: 'v', labelHtml: 'l' }), checkbox({ labelHtml: 'l' }), radioGroup({ legend: 'l', itemsHtml: '' }),
   fold({ value: 'v', titleHtml: 't', metaHtml: 'm', bodyHtml: 'b', open: true, fresh: true }),
@@ -438,9 +442,14 @@ test('T10 each tone and coloured state is pinned by the declaration that renders
 // [name, thunk] that must throw a TypeError whose message starts with `<name>:`.
 const INVALID = [
   ['step', () => step()],
-  ['step', () => step({ bodyHtml: 1 })],
-  ['step', () => step({ bodyHtml: '', wide: 'yes' })],
-  ['step', () => step({ bodyHtml: '', narrow: true })],
+  ['step', () => step({ surface: 'game', bodyHtml: 1 })],
+  ['step', () => step({ surface: 'game', bodyHtml: '', wide: 'yes' })],
+  ['step', () => step({ surface: 'game', bodyHtml: '', narrow: true })],
+  ['step', () => step({ bodyHtml: '' })],
+  ['step', () => step({ surface: undefined, bodyHtml: '' })],
+  ['step', () => step({ surface: 'Game', bodyHtml: '' })],
+  ['step', () => step({ surface: '', bodyHtml: '' })],
+  ['step', () => step({ surface: 'both', bodyHtml: '' })],
   ['split', () => split({ mainHtml: 'm' })],
   ['actions', () => actions({ buttonsHtml: null })],
   ['lesson', () => lesson()],
