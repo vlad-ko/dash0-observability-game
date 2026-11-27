@@ -1,4 +1,4 @@
-// lib/service-view.mjs: the simulated Dash0 service view of the span kinds hunt (level 2.2):
+// lib/service-view.mjs: the concept service view (not a Dash0 screen) of the span kinds hunt (level 2.2):
 // requests per service from SERVER spans, the map edges, and the hunt's flag verdicts.
 // Asserts strings, numbers, booleans and nulls only.
 import { test } from 'node:test';
