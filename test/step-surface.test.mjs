@@ -35,8 +35,8 @@ const choiceStep = (id) => ({
 const remoteStep = (id) => ({ intro: 'Now do it in Dash0.', remote: { id } });
 const playOf = (...steps) => ({ prefix: 'sf', finish: 'You did it, and the level is done.', steps });
 
-test('every live step type says where it happens, and all of them are in the game', () => {
-  for (const [key, type] of Object.entries(STEP_TYPES)) assert.equal(type.surface, 'game', key);
+test('every live step type says where it happens: all in the game but the In Dash0 step (P6)', () => {
+  for (const [key, type] of Object.entries(STEP_TYPES)) assert.equal(type.surface, key === 'dash0' ? 'dash0' : 'game', key);
 });
 
 test('validatePlay returns the surfaces in order of first appearance', () => {

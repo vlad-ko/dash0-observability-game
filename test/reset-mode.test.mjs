@@ -1,6 +1,7 @@
 // ?mode=reset: the owner's fresh-start switch. main.mjs calls takeReset(window) before progress loads.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { SKIPPED_KEY } from '../lib/dash0-task/prefs.mjs';
 import { isResetMode, RESET_KEYS, takeReset } from '../lib/reset-mode.mjs';
 import { CORRUPT_KEY, CORRUPT_LATEST_KEY, STORAGE_KEY } from '../lib/storage.mjs';
 import { HELP_KEY } from '../lib/help-prefs.mjs';
@@ -40,7 +41,7 @@ test('isResetMode is true only for mode=reset exactly', () => {
 });
 
 test('the key list is exactly the game\'s own storage keys', () => {
-  assert.deepEqual([...RESET_KEYS].sort(), [CORRUPT_KEY, CORRUPT_LATEST_KEY, HELP_KEY, PRIMER_KEY, STORAGE_KEY].sort());
+  assert.deepEqual([...RESET_KEYS].sort(), [CORRUPT_KEY, CORRUPT_LATEST_KEY, HELP_KEY, PRIMER_KEY, SKIPPED_KEY, STORAGE_KEY].sort());
 });
 
 test('reset removes every game key and leaves an unrelated key alone', () => {

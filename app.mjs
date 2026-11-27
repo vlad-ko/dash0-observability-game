@@ -28,6 +28,9 @@ import { primerBodyHtml, primerZoneHtml } from './lib/primer-view.mjs';
 import { createTermPopovers } from './lib/term-popover.mjs';
 import { createGuideClient } from './lib/guide/client.mjs';
 import { createAccountClient } from './lib/account/client.mjs';
+import { createDash0TaskClient, isDash0AppUrl } from './lib/dash0-task/client.mjs';
+import { changeSkipped, readSkipped, SKIPPED_KEY } from './lib/dash0-task/prefs.mjs';
+import DASH0_COPY from './content/core/ui/dash0-task.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
 import { NICK_RE } from './lib/account/nickname.mjs';
 import { setFeedback } from './lib/ui/index.mjs';
@@ -210,6 +213,14 @@ export function createGame(deps) {
   const accountClient = typeof request === 'function' && debug !== true ? createAccountClient({ fetch: request }) : null;
   // Level feedback (#370): without a fetch, or in debug, the game never asks the server (debug still shows the button, and never sends).
   const feedbackClient = typeof request === 'function' && debug !== true ? createFeedbackClient({ fetch: request }) : null;
+  // The In Dash0 task client (#509): without a fetch, or in debug, there is none, so ctx.dash0Task is null and a level plays as a
+  // game-only level without a word about it. `self` is the component, read for the signed-in state when a level opens.
+  let self = null;
+  const dash0Client = typeof request === 'function' && debug !== true
+    ? createDash0TaskClient({ fetch: request, signedIn: () => self?.signedIn === true })
+    : null;
+  const skippedMemory = new Map(); // level id -> task ids left out this visit, kept when storage cannot hold them
+  let skipRun = null; // the open run's {levelId, cause} once its In Dash0 task was left out (the reward says so, and later steps skip at once)
   let feedbackDialog = null;
   let liveCtx = null; // the open level's ctx, read for the screen the player is on
   let syncing = null; // the running sync chain
@@ -307,6 +318,8 @@ export function createGame(deps) {
     rewardText: '',
     rewardStars: null,
     rewardCards: [],
+    rewardNotice: '', // the notice of an In Dash0 task this run left out (D7); '' when none
+    dash0Rev: 0, // bumped when the remembered In Dash0 tasks change, here or in another tab (onStorage)
     globeFallback: false,
     // Sign-in and saved progress (#273). account.state: 'unknown' until GET /api/account answers, then
     // 'unconfigured' | 'signedOut' | 'signedIn' | 'unavailable'. Nothing shows unless signedOut or signedIn.
@@ -326,6 +339,7 @@ export function createGame(deps) {
     litNote: '', // "Germany is now lit: The signals.": the polite announcement and the fallback's first line
 
     init() {
+      self = this;
       win?.addEventListener('storage', (e) => this.onStorage(e));
       // Leaving the page (or entering the back/forward cache) frees the WebGL context.
       win?.addEventListener('pagehide', (e) => {
@@ -347,6 +361,7 @@ export function createGame(deps) {
       play?.init();
       this.showGlobe();
       guideClient?.status();
+      dash0Client?.load();
       feedbackClient?.status().then((on) => { this.feedbackOn = on; });
       this.loadAccount();
     },
@@ -661,7 +676,7 @@ export function createGame(deps) {
       const l = registry.levels[id];
       const head = l.kind === 'boss' ? 'Incident' : l.no;
       const sub = l.sub ? ` ${endSentence(l.sub)}` : '';
-      return `${head}: ${endSentence(l.name)}${sub} ${STATE_LABELS[this.levelState(id)]}${this.isNextUp(id) ? ', next up' : ''}`;
+      return `${head}: ${endSentence(l.name)}${sub} ${STATE_LABELS[this.levelState(id)]}${this.isNextUp(id) ? ', next up' : ''}${this.taskWaiting(id) ? `, ${DASH0_COPY.waitingLabel}` : ''}`;
     },
     // The card subtitle: the lock reason while nudged, else the level's sub.
     levelSub(id) {
@@ -937,6 +952,7 @@ export function createGame(deps) {
         this.openPrimer(actId, { then: id, from });
         return false;
       }
+      self = this;
       this.endSession();
       this.hideGlobe();
       this.litNote = '';
@@ -953,7 +969,9 @@ export function createGame(deps) {
       // The guide is decided before the level runs, for the first widget it lists; the first step then
       // says which widget it really shows (onWidget) and each later step does too. Stored choices are
       // read at every decision, so another tab's Don't show again counts. A failed read shows the guide.
-      this.howTo = howToView(level);
+      skipRun = null;
+      this.rewardNotice = '';
+      this.howTo = howToView(level, { dash0: dash0Client?.available() === true });
       this.howToKey = this.howTo.topics[0]?.key ?? null;
       this.howToOpen = this.howToKey !== null && this.howToNew(this.howToKey);
       this.howToAuto = this.howToOpen;
@@ -994,6 +1012,16 @@ export function createGame(deps) {
           onWidget,
           glossary,
           termPops,
+          dash0Task: dash0Client && {
+            available: dash0Client.available,
+            reason: dash0Client.reason,
+            start: dash0Client.start,
+            check: dash0Client.check,
+            isDash0AppUrl,
+            skip: (taskIds, cause) => this.skipDash0(controller, id, taskIds, cause),
+            passed: (taskId) => this.passDash0(controller, id, taskId),
+            downCause: () => skipRun?.cause ?? null,
+          },
         });
         level.run(ctx);
       } catch (e) {
@@ -1003,6 +1031,36 @@ export function createGame(deps) {
       if (this.howToOpen) this.focusSoon('#ov-howto-title');
       else this.focusStepStart();
       return true;
+    },
+
+    // ---------- In Dash0 tasks left out (#509, D7) ----------
+    // The open run left `taskIds` of level `levelId` out ('off': the server is off or not answering; 'signed-out'): remember them,
+    // so the hub says the task is waiting, and keep the cause for the reward's notice. A stale run (another level opened since) says nothing.
+    skipDash0(controller, levelId, taskIds, cause) {
+      if (session !== controller) return;
+      skipRun = { levelId, cause };
+      const kept = [...new Set([...(skippedMemory.get(levelId) ?? []), ...taskIds])];
+      skippedMemory.set(levelId, kept);
+      changeSkipped(storage, levelId, { add: taskIds });
+      this.dash0Rev++;
+    },
+    // The player did the task: it is no longer waiting.
+    passDash0(controller, levelId, taskId) {
+      if (session !== controller) return;
+      const left = (skippedMemory.get(levelId) ?? []).filter((t) => t !== taskId);
+      if (left.length > 0) skippedMemory.set(levelId, left);
+      else skippedMemory.delete(levelId);
+      changeSkipped(storage, levelId, { remove: [taskId] });
+      this.dash0Rev++;
+    },
+    // True when the level has an In Dash0 task the player left out and the registry still has it (the hub's marker).
+    taskWaiting(id) {
+      void this.dash0Rev;
+      if (this.debug || !registry.levels[id]?.surfaces?.includes('dash0')) return false;
+      return (skippedMemory.get(id)?.length ?? 0) > 0 || (readSkipped(storage).levels.get(id)?.length ?? 0) > 0;
+    },
+    taskWaitingText() {
+      return DASH0_COPY.waiting;
     },
 
     nudge(id) {
@@ -1359,6 +1417,7 @@ export function createGame(deps) {
       this.fireConfetti();
       this.rewardTitle = level?.rewardTitle ?? 'Level complete';
       this.rewardText = result.text;
+      this.rewardNotice = skipRun?.levelId === levelId ? DASH0_COPY.notices[skipRun.cause] ?? '' : '';
       this.rewardStars = level?.scored ? result.stars : null; // this run's stars
       this.rewardCards = rec.newCards.map((c) => cardFront[c] ?? c);
       this.rewardOpen = true;
@@ -1459,6 +1518,7 @@ export function createGame(deps) {
         if (!this.howToFlagged()) this.howToNote = '';
       }
       if (e && (e.key === PRIMER_KEY || e.key === null)) this.primerRev++;
+      if (e && (e.key === SKIPPED_KEY || e.key === null)) this.dash0Rev++;
       if (e && e.key !== STORAGE_KEY && e.key !== null) return;
       const { status, progress: other } = loadProgress(storage, registry);
       if (status === 'future') this.notice = 'future';

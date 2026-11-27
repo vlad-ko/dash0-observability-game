@@ -139,6 +139,7 @@
                   <div class="level-status" aria-hidden="true">
                     <span class="level-stars" x-show="levelState(id) === 'done' &amp;&amp; level(id).scored" x-text="starText(id)"></span>
                     <span class="ui-chip" data-tone="attention" x-show="isNextUp(id)">Next up</span>
+                    <span class="ui-chip" data-tone="neutral" x-show="taskWaiting(id)" x-cloak x-text="taskWaitingText()"></span>
                     <span x-text="levelStatusText(id)"></span>
                   </div>
                 </div>
@@ -223,6 +224,7 @@
         <template x-for="(para, i) in rewardParagraphs()" :key="i"><p x-text="para"></p></template>
       </div>
       <p x-show="rewardDebug" x-cloak x-text="rewardNote()"></p>
+      <p class="ui-note" id="reward-dash0" x-show="rewardNotice !== ''" x-cloak x-text="rewardNotice"></p>
       <div class="reward-cards" x-show="rewardCards.length > 0">
         <p class="reward-cards-title">New nuance card</p>
         <template x-for="front in rewardCards" :key="front">

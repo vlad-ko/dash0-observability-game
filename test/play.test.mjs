@@ -63,6 +63,7 @@ const REASONS = {
   choice: 'Pick the right answer', sort: 'Sort every item', build: buildReason, incident: 'Name the cause',
   spot: 'Pick every line that matches and press Check', tradeoff: 'Pick a plan that fits and press Check',
   query: 'Run a query that passes', configure: 'Fix the config and press Check',
+  dash0: 'Do the task in Dash0 and press Check',
 };
 
 test('every step type has a reason stem, and it is the pinned one', () => {
@@ -174,7 +175,8 @@ test('the suite played at least one level', () => {
 });
 
 test('every step type has a driver and every driver a step type', () => {
-  assert.deepEqual(Object.keys(STEP_DRIVERS).sort(), Object.keys(STEP_TYPES).sort());
+  // The In Dash0 step has no driver (#509): the harness has no task server, so runPlay leaves it out; test/dash0-task-step.test.mjs plays it.
+  assert.deepEqual(Object.keys(STEP_DRIVERS).sort(), Object.keys(STEP_TYPES).filter((k) => STEP_TYPES[k].surface === 'game').sort());
 });
 
 test('code is plain text: an <img onerror> in it renders escaped', () => {
@@ -382,7 +384,7 @@ test('two bad steps are two errors, not one', () => {
   const lv = playFixture();
   lv.play.steps = [{ intro: 'x' }, { intro: 'y', choice: lv.play.steps[0].choice, sort: lv.play.steps[1].sort }];
   assert.deepEqual(errorsOf(lv), [
-    `${AT}: step 1 has no step type (one of choice, sort, build, incident, spot, tradeoff, query, configure)`,
+    `${AT}: step 1 has no step type (one of choice, sort, build, incident, spot, tradeoff, query, configure, dash0)`,
     `${AT}: step 2 has two step types ("choice", "sort")`,
   ]);
   assert.throws(() => build(lv), RegistryError);

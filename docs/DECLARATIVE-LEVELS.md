@@ -70,6 +70,7 @@ A level file keeps today's metadata (FOUNDATION §2.1) and declares `play` inste
 | `query` | QuerySpec (§4.7 of M1-DESIGN): `{id, dataset: '<name>', at, reference: '<query>', given?, hint?, explain}`, graded by comparing result series | query | live |
 | `spot` | SpotSpec (§4.4 of M1-DESIGN) | spot | live |
 | `tradeoff` | TradeoffSpec (§4.5 of M1-DESIGN) | tradeoff | live |
+| `dash0` | `{id, task, grader: 'seeded'\|'readback', answers: [question id]}`. The step happens in the real Dash0 (`surface: 'dash0'`) and the task server checks it (§2.6 of FOUNDATION, `lib/widgets/dash0-task*.mjs`). `task` and `grader` and `answers` are logic-only; the brief is the step's `intro`, the optional `question`, and the content adds `fields: [{key, label, hint?}]`, one per question id and no others. Each question has its own field and Check (one `{question, value}` per call) and the step passes once every question has passed; ids are plain words such as `faultCode`. No answer is ever in the spec: the server derives it. No mechanic, no Hint button, no Ask the guide. A play with one needs a game step first and its `finish` may not refer to it | none | live (#509; no level uses it yet) |
 
 **Rule: data holds names; code holds the functions they name.** A checker, dataset or grader is a function in its widget module, registered by name; a level refers to it by an id string. `play` must be plain data: objects, arrays, strings, finite numbers, booleans and null. Values computed when the module loads are fine, because they are data by the time the registry sees them (e.g. checkout-is-slow's triage tables).
 
@@ -301,6 +302,7 @@ Run when the registry is built; all errors are collected into one `RegistryError
 - `prefix` is a plain token;
 - **surface (#509), placement:** each step type has a `surface`, `'game'` (every type today) or `'dash0'`. It is never written in a step. `validatePlay` returns `surfaces` (order of first appearance); a level needs at least one `game` step, a `dash0` step is never step 1, and `mechanics`, `widgets` and `hintless` come from `game` steps only;
 - **surface (#509), running:** `runPlay` reads `ctx.dash0Task?.available?.()` once when the level opens; when it is false or absent the `dash0` steps are left out and the last game step shows Finish. The kit frame shows the surface as a chip and `data-surface`;
+- **surface (#509), finish text:** `play.finish` is shown whether or not the `dash0` steps ran, so it may not contain "In Dash0" or a `dash0` step's `id` or `task` (checked only in a play that has one). The par clock stops during a `dash0` step (FOUNDATION §2.1);
 - **surface (#509), vocabulary:** a `game` screen never titles a heading or panel with a Dash0 screen name (`lib/content/surface.mjs`) or "simulated Dash0"; `test/levels-play.test.mjs` pins it, with a shrink-only allowlist;
 - the `finish` text length;
 - every type's `validate`.

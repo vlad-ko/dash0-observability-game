@@ -205,8 +205,8 @@ test('the guide status is fetched once at init and the level ctx carries it (deb
     game.openLevel('x');
     game.closeOverlay();
     game.openLevel('x');
-    // The feedback status (#370) and the account's one GET (#273) ride along outside debug; debug never asks.
-    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/feedback', 'GET'], ['/api/account', 'GET']];
+    // The task server's status (#509), the feedback status (#370) and the account's one GET (#273) ride along outside debug; debug never asks.
+    const expected = debug ? [['/api/guide', 'GET']] : [['/api/guide', 'GET'], ['/api/dash0-task', 'GET'], ['/api/feedback', 'GET'], ['/api/account', 'GET']];
     assert.deepEqual(calls, expected, 'one status request per page');
     assert.equal(ctxs.x.guide.configured, true);
     assert.equal(typeof ctxs.x.guide.ask, 'function');

@@ -30,8 +30,9 @@ const PENALTIES = {
 const level = (extra = {}) => ({ widgets: ['choice', 'sort'], scored: true, scoring: { parMs: null }, ...extra });
 
 test('one entry per widget, nothing else', () => {
-  assert.deepEqual(Object.keys(HOW_TO).sort(), [...WIDGETS].sort());
-  assert.deepEqual(Object.keys(STEP_TYPES).sort(), [...WIDGETS].sort());
+  // The In Dash0 step (#509) is not a widget a level lists: howToView adds its topic when the task server is on.
+  assert.deepEqual(Object.keys(HOW_TO).sort(), [...WIDGETS, 'dash0'].sort());
+  assert.deepEqual(Object.keys(STEP_TYPES).sort(), [...WIDGETS, 'dash0'].sort());
 });
 
 test("each entry's penalty is its widget's PENALTY object, never retyped", () => {

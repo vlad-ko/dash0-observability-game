@@ -207,10 +207,16 @@ const configure = {
 
 export const STEP_DRIVERS = { choice, sort, build, incident, spot, tradeoff, query, configure };
 
-/** A play level's steps as `{step, key, spec, type, driver}` in order. */
-export function stepsOf(level) {
-  return level.play.steps.map((step) => {
-    const key = Object.keys(STEP_TYPES).find((k) => Object.hasOwn(step, k));
-    return { step, key, spec: step[key], type: STEP_TYPES[key], driver: STEP_DRIVERS[key] };
-  });
+/**
+ * A play level's steps as `{step, key, spec, type, driver}` in order, the ones runPlay shows: the harness has no ctx.dash0Task, so
+ * the In Dash0 steps are left out (they have no driver; test/dash0-task-step.test.mjs plays them with a fake client).
+ * `{dash0: true}` keeps them, for a test that counts a level's steps.
+ */
+export function stepsOf(level, { dash0 = false } = {}) {
+  return level.play.steps
+    .map((step) => {
+      const key = Object.keys(STEP_TYPES).find((k) => Object.hasOwn(step, k));
+      return { step, key, spec: step[key], type: STEP_TYPES[key], driver: STEP_DRIVERS[key] };
+    })
+    .filter(({ type }) => dash0 || type.surface !== 'dash0');
 }
