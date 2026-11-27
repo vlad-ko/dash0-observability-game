@@ -56,13 +56,22 @@ test('the server off, a failed or odd status read all mean off (never signed-out
 test('the request bodies carry exactly the contract keys, nothing else', async () => {
   const r = rig({ post: json(200, START_OK) });
   await r.client.start('p95-task');
-  await r.client.check('p95-task', 'a1b2', { question: 'p95', value: '412' });
+  await r.client.check('p95-task', 'a1b2', { question: 'operation', value: '412' });
   const [start, check] = r.calls;
   assert.deepEqual([start.method, start.url, start.headers], ['POST', DASH0_TASK_URL, { 'content-type': 'application/json' }]);
   assert.deepEqual(start.body, { v: 1, op: 'start', taskId: 'p95-task' });
   assert.deepEqual(Object.keys(start.body).sort(), ['op', 'taskId', 'v']);
-  assert.deepEqual(check.body, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1b2', answer: { question: 'p95', value: '412' } });
+  assert.deepEqual(check.body, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1b2', answer: { question: 'operation', value: '412' } });
   assert.deepEqual(Object.keys(check.body).sort(), ['answer', 'attemptId', 'op', 'taskId', 'v']);
+});
+
+test('a readback check (no answer given) sends a body with no answer key at all, which the server would refuse', async () => {
+  const r = rig({ post: json(200, { v: 1, outcome: 'pass', charge: false }) });
+  await r.client.check('p95-task', 'a1b2');
+  const [call] = r.calls;
+  assert.deepEqual(call.body, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1b2' });
+  assert.equal(Object.hasOwn(call.body, 'answer'), false);
+  assert.equal(r.calls.length, 1);
 });
 
 test('start: ok, with the asset name only when the server sends one', async () => {
@@ -75,12 +84,16 @@ test('start: ok, with the asset name only when the server sends one', async () =
 test('start: an inconclusive answer, an odd body and every HTTP status map to an outcome, never a throw', async () => {
   const cases = [
     [json(200, { v: 1, ok: false, outcome: 'inconclusive', reason: 'settling', retryAfterS: 12 }), { reason: 'settling', retryAfterS: 12 }],
+    [json(400, { ok: false, error: 'bad-request', field: 'taskId' }), { reason: 'unavailable', retryAfterS: 60 }],
+    [json(404, { error: 'unknown-task' }), { reason: 'unavailable', retryAfterS: 60 }],
+    [json(409, { error: 'stale-attempt' }), { reason: 'stale', restart: true }],
+    [json(410, { error: 'expired' }), { reason: 'expired', restart: true }],
     [json(200, { v: 1, ok: true }), { reason: 'unavailable' }],
     [json(200, { ok: true, attemptId: 'x' }), { reason: 'unavailable' }],
     [json(502, { ok: false, outcome: 'inconclusive', reason: 'ingest', retryAfterS: 10 }), { reason: 'ingest', retryAfterS: 10 }],
     [json(401, {}), { reason: 'signed-out', down: 'signed-out' }],
     [json(503, {}), { reason: 'off', down: 'off' }],
-    [json(429, { v: 1, retryAfterS: 45 }), { reason: 'rate-limited', retryAfterS: 45 }],
+    [json(429, { error: 'rate-limited', retryAfterS: 45 }), { reason: 'rate-limited', retryAfterS: 45 }],
     [json(429, {}), { reason: 'rate-limited', retryAfterS: 60 }],
     [json(500, {}), { reason: 'unavailable', retryAfterS: 60 }],
     [new Error('offline'), { reason: 'network', retryAfterS: 60 }],
@@ -94,21 +107,32 @@ test('start: an inconclusive answer, an odd body and every HTTP status map to an
   }
 });
 
-test('check: pass, charged fail, uncharged fail and inconclusive; a charge is only ever on a fail', async () => {
-  const check = (post) => rig({ post }).client.check('t', 'a', {});
-  assert.deepEqual(await check(json(200, { v: 1, outcome: 'pass', charge: true })), { outcome: 'pass', charge: false });
-  assert.deepEqual(await check(json(200, { v: 1, outcome: 'fail', charge: true, field: 'p95', reason: 'wrong' })), { outcome: 'fail', charge: true, field: 'p95', reason: 'wrong' });
+test('check: pass, charged fail, uncharged fail and inconclusive, in the server\'s own shapes; a charge is only ever on a fail', async () => {
+  const check = (post) => rig({ post }).client.check('t', 'a', { question: 'operation', value: 'x' });
+  assert.deepEqual(await check(json(200, { v: 1, outcome: 'pass', charge: false })), { outcome: 'pass', charge: false });
+  assert.deepEqual(await check(json(200, { v: 1, outcome: 'pass', charge: true })), { outcome: 'pass', charge: false }, 'a charge on a pass is ignored');
+  assert.deepEqual(await check(json(200, { v: 1, outcome: 'fail', charge: true })), { outcome: 'fail', charge: true });
   assert.deepEqual(await check(json(200, { v: 1, outcome: 'fail', charge: false })), { outcome: 'fail', charge: false });
   assert.deepEqual(await check(json(200, { v: 1, outcome: 'fail' })), { outcome: 'fail', charge: false }, 'no charge unless the server says so');
   assert.deepEqual(await check(json(200, { v: 1, outcome: 'inconclusive', charge: true, reason: 'settling', retryAfterS: 20 })), { outcome: 'inconclusive', charge: false, reason: 'settling', retryAfterS: 20 });
 });
 
-test('check: every reason the server names passes through on an inconclusive or a fail', async () => {
+test('check: an inconclusive result carries retryAfterS only when the server sent it (no default wait is made up)', async () => {
+  const check = (body) => rig({ post: json(200, body) }).client.check('t', 'a', { question: 'operation', value: 'x' });
+  const without = await check({ v: 1, outcome: 'inconclusive', charge: false, reason: 'answer' });
+  assert.deepEqual(without, { outcome: 'inconclusive', charge: false, reason: 'answer' });
+  assert.equal(Object.hasOwn(without, 'retryAfterS'), false);
+  for (const retryAfterS of [0, -3, 1.5, '9', null]) {
+    assert.equal(Object.hasOwn(await check({ v: 1, outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS }), 'retryAfterS'), false, String(retryAfterS));
+  }
+  assert.deepEqual(await check({ v: 1, outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS: 5 }), { outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS: 5 });
+});
+
+test('check: every reason the server names passes through on an inconclusive result', async () => {
   for (const reason of ['settling', 'cooldown', 'not-visible', 'upstream', 'not-sent']) {
-    const got = await rig({ post: json(200, { v: 1, outcome: 'inconclusive', charge: false, reason, retryAfterS: 5 }) }).client.check('t', 'a', { question: 'q', value: 'v' });
+    const got = await rig({ post: json(200, { v: 1, outcome: 'inconclusive', charge: false, reason, retryAfterS: 5 }) }).client.check('t', 'a', { question: 'operation', value: 'x' });
     assert.deepEqual(got, { outcome: 'inconclusive', charge: false, reason, retryAfterS: 5 });
   }
-  assert.deepEqual(await rig({ post: json(200, { v: 1, outcome: 'fail', charge: true, reason: 'answer' }) }).client.check('t', 'a', {}), { outcome: 'fail', charge: true, reason: 'answer' });
 });
 
 test('check: a network error, a bad status or an odd body is inconclusive and never a fail', async () => {
@@ -123,6 +147,9 @@ test('check: a network error, a bad status or an odd body is inconclusive and ne
   assert.deepEqual(await check(json(409, { error: 'stale-attempt' })), { charge: false, outcome: 'inconclusive', reason: 'stale', restart: true });
   assert.deepEqual(await check(json(410, { error: 'expired' })), { charge: false, outcome: 'inconclusive', reason: 'expired', restart: true });
   assert.deepEqual(await check(json(429, { error: 'rate-limited', retryAfterS: 5 })), { charge: false, outcome: 'inconclusive', reason: 'rate-limited', retryAfterS: 5 });
+  for (const [status, body] of [[400, { ok: false, error: 'bad-request', field: 'answer' }], [404, { error: 'unknown-task' }], [502, { error: 'store-unavailable' }]]) {
+    assert.deepEqual(await check(json(status, body)), { charge: false, outcome: 'inconclusive', reason: 'unavailable', retryAfterS: 60 }, String(status));
+  }
 });
 
 test('the client needs fetch and signedIn', () => {

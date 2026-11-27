@@ -1,6 +1,6 @@
 // #509 P6: the In Dash0 step type (lib/widgets/dash0-task*.mjs) played through runPlay with the real STEP_TYPES.dash0 and a
 // fake task client: the link allowlist, what costs a mistake, the skipped task when the server is off or signed out, the
-// paused clock, the finish-text rule, no Ask the guide, and "Finish without the Dash0 task" when the server goes down mid-step.
+// paused clock, the finish-text rule, no Ask the guide, and "Finish without the In Dash0 task" when the server goes down mid-step.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeDom, q, qa, click } from './helpers/dom.mjs';
@@ -26,7 +26,7 @@ const choiceStep = (id) => ({
   question: 'Pick one.',
   choice: { id, choices: [{ key: 'a', label: 'A metric', why: 'It aggregates.' }, { key: 'b', label: 'A trace', right: true, why: 'Spans carry timing.' }] },
 });
-const dash0Spec = (id = 'd1', extra = {}) => ({ id, task: 'p95-task', grader: 'seeded', answers: ['p95'], fields: [{ key: 'p95', label: 'The p95 in ms', hint: 'Read it off the chart.' }], ...extra });
+const dash0Spec = (id = 'd1', extra = {}) => ({ id, task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read it off the chart.' }], ...extra });
 const dash0Step = (id = 'd1', extra) => ({ intro: 'Now find the slowest route in Dash0.', dash0: dash0Spec(id, extra) });
 const playOf = (...steps) => ({ prefix: 'sf', finish: 'You did it, and the level is done.', steps });
 const FULL = () => playOf(choiceStep('c1'), dash0Step('d1'), choiceStep('c2'));
@@ -50,7 +50,7 @@ function fakeApi({ starts = [STARTED], checks = [PASS], available = true, reason
     },
     check: async (task, attemptId, answer) => {
       const n = calls.filter((c) => c[0] === 'check').length;
-      calls.push(['check', task, attemptId, answer]);
+      calls.push(['check', task, attemptId, ...(answer === undefined ? [] : [answer])]); // a readback check passes no answer
       return next(checks, n);
     },
     skip: (ids, cause) => { api.skipped.push([ids, cause]); down = cause; },
@@ -78,7 +78,7 @@ function open(play, { api, level = { id: 'sf', scored: true, scoring: { parMs: n
 /** To the In Dash0 step of FULL(): the choice step, then Next. */
 const toTask = () => { click('[data-pick="b"]'); click('#sf-next'); };
 const start = async () => { click('#d1-start'); await settle(); };
-const check = async (text = '412') => { click({ type: '#d1-f-p95', text }); click('#d1-check-p95'); await settle(); };
+const check = async (text = '412') => { click({ type: '#d1-f-operation', text }); click('#d1-check-operation'); await settle(); };
 const feedback = () => q('#d1-feedback').textContent;
 
 test('the link: a deep link on app.dash0.com is an anchor that opens a new tab safely; any other origin draws no anchor', async () => {
@@ -98,7 +98,7 @@ test('the link: a deep link on app.dash0.com is an anchor that opens a new tab s
     await start();
     assert.equal(q('#d1-open') === null, true, link);
     assert.equal(qa('#ov-body a, a').length, 0, `no anchor at all for ${link}`);
-    assert.ok(q('#d1-f-p95'), 'the task itself still runs');
+    assert.ok(q('#d1-f-operation'), 'the task itself still runs');
   }
 });
 
@@ -148,13 +148,13 @@ test('Check sends the answer fields to the client; the answer is read from the f
   toTask();
   await start();
   await check('  412 ');
-  assert.deepEqual(api.calls, [['start', 'p95-task'], ['check', 'p95-task', 'a1', { question: 'p95', value: '412' }]]);
+  assert.deepEqual(api.calls, [['start', 'p95-task'], ['check', 'p95-task', 'a1', { question: 'operation', value: '412' }]]);
 });
 
 test('a charged fail calls mistake once; an uncharged fail and an inconclusive result call it never and say why and when to retry; pass enables Next', async () => {
   const api = fakeApi({
     checks: [
-      { outcome: 'fail', charge: true, field: 'p95' },
+      { outcome: 'fail', charge: true, field: 'operation' },
       { outcome: 'fail', charge: false, reason: 'default', retryAfterS: 7 },
       { outcome: 'inconclusive', charge: false, reason: 'settling', retryAfterS: 30 },
       PASS,
@@ -165,7 +165,7 @@ test('a charged fail calls mistake once; an uncharged fail and an inconclusive r
   await start();
   await check();
   assert.equal(run.mistakes(), 1, 'charged fail: one mistake');
-  assert.match(feedback(), /The p95 in ms/, 'it names the field');
+  assert.match(feedback(), /The operation/, 'it names the field');
   assert.equal(q('#d1-feedback').getAttribute('data-tone'), 'error');
   assert.equal(q('#sf-next').disabled, true);
   await check();
@@ -185,7 +185,7 @@ test('a charged fail calls mistake once; an uncharged fail and an inconclusive r
   assert.equal(run.mistakes(), 1);
   assert.equal(q('#sf-next').disabled, false, 'pass enables Next');
   assert.deepEqual(api.passes, ['p95-task']);
-  assert.equal(q('#d1-check-p95').disabled, true, 'nothing more to check');
+  assert.equal(q('#d1-check-operation').disabled, true, 'nothing more to check');
   assert.equal(q('#d1-feedback').getAttribute('data-tone'), 'success');
 });
 
@@ -208,8 +208,8 @@ test('a late answer after the step was left draws and charges nothing', async ()
   const run = open(FULL(), { api });
   toTask();
   await start();
-  click({ type: '#d1-f-p95', text: '1' });
-  click('#d1-check-p95');
+  click({ type: '#d1-f-operation', text: '1' });
+  click('#d1-check-operation');
   q('#ov-body').innerHTML = '';
   release({ outcome: 'fail', charge: true });
   await settle();
@@ -294,6 +294,22 @@ test('par covers the game steps only: the clock is paused while the In Dash0 ste
   assert.equal(game.results[0].stars, run.results[0].stars, 'par does not depend on whether the task ran');
 });
 
+test('par still bites after the In Dash0 step: game time over par on the steps after it costs a star (the clock runs again)', async () => {
+  const level = { id: 'sf', scored: true, scoring: { parMs: 1000 } };
+  const clock = { t: 0 };
+  const run = open(FULL(), { api: fakeApi(), level, clock });
+  clock.t = 100;
+  toTask();
+  await start();
+  clock.t = 100000; // 100 seconds in Dash0: not counted
+  await check();
+  click('#sf-next');
+  clock.t = 108000; // 8 seconds on the game step after it: over the 1000 ms par
+  click('[data-pick="b"]');
+  click('#sf-finish');
+  assert.ok(run.results[0].stars < 5, `over par after the task is a star lost, got ${run.results[0].stars}`);
+});
+
 test('a level that ends on the In Dash0 step does not count the time in Dash0 either', async () => {
   const level = { id: 'sf', scored: true, scoring: { parMs: 1000 } };
   const clock = { t: 0 };
@@ -348,10 +364,20 @@ test('validatePlay: a finish text that refers to an In Dash0 step is refused', (
   assert.deepEqual(validatePlay({ ...playOf(choiceStep('c1')), finish: 'Now you can read it In Dash0 and the level is done.' }).errors, []);
 });
 
-test('the In Dash0 spec: id, task, grader and answers with a labelled field each', () => {
+test('the In Dash0 spec: id, task, grader and, for a seeded task, answers with a labelled field each', () => {
   assert.deepEqual(validateDash0Spec(dash0Spec()), []);
   assert.deepEqual(validateDash0Spec(dash0Spec('d1', { answers: ['faultCode', 'traceId'], fields: [{ key: 'faultCode', label: 'F' }, { key: 'traceId', label: 'T' }] })), [], 'question ids are plain words, camelCase allowed');
-  assert.deepEqual(validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'readback', answers: ['name'], fields: [{ key: 'name', label: 'N' }] }), []);
+  assert.deepEqual(validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'readback' }), [], 'a readback task has no answers and no fields');
+  const readback = (extra) => validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'readback', ...extra });
+  assert.ok(readback({ answers: ['name'] }).some((p) => /readback task has no answers/.test(p)));
+  assert.ok(readback({ fields: [{ key: 'name', label: 'N' }] }).some((p) => /readback task has no fields/.test(p)));
+  assert.ok(readback({ answers: [], fields: [] }).length === 2, 'even empty lists are refused');
+  assert.ok(validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'seeded' }).some((p) => /non-empty/.test(p)), 'a seeded task needs its answers');
+  // the server's question ids: letters only, 1 to 40 of them (api/dash0-task.mjs)
+  for (const key of ['p95', 'fault_code', 'fault-code', '', 'a'.repeat(41), '9a']) {
+    assert.ok(validateDash0Spec(dash0Spec('d1', { answers: [key], fields: [{ key, label: 'L' }] })).length > 0, `"${key}" is not a question id`);
+  }
+  assert.deepEqual(validateDash0Spec(dash0Spec('d1', { answers: ['a'.repeat(40)], fields: [{ key: 'a'.repeat(40), label: 'L' }] })), [], '40 letters is the longest');
   const bad = (extra, re) => assert.ok(validateDash0Spec(dash0Spec('d1', extra)).some((p) => re.test(p)), JSON.stringify(extra));
   bad({ grader: 'magic' }, /grader/);
   bad({ task: 'Not Kebab' }, /task/);
@@ -360,12 +386,12 @@ test('the In Dash0 spec: id, task, grader and answers with a labelled field each
   bad({ answers: [], fields: [] }, /non-empty/);
   bad({ answers: undefined }, /non-empty/);
   bad({ answers: ['p-95'], fields: [{ key: 'p-95', label: 'L' }] }, /question ids/);
-  bad({ answers: ['p95', 'p95'] }, /unique/);
-  bad({ answers: ['p95', 'p99'] }, /"p99" has no field/);
-  bad({ fields: [] }, /"p95" has no field/);
-  bad({ fields: [{ key: 'p95', label: 'L' }, { key: 'extra', label: 'E' }] }, /"extra" is not in answers/);
-  bad({ fields: [{ key: 'p95', label: ' ' }] }, /needs a label/);
-  bad({ fields: [{ key: 'p95', label: 'L', secret: 'x' }] }, /unknown key "secret"/);
+  bad({ answers: ['operation', 'operation'] }, /unique/);
+  bad({ answers: ['operation', 'other'] }, /"other" has no field/);
+  bad({ fields: [] }, /"operation" has no field/);
+  bad({ fields: [{ key: 'operation', label: 'L' }, { key: 'extra', label: 'E' }] }, /"extra" is not in answers/);
+  bad({ fields: [{ key: 'operation', label: ' ' }] }, /needs a label/);
+  bad({ fields: [{ key: 'operation', label: 'L', secret: 'x' }] }, /unknown key "secret"/);
   bad({ fields: 'no' }, /fields must be an array/);
   assert.deepEqual(validateDash0Spec(null), ['spec: not an object']);
   // through validatePlay, the problem names the step
@@ -421,7 +447,7 @@ test('the How to play topic for In Dash0 is added only when the task server is o
 const down = (cause) => ({ outcome: 'inconclusive', charge: false, reason: cause, down: cause });
 const unsure = { outcome: 'inconclusive', charge: false, reason: 'network', retryAfterS: 60 };
 
-test('a 503 or a 401 on Check offers "Finish without the Dash0 task" at once; it records the skip, costs nothing and opens Next', async () => {
+test('a 503 or a 401 on Check offers "Finish without the In Dash0 task" at once; it records the skip, costs nothing and opens Next', async () => {
   for (const cause of ['off', 'signed-out']) {
     const api = fakeApi({ checks: [down(cause)] });
     const run = open(FULL(), { api });
@@ -430,14 +456,14 @@ test('a 503 or a 401 on Check offers "Finish without the Dash0 task" at once; it
     assert.equal(q('#d1-skip') === null, true, 'not offered while all is well');
     await check();
     assert.ok(q('#d1-skip'), `${cause}: offered`);
-    assert.equal(q('#d1-skip').textContent, 'Finish without the Dash0 task');
+    assert.equal(q('#d1-skip').textContent, 'Finish without the In Dash0 task');
     assert.equal(q('#sf-next').disabled, true, 'not yet skipped');
     click('#d1-skip');
     assert.deepEqual(api.skipped, [[['p95-task'], cause]], cause);
     assert.equal(q('#sf-next').disabled, false, `${cause}: never stuck`);
     assert.equal(run.mistakes(), 0, 'no star lost');
     assert.equal(feedback(), COPY.notices[cause], 'the player is told what to do later');
-    assert.equal(q('#d1-check-p95').disabled, true);
+    assert.equal(q('#d1-check-operation').disabled, true);
   }
 });
 
@@ -512,11 +538,11 @@ test('after one skip, a later In Dash0 step of the same level is skipped at once
 });
 
 test('content binds an In Dash0 step: text and field labels from the content, task, grader and answer keys from the logic', () => {
-  const logic = { id: 'lv', play: { prefix: 'p', steps: [{ dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['p95'] } }] } };
-  const text = { id: 'lv', play: { finish: 'You did the thing well.', steps: [{ intro: 'Find it.', question: 'How slow?', dash0: { id: 'd1', fields: [{ key: 'p95', label: 'The p95', hint: 'Read the chart.' }] } }] } };
+  const logic = { id: 'lv', play: { prefix: 'p', steps: [{ dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'] } }] } };
+  const text = { id: 'lv', play: { finish: 'You did the thing well.', steps: [{ intro: 'Find it.', question: 'How slow?', dash0: { id: 'd1', fields: [{ key: 'operation', label: 'The operation', hint: 'Read the chart.' }] } }] } };
   const got = bindText(text, logic);
   assert.deepEqual(got.errors, []);
-  assert.deepEqual(got.value.play.steps[0].dash0, { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['p95'], fields: [{ key: 'p95', label: 'The p95', hint: 'Read the chart.' }] });
+  assert.deepEqual(got.value.play.steps[0].dash0, { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read the chart.' }] });
   assert.deepEqual(validateDash0Spec(got.value.play.steps[0].dash0), []);
   // the logic-only keys may not be written in the content
   const bad = bindText({ ...text, play: { ...text.play, steps: [{ ...text.play.steps[0], dash0: { id: 'd1', task: 'x-task', fields: [] } }] } }, logic);
@@ -530,7 +556,11 @@ test('the words of the In Dash0 step follow the text rules and cover every cause
   for (const s of strings) assert.deepEqual(checkPlain(s), [], s);
   for (const reason of ['off', 'signed-out', 'settling', 'cooldown', 'not-visible', 'upstream', 'not-sent', 'ingest', 'answer', 'network', 'rate-limited', 'expired', 'stale', 'unavailable', 'default']) assert.ok(COPY.reasons[reason], reason);
   assert.deepEqual(Object.keys(COPY.notices).sort(), ['off', 'signed-out']);
-  assert.equal(COPY.skip, 'Finish without the Dash0 task');
+  assert.equal(COPY.skip, 'Finish without the In Dash0 task');
+  for (const s of strings) assert.doesNotMatch(s, /task server/i, 'a player never reads "task server": it is Dash0');
+  assert.equal(COPY.reasons['signed-out'], 'Sign in with your dash0.com account to try again, or finish the level without this task.');
+  const howTo = JSON.stringify(howToView({ widgets: ['choice'], surfaces: ['game', 'dash0'], hintless: [], scored: true, scoring: { parMs: null } }, { dash0: true }));
+  assert.doesNotMatch(howTo, /task server/i);
 });
 
 test('the kit link opens a new tab safely, escapes its address, and takes only https', () => {
@@ -539,4 +569,136 @@ test('the kit link opens a new tab safely, escapes its address, and takes only h
     '<a class="ui-btn ui-btn--ghost" id="go" href="https://app.dash0.com/goto/x?a=1&amp;b=&quot;2&quot;" target="_blank" rel="noopener noreferrer">Open in Dash0</a>',
   );
   for (const href of ['http://app.dash0.com/', 'javascript:alert(1)', '/local', '//evil.example/x', 'https://a b/', undefined]) assert.throws(() => externalLink({ label: 'x', href }), /externalLink/, String(href));
+});
+
+// ---- readback: no answer, no field ----
+
+const readbackStep = (id = 'd1') => ({ intro: 'Build the asset in Dash0.', dash0: { id, task: 'asset-task', grader: 'readback' } });
+
+test('a readback task draws one Check with no field and sends no answer; a wrong asset is a charged fail with its own words', async () => {
+  const api = fakeApi({ starts: [{ ...STARTED, name: 'oncall-k3j9x2m4q1-board-a1b2' }], checks: [{ outcome: 'fail', charge: true }, PASS] });
+  const play = playOf(choiceStep('c1'), readbackStep());
+  assert.deepEqual(validatePlay(play).errors, []);
+  const run = open(play, { api });
+  toTask();
+  assert.equal(q('#d1-check').disabled, true, 'nothing to check before Start');
+  await start();
+  assert.equal(qa('#d1-task input').length, 0, 'no field');
+  assert.equal(q('#d1-check').disabled, false);
+  click('#d1-check');
+  await settle();
+  assert.deepEqual(api.calls[1], ['check', 'asset-task', 'a1'], 'no answer argument at all');
+  assert.equal(run.mistakes(), 1);
+  assert.equal(feedback(), COPY.failedAsset);
+  click('#d1-check');
+  await settle();
+  assert.equal(q('#sf-finish').disabled, false);
+  assert.deepEqual(api.passes, ['asset-task']);
+});
+
+// ---- a safe restart (a 409 or a 410) ----
+
+const TWO = () => dash0Step('d1', { answers: ['operation', 'faultCode'], fields: [{ key: 'operation', label: 'The operation' }, { key: 'faultCode', label: 'The fault code' }] });
+const stale = { outcome: 'inconclusive', charge: false, reason: 'stale', restart: true };
+
+test('Start again after a 409 resets every field: the question that had passed is open and empty, and the step can pass', async () => {
+  const api = fakeApi({ starts: [STARTED, { ...STARTED, attemptId: 'a2' }], checks: [PASS, stale, PASS, PASS] });
+  const run = open(playOf(choiceStep('c1'), TWO()), { api });
+  toTask();
+  await start();
+  click({ type: '#d1-f-operation', text: 'POST /pay' });
+  click('#d1-check-operation');
+  await settle();
+  assert.equal(q('#d1-f-operation').disabled, true, 'the first question passed and is locked');
+  click({ type: '#d1-f-faultCode', text: '500' });
+  click('#d1-check-faultCode');
+  await settle();
+  assert.equal(q('#d1-retry').textContent, COPY.restart);
+  assert.equal(q('#d1-check-operation').disabled, true, 'no attempt: nothing to check');
+  assert.equal(q('#d1-check-faultCode').disabled, true, 'no attempt: nothing to check');
+  click('#d1-retry');
+  await settle();
+  for (const key of ['operation', 'faultCode']) {
+    assert.equal(q(`#d1-f-${key}`).disabled, false, `${key} is open again`);
+    assert.equal(q(`#d1-f-${key}`).value, '', `${key} is empty again`);
+    assert.equal(q(`#d1-check-${key}`).disabled, false, `${key} can be checked`);
+  }
+  click({ type: '#d1-f-operation', text: 'POST /pay' });
+  click('#d1-check-operation');
+  await settle();
+  click({ type: '#d1-f-faultCode', text: '500' });
+  click('#d1-check-faultCode');
+  await settle();
+  assert.equal(q('#sf-finish').disabled, false, 'every question passed on the new attempt');
+  assert.deepEqual(api.calls.filter((c) => c[0] === 'check').map((c) => c[2]), ['a1', 'a1', 'a2', 'a2']);
+  assert.deepEqual(api.passes, ['p95-task']);
+  assert.equal(run.mistakes(), 0);
+});
+
+test('Check stays disabled while there is no attempt: before Start, after a failed Start and after a 410', async () => {
+  const api = fakeApi({ starts: [{ ok: false, outcome: 'inconclusive', reason: 'ingest', retryAfterS: 10 }, STARTED], checks: [{ ...stale, reason: 'expired' }] });
+  open(FULL(), { api });
+  toTask();
+  assert.equal(q('#d1-check-operation').disabled, true, 'before Start');
+  await start();
+  assert.equal(q('#d1-check-operation').disabled, true, 'Start failed: still no attempt');
+  click('#d1-retry');
+  await settle();
+  assert.equal(q('#d1-check-operation').disabled, false, 'an attempt');
+  await check();
+  assert.equal(q('#d1-check-operation').disabled, true, 'the attempt expired');
+});
+
+// ---- only a real outage counts towards "Finish without the In Dash0 task" ----
+
+const inconclusive = (reason) => ({ outcome: 'inconclusive', charge: false, reason, retryAfterS: 5 });
+
+test('cooldown, not-visible, answer, settling, rate-limited and not-sent never count: any number of them offers no skip', async () => {
+  for (const reason of ['cooldown', 'not-visible', 'answer', 'settling', 'rate-limited', 'not-sent']) {
+    const api = fakeApi({ checks: [inconclusive(reason)] });
+    const run = open(FULL(), { api });
+    toTask();
+    await start();
+    for (let i = 0; i < DOWN_AFTER + 2; i++) await check();
+    assert.equal(q('#d1-skip') === null, true, `${reason}: no skip, however often`);
+    assert.deepEqual(api.skipped, [], reason);
+    assert.equal(q('#sf-next').disabled, true, `${reason}: the step still has to be done`);
+    assert.equal(run.mistakes(), 0);
+  }
+});
+
+test('network, unavailable, upstream and ingest do count: the third offers the skip, and it is recorded as off', async () => {
+  for (const reason of ['network', 'unavailable', 'upstream', 'ingest']) {
+    const api = fakeApi({ checks: [inconclusive(reason)] });
+    open(FULL(), { api });
+    toTask();
+    await start();
+    await check();
+    await check();
+    assert.equal(q('#d1-skip') === null, true, `${reason}: two are not enough`);
+    await check();
+    assert.ok(q('#d1-skip'), `${reason}: the third`);
+    click('#d1-skip');
+    assert.deepEqual(api.skipped, [[['p95-task'], 'off']], reason);
+  }
+});
+
+test('paced results between outages neither reset nor add to the count; a 401 keeps its own cause and does not say Dash0 is silent', async () => {
+  const api = fakeApi({ checks: [inconclusive('network'), inconclusive('cooldown'), inconclusive('upstream'), inconclusive('settling'), inconclusive('ingest')] });
+  open(FULL(), { api });
+  toTask();
+  await start();
+  for (let i = 0; i < 4; i++) await check();
+  assert.equal(q('#d1-skip') === null, true, 'two outages and two paced results');
+  await check();
+  assert.ok(q('#d1-skip'), 'the third outage');
+  const api2 = fakeApi({ checks: [inconclusive('network'), inconclusive('cooldown'), { outcome: 'inconclusive', charge: false, reason: 'signed-out', down: 'signed-out' }] });
+  open(FULL(), { api: api2 });
+  toTask();
+  await start();
+  for (let i = 0; i < 3; i++) await check();
+  assert.equal(feedback(), COPY.reasons['signed-out'], 'sign in, or finish without the task; never "not answering"');
+  assert.doesNotMatch(feedback(), /not answering/);
+  click('#d1-skip');
+  assert.deepEqual(api2.skipped, [[['p95-task'], 'signed-out']]);
 });

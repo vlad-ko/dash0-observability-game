@@ -12,6 +12,7 @@ Play levels (the ones with `play: { steps }`, see [DECLARATIVE-LEVELS.md](DECLAR
 - Logic: `levels/<level-id>.mjs`, with the `// Spec:` and `// Dash0 docs:` lines, "Facts used" and "Invented" comments kept at the top. The sources stay with the logic for now.
 - Shared code: `lib/content/` (`bind.mjs` joins, `placeholders.mjs` fills in the `{{name}}` marks (the file keeps its older name), `text-rules.mjs` checks text, `keys.mjs` lists the allowed keys). Do not add a second way to store content anywhere else.
 - `content/` is deployed with the site (it is not in `.vercelignore`), because the level imports it.
+- Engine widget words: `content/core/ui/<name>.mjs` holds the words of one engine widget (today `dash0-task.mjs`, the In Dash0 step's buttons, messages and notices). Strict JSON like the other content files, edited by content-author under the same text rules, and imported by the code that draws the widget (`lib/widgets/dash0-task-view.mjs`, `app.mjs`). It is not a level's content and not an edition: no level logic joins it.
 
 ## 2. The content file
 
@@ -38,7 +39,7 @@ Things to know:
 
 Anything else is an error ("is not a content key").
 - Identity: `id`, `key`.
-- Containers: `play`, `steps`, `choice`, `sort`, `spot`, `tradeoff`, `incident`, `build`, `query`, `configure`, `choices`, `buckets`, `items`, `lines`, `knobs`, `options`, `needs`, `views`, `hypotheses`, `alert`.
+- Containers: `play`, `steps`, `choice`, `sort`, `spot`, `tradeoff`, `incident`, `build`, `query`, `configure`, `dash0`, `choices`, `fields`, `buckets`, `items`, `lines`, `knobs`, `options`, `needs`, `views`, `hypotheses`, `alert`.
 - Text: `intro`, `question`, `show`, `code`, `finish`, `label`, `why`, `whyNot` (an object from a key to text), `explain`, `hint`, `text`, `html`, `title`, `unit`, `unitOne`, `closing`, `name`, `sub`, `rewardTitle`.
 - Top level only: `run` (the words of a run(ctx) level; see lib/content/bind.mjs).
 
@@ -97,7 +98,7 @@ The messages include: "is not a content key" (a key outside the list), "must be 
 
 ## 8. Editions (later)
 
-The folder name `core` is the edition: the one version of the words the game ships. A second edition (the same levels explained for another audience) would be new files under `content/<edition>/levels/` and `primers/`, and a registry that builds the acts with `levelModule.withText(text)` for that edition's text, chosen once at start-up. Every converted level exports `withText(text)` for this reason, so an edition covers every level. Nothing selects an edition yet, and engine words (buttons, card text, act names) are not part of an edition.
+The folder name `core` is the edition: the one version of the words the game ships. A second edition (the same levels explained for another audience) would be new files under `content/<edition>/levels/` and `primers/`, and a registry that builds the acts with `levelModule.withText(text)` for that edition's text, chosen once at start-up. Every converted level exports `withText(text)` for this reason, so an edition covers every level. Nothing selects an edition yet. Engine words are not part of an edition: the widget words in `content/core/ui/` (section 1), card text and act names.
 
 ## 9. Converting a level, step by step
 
@@ -188,7 +189,7 @@ Header and strict JSON as in section 2. At the top: `id`, `name`, `sub`, `reward
 - A module constant that holds words becomes one entry named after the constant (`ON_SPANS` becomes `onSpans`), with the same structure, minus answer flags, numbers, fixtures and `helps`. List elements keep their `id` or `key`.
 - Every other literal becomes one entry named `<screen><Role>`. The screen is the step function's name without `step` (`stepSort` gives `sort`), or `start` for the top of `run`. The role is `Intro` (passed to `ctx.speech`), `Question`, `Reason` (a disabled button's reason), `Button`, `Chip`, `Note`, `Label`, `Says` (a feedback line), or what the code calls it. A level with one finish text names it `finish`. Add a number if two names would clash.
 - One entry per literal in the old code. Literals joined by `+` count as one, and so does a template literal. Two literals with the same words in two places stay two entries.
-- Inside `run` any key is allowed except answer and grader keys (`right`, `keep`, `bucket`, `kind`, `cost`, `keeps`, `cap`, `qid`, `prefix`, `steps`, `play` and the fixture keys of section 3). Every value is text, an object or a list. Every string may hold HTML (section 5) and is checked after its fill-ins.
+- Inside `run` any key is allowed except answer and grader keys (`right`, `keep`, `bucket`, `kind`, `cost`, `keeps`, `cap`, `qid`, `prefix`, `steps`, `play`, `surface`, `task`, `grader`, `answers` and the fixture keys of section 3). Every value is text, an object or a list. Every string may hold HTML (section 5) and is checked after its fill-ins.
 - A text field whose name is one of those keys (the-pager's `answer`) gets another name in the content (`reply`), and `contentOf` maps it back.
 - A list of words that two steps share (the-signals' buckets) is one entry, and `contentOf` uses it in both places.
 - A literal that starts or ends with a space loses that space in the content; the code adds it back where it uses the entry.

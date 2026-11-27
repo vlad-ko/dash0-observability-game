@@ -70,7 +70,7 @@ A level file keeps today's metadata (FOUNDATION §2.1) and declares `play` inste
 | `query` | QuerySpec (§4.7 of M1-DESIGN): `{id, dataset: '<name>', at, reference: '<query>', given?, hint?, explain}`, graded by comparing result series | query | live |
 | `spot` | SpotSpec (§4.4 of M1-DESIGN) | spot | live |
 | `tradeoff` | TradeoffSpec (§4.5 of M1-DESIGN) | tradeoff | live |
-| `dash0` | `{id, task, grader: 'seeded'\|'readback', answers: [question id]}`. The step happens in the real Dash0 (`surface: 'dash0'`) and the task server checks it (§2.6 of FOUNDATION, `lib/widgets/dash0-task*.mjs`). `task` and `grader` and `answers` are logic-only; the brief is the step's `intro`, the optional `question`, and the content adds `fields: [{key, label, hint?}]`, one per question id and no others. Each question has its own field and Check (one `{question, value}` per call) and the step passes once every question has passed; ids are plain words such as `faultCode`. No answer is ever in the spec: the server derives it. No mechanic, no Hint button, no Ask the guide. A play with one needs a game step first and its `finish` may not refer to it | none | live (#509; no level uses it yet) |
+| `dash0` | `{id, task, grader: 'seeded'\|'readback', answers: [question id]}` (a `readback` task has no `answers` and no `fields`: one Check, no field, no answer sent). The step happens in the real Dash0 (`surface: 'dash0'`) and the task server checks it (§2.6 of FOUNDATION, `lib/widgets/dash0-task*.mjs`). `task` and `grader` and `answers` are logic-only; the brief is the step's `intro`, the optional `question`, and the content adds `fields: [{key, label, hint?}]`, one per question id and no others. Each question has its own field and Check (one `{question, value}` per call) and the step passes once every question has passed; ids are letters only, up to 40, such as `faultCode`. No answer is ever in the spec: the server derives it. No mechanic, no Hint button, no Ask the guide. A play with one needs a game step first and its `finish` may not refer to it | none | live (#509; no level uses it yet) |
 
 **Rule: data holds names; code holds the functions they name.** A checker, dataset or grader is a function in its widget module, registered by name; a level refers to it by an id string. `play` must be plain data: objects, arrays, strings, finite numbers, booleans and null. Values computed when the module loads are fine, because they are data by the time the registry sees them (e.g. checkout-is-slow's triage tables).
 
@@ -316,7 +316,7 @@ The registry adds: run and play are mutually exclusive, play requires the kit, a
 - `declares widgets ["sort"] but its steps give ["choice","sort"]; fix or remove widgets`
 - `play must be plain data: steps[1].choice.choices[0].why is a function; write run(ctx) for custom behaviour`
 - `step 2: unknown key "inrto" (did you mean "intro"?)`
-- `step 2 has no step type (one of choice, sort, build, incident, spot, tradeoff, query, configure)` / `step 2 has two step types ("choice", "sort")`
+- `step 2 has no step type (one of choice, sort, build, incident, spot, tradeoff, query, configure, dash0)` / `step 2 has two step types ("choice", "sort")`
 - `step 3: step type "<key>" is reserved for <widget> and not available yet` (no type is reserved now)
 - `step 8 (configure "fx-config"): given: already passes the checker, so there is nothing to fix`
 - `step 2 (choice "avm-why"): needs exactly one right answer, has 0`

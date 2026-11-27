@@ -220,6 +220,9 @@ export function createGame(deps) {
     ? createDash0TaskClient({ fetch: request, signedIn: () => self?.signedIn === true })
     : null;
   const skippedMemory = new Map(); // level id -> task ids left out this visit, kept when storage cannot hold them
+  let dash0Ready = false; // GET /api/dash0-task has answered (or failed): the task client knows whether the server is on
+  let accountKnown = Promise.resolve(); // settles once GET /api/account has answered and the state is set (init replaces it)
+  let markKnown = () => {};
   let skipRun = null; // the open run's {levelId, cause} once its In Dash0 task was left out (the reward says so, and later steps skip at once)
   let feedbackDialog = null;
   let liveCtx = null; // the open level's ctx, read for the screen the player is on
@@ -361,7 +364,8 @@ export function createGame(deps) {
       play?.init();
       this.showGlobe();
       guideClient?.status();
-      dash0Client?.load();
+      dash0Client?.load().then(() => { dash0Ready = true; });
+      accountKnown = new Promise((resolve) => { markKnown = resolve; });
       feedbackClient?.status().then((on) => { this.feedbackOn = on; });
       this.loadAccount();
     },
@@ -407,14 +411,16 @@ export function createGame(deps) {
     },
     // GET /api/account, once per page (init); the only request an anonymous or unconfigured visit makes.
     async loadAccount() {
-      if (!accountClient) return;
+      if (!accountClient) return markKnown();
       const res = await accountClient.account();
       if (res.state === 'unavailable') {
         this.account = { state: 'unavailable', nick: '', listed: false };
         this.accountNotice = ACCOUNT_LOAD_FAILED;
+        markKnown();
         return;
       }
       this.account = { state: res.state, nick: res.nick ?? '', listed: res.listed ?? false };
+      markKnown();
       if (res.state === 'signedIn') await this.syncProgress();
     },
     // POST this browser's progress to the account and save the merged answer locally (saveProgress).
@@ -971,65 +977,75 @@ export function createGame(deps) {
       // read at every decision, so another tab's Don't show again counts. A failed read shows the guide.
       skipRun = null;
       this.rewardNotice = '';
-      this.howTo = howToView(level, { dash0: dash0Client?.available() === true });
-      this.howToKey = this.howTo.topics[0]?.key ?? null;
-      this.howToOpen = this.howToKey !== null && this.howToNew(this.howToKey);
-      this.howToAuto = this.howToOpen;
-      let starting = true;
-      const announced = new Set();
-      const onWidget = (key) => {
-        if (session !== controller || key === this.howToKey) return;
-        if (!this.howTo.topics.some((t) => t.key === key)) return;
-        this.howToKey = key;
-        this.howToNote = '';
-        const fresh = this.howToNew(key);
-        if (starting) {
-          this.howToOpen = fresh;
-          this.howToAuto = fresh;
-        }
-        else if (fresh) {
-          // Mid-level: never a pop-up over the step. The header button is flagged; the note is said once per type.
-          this.howToFlagKey = key;
-          if (!announced.has(key)) {
-            announced.add(key);
-            this.howToNote = `New guide: ${this.howTo.topics.find((t) => t.key === key).title}. Open How to play to read it.`;
+      // A level with an In Dash0 step waits for the task status and the account state (both asked at init) before it runs, so a
+      // level opened a moment after the page loaded never drops its task for an answer that has not come yet (the overlay is drawn now).
+      const launch = () => {
+        this.howTo = howToView(level, { dash0: dash0Client?.available() === true });
+        this.howToKey = this.howTo.topics[0]?.key ?? null;
+        this.howToOpen = this.howToKey !== null && this.howToNew(this.howToKey);
+        this.howToAuto = this.howToOpen;
+        let starting = true;
+        const announced = new Set();
+        const onWidget = (key) => {
+          if (session !== controller || key === this.howToKey) return;
+          if (!this.howTo.topics.some((t) => t.key === key)) return;
+          this.howToKey = key;
+          this.howToNote = '';
+          const fresh = this.howToNew(key);
+          if (starting) {
+            this.howToOpen = fresh;
+            this.howToAuto = fresh;
           }
+          else if (fresh) {
+            // Mid-level: never a pop-up over the step. The header button is flagged; the note is said once per type.
+            this.howToFlagKey = key;
+            if (!announced.has(key)) {
+              announced.add(key);
+              this.howToNote = `New guide: ${this.howTo.topics.find((t) => t.key === key).title}. Open How to play to read it.`;
+            }
+          }
+        };
+        try {
+          const ctx = liveCtx = createLevelContext({
+            level,
+            ovBody: doc.getElementById('ov-body'),
+            ovActions: doc.getElementById('ov-actions'),
+            now,
+            shuffle: (arr) => kitShuffle(arr, rand),
+            reduceMotion: !!reduceMotion(),
+            onFinish: (levelId, result) => this.completeLevel(levelId, result),
+            signal: controller.signal,
+            reportError: report,
+            telemetry,
+            guide: guideClient && { configured: guideClient.configured, ask: guideClient.ask },
+            onWidget,
+            glossary,
+            termPops,
+            dash0Task: dash0Client && {
+              available: dash0Client.available,
+              reason: dash0Client.reason,
+              start: dash0Client.start,
+              check: dash0Client.check,
+              isDash0AppUrl,
+              skip: (taskIds, cause) => this.skipDash0(controller, id, taskIds, cause),
+              passed: (taskId) => this.passDash0(controller, id, taskId),
+              downCause: () => skipRun?.cause ?? null,
+            },
+          });
+          level.run(ctx);
+        } catch (e) {
+          report(e);
         }
+        starting = false;
+        if (this.howToOpen) this.focusSoon('#ov-howto-title');
+        else this.focusStepStart();
       };
-      try {
-        const ctx = liveCtx = createLevelContext({
-          level,
-          ovBody: doc.getElementById('ov-body'),
-          ovActions: doc.getElementById('ov-actions'),
-          now,
-          shuffle: (arr) => kitShuffle(arr, rand),
-          reduceMotion: !!reduceMotion(),
-          onFinish: (levelId, result) => this.completeLevel(levelId, result),
-          signal: controller.signal,
-          reportError: report,
-          telemetry,
-          guide: guideClient && { configured: guideClient.configured, ask: guideClient.ask },
-          onWidget,
-          glossary,
-          termPops,
-          dash0Task: dash0Client && {
-            available: dash0Client.available,
-            reason: dash0Client.reason,
-            start: dash0Client.start,
-            check: dash0Client.check,
-            isDash0AppUrl,
-            skip: (taskIds, cause) => this.skipDash0(controller, id, taskIds, cause),
-            passed: (taskId) => this.passDash0(controller, id, taskId),
-            downCause: () => skipRun?.cause ?? null,
-          },
+      const waiting = dash0Client !== null && level.surfaces?.includes('dash0') === true && (!dash0Ready || this.account.state === 'unknown');
+      if (waiting) {
+        Promise.allSettled([dash0Client.load(), accountKnown]).then(() => {
+          if (session === controller) launch();
         });
-        level.run(ctx);
-      } catch (e) {
-        report(e);
-      }
-      starting = false;
-      if (this.howToOpen) this.focusSoon('#ov-howto-title');
-      else this.focusStepStart();
+      } else launch();
       return true;
     },
 

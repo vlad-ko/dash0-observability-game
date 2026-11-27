@@ -39,9 +39,10 @@ const PLAY = {
   finish: 'You did it, and the level is done.',
   steps: [
     gameStep('s1'),
-    { intro: 'Now find the slowest route in Dash0.', dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['p95'], fields: [{ key: 'p95', label: 'The p95 in ms' }] } },
+    { intro: 'Now find the slowest route in Dash0.', dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation' }] } },
   ],
 };
+const seen = []; // every level's ctx, in the order the levels ran (a test reaches a run's own callbacks through it)
 const REG = buildRegistry(
   [{
     id: 'a0', no: 0, name: 'First act',
@@ -51,19 +52,24 @@ const REG = buildRegistry(
     ],
     boss: null,
   }],
-  { deck: [], nodeIds: [], play: { validatePlay, runPlay } },
+  { deck: [], nodeIds: [], play: { validatePlay, runPlay: (level, ctx, ...rest) => (seen.push(ctx), runPlay(level, ctx, ...rest)) } },
 );
 
 const json = (status, body) => ({ status, json: async () => body });
 /** A page: `server` is GET/POST /api/dash0-task's answers, `account` GET /api/account's. Every request is recorded. */
-function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(), start = { v: 1, ok: true, attemptId: 'a1', link: LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 }, check = { v: 1, outcome: 'pass', charge: false }, noFetch = false } = {}) {
+function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(), start = { v: 1, ok: true, attemptId: 'a1', link: LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 }, check = { v: 1, outcome: 'pass', charge: false }, noFetch = false, holdAccount = false } = {}) {
   const dom = makeDom(HTML);
   const requests = [];
   const errors = [];
+  let release = () => {};
+  const gate = new Promise((resolve) => { release = resolve; }); // with holdAccount, GET /api/account answers when a test says so
   const fetch = async (url, init = {}) => {
     requests.push({ url, method: init.method ?? 'GET', body: init.body === undefined ? undefined : JSON.parse(init.body) });
     if (url === '/api/dash0-task') return init.method === 'POST' ? json(200, JSON.parse(init.body).op === 'start' ? start : check) : json(200, { v: 1, on });
-    if (url === '/api/account') return json(200, signedIn ? { v: 1, configured: true, signedIn: true, nick: 'ada', listed: false } : { v: 1, configured: true, signedIn: false });
+    if (url === '/api/account') {
+      const answer = json(200, signedIn ? { v: 1, configured: true, signedIn: true, nick: 'ada', listed: false } : { v: 1, configured: true, signedIn: false });
+      return holdAccount ? gate.then(() => answer) : answer;
+    }
     return json(404, {});
   };
   const game = createGame({
@@ -71,7 +77,7 @@ function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(),
     reportError: (e) => errors.push(e), setTimeout: () => {}, clearTimeout: () => {}, debug, ...(noFetch ? {} : { fetch }),
   });
   game.init();
-  return { game, store, requests, errors, dom };
+  return { game, store, requests, errors, dom, release };
 }
 const dash0Requests = (r) => r.requests.filter((x) => x.url === '/api/dash0-task');
 const finishGameOnly = async (r, id) => {
@@ -92,10 +98,10 @@ test('available: the server on and a signed-in player run the In Dash0 step; the
   assert.ok(q('#d1-start'), 'the In Dash0 step is shown');
   click('#d1-start');
   await settle();
-  click({ type: '#d1-f-p95', text: '412' });
-  click('#d1-check-p95');
+  click({ type: '#d1-f-operation', text: '412' });
+  click('#d1-check-operation');
   await settle();
-  assert.deepEqual(dash0Requests(r).map((x) => x.body ?? null), [null, { v: 1, op: 'start', taskId: 'p95-task' }, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1', answer: { question: 'p95', value: '412' } }]);
+  assert.deepEqual(dash0Requests(r).map((x) => x.body ?? null), [null, { v: 1, op: 'start', taskId: 'p95-task' }, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1', answer: { question: 'operation', value: '412' } }]);
   click('#dt-finish');
   assert.equal(r.game.rewardNotice, '', 'nothing was left out');
   assert.equal(r.game.taskWaiting('with-task'), false);
@@ -130,6 +136,9 @@ test('the two notices are different and say what to do', () => {
   assert.match(COPY.notices.off, /Come back once the admin restores the connection to Dash0/);
   assert.match(COPY.notices['signed-out'], /Sign in with your dash0\.com account/);
   assert.notEqual(COPY.notices.off, COPY.notices['signed-out']);
+  assert.match(COPY.notices['signed-out'], /then replay this level to do its In Dash0 task/);
+  assert.equal(COPY.waiting, 'Come back for the In Dash0 task');
+  assert.equal(COPY.waitingLabel, 'has an In Dash0 task to come back to');
 });
 
 test('a level with no In Dash0 step says nothing and remembers nothing, whatever the server says', async () => {
@@ -159,21 +168,21 @@ test('once the server is back the level offers the task again, and doing it take
   click('#dt-next');
   click('#d1-start');
   await settle();
-  click('#d1-check-p95');
+  click('#d1-check-operation');
   await settle();
   assert.equal(again.game.taskWaiting('with-task'), false, 'the pass took it out');
   assert.equal(readSkipped(() => store).levels.size, 0, 'and out of the saved state');
 });
 
-test('the server going down mid-step: "Finish without the Dash0 task" records the skip, the reward carries the notice, the hub marks the level', async () => {
-  const r = rig({ check: { v: 1, outcome: 'inconclusive', reason: 'x' } });
+test('the server going down mid-step: "Finish without the In Dash0 task" records the skip, the reward carries the notice, the hub marks the level', async () => {
+  const r = rig({ check: { v: 1, outcome: 'inconclusive', charge: false, reason: 'upstream' } });
   await settle();
   r.game.openLevel('with-task');
   playGame('s1');
   click('#dt-next');
   click('#d1-start');
   await settle();
-  const failing = async () => { click('#d1-check-p95'); await settle(); };
+  const failing = async () => { click('#d1-check-operation'); await settle(); };
   await failing();
   await failing();
   await failing();
@@ -211,12 +220,84 @@ test('without a fetch there is no task client: the level plays as a game-only le
   assert.equal(r.store.data.has(SKIPPED_KEY), false);
 });
 
-test('a level opened before the status answered counts as off, and a stale run cannot write for the level that is open now', async () => {
+test('a level opened before the status answered waits for it, then runs the task', async () => {
   const r = rig();
-  r.game.openLevel('with-task'); // GET /api/dash0-task has not answered yet
-  assert.equal(q('#d1-start') === null, true);
-  r.game.openLevel('game-only');
-  assert.equal(r.game.rewardNotice, '', 'a new run starts with no notice');
+  r.game.openLevel('with-task'); // neither GET /api/dash0-task nor GET /api/account has answered yet
+  assert.equal(q('[data-line="user"]') === null, true, 'nothing runs until both answered');
+  assert.equal(r.game.overlayOpen, true, 'the overlay is drawn at once');
+  await settle();
+  assert.ok(q('[data-line="user"]'), 'the first step runs once they answered');
+  assert.ok(r.game.howTo.topics.some((t) => t.key === 'dash0'), 'the guide is decided with the answer');
+  playGame('s1');
+  click('#dt-next');
+  assert.ok(q('#d1-start'), 'the In Dash0 step was not dropped');
+  assert.equal(r.store.data.has(SKIPPED_KEY), false, 'and no skip was saved');
+  assert.equal(r.game.rewardNotice, '');
+});
+
+for (const [name, opts, cause] of [['off', { on: false }, 'off'], ['signed-out', { signedIn: false }, 'signed-out']]) {
+  test(`a level opened before the answers came, with the task ${name}, leaves the step out with the right cause`, async () => {
+    const r = rig(opts);
+    r.game.openLevel('with-task');
+    await settle();
+    playGame('s1');
+    assert.equal(q('#d1-start') === null, true);
+    click('#dt-finish');
+    await settle();
+    assert.equal(r.game.rewardNotice, COPY.notices[cause]);
+    assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['p95-task'] } });
+  });
+}
+
+test('a level opened once the task status answered but the account has not still waits: a signed-in player is not taken for signed out', async () => {
+  const r = rig({ holdAccount: true });
+  await settle(); // the task status has answered, GET /api/account has not
+  r.game.openLevel('with-task');
+  assert.equal(q('[data-line="user"]') === null, true, 'waiting for the account state');
+  r.release();
+  await settle();
+  assert.ok(q('[data-line="user"]'));
+  playGame('s1');
+  click('#dt-next');
+  assert.ok(q('#d1-start'), 'the task runs for the signed-in player');
+  assert.equal(r.store.data.has(SKIPPED_KEY), false);
+});
+
+test('a level closed while it waits never runs, and one opened after it is not touched by it', async () => {
+  const r = rig();
+  r.game.openLevel('with-task');
+  r.game.closeOverlay();
+  await settle();
+  assert.equal(q('[data-line="user"]') === null, true, 'closed: it never runs');
+  assert.equal(r.store.data.has(SKIPPED_KEY), false);
+  const waiting = rig();
+  waiting.game.openLevel('with-task');
+  waiting.game.closeOverlay();
+  waiting.game.openLevel('game-only'); // a level with no In Dash0 step runs at once
+  const shown = q('[data-line="user"]');
+  assert.ok(shown);
+  await settle();
+  assert.equal(shown.isConnected, true, 'the first run did not redraw the level that is open now');
+  assert.equal(waiting.game.currentLevelId, 'game-only');
+});
+
+test('a stale run cannot skip or pass for the level that is open now', async () => {
+  const r = rig();
+  await settle();
+  r.game.openLevel('with-task');
+  const stale = seen.at(-1).dash0Task; // run A's own callbacks
+  r.game.closeOverlay();
+  r.game.openLevel('game-only'); // run B
+  const before = [r.game.dash0Rev, r.store.data.get(SKIPPED_KEY) ?? null, r.store.sets.length, r.game.taskWaiting('with-task'), r.game.rewardNotice];
+  stale.skip(['p95-task'], 'off');
+  stale.passed('p95-task');
+  assert.deepEqual([r.game.dash0Rev, r.store.data.get(SKIPPED_KEY) ?? null, r.store.sets.length, r.game.taskWaiting('with-task'), r.game.rewardNotice], before, 'run B\'s state is unchanged');
+  assert.equal(r.game.taskWaiting('with-task'), false);
+  // the live run's own callbacks do write
+  r.game.closeOverlay();
+  r.game.openLevel('with-task');
+  seen.at(-1).dash0Task.skip(['p95-task'], 'off');
+  assert.equal(r.game.taskWaiting('with-task'), true, 'the guard is about the run, not the callback');
 });
 
 test('?mode=reset clears the remembered tasks too', () => {
