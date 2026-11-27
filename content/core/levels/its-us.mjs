@@ -1,8 +1,8 @@
-// Text of levels/its-us.mjs (docs/CONTENT.md). A play level: a spot step, then an In Dash0 step. The spot lines use made-up attempt ids and span names taken from the game's own save path; the In Dash0 step's own fields and filter hint come from the task server and content/core/ui/dash0-task.mjs. The finish text says the same whether or not the In Dash0 step ran, so it never mentions it.
+// Text of levels/its-us.mjs (docs/CONTENT.md). A play level: a spot step, then an In Dash0 step. The spot lines use made-up attempt ids and span names taken from the game's own save path; the In Dash0 step's buttons and status lines come from content/core/ui/dash0-task.mjs; its fields and hints are in this file. The finish text says the same whether or not the In Dash0 step ran, so it never mentions it.
 export default {
   "id": "its-us",
   "name": "It's us",
-  "sub": "Find your own incident in Dash0",
+  "sub": "Find your own failing span",
   "rewardTitle": "On-call",
   "play": {
     "finish": "You picked your own failed span out of other attempts' telemetry by the attempt id and the span status. That is how you find one request among everyone's: filter on an attribute that names it, then read the status.",
@@ -17,9 +17,9 @@ export default {
             { "id": "mine-unset", "text": "operation=progress.serialize status=Unset game.attempt.id=att-4d27" },
             { "id": "other-ok-sync", "text": "operation=progress.sync status=Ok game.attempt.id=att-9b13" },
             { "id": "lookalike-error", "text": "operation=globe.ignite status=Error game.attempt.id=att-4d72" },
-            { "id": "mine-error", "text": "operation=cards.award status=Error game.attempt.id=att-4d27" },
-            { "id": "other-ok-storage", "text": "operation=storage.write status=Ok game.attempt.id=att-71f0" },
             { "id": "other-error-globe", "text": "operation=globe.ignite status=Error game.attempt.id=att-e60a" },
+            { "id": "other-ok-storage", "text": "operation=storage.write status=Ok game.attempt.id=att-71f0" },
+            { "id": "mine-error", "text": "operation=cards.award status=Error game.attempt.id=att-4d27" },
             { "id": "mine-ok", "text": "operation=cards.award status=Ok game.attempt.id=att-4d27" },
             { "id": "other-ok-globe", "text": "operation=globe.ignite status=Ok game.attempt.id=att-e60a" }
           ],
@@ -37,12 +37,12 @@ export default {
         }
       },
       {
-        "intro": "Now do it on real data. The game has sent a failed save of its own to your Dash0, as one trace. Start the task, then open Dash0 from this step. The step shows the attempt id to filter on.<ol><li>Open the [[Trace Explorer]] and add a filter: the key <code>game.attempt.id</code>, the operator <b>is</b>, and the attempt id this step shows. The link opens the explorer without that filter, and your trace can take a little while to arrive, so check the time range if the list is empty.</li><li>Select a span of your trace. The [[Span Sidebar]] opens, and <b>View full trace</b> on its Overview tab opens the [[Trace View]]. In the Waterfall, the Errors tag shows only the failed spans.</li><li>Select the failing span. Its Attributes tab lists the fault code, in <code>game.fault.code</code>. Its Related Logs &amp; Events tab lists its [[span events|span-event]]; the retries are the events named <code>retry</code>.</li><li>The Source tab shows the span as it was sent to Dash0, and the trace ID is its <code>traceId</code>.</li></ol>",
+        "intro": "Now do it on real data. When you start the task, the game sends a failed save of its own to the game's own Dash0 organisation, as one trace. Then press Open in Dash0 on this step. The step shows the attempt id, the game's id for your try.<ol><li>Open the [[Trace Explorer]] and look for the attribute <code>game.attempt.id</code> with the value the step shows. The link opens the explorer without a filter, and your trace can take a little while to arrive, so check the time range if the list is empty.</li><li>Select a span of your trace. The [[Span Sidebar]] opens, and <b>View full trace</b> on its Overview tab opens the [[Trace View]]. In the [[Trace View]], which draws the trace as a [[Waterfall]], the [[Errors tag]] shows only the failed spans.</li><li>Select the failing span. Its Attributes tab lists the fault code, in <code>game.fault.code</code>. Its Related Logs &amp; Events tab lists its [[span events|span-event]]; the retries are the events named <code>retry</code>.</li><li>The Source tab shows the span as it was sent to Dash0, and the trace ID is its <code>traceId</code>.</li></ol>",
         "dash0": {
           "id": "its-find",
           "fields": [
             { "key": "operation", "label": "Which operation failed?", "hint": "The name of the failing span." },
-            { "key": "faultCode", "label": "What is its fault code?", "hint": "Read it from that span's attributes, exactly as shown. Case does not matter." },
+            { "key": "faultCode", "label": "What is its fault code?", "hint": "Read it from that span's attributes. Case does not matter." },
             { "key": "retryCount", "label": "How many times was it retried?", "hint": "Count the events named <code>retry</code> on that span. Type a whole number." },
             { "key": "traceId", "label": "What is the trace ID?", "hint": "The ID of the whole trace: 32 hexadecimal characters." }
           ]

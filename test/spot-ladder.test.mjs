@@ -132,6 +132,7 @@ const RULES = {
   'every even line': (n) => n % 2 === 0,
   'the first k lines': (n, len, k) => n <= k,
   'the last k lines': (n, len, k) => n > len - k,
+  'the middle line': (n, len) => len % 2 === 1 && n === (len + 1) / 2,
 };
 
 test('no two Spot boards share an answer layout', async () => {

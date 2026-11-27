@@ -164,7 +164,7 @@ for (const level of LEVELS) {
     assert.equal(playAll(level).calls[0].result.stars, stars(level));
     const second = start(level);
     assert.equal(second.focus.names()[0], steps[0].driver.first(steps[0].spec));
-    assert.equal(qa('[data-finish]').length, steps.length > 1 ? 0 : 1, 'starts on a step that is not the last (a level whose In Dash0 steps are left out can have one step shown)');
+    assert.equal(qa('[data-finish]').length, steps.length === 1 && stepsOf(level, { dash0: true }).length > 1 ? 1 : 0, 'starts on a step that is not the last (only a level whose In Dash0 steps were left out can show one step, which then finishes)');
     assert.equal(playAll(level, () => {}, second).calls[0].result.stars, stars(level));
     ran += 1;
   });

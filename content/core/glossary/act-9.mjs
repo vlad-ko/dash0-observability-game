@@ -17,6 +17,8 @@ export default {
     {"id": "filter-bar", "name": "Filter bar", "variants": [], "definition": "The bar on a Dash0 page that holds its filters.", "topic": "Dash0"},
     {"id": "filter-operator", "name": "Filter operator", "variants": [], "definition": "The comparison in a filter that relates a key to its values, for example equals.", "topic": "Dash0"},
     {"id": "attribute-filter", "name": "Attribute filter", "variants": ["attribute filters"], "definition": "A filter on one attribute: a key, an operator and one or more values.", "topic": "Dash0"},
+    {"id": "waterfall", "name": "Waterfall", "variants": [], "definition": "The chart in Dash0's Trace View that lays one trace's spans out as bars along a time axis.", "topic": "Dash0"},
+    {"id": "errors-tag", "name": "Errors tag", "variants": [], "definition": "A tag in Dash0's Trace View that, when you click it, shows only the failed spans of the trace.", "topic": "Dash0"},
     {"id": "simulated-dash0", "name": "Simulated Dash0", "variants": ["practice", "practice mode"], "definition": "The game's practice mode, with a simulated Dash0 instead of an account.", "topic": "Dash0"}
   ]
 };

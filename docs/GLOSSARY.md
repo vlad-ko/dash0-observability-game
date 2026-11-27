@@ -239,6 +239,8 @@ Terms the game teaches, grouped by topic. Each entry is one or two lines. "(Act 
 - **Filter bar**: The bar on a Dash0 page that holds its filters. (Act 9)
 - **Filter operator**: The comparison in a filter that relates a key to its values, for example equals. (Act 9)
 - **Attribute filter**: A filter on one attribute: a key, an operator and one or more values. (Act 9)
+- **Waterfall**: The chart in Dash0's Trace View that lays one trace's spans out as bars along a time axis. (Act 9)
+- **Errors tag**: A tag in Dash0's Trace View that, when you click it, shows only the failed spans of the trace. (Act 9)
 - **Simulated Dash0**: The game's practice mode, with a simulated Dash0 instead of an account. (Act 9)
 
 Dash0 product names and descriptions to be checked with the product team before release.

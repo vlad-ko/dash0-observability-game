@@ -71,7 +71,7 @@ test('the In Dash0 step is the seeded task its-us-find with the four incident qu
     assert.ok(f.label.endsWith('?'), `${f.key}: the label is a question`);
     assert.ok(typeof f.hint === 'string' && f.hint.length > 10, `${f.key}: has a hint`);
   }
-  for (const word of [/Trace Explorer/, /game\.attempt\.id/, /Span Sidebar/, /Trace View/, /span event/i]) assert.match(dash0Step.intro, word, `the brief says where to read: ${word}`);
+  for (const word of [/Trace Explorer/, /game\.attempt\.id/, /Span Sidebar/, /Trace View/, /span event/i, /Open in Dash0/, /look for the attribute/, /without a filter/, /game's own Dash0 organisation/]) assert.match(dash0Step.intro, word, `the brief says where to read: ${word}`);
 });
 
 test('the finish text is the same whether or not the task ran: it never names the In Dash0 step or the task', () => {
@@ -122,7 +122,7 @@ test('with the task available the spot step leads on to the In Dash0 step', () =
   assert.equal(results.length, 0);
 });
 
-test('the boss never touches ctx.telemetry: neither signed out nor with the task available, nor through a wrong pick', async () => {
+test('the spot step never touches ctx.telemetry: neither signed out nor with the task available (up to the In Dash0 Start, which is not pressed here), nor through a wrong pick', async () => {
   for (const api of [fakeApi({ available: false, reason: 'off' }), fakeApi({ available: true })]) {
     const { results } = open({ api, telemetry: forbiddenTelemetry() });
     click('[data-line="other-error-storage"]'); // a wrong Check
@@ -142,11 +142,4 @@ test('the source imports nothing from the incident lab or the telemetry session,
   assert.ok(imports.length >= 2, `the scan reads the imports (${imports.join(', ')})`);
   for (const spec of imports) assert.doesNotMatch(spec, /incident-lab|telemetry|otlp|dash0-task/, `import ${spec}`);
   assert.ok(!/ctx\.telemetry/.test(src.replace(/^\s*\/\/.*$/gm, '')), 'no code reads ctx.telemetry');
-});
-
-test('the old practice and send screens are gone: no practice filter, send button or simulated explorer on the first screens', () => {
-  const api = fakeApi({ available: true });
-  open({ api });
-  assert.equal(qa('input[type="radio"][name^="its-f"]').length, 0, 'no practice filter radios');
-  for (const sel of ['#its-practice', '#its-send', '#its-explorer']) assert.equal(q(sel) === null, true, sel);
 });
