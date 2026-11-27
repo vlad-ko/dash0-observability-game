@@ -201,6 +201,8 @@ const ANSWERS = {
     'tradeoff wcm-gb: traces=tail logs=trimmed',
     'tradeoff wcm-signal: interval=s60 records=per-request spans=tail',
   ],
+  // The In Dash0 step has no driver and no answer here: the task server derives its answers (test/its-us.test.mjs pins its task and questions).
+  'its-us': ['spot its-spot: mine-error'],
   'play-fixture': [
     'choice fx-pick: trace',
     'sort fx-sort: server=auto loyalty=manual',

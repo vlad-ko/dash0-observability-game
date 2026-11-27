@@ -1,6 +1,6 @@
 // The Spot it help ladder per level (#160): every Spot it step declares its helps explicitly,
-// and the ten Spot levels follow the default ladder: hints on in act 3 (3.2, 3.5, 3.6) and off
-// later (5.2, 5.5, 6.2, 7.1, 8.1, 8.2, 9.5). A step with no helps key would have hints off (spotHelps), but the
+// and the eleven Spot levels follow the default ladder: hints on in act 3 (3.2, 3.5, 3.6) and off
+// later (5.2, 5.5, 6.2, 7.1, 8.1, 8.2, 9.5, and the Act 9 boss, which has no level number and is keyed by its id). A step with no helps key would have hints off (spotHelps), but the
 // ladder is a decision, so it is written down on each step. The specs are read from each
 // level's `play` and its CONTENT export.
 import { test } from 'node:test';
@@ -25,6 +25,7 @@ const LADDER = {
   '8.1': false,
   '8.2': false,
   '9.5': false,
+  'its-us': false,
 };
 
 const LEVELS = join(dirname(fileURLToPath(import.meta.url)), '..', 'levels');
@@ -37,12 +38,12 @@ async function spotLevels() {
     const steps = [...(mod.default?.play?.steps ?? []), ...(mod.CONTENT?.steps ?? [])];
     const byId = new Map();
     for (const s of steps) if (s?.spot) byId.set(s.spot.id, s.spot);
-    if (byId.size) out.push({ no: mod.default.no, file, specs: [...byId.values()] });
+    if (byId.size) out.push({ no: mod.default.no ?? mod.default.id, file, specs: [...byId.values()] });
   }
   return out;
 }
 
-test('the Spot levels are exactly the ten on the ladder', async () => {
+test('the Spot levels are exactly the eleven on the ladder', async () => {
   const found = (await spotLevels()).map((l) => l.no).sort();
   assert.deepEqual(found, Object.keys(LADDER).sort());
 });
@@ -140,7 +141,7 @@ test('no two Spot boards share an answer layout', async () => {
   }
   const shared = Object.entries(byLayout).filter(([, boards]) => boards.length > 1);
   assert.deepEqual(shared, [], JSON.stringify(byLayout));
-  assert.equal(Object.values(byLayout).flat().length, 10, 'all ten Spot boards were compared');
+  assert.equal(Object.values(byLayout).flat().length, 11, 'all eleven Spot boards were compared');
 });
 
 test('no position rule (every odd or even line, the first or last k lines) solves any Spot board through checkSpot (#190)', async () => {
@@ -158,6 +159,6 @@ test('no position rule (every odd or even line, the first or last k lines) solve
       }
     }
   }
-  assert.equal(boards, 10, 'all ten Spot boards were tried');
+  assert.equal(boards, 11, 'all eleven Spot boards were tried');
   assert.deepEqual(solving, {}, 'boards a position rule solves without reading them');
 });

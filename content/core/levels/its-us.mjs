@@ -1,117 +1,53 @@
-// Text of levels/its-us.mjs (docs/CONTENT.md). {{timeout-s}} and {{session-attr}} are figures from the level's VARS table; the other {{name}} marks are slots the code fills while it runs (counts, hosts, the session id it marks up, a span or key name, an HTTP status, a server message).
-// A run(ctx) level: levels/its-us.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). The VERIFY (#195) notes (the 401 or 403 wording, that a session.id attribute is a filter key) are in levels/its-us.mjs beside the code that uses them. The span status names the trace tables show (Error, Unset) stay in the code: they come from the span and the driver reads them.
+// Text of levels/its-us.mjs (docs/CONTENT.md). A play level: a spot step, then an In Dash0 step. The spot lines use made-up attempt ids and span names taken from the game's own save path; the In Dash0 step's own fields and filter hint come from the task server and content/core/ui/dash0-task.mjs. The finish text says the same whether or not the In Dash0 step ran, so it never mentions it.
 export default {
   "id": "its-us",
   "name": "It's us",
   "sub": "Find your own incident in Dash0",
   "rewardTitle": "On-call",
-  "run": {
-    "startIntroNoIncident": "The game could not read its own incident, so there is nothing to find.",
-    "startIntroNoTelemetry": "The game has no telemetry session in this build, so there is no incident to find.",
-    "startNote": "Use Back to return to the map.",
-    "notConnectedIntro": "The game ran into a problem of its own. Your job is to find it, in Dash0, from the game's own telemetry. But the game is not connected to a Dash0: you skipped the connection in level 9.3, or the page was reloaded, which drops it.",
-    "notConnectedChip": "Not connected",
-    "notConnectedPractice": "<p>Practice shows the same incident in a simulated Dash0 Trace View, and it scores the same way as your own Dash0. Nothing leaves this page.</p>",
-    "notConnectedWhyAvailable": "Your own Dash0 needs a connection from level 9.3 first. Connect there, then come back.",
-    "notConnectedWhyUnavailable": "Your own Dash0 needs a connection from level 9.3 first, and connecting to your own Dash0 is not available in this browser. Practice works the same way.",
-    "notConnectedPracticeButton": "Practice with a simulated Dash0",
-    "notConnectedLiveButton": "Use my own Dash0",
-    "notConnectedReasonAvailable": "Connect in level 9.3 first.",
-    "notConnectedReasonUnavailable": "Not available in this browser.",
-    "sendLeadElsewhere": "The game sent this incident to {{hosts}} earlier. This is a different Dash0, so it has not got it yet. Send it here, then find it there.",
-    "sendHostsJoiner": "and",
-    "sendLeadAttempted": "The game keeps a trace of its own save path, and one step of it failed. An earlier attempt to send it may have got through; the game cannot tell. Send it to your Dash0, then find it there.",
-    "sendLeadFresh": "The game keeps a trace of its own save path, and one step of it failed. It has not been sent yet. Send it to your Dash0, then find it there.",
-    "sendChip": "Your own Dash0: {{host}}",
-    "sendBody": "<p>This sends one trace of five spans. Every span carries your session id, {{session}}, as <code>session.id</code>, so you can pick your own out of everything else in your Dash0. Press the button once; the game does not send it again on its own.</p>",
-    "duplicateNote": "If an earlier attempt did get through, Dash0 may list each span of the trace twice, with the same ids; read one copy. Your answers are the same either way.",
-    "sendButton": "Send the incident to Dash0",
-    "sendBarButton": "Send the incident to Dash0",
-    "sendRetryButton": "Send the incident again",
-    "sendSwitchButton": "Practice instead",
-    "sendSendingSays": "Sending the incident.",
-    "describeRefusedToken": "Dash0 refused the token and would not take the incident. Open level 9.3 to connect again with a token that has the Ingesting permission, or practice here.",
-    "describeRefused": "Dash0 refused the incident (HTTP {{status}}).",
-    "describeSaid": "Dash0 said: {{message}}",
-    "unreachable": {
-      "network": "The request never got an answer. In a browser that can be a wrong host, a CORS refusal or the page's Content Security Policy, and the browser cannot tell them apart.",
-      "timeout": "There was no answer within {{timeout-s}} seconds.",
-      "opaque": "Something answered, but not with a usable HTTP response.",
-      "aborted": "The request was cancelled before it finished.",
-      "invalid": "The game could not build the request, so nothing was sent."
-    },
-    "unreachableFallback": "The game is not connected, so the incident was not sent.",
-    "filterKeyLegend": "Filter: key",
-    "filterOperatorLegend": "Filter: operator",
-    "filterValueLabel": "Filter: value",
-    "filterApplyButton": "Apply filter",
-    "filterClearButton": "Clear filter",
-    "filterValueSays": "Type a value to filter by.",
-    "explorerChip": "Simulated",
-    "explorerTail": "Nothing here is your account.",
-    "explorerListTitle": "Trace Explorer",
-    "explorerTraceTitle": "Trace View",
-    "listSession": "<p>Your session id: {{session}}</p>",
-    "listCount": "{{count}} traces.",
-    "listMatchOne": "{{count}} trace matches: {{key}} {{op}} {{value}}.",
-    "listMatchMany": "{{count}} traces match: {{key}} {{op}} {{value}}.",
-    "listNone": "No traces match. Check the key, the operator and the value; nothing is charged for a filter.",
-    "listCaption": "Traces",
-    "listHead": ["No.", "Root operation", "Start (UTC)", "Duration (ms)", "Spans", "Status"],
-    "listOpenButton": "Open trace {{n}}",
-    "traceIdLine": "<p>Trace ID: {{id}}</p>",
-    "traceCaption": "Spans of the trace",
-    "traceHead": ["Span", "Parent", "Start (ms)", "Duration (ms)", "Status"],
-    "traceOpenButton": "Open {{name}}",
-    "traceNote": "Open a span to see its attributes and events.",
-    "traceBackButton": "Back to the trace list",
-    "detailAttrCaption": "Attributes of {{name}}",
-    "detailAttrHead": ["Attribute", "Value"],
-    "detailNoEvents": "This span has no events.",
-    "detailEventsCaption": "Events of {{name}}",
-    "detailEventsHead": ["Event", "At (ms)", "Attributes"],
-    "findGuideTitle": "Find your incident in Dash0",
-    "findGuide": "<ol><li>Open the Trace Explorer.</li><li>Add a filter: the key <code>{{session-attr}}</code>, the operator <b>is</b>, and your session id {{session}} as the value. If nothing matches, widen the Time Picker.</li><li>Open the trace and choose View full trace. The Waterfall lists its spans; one is in error.</li><li>Choose that span. The Span Sidebar shows its attributes, and its span events.</li></ol>",
-    "findIntroPractice": "Several sessions saved their progress, and in one of them a step of the save path failed. That session is yours. Find your trace, then open its spans and read what is on them.",
-    "findIntroLive": "The incident is in your Dash0. Find it the way you would find any trace, then answer from what you read there.",
-    "simulated": "Practice: a simulated Dash0, not your account",
-    "findChipLive": "Your own Dash0",
-    "questions": [
+  "play": {
+    "finish": "You picked your own failed span out of other attempts' telemetry by the attempt id and the span status. That is how you find one request among everyone's: filter on an attribute that names it, then read the status.",
+    "steps": [
       {
-        "key": "operation",
-        "label": "Which operation failed?",
-        "note": "The name of the span in error.",
-        "nudge": "Type the name of the span in error.",
-        "wrong": "That is not the operation that failed."
+        "intro": "The game ran into a problem of its own: a step of its save path failed while you played. Several attempts saved their progress at about the same time, and each span below carries the id of the attempt that made it. In this made-up list your attempt is <code>att-4d27</code>.",
+        "question": "Which span is yours and ended in error?",
+        "spot": {
+          "id": "its-spot",
+          "lines": [
+            { "id": "other-error-storage", "text": "operation=storage.write status=Error game.attempt.id=att-9b13" },
+            { "id": "mine-unset", "text": "operation=progress.serialize status=Unset game.attempt.id=att-4d27" },
+            { "id": "other-ok-sync", "text": "operation=progress.sync status=Ok game.attempt.id=att-9b13" },
+            { "id": "lookalike-error", "text": "operation=globe.ignite status=Error game.attempt.id=att-4d72" },
+            { "id": "mine-error", "text": "operation=cards.award status=Error game.attempt.id=att-4d27" },
+            { "id": "other-ok-storage", "text": "operation=storage.write status=Ok game.attempt.id=att-71f0" },
+            { "id": "other-error-globe", "text": "operation=globe.ignite status=Error game.attempt.id=att-e60a" },
+            { "id": "mine-ok", "text": "operation=cards.award status=Ok game.attempt.id=att-4d27" },
+            { "id": "other-ok-globe", "text": "operation=globe.ignite status=Ok game.attempt.id=att-e60a" }
+          ],
+          "whyNot": {
+            "mine-unset": "It is yours, but its status is Unset, the default. Nothing marked this span as failed, so it is not the one in error.",
+            "mine-ok": "It is yours, but its status is Ok, which a developer or operator sets to say the work was validated as successful. A span in error has the status Error.",
+            "other-error-storage": "Its status is Error, but its attempt id is att-9b13, not yours. Another attempt's failure is not your failure.",
+            "other-error-globe": "Its status is Error, but it belongs to another attempt, att-e60a. It failed for someone else, not for you.",
+            "lookalike-error": "Its status is Error, but its attempt id is att-4d72, and yours is att-4d27. A filter that says the id is att-4d27 would not match it.",
+            "other-ok-sync": "It belongs to another attempt, att-9b13, and its status is Ok. It fails on both counts.",
+            "other-ok-storage": "It belongs to another attempt, att-71f0, and its status is Ok. It fails on both counts.",
+            "other-ok-globe": "It belongs to another attempt, att-e60a, and its status is Ok. It fails on both counts."
+          },
+          "explain": "Two things told yours apart: the attempt id is an attribute, so it says whose span this is, and the status says whether it failed. A span's status is Unset by default, Ok when a developer or operator marks it as validated successful, and Error when the work it covers contains an error. The attempt id alone or the status alone would have left other spans in the list."
+        }
       },
       {
-        "key": "faultCode",
-        "label": "What is its fault code?",
-        "note": "Read it from that span's attributes, exactly as shown. Case does not matter.",
-        "nudge": "Type the fault code from the span.",
-        "wrong": "That is not the fault code on the failing span. Check each character."
-      },
-      {
-        "key": "retryCount",
-        "label": "How many times was it retried?",
-        "note": "Count the retry events on that span.",
-        "nudge": "Type a whole number.",
-        "wrong": "That is not the number of retries. Count them again."
-      },
-      {
-        "key": "traceId",
-        "label": "What is the trace ID?",
-        "note": "The id of the whole trace: 32 hexadecimal characters.",
-        "nudge": "A trace ID is 32 characters, 0 to 9 and a to f.",
-        "wrong": "That is not the id of this trace."
+        "intro": "Now do it on real data. The game has sent a failed save of its own to your Dash0, as one trace. Start the task, then open Dash0 from this step. The step shows the attempt id to filter on.<ol><li>Open the [[Trace Explorer]] and add a filter: the key <code>game.attempt.id</code>, the operator <b>is</b>, and the attempt id this step shows. The link opens the explorer without that filter, and your trace can take a little while to arrive, so check the time range if the list is empty.</li><li>Select a span of your trace. The [[Span Sidebar]] opens, and <b>View full trace</b> on its Overview tab opens the [[Trace View]]. In the Waterfall, the Errors tag shows only the failed spans.</li><li>Select the failing span. Its Attributes tab lists the fault code, in <code>game.fault.code</code>. Its Related Logs &amp; Events tab lists its [[span events|span-event]]; the retries are the events named <code>retry</code>.</li><li>The Source tab shows the span as it was sent to Dash0, and the trace ID is its <code>traceId</code>.</li></ol>",
+        "dash0": {
+          "id": "its-find",
+          "fields": [
+            { "key": "operation", "label": "Which operation failed?", "hint": "The name of the failing span." },
+            { "key": "faultCode", "label": "What is its fault code?", "hint": "Read it from that span's attributes, exactly as shown. Case does not matter." },
+            { "key": "retryCount", "label": "How many times was it retried?", "hint": "Count the events named <code>retry</code> on that span. Type a whole number." },
+            { "key": "traceId", "label": "What is the trace ID?", "hint": "The ID of the whole trace: 32 hexadecimal characters." }
+          ]
+        }
       }
-    ],
-    "findCheckButton": "Check my answers",
-    "findFinishReason": "Answer all four questions to finish the level.",
-    "findRightSays": "Right.",
-    "findAllRightSays": "All four answers are right. That was the game's own incident.",
-    "findFinishFiltered": "You filtered a simulated Dash0 Trace Explorer by your session id, opened your trace and read the span in error. Your own Dash0 works the same way.",
-    "findFinishUnfiltered": "You found your trace in a simulated Dash0 Trace Explorer without the filter. Filtering by session.id is quicker, and it is how you find your own telemetry in your own Dash0.",
-    "findFinishLive": "You found the game's own incident in your own Dash0: you filtered by your session id, opened the trace and read the span in error."
+    ]
   }
 };
