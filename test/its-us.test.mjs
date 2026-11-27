@@ -71,7 +71,7 @@ test('the In Dash0 step is the seeded task its-us-find with the four incident qu
     assert.ok(f.label.endsWith('?'), `${f.key}: the label is a question`);
     assert.ok(typeof f.hint === 'string' && f.hint.length > 10, `${f.key}: has a hint`);
   }
-  for (const word of [/Trace Explorer/, /game\.attempt\.id/, /Span Sidebar/, /Trace View/, /span event/i, /Open in Dash0/, /look for the attribute/, /without a filter/, /game's own Dash0 organisation/]) assert.match(dash0Step.intro, word, `the brief says where to read: ${word}`);
+  for (const word of [/Trace Explorer/, /game\.attempt\.id/, /Span Sidebar/, /Trace View/, /span event/i, /Open in Dash0/, /look for the attribute/, /without a filter/, /its own Dash0 organisation/]) assert.match(dash0Step.intro, word, `the brief says where to read: ${word}`);
 });
 
 test('the finish text is the same whether or not the task ran: it never names the In Dash0 step or the task', () => {

@@ -17,7 +17,8 @@
 // - A filter picks a key first, then an operator (is / equals), then the value (glossary/filtering).
 // - The Span Sidebar's Overview tab has a "View full trace" button that opens the Trace View; its Attributes tab lists the span's key-value pairs;
 //   its Related Logs & Events tab shows log records and span events; its Source tab shows the full resourceSpans structure as sent to Dash0
-//   (tracing/span-sidebar). In the Trace View the Errors tag shows only failed spans (tracing/view).
+//   (tracing/span-sidebar). In the Trace View, the Waterfall lists the spans, and its Errors tag shows only the failed spans
+//   (https://www.dash0.com/docs/dash0/telemetry/tracing/view).
 // - A span event has a name (such as exception, cache.miss, retry), a timestamp and attributes; retries can be recorded as events on the enclosing span
 //   (tracing/span-events). The OTLP JSON encoding writes traceId as a hex string (otlp, JSON Protobuf encoding).
 // Not on a Dash0 page, so unverified (#195, P8): that game.attempt.id is offered as a filter key in the game's own Dash0 organisation (the filter page says Dash0 offers
