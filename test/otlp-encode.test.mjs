@@ -166,3 +166,132 @@ test('encodeResourceSpans refuses an empty batch, a resource without service.nam
     assert.throws(() => encodeResourceSpans([root], { ...ok, stamp }), TypeError, JSON.stringify(stamp));
   }
 });
+
+// ---- logs and metrics (#509 P4). Proto: opentelemetry-proto v1.11.1, logs/v1/logs.proto and
+// metrics/v1/metrics.proto. Fixtures are deliberately unequal: a stamp and an attribute differ.
+import { encodeResourceLogs, encodeResourceMetrics } from '../lib/otlp/encode.mjs';
+
+const ENV = {
+  resource: { 'service.name': 'dash0-task' },
+  scope: { name: 'task-seeder', version: '2' },
+  stamp: { 'game.attempt.id': 'y' },
+};
+
+test('a log record: the stamp beats a record attribute, times are decimal strings', () => {
+  const body = encodeResourceLogs(
+    [
+      {
+        timeMs: 1762300800123.5,
+        severity: 'warn',
+        body: 'cache miss',
+        attributes: { 'game.attempt.id': 'x', 'cache.size': 7 },
+        traceId: TRACE,
+        spanId: ROOT_ID,
+      },
+    ],
+    ENV,
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(body)), {
+    resourceLogs: [
+      {
+        resource: { attributes: [{ key: 'service.name', value: { stringValue: 'dash0-task' } }] },
+        scopeLogs: [
+          {
+            scope: { name: 'task-seeder', version: '2' },
+            logRecords: [
+              {
+                timeUnixNano: '1762300800123500000',
+                observedTimeUnixNano: '1762300800123500000',
+                severityNumber: 13,
+                severityText: 'WARN',
+                body: { stringValue: 'cache miss' },
+                attributes: [
+                  { key: 'game.attempt.id', value: { stringValue: 'y' } },
+                  { key: 'cache.size', value: { intValue: '7' } },
+                ],
+                traceId: TRACE,
+                spanId: ROOT_ID,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test('log refusals: envelope, ids, timestamps, body, severity, empty list', () => {
+  const ok = { timeMs: 1, severity: 'info', body: 'b' };
+  assert.throws(() => encodeResourceLogs([ok], { ...ENV, resource: {} }), TypeError);
+  assert.throws(() => encodeResourceLogs([ok], { ...ENV, scope: { name: '' } }), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, traceId: 'ABC' }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, spanId: 'zz' }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, timeMs: -1 }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, body: 5 }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, severity: 'loud' }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, severity: 25 }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, attributes: { a: null } }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([], ENV), RangeError);
+});
+
+test('metrics: a sum int is asInt "3" with temporality 2, a gauge 3.5 is asDouble 3.5', () => {
+  const body = encodeResourceMetrics(
+    [
+      {
+        name: 'tasks.done',
+        unit: '1',
+        type: 'sum',
+        temporality: 'cumulative',
+        monotonic: true,
+        points: [{ value: 3, timeMs: 2000, startMs: 1000, attributes: { 'game.attempt.id': 'x', k: 'v' } }],
+      },
+      { name: 'queue.depth', type: 'gauge', points: [{ value: 3.5, timeMs: 2000 }] },
+    ],
+    ENV,
+  );
+  const [sum, gauge] = body.resourceMetrics[0].scopeMetrics[0].metrics;
+  assert.deepEqual(sum, {
+    name: 'tasks.done',
+    unit: '1',
+    sum: {
+      dataPoints: [
+        {
+          timeUnixNano: '2000000000',
+          startTimeUnixNano: '1000000000',
+          asInt: '3',
+          attributes: [
+            { key: 'game.attempt.id', value: { stringValue: 'y' } },
+            { key: 'k', value: { stringValue: 'v' } },
+          ],
+        },
+      ],
+      aggregationTemporality: 2,
+      isMonotonic: true,
+    },
+  });
+  assert.deepEqual(gauge, {
+    name: 'queue.depth',
+    gauge: {
+      dataPoints: [
+        { timeUnixNano: '2000000000', asDouble: 3.5, attributes: [{ key: 'game.attempt.id', value: { stringValue: 'y' } }] },
+      ],
+    },
+  });
+  assert.equal(body.resourceMetrics[0].scopeMetrics[0].scope.name, 'task-seeder');
+});
+
+test('metric refusals: sum without temporality or monotonic, unknown type, bad values, envelope', () => {
+  const pt = { value: 1, timeMs: 1 };
+  const m = (o) => [{ name: 'n', type: 'gauge', points: [pt], ...o }];
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', monotonic: true }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', temporality: 'delta' }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', temporality: 0, monotonic: false }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'histogram' }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: NaN, timeMs: 1 }] }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: '3', timeMs: 1 }] }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: 2 ** 60, timeMs: 1 }] }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [] }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ name: '' }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m(), { ...ENV, resource: {} }), TypeError);
+  assert.throws(() => encodeResourceMetrics([], ENV), RangeError);
+});

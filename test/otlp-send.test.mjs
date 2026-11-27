@@ -456,3 +456,51 @@ test("sendTraces over Node's own fetch: a redirect fails the send", async () => 
   );
   assert.equal(hits, 0);
 });
+
+// ---- sendOtlp and the per-signal classifier (#509 P4)
+import { sendOtlp } from '../lib/otlp/send.mjs';
+import { signalUrl } from '../lib/dash0/ingress.mjs';
+
+const BASE = 'https://ingress.eu-west-1.aws.dash0.com';
+
+test('sendOtlp logs POSTs to base + /v1/logs with the body and the same headers', async () => {
+  const f = fakeFetch(() => res(200, ''));
+  const t = fakeTimers();
+  const body = { resourceLogs: [{ marker: 'unequal-7' }] };
+  const out = await sendOtlp({
+    signal: 'logs', fetch: f.fetch, url: signalUrl(BASE + '/', 'logs'), token: T, dataset: 'ds1', body, ...t,
+  });
+  assert.deepEqual(out, { kind: 'accepted' });
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].url, `${BASE}/v1/logs`);
+  assert.deepEqual(JSON.parse(f.calls[0].init.body), body);
+  assert.equal(f.calls[0].init.headers.Authorization, `Bearer ${T}`);
+  assert.equal(f.calls[0].init.headers[DATASET_HEADER], 'ds1');
+  assert.equal(f.calls[0].init.credentials, 'omit');
+});
+
+test('a 2xx with rejectedLogRecords is rejected for logs, accepted for traces; each signal reads its own field', async () => {
+  const body = JSON.stringify({ partialSuccess: { rejectedLogRecords: 2, errorMessage: 'bad' } });
+  assert.deepEqual(await classifyResponse(res(200, body), { token: T, signal: 'logs' }), {
+    kind: 'rejected', status: 200, auth: false, message: 'bad',
+  });
+  assert.deepEqual(await classifyResponse(res(200, body), { token: T, signal: 'traces' }), { kind: 'accepted' });
+  assert.deepEqual(await classifyResponse(res(200, body), { token: T }), { kind: 'accepted' });
+  const m = JSON.stringify({ partialSuccess: { rejectedDataPoints: '4' } });
+  assert.equal((await classifyResponse(res(200, m), { token: T, signal: 'metrics' })).kind, 'rejected');
+  assert.equal((await classifyResponse(res(200, m), { token: T, signal: 'logs' })).kind, 'accepted');
+  const zero = JSON.stringify({ partialSuccess: { rejectedDataPoints: 0 } });
+  assert.equal((await classifyResponse(res(200, zero), { token: T, signal: 'metrics' })).kind, 'accepted');
+});
+
+test('sendOtlp end to end reports a logs rejection, and refuses an unknown signal', async () => {
+  const t = fakeTimers();
+  const f = fakeFetch(() => res(200, JSON.stringify({ partialSuccess: { rejectedLogRecords: 1 } })));
+  const out = await sendOtlp({ signal: 'logs', fetch: f.fetch, url: `${BASE}/v1/logs`, token: T, body: {}, ...t });
+  assert.deepEqual(out, { kind: 'rejected', status: 200, auth: false });
+  await assert.rejects(
+    sendOtlp({ signal: 'profiles', fetch: f.fetch, url: BASE, token: T, body: {}, ...t }),
+    RangeError,
+  );
+  assert.equal(f.calls.length, 1);
+});
