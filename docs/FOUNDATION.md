@@ -383,12 +383,15 @@ top-level navigation from `<a href="/api/auth-start">`, sign-out is a same-origi
 
 **Store (Upstash Redis over REST with fetch, no dependency).** Keys are prefixed `oc:v1:`: `sub:<sub>` (pid),
 `profile:<pid>` (HASH: nick, nickKey, listed 0/1, gen, created, sub (needed by delete); never an email or name), `progress:<pid>`
-(HASH: rev, json, total, reachedAt, score), `nick:<nickKey>` (pid, the uniqueness claim), `board` (ZSET of listed pids)
-and `rl:<pid>:<route>:<window>` (INCR plus EXPIRE). The pid is a random 16-byte base64url id; Google's sub never
+(HASH: rev, json, total, reachedAt, score), `nick:<nickKey>` (pid, the uniqueness claim), `board` (ZSET of listed pids),
+`rl:<pid>:<route>:<window>` (INCR plus EXPIRE) and, for the In Dash0 tasks (§2.15), `task:<pid>` (HASH of the player's attempts, 30 day EXPIRE),
+`task-charged:<pid>` (SET of `<attemptId>|<value>`, EXPIRE refreshed to 30 days on write) and `task-cool:<pid>:<attemptId>` (a 5 s cooldown that expires on its own).
+`delete-account` takes seven KEYS (profile, progress, board, sub, nick, `task:<pid>`, `task-charged:<pid>`) and removes both task keys with the account;
+the cooldown keys are the only ones it leaves, and they are gone within 5 s. The pid is a random 16-byte base64url id; Google's sub never
 reaches a client. `lib/account/score.mjs` encodes `score = total * 2^31 + (2^31 - 1 - s)`, s being the server's
 seconds since 2026-01-01 when the current total was reached, so a descending range gives most stars, then earliest;
 `reachedAt` changes only when the recomputed total changes and always comes from the server clock. Writes that must be
-atomic are Lua scripts (`cas-progress`, `claim-nick`, `set-listing`, `delete-account`) that only compare and write
+atomic are Lua scripts (`cas-progress`, `claim-nick`, `set-listing`, `delete-account`, and `mark-sent` for the tasks) that only compare and write
 values computed in JS (`set-listing` does an HSET of `listed`, then ZADD with the stored score or ZREM; with no stored score it only sets
 `listed`, and the ZADD happens at the next progress write because `cas-progress` reads `listed` inside the script
 before its ZADD); first sign-in uses `SET sub NX` and the loser re-reads. Nicknames match
@@ -468,7 +471,7 @@ nickname field, a listing toggle, Sign out and Delete with a two-step confirm. T
 dismissible, shown at most once per page session and not when `signin-nudge` is hidden through `hideHelp`, with
 buttons Sign in, Not now and Don't ask again. `?signin=` is read once in `main.mjs`, shown as a notice, then stripped
 with `history.replaceState`; `new` shows the welcome line (it promises a leaderboard place only once the player has a star), `ok` shows nothing. Privacy copy: "Optional, @dash0.com Google accounts only. We keep your Google account id,
-a nickname and your level stars and cards, nothing else. We never store or show your name or email. Signed-in players
+a nickname and your level stars and cards, and your In Dash0 task attempts until 30 days after your last In Dash0 task. We never store or show your name or email. Signed-in players
 are listed on the leaderboard by default and can hide themselves in Account. Your default nickname is a fun name made
 from your email; change it any time. Delete your account to remove everything we hold; this browser
 keeps its own copy."
@@ -516,8 +519,8 @@ The `api/` functions send one trace per request to the owner's Dash0 when config
 Play events from the browser (client `lib/play-telemetry.mjs`, receiver `api/events.mjs`, resource `oncall-game-web`, one trace per event): docs/GAME-EVENTS.md.
 Code: `lib/otel/` (`config.mjs`, `traceparent.mjs`, `attributes.mjs`, `export.mjs`, `server.mjs`) over the lab's `lib/otlp/encode.mjs`
 and `lib/otlp/send.mjs`; no package, no install step. Each `api/<name>.mjs` ends with the same three lines
-(`createServerTelemetry({name, env: process.env})`, the factory over `log: telemetry.log` (the guide and the sign-in
-callback also `fetch: telemetry.trace(globalThis.fetch)`), `export const {...} = telemetry.instrument(...)`).
+(`createServerTelemetry({name, env: process.env})`, the factory over `log: telemetry.log` (the functions that make outbound calls, the guide, the sign-in
+callback, feedback and dash0-task, also `fetch: telemetry.trace(globalThis.fetch)`), `export const {...} = telemetry.instrument(...)`).
 
 - Env: `DASH0_OTLP_ENDPOINT` (an ingress base URL, checked by `parseEndpoint` in `lib/dash0/ingress.mjs`; `http://localhost` is allowed only when `VERCEL` is not `1`, where the lab allows it only in debug mode),
   `DASH0_AUTH_TOKEN` (`auth_...`), `DASH0_DATASET` (optional). All three absent or empty is off; any set must pass
@@ -725,6 +728,52 @@ question, an action, an answer card, a label or a legend. `endSession`
 closes an open card, and `focusStepStart` skips a term so that opening a level does not open a definition. Whether a term exists is
 checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind, which never imports the glossary.
 Authoring rules: `docs/CONTENT.md` section 5.1.
+
+### 2.15 In Dash0 tasks: the server core (#509 P5)
+
+A task asks the player to find something in the game's own Dash0 organisation. `api/dash0-task.mjs` makes the attempt, sends its
+telemetry and grades the answer; the browser holds no spans and no key. The In Dash0 step (§2.6, #515) is its only caller, and no level uses that step until P7 (#509); §2.6 holds the browser side of this wire contract.
+Code: `lib/dash0-task/` (`config.mjs`, `tag.mjs`, `stamp.mjs`, `names.mjs`, `links.mjs`, `api.mjs` are shared; `scenario.mjs` and `grade.mjs`
+are SERVER ONLY, so `test/dash0-task-server-only.test.mjs` forbids any import of them from `levels/`, `lib/widgets/`, `lib/play.mjs` or
+anything reachable from `main.mjs`), over `lib/otlp/encode.mjs` and `send.mjs` (P4) and `lib/dash0/ingress.mjs`. Tests: `tools/fake-dash0.mjs`
+(an in-memory Dash0 that throws a `TypeError` for any host it was not built with) and `tools/fake-redis.mjs`; `DASH0_TASK_STUB=1` with `AUTH_STUB=1`
+wires both into the dev server.
+
+- Env (all separate from the owner's monitoring variables of §2.10): `DASH0_GAME_INGEST_URL`, `_INGEST_TOKEN`, `_DATASET` (the dataset identifier, the value of the `Dash0-Dataset` header; required: every deep
+  link names it), `_API_URL`, `_API_TOKEN`, `_APP_URL` and `_PLAYER_SECRET` (32 bytes or more). All seven absent is off; any one set means all must
+  validate, else `invalid`, and the one log line names the variable and the reason, never a value. The API hosts are the ingress hosts with `api.`
+  for `ingress.`; the app origin is exactly `https://app.dash0.com`. `http://localhost` is accepted for the ingest URL only when `VERCEL` is not `1` (the local dev server). The tasks are `on` only when these validate and sign-in with its store (§2.9) is
+  configured: `createDash0Task` computes that once (`enabled`). Off makes no Redis command and no fetch.
+- Wire: `GET` -> `{v:1, on}` (no session). `POST {v:1, op:'start', taskId}` -> `{v:1, ok:true, attemptId, link, tag, readyAfterS, expiresAt}` (plus `name`
+  for a readback task); ingest failure -> 502 `{ok:false, outcome:'inconclusive', reason:'ingest', retryAfterS}`. `POST {v:1, op:'check', taskId, attemptId,
+  answer?}` (`answer` is `{question, value}`, required for a seeded task, refused for a readback one) -> `{v:1, outcome:'pass'|'fail'|'inconclusive', charge,
+  reason?, retryAfterS?}`. Check order: 405, 503 (off or invalid), 403 (`originMatches`), 415, 413 (4 KiB), 401 (502 if the store fails), 400, 404 (unknown
+  task), 429, then 409 (stale or no attempt) and 410 (after `expiresAt`; at `expiresAt` it still passes). Limits through `store.rateLimit`: start 12 and check 40 per 600 s, plus a
+  per-attempt `SET NX EX 5` cooldown (reason `cooldown`; its keys expire in 5 s) taken on every seeded check after settling and BEFORE grading, so a held cooldown
+  is `cooldown` whatever the answer, and on a readback check before its probe.
+- Identity: `playerTag(pid, secret)` is `base32lower(HMAC-SHA256(secret, 'player:' + pid))` cut to 10 characters, the only identifier that leaves the
+  server. Every record carries `game.attempt.id`, `game.player.tag` and `game.task.id` (`stamp.mjs`). `names.mjs` is the only place a name is composed:
+  `oncall-<tag>-<task>-<attempt6>`. `links.mjs` builds `<app>/goto/traces/explorer?from&to&dataset&filter` (the filter is JSON on `game.attempt.id`, times absolute ISO 8601).
+- State: Redis `oc:v1:task:<pid>` is a hash with a field per task holding the immutable record `{attemptId, seed, t0, expiresAt, grader}` (written BEFORE
+  anything is sent, 30 day EXPIRE) and a field `<task>.sent` holding `{attemptId, sentAt}` (and, for a seeded task, `<task>.seen`, below), set after the batches are accepted (the `mark-sent` script writes it only while the record's `attemptId` is still this one, so a start that lost a race cannot mark over the winner, whose own
+  start answers 409 `stale-attempt` instead; a marker for another attempt is ignored on read). A `start` while the attempt is unsent resends the identical payload (same seed and t0).
+  An attempt lives 24 hours. Answers are derived from the seed on the server (`buildScenario`) and never stored or sent.
+- Grading (`grade.mjs`): a seeded check grades nothing before the data can be there. Before `sentAt + SETTLE_S` (30 s, unmeasured: P8) every answer, right or wrong, is
+  `inconclusive` `settling` with `retryAfterS` and no charge (a right one could only be a guess). After that the cooldown is taken, then the attempt's data must be confirmed visible BEFORE any answer is graded:
+  the server probes `countAttempt` and only a count above 0 confirms it; zero is `not-visible`, an API error, a timeout or a non-count is `upstream`, and in those cases every answer, right or wrong, is
+  inconclusive with no charge. A seeded answer is graded only once the data is confirmed visible. The confirmation is cached per attempt in a third field `<task>.seen` holding `{attemptId, at}`
+  (written by the same `mark-sent` script, so it too is attemptId-guarded), and later checks do not probe again.
+  An attempt that was never sent is `not-sent`. A readback task passes when the probe finds the attempt and is otherwise inconclusive, never `fail`. `charge` comes from
+  one `SADD oc:v1:task-charged:<pid>` (EXPIRE refreshed to 30 days) of `<attemptId>|<normalised wrong value>` (`normaliseAnswer`), so a distinct wrong value is charged once per attempt
+  even when two checks race.
+- Never in a response, log line, span or Redis: the tokens, the player secret, the seed, the answers, a pid, a nickname, an email. A deleted account removes `oc:v1:task:<pid>` and
+  `oc:v1:task-charged:<pid>` (the sixth and seventh KEYS of the `delete-account` script); the cooldown keys expire in 5 s.
+  The seed is in the attempt record (it has to be, to rebuild the key), so it is never in a response, log line or span, and goes with the account.
+  The log carries `{msg:'dash0-task', outcome:'not-configured', reason}` once per instance, with `reason` `<VARIABLE>:<reason>` for an invalid configuration and `auth:not-configured` when the Dash0 variables validate but sign-in is not configured.
+- Telemetry (§2.10): the function ends with the same three lines, so each request has a SERVER span and the ingest call a CLIENT span. Of the `game.*` attributes only `game.api.outcome` (from the log line's `outcome`) reaches them; `game.attempt.id`, `game.player.tag` and `game.task.id` are not on the allowlist and never do.
+- Not built here (P8): the real Dash0 API adapter (`createDash0Api` throws `not implemented: P8`, so real mode answers `upstream`), the measured `SETTLE_S`,
+  the 60-per-minute outbound budget, the asset cleanup. OTLP/HTTP JSON on `/v1/logs` and `/v1/metrics` is unconfirmed until P8: Dash0 does not document it for those signals (see the check in §2.10 for traces). Switching the tasks on needs the seven variables and the owner decisions D1 to D3 of #509.
+- `lib/` is deployed as static files, so `scenario.mjs` and `grade.mjs` are fetchable by URL: the answer key is safe because the seed that makes it is not in them, not because the code is hidden.
 
 ## 3. Invariants
 

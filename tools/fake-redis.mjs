@@ -34,6 +34,14 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
     db.set(k, { z });
     return z;
   };
+  const setOf = (k, make) => {
+    const v = db.get(k);
+    if (v && v.set) return v.set;
+    if (!make) return null;
+    const set = new Set();
+    db.set(k, { set });
+    return set;
+  };
   const tidy = (k) => {
     const v = db.get(k);
     if ((v instanceof Map && v.size === 0) || (v && v.z && v.z.size === 0)) db.delete(k);
@@ -72,6 +80,12 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       }
       return added;
     },
+    SADD: ([k, ...members]) => {
+      const set = setOf(k, true);
+      return members.filter((m) => !set.has(String(m)) && set.add(String(m))).length;
+    },
+    SMEMBERS: ([k]) => [...(setOf(k)?.values() ?? [])].sort(),
+    SISMEMBER: ([k, m]) => (setOf(k)?.has(String(m)) ? 1 : 0),
     ZADD: ([k, score, member]) => {
       const z = zset(k, true);
       const had = z.has(member);
@@ -136,7 +150,20 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       }
       return 'ok';
     },
-    'delete-account': ([profile, progress, board, subKey, nickKeyKey], [pid, expectedSub, expectedNickKey]) => {
+    'mark-sent': ([task], [taskId, sentField, attemptId, sent]) => {
+      const raw = hash(task)?.get(taskId);
+      if (raw === undefined) return 0;
+      let rec;
+      try {
+        rec = JSON.parse(raw);
+      } catch {
+        return 0;
+      }
+      if (rec === null || typeof rec !== 'object' || rec.attemptId !== attemptId) return 0;
+      commands.HSET([task, sentField, sent]);
+      return 1;
+    },
+    'delete-account': ([profile, progress, board, subKey, nickKeyKey, task, taskCharged], [pid, expectedSub, expectedNickKey]) => {
       if ((hash(profile)?.get('sub') ?? '') !== expectedSub || (hash(profile)?.get('nickKey') ?? '') !== expectedNickKey) {
         return 'conflict';
       }
@@ -145,6 +172,8 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       commands.ZREM([board, pid]);
       db.delete(profile);
       db.delete(progress);
+      db.delete(task);
+      db.delete(taskCharged);
       return 'ok';
     },
   };
@@ -235,7 +264,7 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
     // every string stored anywhere (keys, values, hash fields, members), for "nothing leaks" checks
     dump: () =>
       JSON.stringify(
-        [...db.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : v instanceof Map ? [...v] : [...v.z]]),
+        [...db.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : v instanceof Map ? [...v] : v.set ? [...v.set] : [...v.z]]),
       ),
   };
 }

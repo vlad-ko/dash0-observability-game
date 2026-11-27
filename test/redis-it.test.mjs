@@ -1,4 +1,4 @@
-// Opt-in check of the four Lua scripts against a real Upstash Redis (#297). With REDIS_IT=1 and
+// Opt-in check of the five Lua scripts against a real Upstash Redis (#297). With REDIS_IT=1 and
 // the store env (UPSTASH_REDIS_REST_URL/_TOKEN or KV_REST_API_URL/_TOKEN) the same scenarios run
 // over the real REST endpoint and over tools/fake-redis.mjs (the JS twins), and the observable
 // results must be identical. Without them the live test is skipped. Use a dev database only: every
@@ -85,7 +85,7 @@ async function scenarios({ redis, raw, sent }) {
   const snap = async (label) => {
     const cmds = [
       ...subs.map((s) => ['GET', keys.sub(s)]),
-      ...pids.flatMap((p) => [['HGETALL', keys.profile(p)], ['HGETALL', keys.progress(p)]]),
+      ...pids.flatMap((p) => [['HGETALL', keys.profile(p)], ['HGETALL', keys.progress(p)], ['HGETALL', keys.task(p)], ['SMEMBERS', keys.taskCharged(p)]]),
       ...[...nicks].map((k) => ['GET', keys.nick(k)]),
       ['ZREVRANGE', keys.board, 0, -1, 'WITHSCORES'],
     ];
@@ -93,7 +93,7 @@ async function scenarios({ redis, raw, sent }) {
     let i = 0;
     const view = {
       subs: subs.map(() => res[i++]),
-      hashes: pids.flatMap(() => [normalize(res[i++]), normalize(res[i++])]),
+      hashes: pids.flatMap(() => [normalize(res[i++]), normalize(res[i++]), normalize(res[i++]), res[i++]]),
       nicks: [...nicks].map(() => res[i++]),
       board: res[i++].map((v, j) => (j % 2 ? Number(v) : v)),
     };
@@ -152,8 +152,27 @@ async function scenarios({ redis, raw, sent }) {
   await snap('listed');
   note('board', await store.leaderboard({ pid: a }));
 
+  // mark-sent (also writes the `.seen` confirmation): a matching record is marked; another attemptId, a missing field and a non-JSON record are not.
+  const taskKey = keys.task(b);
+  const marker = JSON.stringify({ attemptId: 'att-1', sentAt: 5 });
+  const markers = async () => redis.pipeline([['HGET', taskKey, 'its-us-find.sent'], ['HGET', taskKey, 'its-us-find.seen']]);
+  await redis.command(['HSET', taskKey, 'its-us-find', JSON.stringify({ attemptId: 'att-1', t0: 1 })]);
+  note('mark-sent matching', await redis.script('mark-sent', [taskKey], ['its-us-find', 'its-us-find.sent', 'att-1', marker]));
+  note('mark-sent written', await markers());
+  note('mark-sent seen matching', await redis.script('mark-sent', [taskKey], ['its-us-find', 'its-us-find.seen', 'att-1', JSON.stringify({ attemptId: 'att-1', at: 9 })]));
+  note('mark-sent seen written', await markers());
+  note('mark-sent other attempt', await redis.script('mark-sent', [taskKey], ['its-us-find', 'its-us-find.sent', 'att-2', JSON.stringify({ attemptId: 'att-2', sentAt: 6 })]));
+  note('mark-sent unchanged', await markers());
+  note('mark-sent missing field', await redis.script('mark-sent', [taskKey], ['no-such-task', 'no-such-task.sent', 'att-1', marker]));
+  await redis.command(['HSET', taskKey, 'broken', 'x']);
+  note('mark-sent non-JSON', await redis.script('mark-sent', [taskKey], ['broken', 'broken.sent', 'att-1', marker]));
+  note('mark-sent non-JSON untouched', await redis.command(['HGET', taskKey, 'broken.sent']));
+  await redis.command(['DEL', taskKey]);
+
   // delete-account: conflict, then a nick key held by another pid is spared, then all of it goes.
-  const delKeys = (p, sub, nk) => [keys.profile(p), keys.progress(p), keys.board, keys.sub(sub), keys.nick(nk)];
+  const delKeys = (p, sub, nk) => [keys.profile(p), keys.progress(p), keys.board, keys.sub(sub), keys.nick(nk), keys.task(p), keys.taskCharged(p)];
+  await redis.command(['HSET', keys.task(a), 'its-us-find', '{}']); // an In Dash0 attempt and its charges: they go with the account
+  await redis.command(['SADD', keys.taskCharged(a), 'attempt|operation:x']);
   note('delete wrong sub', await redis.script('delete-account', delKeys(a, 'sub-a', 'grace'), [a, 'other-sub', 'grace']));
   note('delete wrong nickKey', await redis.script('delete-account', delKeys(a, 'sub-a', 'grace'), [a, 'sub-a', 'other']));
   await redis.command(['SET', keys.nick('grace'), b]); // grace is now held by another pid

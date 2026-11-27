@@ -402,3 +402,25 @@ test('FEEDBACK_STUB: a feedback POST is accepted and the issue is printed, not s
     stub.server.close();
   }
 });
+
+test('DASH0_TASK_STUB: /api/dash0-task is on over the in-memory Dash0 (with AUTH_STUB), and off without the flag', async () => {
+  const lines = [];
+  const saved = globalThis.fetch;
+  globalThis.fetch = () => { throw new Error('no network in DASH0_TASK_STUB'); };
+  const on = await listen({ authStub: true, dash0TaskStub: true, log: (l) => lines.push(l) });
+  const off = await listen({ authStub: true });
+  try {
+    assert.ok(lines.some((l) => l.startsWith('DASH0_TASK_STUB=1: /api/dash0-task is on')), 'the startup line says so');
+    assert.deepEqual(JSON.parse((await send(on.port, 'GET', '/api/dash0-task')).body), { v: 1, on: true });
+    const origin = `http://localhost:${on.port}`;
+    const start = await send(on.port, 'POST', '/api/dash0-task', { body: JSON.stringify({ v: 1, op: 'start', taskId: 'its-us-find' }), headers: { ...JSON_TYPE, origin } });
+    assert.equal(start.status, 401, 'enabled, so it asks for a session instead of 503');
+    assert.deepEqual(JSON.parse((await send(off.port, 'GET', '/api/dash0-task')).body), { v: 1, on: false });
+    const refused = await send(off.port, 'POST', '/api/dash0-task', { body: JSON.stringify({ v: 1, op: 'start', taskId: 'its-us-find' }), headers: { ...JSON_TYPE, origin } });
+    assert.equal(refused.status, 503);
+  } finally {
+    globalThis.fetch = saved;
+    on.server.close();
+    off.server.close();
+  }
+});
