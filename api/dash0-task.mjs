@@ -205,7 +205,7 @@ export function createDash0Task({
       tag,
       readyAfterS: SETTLE_S,
       expiresAt: attempt.expiresAt,
-      ...(task.grader === GRADER.readback ? { name: assetName(tag, taskId, attempt.attemptId) } : {}),
+      ...(task.grader === GRADER.readback ? { name: assetName(tag, taskId, attempt.attemptId), dataset: cfg.dataset } : {}),
     }, 'started');
   }
 

@@ -134,7 +134,8 @@ test('scenario: its-us-find is deterministic, stamped on every span, and its ans
     assert.equal(attrs['game.player.tag'], SCENARIO.tag);
     assert.equal(attrs['game.task.id'], 'its-us-find');
   }
-  assert.equal(a.linkParams.attemptId, SCENARIO.attemptId);
+  assert.equal('attemptId' in a.linkParams, false, 'the boss link has no attempt filter');
+  assert.equal(buildScenario('connect-test-span', SCENARIO).linkParams.attemptId, SCENARIO.attemptId);
   assert.equal(a.linkParams.target, 'traces');
   assert.ok(a.linkParams.fromMs < SCENARIO.t0 && a.linkParams.toMs > SCENARIO.t0);
 });
@@ -250,4 +251,14 @@ test('fake dash0: a host it was not built with throws a TypeError', async () => 
   await assert.rejects(fake.fetch('https://ingress.us-east-1.aws.dash0.com/v1/traces', { method: 'POST', body: '{}' }), TypeError);
   await assert.rejects(fake.fetch(`https://${API_HOST}/api/spans`, { method: 'POST', body: '{}' }), TypeError);
   await assert.rejects(fake.fetch('https://example.com/'), TypeError);
+});
+
+test('links: without an attempt id the link has no filter at all, and a bad one still throws (#509 P7.1)', () => {
+  const base = { appOrigin: 'https://app.dash0.com', dataset: 'oncall-game', fromMs: 1_000_000, toMs: 2_000_000, target: 'traces' };
+  const url = new URL(deepLink(base));
+  assert.equal(url.searchParams.has('filter'), false);
+  assert.equal(url.searchParams.get('dataset'), 'oncall-game');
+  assert.equal(url.searchParams.has('from') && url.searchParams.has('to'), true, 'the time range stays');
+  assert.equal(deepLink(base).includes('filter'), false);
+  assert.throws(() => deepLink({ ...base, attemptId: 'nothex' }), TypeError);
 });

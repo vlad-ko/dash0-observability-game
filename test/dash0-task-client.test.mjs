@@ -187,3 +187,14 @@ test('a readback check sends no answer, so a 400 naming the answer field is a co
     assert.equal((await seeded.client.check('its-us-find', 'a1b2', { question: 'operation', value: 'x' })).reason, 'refused', `${status} on a seeded check stays refused`);
   }
 });
+
+test('start: a readback start keeps its dataset only when it is a well-formed identifier (#509 P7.1)', async () => {
+  const ok = await rig({ post: json(200, { ...START_OK, dataset: 'game-ds' }) }).client.start('t');
+  assert.equal(ok.dataset, 'game-ds');
+  for (const bad of ['../x', 'a b', 'x'.repeat(64), '', 7, null, { a: 1 }]) {
+    const got = await rig({ post: json(200, { ...START_OK, dataset: bad }) }).client.start('t');
+    assert.equal(got.ok, true, String(bad));
+    assert.equal(Object.hasOwn(got, 'dataset'), false, `${JSON.stringify(bad)} is dropped, not kept`);
+  }
+  assert.equal(Object.hasOwn(await rig({ post: json(200, START_OK) }).client.start('t'), 'dataset'), false);
+});

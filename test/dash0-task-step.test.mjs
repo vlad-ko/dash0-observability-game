@@ -61,12 +61,12 @@ function fakeApi({ starts = [STARTED], checks = [PASS], available = true, reason
 }
 
 /** Open `play` on the real ctx. `clock.t` is the level clock; `types` for a fixture type. */
-function open(play, { api, level = { id: 'sf', scored: true, scoring: { parMs: null } }, clock = { t: 0 }, types = STEP_TYPES, guide = null } = {}) {
+function open(play, { api, level = { id: 'sf', scored: true, scoring: { parMs: null } }, clock = { t: 0 }, types = STEP_TYPES, guide = null, telemetry = null } = {}) {
   const dom = makeDom();
   const results = [];
   const ctx = createLevelContext({
     level, ovBody: dom.body, ovActions: dom.actions, now: () => clock.t, shuffle: (a) => a, reduceMotion: true,
-    onFinish: (id, r) => results.push(r), signal: new AbortController().signal, reportError: (e) => { throw e; }, guide,
+    onFinish: (id, r) => results.push(r), signal: new AbortController().signal, reportError: (e) => { throw e; }, guide, telemetry,
   });
   if (api) ctx.dash0Task = api;
   let mistakes = 0;
@@ -78,6 +78,9 @@ function open(play, { api, level = { id: 'sf', scored: true, scoring: { parMs: n
 /** To the In Dash0 step of FULL(): the choice step, then Next. */
 const toTask = () => { click('[data-pick="b"]'); click('#sf-next'); };
 const start = async () => { click('#d1-start'); await settle(); };
+// A readback step is sent from the player's browser (lib/widgets/dash0-send.mjs): a session that accepts and connects, and the click on Send.
+const fakeSession = () => { let state = 'off'; return { status: () => ({ state }), connect: () => { state = 'configured'; return { ok: true }; }, sendTest: async () => { state = 'connected'; return { kind: 'accepted' }; } }; };
+const sendSpan = async () => { click({ type: '#d1-endpoint', text: 'https://ingress.eu-west-1.aws.dash0.com' }); click({ type: '#d1-token', text: 'auth_Tk9secretValue42xyz' }); click('#d1-send-go'); await settle(); };
 const check = async (text = '412') => { click({ type: '#d1-f-operation', text }); click('#d1-check-operation'); await settle(); };
 const feedback = () => q('#d1-feedback').textContent;
 
@@ -603,11 +606,13 @@ test('a readback task draws one Check with no field and sends no answer; a wrong
   const api = fakeApi({ starts: [{ ...STARTED, name: 'oncall-k3j9x2m4q1-board-a1b2' }], checks: [{ outcome: 'fail', charge: true }, PASS] });
   const play = playOf(choiceStep('c1'), readbackStep());
   assert.deepEqual(validatePlay(play).errors, []);
-  const run = open(play, { api });
+  const run = open(play, { api, telemetry: fakeSession() });
   toTask();
   assert.equal(q('#d1-check').disabled, true, 'nothing to check before Start');
   await start();
-  assert.equal(qa('#d1-task input').length, 0, 'no field');
+  assert.equal(qa('#d1-task input').length, 2, 'no answer field: only the send form (endpoint and token)');
+  assert.equal(q('#d1-check').disabled, true, 'nothing to check before a span is sent');
+  await sendSpan();
   assert.equal(q('#d1-check').disabled, false);
   click('#d1-check');
   await settle();
@@ -723,9 +728,10 @@ test('not-visible counts for a seeded task only 3 x readyAfterS after its Start 
   assert.ok(feedback().includes(COPY.offer));
   const rb = fakeApi({ checks: [inconclusive('not-visible')] });
   const rbClock = { t: 0 };
-  open(playOf(choiceStep('c1'), readbackStep()), { api: rb, clock: rbClock });
+  open(playOf(choiceStep('c1'), readbackStep()), { api: rb, clock: rbClock, telemetry: fakeSession() });
   toTask();
   await start();
+  await sendSpan();
   rbClock.t = 1e9; // long after the data should have shown
   for (let i = 0; i < DOWN_AFTER + 2; i++) { click('#d1-check'); await settle(); }
   assert.equal(q('#d1-skip') === null, true, 'a readback task never gives up on not-visible');
@@ -864,9 +870,10 @@ test('a Check that gets a 409 or a 410 moves focus to Start again, for a seeded 
   ];
   for (const [name, play, res, btn, fill] of cases) {
     const api = fakeApi({ checks: [res] });
-    open(play, { api });
+    open(play, { api, telemetry: fakeSession() });
     toTask();
     await start();
+    if (btn === '#d1-check') await sendSpan();
     trackFocus();
     await fill();
     q(btn).focus();
