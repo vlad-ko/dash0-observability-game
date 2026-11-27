@@ -27,9 +27,8 @@ export const MAX_BODY_BYTES = 4 * 1024;
 export const START_LIMIT = { max: 12, windowS: 600 };
 export const CHECK_LIMIT = { max: 40, windowS: 600 };
 export const COOLDOWN_S = 5;
-export const CHARGE_TTL_S = 24 * 60 * 60;
-export const TASK_TTL_S = 30 * 24 * 60 * 60; // the player's attempts hash
-export const ATTEMPT_LIFE_MS = 24 * 60 * 60 * 1000; // one attempt; the charge set outlives it by no more than its own TTL
+export const TASK_TTL_S = 30 * 24 * 60 * 60; // the player's attempts hash and charge set, refreshed on every write
+export const ATTEMPT_LIFE_MS = 24 * 60 * 60 * 1000; // one attempt
 export const INGEST_RETRY_S = 10;
 export const INGEST_TIMEOUT_MS = 8000;
 export const PROBE_TIMEOUT_MS = 5000;
@@ -101,8 +100,9 @@ export function createDash0Task({
   const hex = (n) => Buffer.from(random(n)).toString('hex');
 
   // The attempts: one hash per player, a field per task holding the immutable record (attemptId, seed, t0, expiresAt,
-  // grader), and a second field `<task>.sent` holding {attemptId, sentAt}. Marking sent is a single HSET on its own field,
-  // so it can never overwrite a newer attempt's record; a marker whose attemptId is not the record's is ignored.
+  // grader), and a second field `<task>.sent` holding {attemptId, sentAt}. Marking sent is one script that writes the
+  // marker only while the record is still this attempt (a start that lost a race cannot mark over the winner), and a
+  // marker whose attemptId is not the record's is ignored on read.
   async function loadAttempt(pid, taskId) {
     const [raw, sent] = await redis.pipeline([['HGET', keys.task(pid), taskId], ['HGET', keys.task(pid), sentField(taskId)]]);
     if (raw === null) return null;
@@ -124,8 +124,9 @@ export function createDash0Task({
   const saveAttempt = (pid, taskId, record) =>
     redis.pipeline([['HSET', keys.task(pid), taskId, JSON.stringify(record)], ['EXPIRE', keys.task(pid), TASK_TTL_S]]);
 
-  const markSent = (pid, taskId, attemptId, sentAt) =>
-    redis.command(['HSET', keys.task(pid), sentField(taskId), JSON.stringify({ attemptId, sentAt })]);
+  /** True when marked; false when the record is no longer this attempt (a newer start won). */
+  const markSent = async (pid, taskId, attemptId, sentAt) =>
+    (await redis.script('mark-sent', [keys.task(pid)], [taskId, sentField(taskId), attemptId, JSON.stringify({ attemptId, sentAt })])) === 1;
 
   const scenarioOf = (taskId, attempt, tag) => buildScenario(taskId, { seed: attempt.seed, t0: attempt.t0, tag, attemptId: attempt.attemptId });
 
@@ -188,7 +189,7 @@ export function createDash0Task({
     if (!(await sendBatches(scenario.batches))) {
       return done(502, { ok: false, outcome: GRADE.inconclusive, reason: 'ingest', retryAfterS: INGEST_RETRY_S }, 'ingest');
     }
-    await markSent(pid, taskId, attempt.attemptId, now());
+    if (!(await markSent(pid, taskId, attempt.attemptId, now()))) return done(409, { error: 'stale-attempt' }, 'stale'); // a newer start took over
     const link = deepLink({ appOrigin: cfg.appOrigin, dataset: cfg.dataset, ...scenario.linkParams });
     return done(200, {
       v: 1,
@@ -218,8 +219,9 @@ export function createDash0Task({
     });
     if (result.outcome === GRADE.pass) return done(200, { v: 1, outcome: GRADE.pass, charge: false }, 'pass');
     if (result.outcome === GRADE.fail) {
-      // One charge per distinct wrong value per attempt: SADD says in one step whether this value was new.
-      const [added] = await redis.pipeline([['SADD', keys.taskCharged(pid, attempt.attemptId), result.wrong], ['EXPIRE', keys.taskCharged(pid, attempt.attemptId), CHARGE_TTL_S]]);
+      // One charge per distinct wrong value per attempt: SADD says in one step whether this member was new. The set is the
+      // player's (so deleting the account removes it) and its expiry is refreshed on every write.
+      const [added] = await redis.pipeline([['SADD', keys.taskCharged(pid), `${attempt.attemptId}|${result.wrong}`], ['EXPIRE', keys.taskCharged(pid), TASK_TTL_S]]);
       return done(200, { v: 1, outcome: GRADE.fail, charge: added === 1 }, 'fail');
     }
     const { reason, retryAfterS } = result;

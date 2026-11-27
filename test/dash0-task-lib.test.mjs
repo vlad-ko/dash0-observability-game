@@ -165,7 +165,10 @@ test('grade: the decision table, with the probe asked only when it must be', asy
     return { out, asked };
   };
   assert.deepEqual((await run({ answer: right })).out, { outcome: 'pass' });
-  assert.deepEqual((await run({ answer: right })).asked, { probe: 0, cooldown: 0 });
+  assert.deepEqual((await run({ answer: right })).asked, { probe: 0, cooldown: 1 }, 'a right answer takes the cooldown first and needs no probe');
+  const early = await run({ answer: right, now: sentAt + 29_999 });
+  assert.deepEqual([early.out.reason, early.out.retryAfterS, early.asked], ['settling', 1, { probe: 0, cooldown: 0 }], 'a right answer while settling is not graded: it could only be a guess');
+  assert.equal((await run({ answer: right, cooldown: async () => false })).out.reason, 'cooldown', 'a held cooldown refuses a right answer too');
   assert.deepEqual((await run()).out, { outcome: 'fail', wrong: 'faultCode:zzzzzz' });
   assert.equal((await run({ now: sentAt + 29_999 })).out.reason, 'settling');
   assert.equal((await run({ now: sentAt + 29_999 })).asked.probe, 0);

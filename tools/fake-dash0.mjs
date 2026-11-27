@@ -1,6 +1,6 @@
 // An in-memory Dash0 for tests and local dev (#509 P5): the OTLP ingest (`POST /v1/{traces,logs,metrics}`) and the
 // task server's API interface (lib/dash0-task/api.mjs), over a fetch-shaped function. No network, ever: a request to a host the
-// fake was not built with throws a TypeError, so a suite cannot reach the real Dash0 by accident (T8).
+// fake was not built with throws a TypeError, so a suite cannot reach the real Dash0 by accident (#509).
 //   createFakeDash0({now, lagMs, hosts, ingestToken}) -> {fetch, countAttempt, findAssets, fail, records, assets, calls}
 //   records   every record received: {signal, attemptId, tag, taskId, receivedAt}. It is only COUNTED once receivedAt + lagMs <= now().
 //   assets    the assets findAssets lists: {origin, kind}; a test pushes them.

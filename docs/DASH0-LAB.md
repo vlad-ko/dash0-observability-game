@@ -9,6 +9,7 @@ Every Dash0 fact not yet confirmed is marked `VERIFY (#195)` in code and listed 
 - Transport: the browser sends OTLP/HTTP JSON straight to the player's ingress. A Vercel relay `api/otlp` is built only if Dash0 refuses browser CORS; it would forward the player's own `Authorization`, never store or log it, forward only to allowlisted hosts and cap the body at 64 KiB.
 - Server telemetry (docs/FOUNDATION.md §2.10) is separate from the lab: the `api/` functions use the owner's endpoint, token and dataset from the Vercel environment, never the player's token or dataset.
 - Practice mode scores full stars.
+- The In Dash0 tasks (#509, docs/FOUNDATION.md §2.15) use their own owner variables `DASH0_GAME_*` in the game's own organisation, held only on the server; they are not the lab and never take a player's token.
 - Each phase is one PR against main, never stacked.
 
 ## Hosts and CSP

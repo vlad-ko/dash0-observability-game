@@ -74,7 +74,8 @@ export async function taskRig({ env = TASK_ENV, lagMs = 0, signedIn = true, time
   };
   /** A wrong operation: any candidate other than the right one. */
   const wrongOperation = (taskId = 'its-us-find') => (answersOf(taskId).operation === 'storage.write' ? 'cards.award' : 'storage.write');
-  const charged = (attemptId) => [...(r.fake.db.get(keys.taskCharged(profile.pid, attemptId))?.set ?? [])];
+  /** The charge-set members of one attempt (the set is the player's; members are `<attemptId>|<value>`). */
+  const charged = (attemptId) => [...(r.fake.db.get(keys.taskCharged(profile.pid))?.set ?? [])].filter((m) => m.startsWith(`${attemptId}|`));
 
   return {
     r, dash0, sent, api, deps, pid: profile.pid, cookie, tag, headers, op, json, attempt, answersOf, noCooldown, start, check,

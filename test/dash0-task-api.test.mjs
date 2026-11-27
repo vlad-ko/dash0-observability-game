@@ -1,5 +1,5 @@
 // api/dash0-task.mjs (#509 P5; docs/FOUNDATION.md §2.15): the In Dash0 task server over fake Redis and a fake Dash0.
-// Invariants T1 to T9 are named in the test titles. No network: the global fetch throws (helpers/no-network.mjs).
+// The invariants of #509 P5 (secrets, identity, the key, settling, one charge, off, deletion, no network) are each tested below. No network: the global fetch throws (helpers/no-network.mjs).
 import './helpers/no-network.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -20,7 +20,7 @@ const WRONG_ANSWERS = ['storage.write', 'cards.award', 'globe.ignite'];
 const noDash0 = (env) => Object.fromEntries(Object.entries(env).filter(([k]) => !k.startsWith('DASH0_GAME_')));
 const texts = async (responses) => Promise.all(responses.map((res) => res.clone().text()));
 
-test('T6 off: no Dash0 variables is off, with zero Redis commands and zero fetches', async () => {
+test('off: no Dash0 variables is off, with zero Redis commands and zero fetches', async () => {
   const t = await taskRig({ env: noDash0(TASK_ENV) });
   const before = t.fake.calls.length; // the fixture's own sign-in
   const get_ = await t.get();
@@ -34,7 +34,7 @@ test('T6 off: no Dash0 variables is off, with zero Redis commands and zero fetch
   assert.ok(!t.logs.some((l) => 'reason' in l), 'off never logs a configuration line');
 });
 
-test('T6 off: valid Dash0 variables with sign-in unconfigured are off too', async () => {
+test('off: valid Dash0 variables with sign-in unconfigured are off too', async () => {
   const env = Object.fromEntries(Object.entries(TASK_ENV).filter(([k]) => k !== 'SESSION_SECRET'));
   const t = await taskRig({ env });
   const before = t.fake.calls.length;
@@ -147,7 +147,7 @@ test('start for a readback task adds the asset name and sends nothing', async ()
   assert.equal(t.attempt('connect-test-span').seed, undefined);
 });
 
-test('T2 the ingest body, name and link carry the tag and never a pid, nickname or email', async () => {
+test('the ingest body, name and link carry the tag and never a pid, nickname or email', async () => {
   const t = await taskRig();
   assert.notEqual(t.tag, t.pid);
   const { body } = await t.start('its-us-find');
@@ -225,7 +225,7 @@ test('every ingest failure mode is the same refusal and never marks the attempt 
   }
 });
 
-test('T1 no token or secret appears in a response, a log line, Redis or an OTLP body (and the check can fire)', async () => {
+test('no token or secret appears in a response, a log line, Redis or an OTLP body (and the check can fire)', async () => {
   const t = await taskRig();
   const seen = [];
   const keep = async (res) => {
@@ -250,7 +250,7 @@ test('T1 no token or secret appears in a response, a log line, Redis or an OTLP 
   assert.ok(containsToken(t.sent[0].headers.Authorization, INGEST_TOKEN), 'the check does fire on the one place the ingest token belongs');
 });
 
-test('T1 no token, secret or pid reaches a span either', async () => {
+test('no token, secret or pid reaches a span either', async () => {
   const t = await taskRig();
   const exported = [];
   const tel = createServerTelemetry({
@@ -271,7 +271,7 @@ test('T1 no token, secret or pid reaches a span either', async () => {
   }
 });
 
-test('T3 a check response carries no answer, seed or t0', async () => {
+test('a check response carries no answer, seed or t0', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   t.noCooldown();
@@ -288,9 +288,11 @@ test('T3 a check response carries no answer, seed or t0', async () => {
   }
 });
 
-test('a right answer passes at once, charge false, with no Dash0 call (even before the data settles)', async () => {
+test('a right answer passes with charge false and no Dash0 call once the data has settled', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
+  t.noCooldown();
+  t.clock.t += SETTLE_MS;
   const key = t.answersOf('its-us-find');
   const { res, body: out } = await t.check('its-us-find', body.attemptId, { question: 'operation', value: `  ${key.operation.toUpperCase()} ` });
   assert.equal(res.status, 200);
@@ -299,6 +301,30 @@ test('a right answer passes at once, charge false, with no Dash0 call (even befo
   for (const [question, value] of [['faultCode', key.faultCode], ['retryCount', key.retryCount], ['traceId', key.traceId]]) {
     assert.equal((await t.check('its-us-find', body.attemptId, { question, value })).body.outcome, 'pass', question);
   }
+});
+
+test('no free guesses: while settling EVERY answer, right or wrong, is inconclusive "settling" with a retry time and no charge', async () => {
+  const t = await taskRig();
+  const { body } = await t.start('its-us-find');
+  t.noCooldown();
+  const key = t.answersOf('its-us-find');
+  const sentAt = t.clock.t;
+  const attempts = [
+    { question: 'operation', value: key.operation },
+    { question: 'faultCode', value: key.faultCode },
+    { question: 'operation', value: t.wrongOperation() },
+  ];
+  for (const at of [0, 10_000, SETTLE_MS - 1]) {
+    t.clock.t = sentAt + at;
+    const retryAfterS = Math.ceil((SETTLE_MS - at) / 1000);
+    for (const answer of attempts) {
+      assert.deepEqual((await t.check('its-us-find', body.attemptId, answer)).body, { v: 1, outcome: 'inconclusive', charge: false, reason: 'settling', retryAfterS });
+    }
+  }
+  assert.deepEqual(t.dash0.calls, []);
+  assert.equal(t.charged(body.attemptId).length, 0);
+  t.clock.t = sentAt + SETTLE_MS;
+  assert.equal((await t.check('its-us-find', body.attemptId, attempts[0])).body.outcome, 'pass', 'at the boundary the right answer grades');
 });
 
 test('a right answer passes with the API down (the probe is not asked)', async () => {
@@ -328,10 +354,11 @@ test('a wrong answer with the data visible is a fail with a charge, once per dis
   assert.equal((await one(`0${wrongRetry}`, 'retryCount')).charge, false, '"03" is the number 3 again');
   assert.equal((await one(String(wrongRetry), 'retryCount')).charge, false);
   assert.equal(t.dash0.calls.every((c) => c.op === 'countAttempt'), true);
-  assert.ok(t.r.fake.ttl.get(keys.taskCharged(t.pid, body.attemptId)) === 86400, 'the charge set expires after a day');
+  assert.equal(t.r.fake.ttl.get(keys.taskCharged(t.pid)), 30 * 24 * 60 * 60, 'the player\'s charge set expires after 30 days, refreshed on every write');
+  assert.ok([...t.r.fake.db.get(keys.taskCharged(t.pid)).set].every((m) => m.startsWith(`${body.attemptId}|`)), 'members are <attemptId>|<value>');
 });
 
-test('T5 two identical wrong checks at once give exactly one charge', async () => {
+test('two identical wrong checks at once give exactly one charge', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   t.noCooldown();
@@ -357,7 +384,7 @@ test('T5 two identical wrong checks at once give exactly one charge', async () =
   assert.equal(t.charged(body.attemptId).length, 1);
 });
 
-test('T4 settling: a wrong answer one millisecond early is inconclusive and makes no call; at the boundary the probe runs', async () => {
+test('settling: a wrong answer one millisecond early is inconclusive and makes no call; at the boundary the probe runs', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   t.noCooldown();
@@ -377,7 +404,7 @@ test('T4 settling: a wrong answer one millisecond early is inconclusive and make
   assert.ok(t.dash0.calls[0].to > t.dash0.calls[0].from);
 });
 
-test('T4 data that lags behind ingest is not-visible, never a fail, and not charged', async () => {
+test('data that lags behind ingest is not-visible, never a fail, and not charged', async () => {
   const t = await taskRig({ lagMs: 60_000 });
   const { body } = await t.start('its-us-find');
   t.noCooldown();
@@ -390,7 +417,7 @@ test('T4 data that lags behind ingest is not-visible, never a fail, and not char
   assert.deepEqual((await t.check('its-us-find', body.attemptId, wrong)).body, { v: 1, outcome: 'fail', charge: true }, 'once visible, the same answer fails');
 });
 
-test('T4 an API failure of any kind is inconclusive "upstream", never a fail, and not charged', async () => {
+test('an API failure of any kind is inconclusive "upstream", never a fail, and not charged', async () => {
   for (const mode of [401, 403, 429, 500, 'timeout', 'malformed']) {
     const t = await taskRig();
     const { body } = await t.start('its-us-find');
@@ -403,7 +430,7 @@ test('T4 an API failure of any kind is inconclusive "upstream", never a fail, an
   }
 });
 
-test('T4 the real-mode adapter stub says "not implemented: P8" and the check stays inconclusive', async () => {
+test('the real-mode adapter stub says "not implemented: P8" and the check stays inconclusive', async () => {
   const t = await taskRig();
   const api = createDash0Task({ ...t.deps, dash0: null }); // no injected Dash0: the P8 stub
   const { body } = await (async () => {
@@ -418,18 +445,22 @@ test('T4 the real-mode adapter stub says "not implemented: P8" and the check sta
   await assert.rejects(createDash0Api().findAssets(), /not implemented: P8/);
 });
 
-test('the per-attempt cooldown answers inconclusive "cooldown" with no Dash0 call, and does not hold a right answer', async () => {
+test('the per-attempt cooldown is taken before grading: a held cooldown is "cooldown" whatever the answer, with no Dash0 call', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   t.clock.t += SETTLE_MS;
   const wrong = { question: 'operation', value: t.wrongOperation() };
+  const right = { question: 'operation', value: t.answersOf('its-us-find').operation };
   assert.equal((await t.check('its-us-find', body.attemptId, wrong)).body.outcome, 'fail');
-  const second = (await t.check('its-us-find', body.attemptId, { question: 'faultCode', value: 'ZZZZZZ' })).body;
-  assert.deepEqual(second, { v: 1, outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS: 5 });
-  assert.equal(t.dash0.calls.length, 1, 'the second check made no Dash0 call');
+  const held = { v: 1, outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS: 5 };
+  assert.deepEqual((await t.check('its-us-find', body.attemptId, { question: 'faultCode', value: 'ZZZZZZ' })).body, held);
+  assert.deepEqual((await t.check('its-us-find', body.attemptId, right)).body, held, 'a right answer is not graded while the cooldown is held either');
+  assert.equal(t.dash0.calls.length, 1, 'the held checks made no Dash0 call');
+  assert.equal(t.charged(body.attemptId).length, 1, 'and no charge');
   const cool = t.r.fake.calls.find((c) => c[0] === 'SET' && String(c[1]).includes(':task-cool:'));
   assert.deepEqual(cool.slice(2), ['1', 'NX', 'EX', 5]);
-  assert.equal((await t.check('its-us-find', body.attemptId, { question: 'operation', value: t.answersOf('its-us-find').operation })).body.outcome, 'pass');
+  t.r.fake.db.delete(cool[1]); // the 5 s are up
+  assert.equal((await t.check('its-us-find', body.attemptId, right)).body.outcome, 'pass');
 });
 
 test('a stale attempt id is 409; expired is 410 one millisecond past expiresAt and fine at expiresAt', async () => {
@@ -488,16 +519,107 @@ test('readback: the connect task passes once the attempt\'s span is visible, and
   assert.equal(t.charged(body.attemptId).length, 0);
 });
 
-test('T9 delete-account removes the task attempts, through the API too', async () => {
+test('delete-account removes the task attempts and the charge set, through the API too', async () => {
   const t = await taskRig();
   await t.start('its-us-find');
   await t.start('connect-test-span');
+  t.noCooldown();
+  t.clock.t += SETTLE_MS;
+  assert.equal((await t.check('its-us-find', t.attempt('its-us-find').attemptId, { question: 'operation', value: t.wrongOperation() })).body.charge, true);
   assert.ok(t.r.fake.db.has(keys.task(t.pid)));
+  assert.ok(t.r.fake.db.has(keys.taskCharged(t.pid)));
   const { createAccount } = await import('../api/account.mjs');
   const res = await createAccount(t.deps).POST(post(`${ORIGIN}/api/account`, { v: 1, action: 'delete', confirm: 'delete' }, { cookie: t.cookie }));
   assert.equal(res.status, 200);
   assert.equal(t.r.fake.db.has(keys.task(t.pid)), false);
+  assert.equal(t.r.fake.db.has(keys.taskCharged(t.pid)), false);
+  assert.ok(!t.r.fake.keys().some((k) => k.includes(t.pid) && k.includes('task-charged')));
   assert.ok(!t.r.fake.keys().some((k) => k.includes(t.pid) && k.includes(':task:')));
+});
+
+test('two starts at once: the second save wins and the survivor is sent and checkable, never stranded by the first start\'s late marker', async () => {
+  const t = await taskRig();
+  // Hold both saves until both starts have read "no attempt", then land A's, then B's; hold A's send until B has finished.
+  let saves = 0;
+  let sends = 0;
+  let bothLoaded;
+  const loaded = new Promise((resolve) => { bothLoaded = resolve; });
+  let releaseSend;
+  const sendGate = new Promise((resolve) => { releaseSend = resolve; });
+  const redis = {
+    ...t.deps.redis,
+    pipeline: async (commands) => {
+      if (commands[0][0] === 'HSET' && commands[0][1] === keys.task(t.pid) && commands[0][2] === 'its-us-find') {
+        if (++saves === 2) bothLoaded();
+        await loaded;
+      }
+      return t.deps.redis.pipeline(commands);
+    },
+  };
+  const fetch = async (url, init) => {
+    if (sends++ === 0) await sendGate; // A's send waits for B's whole start
+    return t.deps.fetch(url, init);
+  };
+  const api = createDash0Task({ ...t.deps, redis, fetch });
+  const start = async () => (await api.POST(post(URL_, { v: 1, op: 'start', taskId: 'its-us-find' }, { cookie: t.cookie }))).json();
+  const a = start();
+  const b = start();
+  const second = await b; // B's save landed after A's, B sent and marked, while A is still held
+  releaseSend();
+  const first = await a;
+  assert.equal(saves, 2, 'both starts reached the save');
+  const survivor = t.attempt('its-us-find').attemptId;
+  assert.equal(second.ok, true);
+  assert.equal(second.attemptId, survivor, 'the second save won');
+  assert.equal(first.error, 'stale-attempt', 'the first start learns it lost');
+  const out = await t.check('its-us-find', survivor, { question: 'operation', value: t.answersOf('its-us-find').operation });
+  assert.equal(out.res.status, 200);
+  assert.notEqual(out.body.reason, 'not-sent', 'the survivor is sent');
+  assert.equal(out.body.reason, 'settling', 'and checkable: it grades once the data has settled');
+  t.noCooldown();
+  t.clock.t += SETTLE_MS;
+  assert.equal((await t.check('its-us-find', survivor, { question: 'operation', value: t.answersOf('its-us-find').operation })).body.outcome, 'pass');
+});
+
+test('an unsent attempt past its expiry is not resent: the next start is a new attempt from now, and a later check is not 410', async () => {
+  const t = await taskRig();
+  t.dash0.fail(500, 'ingest');
+  const failed = await t.start('its-us-find');
+  assert.equal(failed.res.status, 502);
+  const dead = t.attempt('its-us-find');
+  t.dash0.fail(null);
+  t.clock.t = dead.expiresAt + 1;
+  const { res, body } = await t.start('its-us-find');
+  assert.equal(res.status, 200);
+  assert.notEqual(body.attemptId, dead.attemptId, 'a new attempt');
+  const fresh = t.attempt('its-us-find');
+  assert.equal(fresh.t0, t.clock.t, 't0 is now');
+  assert.equal(fresh.expiresAt, t.clock.t + 24 * 60 * 60 * 1000);
+  t.clock.t += SETTLE_MS;
+  t.noCooldown();
+  const check = await t.check('its-us-find', body.attemptId, { question: 'operation', value: t.answersOf('its-us-find').operation });
+  assert.equal(check.res.status, 200, 'not 410');
+  assert.equal(check.body.outcome, 'pass');
+});
+
+test('an old attempt\'s sent marker is ignored: a new attempt whose ingest failed is not-sent, and its retry resends it byte for byte', async () => {
+  const t = await taskRig();
+  const a = (await t.start('its-us-find')).body; // A is sent
+  assert.equal(t.sent.length, 1);
+  t.dash0.fail(500, 'ingest');
+  const failed = await t.start('its-us-find'); // B: a sent attempt starts a fresh one, and its ingest fails
+  assert.equal(failed.res.status, 502);
+  const b = t.attempt('its-us-find');
+  assert.notEqual(b.attemptId, a.attemptId);
+  assert.ok(t.r.fake.db.get(keys.task(t.pid)).has('its-us-find.sent'), 'A\'s marker is still in the hash');
+  t.clock.t += SETTLE_MS;
+  t.noCooldown();
+  assert.equal((await t.check('its-us-find', b.attemptId, { question: 'operation', value: 'x' })).body.reason, 'not-sent');
+  t.dash0.fail(null);
+  const retry = await t.start('its-us-find');
+  assert.equal(retry.body.attemptId, b.attemptId, 'B is resent, not replaced');
+  assert.equal(t.sent.length, 3);
+  assert.equal(t.sent[2].body, t.sent[1].body, 'byte for byte');
 });
 
 test('a Redis failure is 502 with nothing sent', async () => {
@@ -510,9 +632,9 @@ test('a Redis failure is 502 with nothing sent', async () => {
   assert.ok(t.logs.some((l) => l.outcome === 'store' && l.status === 502));
 });
 
-test('T8 the suite never reaches the real Dash0: an unconfigured host is refused by the fake, and the global fetch throws', async () => {
+test('the suite never reaches the real Dash0: an unconfigured host is refused by the fake, and the global fetch throws', async () => {
   const t = await taskRig();
-  await assert.rejects(async () => globalThis.fetch('https://api.eu-west-1.aws.dash0.com/'), /T8/);
+  await assert.rejects(async () => globalThis.fetch('https://api.eu-west-1.aws.dash0.com/'), /the test reached for the real fetch/);
   await assert.rejects(t.dash0.fetch('https://ingress.us-east-1.aws.dash0.com/v1/traces', { method: 'POST', body: '{}' }), TypeError);
   await assert.rejects(t.dash0.fetch('https://evil.example/v1/traces', { method: 'POST', body: '{}' }), TypeError);
   // A configured host the fake was not built for: the handler's send fails safe instead of reaching anywhere.

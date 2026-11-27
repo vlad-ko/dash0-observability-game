@@ -85,7 +85,7 @@ async function scenarios({ redis, raw, sent }) {
   const snap = async (label) => {
     const cmds = [
       ...subs.map((s) => ['GET', keys.sub(s)]),
-      ...pids.flatMap((p) => [['HGETALL', keys.profile(p)], ['HGETALL', keys.progress(p)], ['HGETALL', keys.task(p)]]),
+      ...pids.flatMap((p) => [['HGETALL', keys.profile(p)], ['HGETALL', keys.progress(p)], ['HGETALL', keys.task(p)], ['SMEMBERS', keys.taskCharged(p)]]),
       ...[...nicks].map((k) => ['GET', keys.nick(k)]),
       ['ZREVRANGE', keys.board, 0, -1, 'WITHSCORES'],
     ];
@@ -93,7 +93,7 @@ async function scenarios({ redis, raw, sent }) {
     let i = 0;
     const view = {
       subs: subs.map(() => res[i++]),
-      hashes: pids.flatMap(() => [normalize(res[i++]), normalize(res[i++]), normalize(res[i++])]),
+      hashes: pids.flatMap(() => [normalize(res[i++]), normalize(res[i++]), normalize(res[i++]), res[i++]]),
       nicks: [...nicks].map(() => res[i++]),
       board: res[i++].map((v, j) => (j % 2 ? Number(v) : v)),
     };
@@ -153,8 +153,9 @@ async function scenarios({ redis, raw, sent }) {
   note('board', await store.leaderboard({ pid: a }));
 
   // delete-account: conflict, then a nick key held by another pid is spared, then all of it goes.
-  const delKeys = (p, sub, nk) => [keys.profile(p), keys.progress(p), keys.board, keys.sub(sub), keys.nick(nk), keys.task(p)];
-  await redis.command(['HSET', keys.task(a), 'its-us-find', '{}']); // an In Dash0 attempt: it goes with the account
+  const delKeys = (p, sub, nk) => [keys.profile(p), keys.progress(p), keys.board, keys.sub(sub), keys.nick(nk), keys.task(p), keys.taskCharged(p)];
+  await redis.command(['HSET', keys.task(a), 'its-us-find', '{}']); // an In Dash0 attempt and its charges: they go with the account
+  await redis.command(['SADD', keys.taskCharged(a), 'attempt|operation:x']);
   note('delete wrong sub', await redis.script('delete-account', delKeys(a, 'sub-a', 'grace'), [a, 'other-sub', 'grace']));
   note('delete wrong nickKey', await redis.script('delete-account', delKeys(a, 'sub-a', 'grace'), [a, 'sub-a', 'other']));
   await redis.command(['SET', keys.nick('grace'), b]); // grace is now held by another pid

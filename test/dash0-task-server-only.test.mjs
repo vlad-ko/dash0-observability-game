@@ -1,4 +1,4 @@
-// T3 (#509 P5): the answer key stays on the server. lib/dash0-task/scenario.mjs and grade.mjs must not be imported by a
+// (#509 P5) the answer key stays on the server. lib/dash0-task/scenario.mjs and grade.mjs must not be imported by a
 // level, a widget, lib/play.mjs or main.mjs, nor be reachable from main.mjs through any chain of imports.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

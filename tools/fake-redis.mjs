@@ -84,6 +84,7 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       const set = setOf(k, true);
       return members.filter((m) => !set.has(String(m)) && set.add(String(m))).length;
     },
+    SMEMBERS: ([k]) => [...(setOf(k)?.values() ?? [])].sort(),
     SISMEMBER: ([k, m]) => (setOf(k)?.has(String(m)) ? 1 : 0),
     ZADD: ([k, score, member]) => {
       const z = zset(k, true);
@@ -149,7 +150,20 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       }
       return 'ok';
     },
-    'delete-account': ([profile, progress, board, subKey, nickKeyKey, task], [pid, expectedSub, expectedNickKey]) => {
+    'mark-sent': ([task], [taskId, sentField, attemptId, sent]) => {
+      const raw = hash(task)?.get(taskId);
+      if (raw === undefined) return 0;
+      let rec;
+      try {
+        rec = JSON.parse(raw);
+      } catch {
+        return 0;
+      }
+      if (rec === null || typeof rec !== 'object' || rec.attemptId !== attemptId) return 0;
+      commands.HSET([task, sentField, sent]);
+      return 1;
+    },
+    'delete-account': ([profile, progress, board, subKey, nickKeyKey, task, taskCharged], [pid, expectedSub, expectedNickKey]) => {
       if ((hash(profile)?.get('sub') ?? '') !== expectedSub || (hash(profile)?.get('nickKey') ?? '') !== expectedNickKey) {
         return 'conflict';
       }
@@ -159,6 +173,7 @@ export function createFakeRedis({ token = 'fake-token', url = 'https://fake-redi
       db.delete(profile);
       db.delete(progress);
       db.delete(task);
+      db.delete(taskCharged);
       return 'ok';
     },
   };
