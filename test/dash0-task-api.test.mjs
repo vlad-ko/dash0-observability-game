@@ -9,7 +9,7 @@ import { containsToken } from '../lib/otlp/send.mjs';
 import { createServerTelemetry } from '../lib/otel/server.mjs';
 import { ORIGIN, get, post } from './helpers/auth-api.mjs';
 import {
-  API_TOKEN, EMAIL, INGEST_HOST, INGEST_TOKEN, NICK, PLAYER_SECRET, SETTLE_MS, TASK_ENV, URL_, taskRig,
+  API_TOKEN, DATASET, EMAIL, INGEST_HOST, INGEST_TOKEN, NICK, PLAYER_SECRET, SETTLE_MS, TASK_ENV, URL_, taskRig,
 } from './helpers/dash0-task.mjs';
 
 // Pinned here on purpose: a test that imported these would move with a mutation of them.
@@ -141,7 +141,8 @@ test('start answers with exactly the listed keys, and no seed, answer or fault c
 test('start for a readback task adds the asset name and sends nothing', async () => {
   const t = await taskRig();
   const { body } = await t.start('connect-test-span');
-  assert.deepEqual(Object.keys(body).sort(), [...START_KEYS, 'name'].sort());
+  assert.deepEqual(Object.keys(body).sort(), [...START_KEYS, 'name', 'dataset'].sort());
+  assert.equal(body.dataset, DATASET, 'a readback start carries the configured dataset (not a secret)');
   assert.equal(body.name, `oncall-${t.tag}-connect-test-span-${body.attemptId.slice(0, 6)}`);
   assert.equal(t.sent.length, 0, 'the player sends this task\'s span, the server sends none');
   assert.equal(t.attempt('connect-test-span').seed, undefined);
@@ -168,14 +169,17 @@ test('the ingest body, name and link carry the tag and never a pid, nickname or 
   assert.equal(request.headers['Dash0-Dataset'], 'oncall-game');
 });
 
-test('the link names the app, the attempt filter and the dataset', async () => {
+test('the link names the app and the dataset: the boss link is unfiltered, a readback link keeps the attempt filter', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   const url = new URL(body.link);
   assert.equal(url.origin, 'https://app.dash0.com');
   assert.equal(url.pathname, '/goto/traces/explorer');
   assert.equal(url.searchParams.get('dataset'), 'oncall-game');
-  assert.deepEqual(JSON.parse(url.searchParams.get('filter')), [{ key: 'game.attempt.id', operator: 'is', value: body.attemptId }]);
+  assert.equal(url.searchParams.has('filter'), false, 'its-us-find: no filter, the player finds their own trace');
+  assert.equal(body.dataset, undefined, 'a seeded start carries no dataset');
+  const own = new URL((await t.start('connect-test-span')).body.link);
+  assert.equal(own.searchParams.has('filter'), true, 'a readback link keeps the filter');
   const t0 = t.attempt('its-us-find').t0;
   assert.ok(Date.parse(url.searchParams.get('from')) < t0 && Date.parse(url.searchParams.get('to')) > t0, 'the window holds the attempt');
 });

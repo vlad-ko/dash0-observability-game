@@ -654,3 +654,48 @@ test('mutating a draft after emit cannot change or poison the buffered span', as
   assert.deepEqual(span.events[0].attributes, [{ key: 'e', value: { intValue: '1' } }]);
   assert.equal(span.status.code, 1);
 });
+
+// ---- attempt-stamped test span (#509 P7.1) --------------------------------------------
+
+const A = 'a'.repeat(16);
+const B = 'b'.repeat(16);
+const attrsOf = (call) => Object.fromEntries(call.body.resourceSpans[0].scopeSpans[0].spans[0].attributes.map((a) => [a.key, a.value.stringValue]));
+
+test('sendTest stamps game.attempt.id only when given one; session.id stays', async () => {
+  const f = instantFetch();
+  const { telemetry } = make({ fetch: f.fetch });
+  telemetry.connect(live());
+  await telemetry.sendTest();
+  assert.equal('game.attempt.id' in attrsOf(f.calls[0]), false, 'no id given: no attribute');
+  await telemetry.sendTest({ attemptId: A });
+  const a = attrsOf(f.calls[1]);
+  assert.equal(a['game.attempt.id'], A);
+  assert.equal(a['session.id'], telemetry.sessionId);
+});
+
+test('a malformed attempt id is a TypeError rejection and nothing is fetched', async () => {
+  const f = instantFetch();
+  const { telemetry } = make({ fetch: f.fetch });
+  telemetry.connect(live());
+  for (const bad of ['a'.repeat(15), 'A'.repeat(16), 'g'.repeat(16), 7, null, '']) {
+    await assert.rejects(() => telemetry.sendTest({ attemptId: bad }), TypeError, String(bad));
+  }
+  assert.equal(f.calls.length, 0);
+});
+
+test('sendTest single-flight is per attempt: the same id shares one fetch, another id gets its own', async () => {
+  const f = heldFetch();
+  const { telemetry } = make({ fetch: f.fetch });
+  telemetry.connect(live());
+  const a1 = telemetry.sendTest({ attemptId: A });
+  const a2 = telemetry.sendTest({ attemptId: A });
+  assert.equal(a1, a2);
+  await tick();
+  assert.equal(f.calls.length, 1);
+  const b = telemetry.sendTest({ attemptId: B });
+  assert.notEqual(b, a1);
+  await tick();
+  assert.equal(f.calls.length, 2);
+  for (const c of f.calls) c.resolve(res(200));
+  await Promise.all([a1, b]);
+});

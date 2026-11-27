@@ -12,7 +12,7 @@ const SCENARIO = new URL('../lib/dash0-task/scenario.mjs', import.meta.url);
 test('TASKS holds only ids, graders and question ids (no seed, no key, no answer value)', () => {
   assert.deepEqual(Object.keys(TASKS).sort(), ['connect-test-span', 'its-us-find']);
   for (const [id, t] of Object.entries(TASKS)) {
-    assert.deepEqual(Object.keys(t).filter((k) => !['grader', 'answers'].includes(k)), [], id);
+    assert.deepEqual(Object.keys(t).filter((k) => !['grader', 'answers', 'send', 'filterHint'].includes(k)), [], id);
     assert.ok(['seeded', 'readback'].includes(t.grader), id);
     if (t.grader === 'readback') assert.equal(t.answers, undefined, `${id}: a readback task asks nothing`);
     else assert.ok(t.answers.every((a) => /^[A-Za-z]{1,40}$/.test(a)), id);
@@ -30,4 +30,14 @@ test('TASKS agrees with the server task definitions (runs once lib/dash0-task/sc
     if (TASKS[id].grader === 'readback') assert.equal(built.answers, null, `${id}: no answers`);
     else assert.deepEqual([...TASKS[id].answers].sort(), Object.keys(built.answers).sort(), `${id}: the same question ids`);
   }
+});
+
+test('only a readback task has `send`, and a send task is readback; its-us-find asks for the attempt filter', () => {
+  for (const [id, t] of Object.entries(TASKS)) {
+    if (t.send !== undefined) assert.equal(t.grader, 'readback', `${id}: only a readback task may send`);
+  }
+  assert.equal(TASKS['connect-test-span'].send, 'test-span');
+  assert.equal(TASKS['its-us-find'].send, undefined);
+  assert.equal(TASKS['its-us-find'].filterHint, 'game.attempt.id');
+  assert.equal(TASKS['connect-test-span'].filterHint, undefined);
 });
