@@ -153,7 +153,7 @@ Each level lists **concept** / **OTel nuance** / **Dash0 tie-in** / **mechanic**
 | 8.3 Migrating vendors | Moving dashboards and alerts off a proprietary tool | Proprietary query languages don't map 1:1: translated, approximated, manual or skipped (a percentile becomes a bucket estimate) | Dash0 imports Grafana dashboards (Prometheus queries and common panel types; a placeholder otherwise). 8.3 names DART (Dashboards, Alerts & Rules to Terraform) as Dash0's way to bring dashboards, alerts and rules over as Terraform (owner, 2026-11-09, #263; no public page) | Sort it + Choice |
 | 8.4 Frontend / RUM | Browser telemetry, Web Vitals, sessions | Browser spans and CORS for the OTLP endpoint | Dash0 website monitoring | Build it + Choice |
 | 8.5 AI-assisted debugging | Letting an agent query your telemetry | Agents need good semantic conventions as much as humans do | Dash0 MCP Server and Agent0 | Incident (the agent simulated as authored views; the guide as copilot is out of scope, #17) + Choice |
-| Final boss: "It's us" | A real incident in the game's own telemetry, in Dash0 | n/a | Everything together | Incident |
+| Final boss: "It's us" | A spot step, then a real incident in Dash0 (an In Dash0 task) | n/a | Everything together | Spot + In Dash0 task |
 
 ## 5. Nuance cards (collectibles)
 

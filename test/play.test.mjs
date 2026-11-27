@@ -44,7 +44,8 @@ function start(level) {
 }
 
 const prefixOf = (level) => level.play.prefix ?? level.id;
-const advanceId = (level, i) => `#${prefixOf(level)}-${i === level.play.steps.length - 1 ? 'finish' : 'next'}`;
+// The harness has no task server, so a level's In Dash0 steps are left out: the last step shown (stepsOf) is the one that finishes.
+const advanceId = (level, i) => `#${prefixOf(level)}-${i === stepsOf(level).length - 1 ? 'finish' : 'next'}`;
 const text = (sel) => q(sel).textContent;
 
 /** Play every step cleanly, calling `during(i, entry)` before step i is solved. */
@@ -163,7 +164,7 @@ for (const level of LEVELS) {
     assert.equal(playAll(level).calls[0].result.stars, stars(level));
     const second = start(level);
     assert.equal(second.focus.names()[0], steps[0].driver.first(steps[0].spec));
-    assert.equal(qa('[data-finish]').length, 0, 'starts on a step that is not the last');
+    assert.equal(qa('[data-finish]').length, steps.length === 1 && stepsOf(level, { dash0: true }).length > 1 ? 1 : 0, 'starts on a step that is not the last (only a level whose In Dash0 steps were left out can show one step, which then finishes)');
     assert.equal(playAll(level, () => {}, second).calls[0].result.stars, stars(level));
     ran += 1;
   });

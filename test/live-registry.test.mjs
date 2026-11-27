@@ -193,13 +193,11 @@ const HAND_WRITTEN_WIDGETS = {
   'events-and-links': ['choice', 'build'],
   'checkout-is-slow': ['incident'],
   'connect-to-dash0': [],
-  'its-us': [],
 };
 // Declares a mechanic its board is not (custom, unscored, unwinnable), so no help is offered.
 const NOT_A_WIDGET = {
   'the-pager': 'No help card: its intro explains the board (it is not scored).',
   'connect-to-dash0': 'No help card: its form is its own kit markup, not a shared widget.',
-  'its-us': 'No help card: its Trace View and questions are its own kit markup, not a shared widget.',
   'span-kinds': 'Its hunt board is its own kit markup; only the fix is a shared widget.',
 };
 
@@ -250,6 +248,7 @@ const HINTLESS = {
   'the-34-percent-error-rate': ['tradeoff'], // a live-demo question: no helps on its Trade-off (#160)
   'the-trace-that-starts-in-the-middle': ['build'], // Act 9 has no helps (#240)
   'the-alert-that-stayed-green': ['query'], // a live-demo question: no helps on its Query it
+  'its-us': ['spot'], // the Act 9 boss: no helps on its Spot (#240)
 };
 
 test('which widgets have no hints on each live level is pinned, and the how-to-play help says so', () => {

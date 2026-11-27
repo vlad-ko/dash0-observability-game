@@ -416,65 +416,9 @@ const DRIVERS = {
       expect: { stars: 2, cards: [] },
     },
   },
-  // The lab boss in practice (the session was never connected): filter the simulated Trace Explorer by the
-  // session id, open the trace, open the spans, read the failing one, and type what the page shows. The expected values come from the page, so
-  // the driver breaks if the view stops showing them. Sloppy: a wrong operation and a wrong retry count.
-  'its-us': {
-    async: true,
-    telemetry: practiceTelemetry,
-    async play({ telemetry }) {
-      await findIncident(telemetry);
-      click('#its-finish');
-    },
-    expect: { stars: 5, cards: [] },
-    sloppy: {
-      telemetry: practiceTelemetry,
-      async play({ telemetry }) {
-        await findIncident(telemetry, { operation: 'progress.sync', retryCount: '9' });
-        await fixAnswers(telemetry);
-        click('#its-finish');
-      },
-      expect: { stars: 3, cards: [] },
-    },
-  },
 };
 
-/** Read the failing span off the practice Trace View and type the four answers (with `over` swapped in). */
-async function findIncident(telemetry, over = {}) {
-  click('#its-practice');
-  // The Trace Explorer lists several sessions' traces: filter by the session id the page shows.
-  for (const r of qa('input[name="its-fkey"]')) r.checked = r.value === 'session.id';
-  for (const r of qa('input[name="its-fop"]')) r.checked = r.value === 'is';
-  type('#its-fvalue', q('#its-session').textContent.trim());
-  click('#its-filter-apply');
-  assert.equal(qa('#its-explorer tbody tr').length, 1, 'the filter narrows the list to one trace');
-  click('#its-open-trace-0');
-  const spans = telemetry.incident().spans;
-  const rows = qa('#its-explorer tbody tr');
-  const bad = rows.findIndex((tr) => tr.lastElementChild.textContent.trim() === 'Error');
-  assert.ok(bad >= 0, 'the failing span is marked in the list');
-  click(`#its-open-${bad}`);
-  const detail = q('#its-detail');
-  const code = [...detail.querySelectorAll('tr')].find((tr) => tr.textContent.includes('game.fault.code')).querySelectorAll('td')[1].textContent.trim();
-  const retries = [...detail.querySelectorAll('tr')].filter((tr) => tr.querySelector('td')?.textContent.trim() === 'retry').length;
-  type('#its-q-operation', over.operation ?? spans[bad].name);
-  type('#its-q-faultCode', code);
-  type('#its-q-retryCount', over.retryCount ?? String(retries));
-  type('#its-q-traceId', q('#its-trace').textContent.trim());
-  click('#its-check');
-  await Promise.resolve();
-}
-
-/** After a sloppy first check: type the right operation and retry count from the same page. */
-async function fixAnswers(telemetry) {
-  const bad = telemetry.incident().spans.findIndex((s) => s.status?.code === 'error');
-  const detail = q('#its-detail');
-  type('#its-q-operation', telemetry.incident().spans[bad].name);
-  type('#its-q-retryCount', String([...detail.querySelectorAll('tr')].filter((tr) => tr.querySelector('td')?.textContent.trim() === 'retry').length));
-  click('#its-check');
-}
-
-// A fixed clock (2023-11-14T22:13:20Z), so the wall-clock times its-us shows are the same on every run
+// A fixed clock (2023-11-14T22:13:20Z), so the wall-clock times a level shows are the same on every run
 // and a LEVEL_SNAPSHOT before and after a change to the level can be compared (#391).
 const PRACTICE_NOW_MS = 1_700_000_000_000;
 
@@ -965,53 +909,6 @@ const UNREACHED = {
     'run.connectedChipLive',
     'run.connectedFinishLive',
   ],
-  // Never on a screen: the broken-build starts, everything live (the send screen, its failures, the live find
-  // guide and finish), the filters and answers the drivers never get wrong, and the explorer states they never reach
-  // (no match, a match of several, a span with no events).
-  'its-us': [
-    'run.startIntroNoIncident',
-    'run.startIntroNoTelemetry',
-    'run.startNote',
-    'run.notConnectedWhyAvailable',
-    'run.notConnectedReasonAvailable',
-    'run.sendLeadElsewhere',
-    'run.sendHostsJoiner',
-    'run.sendLeadAttempted',
-    'run.sendLeadFresh',
-    'run.sendChip',
-    'run.sendBody',
-    'run.duplicateNote',
-    'run.sendButton',
-    'run.sendBarButton',
-    'run.sendRetryButton',
-    'run.sendSwitchButton',
-    'run.sendSendingSays',
-    'run.describeRefusedToken',
-    'run.describeRefused',
-    'run.describeSaid',
-    'run.unreachable.network',
-    'run.unreachable.timeout',
-    'run.unreachable.opaque',
-    'run.unreachable.aborted',
-    'run.unreachable.invalid',
-    'run.unreachableFallback',
-    'run.filterValueSays',
-    'run.listMatchMany',
-    'run.listNone',
-    'run.detailNoEvents',
-    'run.findGuideTitle',
-    'run.findGuide',
-    'run.findIntroLive',
-    'run.findChipLive',
-    'run.questions[0].nudge',
-    'run.questions[1].nudge',
-    'run.questions[1].wrong',
-    'run.questions[2].nudge',
-    'run.questions[3].nudge',
-    'run.questions[3].wrong',
-    'run.findFinishUnfiltered',
-    'run.findFinishLive',
-  ],
   // The runs open the two clue views and the herring and make one wrong pick: the other views' notes, the explanations of
   // the other wrong picks and the triage table's "no data" (no row lacks data) are never on a screen. The hint is: HINT_PLAYS presses the Hint button.
   'checkout-is-slow': [
@@ -1239,7 +1136,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'checkout-is-slow', 'connect-to-dash0', 'context-propagation', 'events-and-links', 'its-us', 'monitoring-vs-observability', 'naming-your-service', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'checkout-is-slow', 'connect-to-dash0', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'naming-your-service', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
@@ -1247,7 +1144,7 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     const shown = [];
     const runs = [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy], ...(HINT_PLAYS[id] ? [['hinted', { play: HINT_PLAYS[id] }]] : [])];
     for (const [label, run] of runs) {
-      // A level that sends a request (connect-to-dash0, its-us) has an async driver and a telemetry session.
+      // A level that sends a request (connect-to-dash0) has an async driver and a telemetry session.
       const { calls, frames, clicks } = DRIVERS[id].async
         ? await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() })
         : playLevel(level, run.play);
@@ -1711,7 +1608,9 @@ test('T8 UNDEFINED_ALLOW is empty: every rendered class has a CSS rule', () => {
 
 // #509 vocabulary rule: a game screen never titles a heading or panel with a Dash0 screen name or "simulated Dash0".
 // Prose that only mentions a Dash0 screen is allowed. The allowlist only shrinks: P7 removes both entries.
-const VOCABULARY_ALLOW = ['connect-to-dash0', 'its-us'];
+const VOCABULARY_ALLOW = [
+  'connect-to-dash0',
+];
 
 test('#509 harness: surfaceProblems wants exactly one valid data-surface per screen', () => {
   assert.deepEqual(surfaceProblems([{ surfaces: ['game'] }, { surfaces: ['dash0'] }]), []);
