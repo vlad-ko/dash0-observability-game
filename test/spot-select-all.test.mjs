@@ -142,6 +142,10 @@ function blindWorstCase(n, k, ms) {
     if (Date.now() > deadline) throw new Error('deadline');
     let res = false;
     for (let s = 1; s <= ALL && !res; s++) {
+      // Root symmetry: at the root every k-of-n answer set is possible, so a blind player cannot tell the lines
+      // apart and any two queries of the same size are equivalent up to relabelling the lines. Trying only the
+      // first-m-lines query (s = 2^m - 1) per size covers them all; this skips the rest of the root's 2^n queries.
+      if (Hs.length === H.length && (s & (s + 1))) continue;
       const classes = new Map();
       for (const h of Hs) {
         if (h === s) continue;
