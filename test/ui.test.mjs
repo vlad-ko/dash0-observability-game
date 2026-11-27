@@ -27,6 +27,7 @@ test('layout: step, split, actions', () => {
   const dash0 = '<span class="ui-chip" data-tone="attention">In Dash0</span>';
   assert.equal(step({ surface: 'game', bodyHtml: '<p>x</p>' }), `<div class="ui-step" data-surface="game">${game}<p>x</p></div>`);
   assert.equal(step({ surface: 'game', wide: true, bodyHtml: 'b' }), `<div class="ui-step ui-step--wide" data-surface="game">${game}b</div>`);
+  assert.equal(step({ surface: null, bodyHtml: 'b' }), '<div class="ui-step">b</div>');
   assert.equal(step({ surface: 'dash0', bodyHtml: 'b' }), `<div class="ui-step" data-surface="dash0">${dash0}b</div>`);
   assert.equal(split({ mainHtml: 'm', sideHtml: 's' }),
     '<div class="ui-split"><div class="ui-split-main">m</div><div class="ui-split-side">s</div></div>');
@@ -447,6 +448,7 @@ const INVALID = [
   ['step', () => step({ bodyHtml: '' })],
   ['step', () => step({ surface: undefined, bodyHtml: '' })],
   ['step', () => step({ surface: 'Game', bodyHtml: '' })],
+  ['step', () => step({ surface: '', bodyHtml: '' })],
   ['step', () => step({ surface: 'both', bodyHtml: '' })],
   ['split', () => split({ mainHtml: 'm' })],
   ['actions', () => actions({ buttonsHtml: null })],

@@ -134,5 +134,6 @@ test('the vocabulary check finds a Dash0 screen name or "simulated Dash0" in a t
   assert.deepEqual(DASH0_SCREEN_NAMES, ['Trace Explorer', 'Trace View', 'Span Sidebar', 'Log Explorer', 'Metric Explorer', 'Dashboards', 'Check Rules', 'Auth Tokens']);
   for (const name of DASH0_SCREEN_NAMES) assert.deepEqual(vocabularyHits([`The ${name} page`]), [{ name, title: `The ${name} page` }], name);
   assert.deepEqual(vocabularyHits(['Practice: a simulated Dash0, not yours'])[0].name, 'simulated Dash0');
+  assert.deepEqual(vocabularyHits(['Simulated Dash0 view'])[0].name, 'simulated Dash0');
   assert.deepEqual(vocabularyHits(['Pick the span', 'Your own dashboards', 'The trace explorer']), []);
 });

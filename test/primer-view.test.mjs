@@ -141,6 +141,12 @@ const THREE = { ...PRIMER, chapters: [chap('c-one', 'One'), chap('c-two', 'Two')
 const drawZone = (primer, screen, stored, opts) =>
   parseHTML(`<!doctype html><body><div id="r">${primerZoneHtml(primerZoneView(primer, screen, stored, {}), opts)}</div></body>`).document.getElementById('r');
 
+test('#509 the zone is not a step: no data-surface and no surface chip', () => {
+  const root = drawZone(THREE, 1, { read: ['c-one'] });
+  assert.equal(root.querySelectorAll('[data-surface]').length, 0);
+  assert.equal(root.querySelector('.ui-step').firstElementChild.matches('.ui-chip'), false);
+});
+
 test('the zone is a wide step with a split: the chapter in the main column, the chapter list beside it', () => {
   const root = drawZone(THREE, 1, { read: ['c-one'] });
   assert.equal(root.firstElementChild.matches('.ui-step.ui-step--wide'), true);
