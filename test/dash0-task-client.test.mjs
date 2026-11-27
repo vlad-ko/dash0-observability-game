@@ -6,7 +6,7 @@ import { createDash0TaskClient, DASH0_TASK_URL, isDash0AppUrl } from '../lib/das
 
 const json = (status, body) => ({ status, json: async () => body });
 /** A fetch that answers by method and records every call. */
-function rig({ get = json(200, { v: 1, on: true }), post = json(200, { v: 1, ok: true }), signedIn = true } = {}) {
+function rig({ get = json(200, { v: 1, on: true }), post = json(200, { v: 1, ok: true }), signedIn = true, signedOut } = {}) {
   const calls = [];
   const fetch = async (url, init = {}) => {
     calls.push({ url, method: init.method ?? 'GET', body: init.body === undefined ? undefined : JSON.parse(init.body), headers: init.headers });
@@ -15,7 +15,7 @@ function rig({ get = json(200, { v: 1, on: true }), post = json(200, { v: 1, ok:
     return typeof answer === 'function' ? answer(init) : answer;
   };
   let me = signedIn;
-  const client = createDash0TaskClient({ fetch, signedIn: () => me });
+  const client = createDash0TaskClient({ fetch, signedIn: () => me, ...(signedOut === undefined ? {} : { signedOut }) });
   return { client, calls, signOut: () => { me = false; } };
 }
 
@@ -42,6 +42,18 @@ test('available() is the server being on AND a signed-in player; the status is a
   r.signOut();
   assert.equal(r.client.available(), false, 'the signed-in state is read at each decision');
   assert.equal(r.client.reason(), 'signed-out');
+});
+
+test('reason() is signed-out only when the account really answered signed out: an unavailable or unknown account is off', async () => {
+  for (const [state, want] of [['signedOut', 'signed-out'], ['unavailable', 'off'], ['unknown', 'off'], ['unconfigured', 'off']]) {
+    const r = rig({ signedIn: false, signedOut: () => state === 'signedOut' });
+    await r.client.load();
+    assert.equal(r.client.available(), false, state);
+    assert.equal(r.client.reason(), want, state);
+  }
+  const throws = rig({ signedIn: false, signedOut: () => { throw new Error('boom'); } });
+  await throws.client.load();
+  assert.equal(throws.client.reason(), 'off');
 });
 
 test('the server off, a failed or odd status read all mean off (never signed-out, which would ask the player to sign in for nothing)', async () => {
@@ -84,7 +96,8 @@ test('start: ok, with the asset name only when the server sends one', async () =
 test('start: an inconclusive answer, an odd body and every HTTP status map to an outcome, never a throw', async () => {
   const cases = [
     [json(200, { v: 1, ok: false, outcome: 'inconclusive', reason: 'settling', retryAfterS: 12 }), { reason: 'settling', retryAfterS: 12 }],
-    [json(400, { ok: false, error: 'bad-request', field: 'taskId' }), { reason: 'unavailable', retryAfterS: 60 }],
+    [json(400, { ok: false, error: 'bad-request', field: 'taskId' }), { reason: 'refused' }],
+    [json(413, { error: 'too-large' }), { reason: 'refused' }],
     [json(404, { error: 'unknown-task' }), { reason: 'unavailable', retryAfterS: 60 }],
     [json(409, { error: 'stale-attempt' }), { reason: 'stale', restart: true }],
     [json(410, { error: 'expired' }), { reason: 'expired', restart: true }],
@@ -147,7 +160,10 @@ test('check: a network error, a bad status or an odd body is inconclusive and ne
   assert.deepEqual(await check(json(409, { error: 'stale-attempt' })), { charge: false, outcome: 'inconclusive', reason: 'stale', restart: true });
   assert.deepEqual(await check(json(410, { error: 'expired' })), { charge: false, outcome: 'inconclusive', reason: 'expired', restart: true });
   assert.deepEqual(await check(json(429, { error: 'rate-limited', retryAfterS: 5 })), { charge: false, outcome: 'inconclusive', reason: 'rate-limited', retryAfterS: 5 });
-  for (const [status, body] of [[400, { ok: false, error: 'bad-request', field: 'answer' }], [404, { error: 'unknown-task' }], [502, { error: 'store-unavailable' }]]) {
+  for (const status of [400, 413]) {
+    assert.deepEqual(await check(json(status, { ok: false, error: 'bad-request', field: 'answer' })), { charge: false, outcome: 'inconclusive', reason: 'refused' }, `${status}: refused, never an outage, no wait`);
+  }
+  for (const [status, body] of [[404, { error: 'unknown-task' }], [502, { error: 'store-unavailable' }]]) {
     assert.deepEqual(await check(json(status, body)), { charge: false, outcome: 'inconclusive', reason: 'unavailable', retryAfterS: 60 }, String(status));
   }
 });

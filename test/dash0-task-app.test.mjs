@@ -10,7 +10,7 @@ import { makeDom, q, click } from './helpers/dom.mjs';
 import { fakeStorage } from './helpers/fake-storage.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
-import { createGame } from '../app.mjs';
+import { createGame, DASH0_WAIT_MS } from '../app.mjs';
 import { readSkipped, SKIPPED_KEY } from '../lib/dash0-task/prefs.mjs';
 import { RESET_KEYS } from '../lib/reset-mode.mjs';
 import COPY from '../content/core/ui/dash0-task.mjs';
@@ -57,7 +57,7 @@ const REG = buildRegistry(
 
 const json = (status, body) => ({ status, json: async () => body });
 /** A page: `server` is GET/POST /api/dash0-task's answers, `account` GET /api/account's. Every request is recorded. */
-function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(), start = { v: 1, ok: true, attemptId: 'a1', link: LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 }, check = { v: 1, outcome: 'pass', charge: false }, noFetch = false, holdAccount = false } = {}) {
+function rig({ accountFails = false, timers = null, on = true, signedIn = true, debug = false, store = fakeStorage(), start = { v: 1, ok: true, attemptId: 'a1', link: LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 }, check = { v: 1, outcome: 'pass', charge: false }, noFetch = false, holdAccount = false } = {}) {
   const dom = makeDom(HTML);
   const requests = [];
   const errors = [];
@@ -67,6 +67,7 @@ function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(),
     requests.push({ url, method: init.method ?? 'GET', body: init.body === undefined ? undefined : JSON.parse(init.body) });
     if (url === '/api/dash0-task') return init.method === 'POST' ? json(200, JSON.parse(init.body).op === 'start' ? start : check) : json(200, { v: 1, on });
     if (url === '/api/account') {
+      if (accountFails) throw new Error('offline');
       const answer = json(200, signedIn ? { v: 1, configured: true, signedIn: true, nick: 'ada', listed: false } : { v: 1, configured: true, signedIn: false });
       return holdAccount ? gate.then(() => answer) : answer;
     }
@@ -74,7 +75,7 @@ function rig({ on = true, signedIn = true, debug = false, store = fakeStorage(),
   };
   const game = createGame({
     registry: REG, deck: [], storage: () => store, document: dom.document, window: { addEventListener() {} }, now: () => NOW, rand: () => 0,
-    reportError: (e) => errors.push(e), setTimeout: () => {}, clearTimeout: () => {}, debug, ...(noFetch ? {} : { fetch }),
+    reportError: (e) => errors.push(e), setTimeout: timers ? timers.set : () => {}, clearTimeout: timers ? timers.clear : () => {}, debug, ...(noFetch ? {} : { fetch }),
   });
   game.init();
   return { game, store, requests, errors, dom, release };
@@ -306,5 +307,81 @@ test('?mode=reset clears the remembered tasks too', () => {
 
 test('the reward card and the level card in index.html show the notice and the marker without inline style', () => {
   assert.match(HTML, /id="reward-dash0"[^>]*x-text="rewardNotice"/);
-  assert.match(HTML, /x-show="taskWaiting\(id\)"[^>]*x-text="taskWaitingText\(\)"/);
+  assert.match(HTML, /x-show="taskWaiting\(id\)"[^>]*>\s*<span class="ui-chip"[^>]*x-text="taskWaitingText\(\)"/);
+  const body = /<div class="level-body">([\s\S]*?)<div class="level-status"/.exec(HTML)[1];
+  assert.match(body, /taskWaitingText/, 'the long chip sits in the body, where it can wrap');
+  const status = /<div class="level-status"[\s\S]*?<\/div>/.exec(HTML)[0];
+  assert.doesNotMatch(status, /taskWaitingText/, 'not in the no-wrap status column');
+});
+
+/** A timer rig: `set` records each call, `fire(ms)` runs the ones asked for that delay. */
+const fakeTimers = () => {
+  const list = [];
+  return {
+    list,
+    set: (fn, ms) => { list.push({ fn, ms, cleared: false }); return list.length; },
+    clear: (n) => { if (list[n - 1]) list[n - 1].cleared = true; },
+    fire: (ms) => list.filter((t) => t.ms === ms && !t.cleared).forEach((t) => t.fn()),
+  };
+};
+
+test('a level never waits for the task status or the account for ever: after DASH0_WAIT_MS it runs without the task, and says it is getting ready meanwhile', async () => {
+  const timers = fakeTimers();
+  const r = rig({ holdAccount: true, timers });
+  await settle(); // GET /api/account never answers
+  r.game.openLevel('with-task');
+  assert.equal(q('[data-line="user"]') === null, true, 'still waiting');
+  assert.match(q('#ov-body').textContent, new RegExp(COPY.preparing));
+  assert.ok(timers.list.some((t) => t.ms === DASH0_WAIT_MS), 'a timer bounds the wait');
+  timers.fire(DASH0_WAIT_MS);
+  assert.ok(q('[data-line="user"]'), 'the level runs with what is known');
+  assert.doesNotMatch(q('#ov-body').textContent, new RegExp(COPY.preparing));
+  playGame('s1');
+  click('#dt-finish');
+  await settle();
+  assert.equal(r.game.rewardNotice, COPY.notices.off, 'an account that did not answer counts as unavailable: off, never signed out');
+  assert.deepEqual(dash0Requests(r).filter((x) => x.method === 'POST'), []);
+});
+
+test('the status GET that never answers counts as off after the wait', async () => {
+  const timers = fakeTimers();
+  const dom = makeDom(HTML);
+  const fetch = (url) => (url === '/api/dash0-task' ? new Promise(() => {}) : Promise.resolve(json(200, { v: 1, configured: true, signedIn: true, nick: 'ada', listed: false })));
+  const game = createGame({ registry: REG, deck: [], storage: () => fakeStorage(), document: dom.document, window: { addEventListener() {} }, now: () => NOW, rand: () => 0, reportError: (e) => { throw e; }, setTimeout: timers.set, clearTimeout: timers.clear, fetch });
+  game.init();
+  await settle();
+  game.openLevel('with-task');
+  assert.equal(q('[data-line="user"]') === null, true);
+  timers.fire(DASH0_WAIT_MS);
+  assert.ok(q('[data-line="user"]'));
+  playGame('s1');
+  click('#dt-finish');
+  await settle();
+  assert.equal(game.rewardNotice, COPY.notices.off);
+});
+
+test('an answer that comes before the timer runs the level once and cancels the timer', async () => {
+  const timers = fakeTimers();
+  const r = rig({ holdAccount: true, timers });
+  await settle();
+  r.game.openLevel('with-task');
+  r.release();
+  await settle();
+  assert.ok(q('[data-line="user"]'));
+  assert.equal(timers.list.find((t) => t.ms === DASH0_WAIT_MS).cleared, true);
+  const shown = q('[data-line="user"]');
+  timers.list.find((t) => t.ms === DASH0_WAIT_MS).fn(); // a late fire does nothing
+  assert.equal(q('[data-line="user"]') === shown, true, 'no second run');
+});
+
+test('an account GET that fails while the server is on skips with cause off, never signed-out', async () => {
+  const r = rig({ accountFails: true });
+  await settle();
+  r.game.openLevel('with-task');
+  assert.ok(q('[data-line="user"]'));
+  assert.equal(seen.at(-1).dash0Task.reason(), 'off');
+  playGame('s1');
+  click('#dt-finish');
+  await settle();
+  assert.equal(r.game.rewardNotice, COPY.notices.off);
 });

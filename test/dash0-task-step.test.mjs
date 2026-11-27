@@ -702,3 +702,90 @@ test('paced results between outages neither reset nor add to the count; a 401 ke
   click('#d1-skip');
   assert.deepEqual(api2.skipped, [[['p95-task'], 'signed-out']]);
 });
+
+test(`${DOWN_AFTER} refused answers (the server's 400 or 413) are the player's input, not an outage: no skip offer, no charge, and the words say so`, async () => {
+  const refused = { outcome: 'inconclusive', charge: false, reason: 'refused' };
+  const api = fakeApi({ checks: [refused] });
+  const run = open(FULL(), { api });
+  toTask();
+  await start();
+  for (let i = 0; i < DOWN_AFTER + 1; i++) await check();
+  assert.equal(q('#d1-skip') === null, true, 'a healthy server is never given up on for refusing an answer');
+  assert.deepEqual(api.skipped, []);
+  assert.equal(run.mistakes(), 0);
+  assert.match(q('#d1-feedback').textContent, /Dash0 could not take that answer\. Check it and try again\./);
+  assert.doesNotMatch(q('#d1-feedback').textContent, /not answering/);
+  assert.doesNotMatch(q('#d1-feedback').textContent, /seconds/, 'no wait is named');
+});
+
+test('an answer over 200 characters is refused here: a message, no request, no charge', async () => {
+  const api = fakeApi();
+  const run = open(FULL(), { api });
+  toTask();
+  await start();
+  const before = api.calls.length;
+  await check('x'.repeat(201));
+  assert.equal(api.calls.length, before, 'nothing was sent');
+  assert.match(q('#d1-feedback').textContent, /That answer is too long: paste just the value\./);
+  assert.equal(run.mistakes(), 0);
+  assert.equal(q('#d1-check-operation').disabled, false, 'the field is still open');
+  await check('x'.repeat(200));
+  assert.equal(api.calls.length, before + 1, '200 characters go');
+});
+
+// linkedom has no focus model: track focus() calls and serve them as document.activeElement (as test/game.test.mjs does).
+function trackFocus() {
+  let active = globalThis.document.body;
+  Object.defineProperty(globalThis.document, 'activeElement', { get: () => active, configurable: true });
+  globalThis.window.HTMLElement.prototype.focus = function focus() { active = this; };
+}
+
+test('focus stays inside the step: after a wrong Check, after a partial pass, and after a redrawn Retry', async () => {
+  const wrong = { outcome: 'fail', charge: true };
+  const api = fakeApi({ checks: [wrong, PASS] });
+  const run = open(FULL(), { api });
+  toTask();
+  await start();
+  trackFocus();
+  const doc = globalThis.document;
+  q('#d1-check-operation').focus();
+  click({ type: '#d1-f-operation', text: '412' });
+  q('#d1-check-operation').focus();
+  click('#d1-check-operation');
+  assert.equal(doc.activeElement.id, 'd1-check-operation', 'the pressed Check keeps focus while it runs');
+  assert.equal(q('#d1-check-operation').disabled, false, 'a focused button is never disabled: a browser would drop focus to the page');
+  assert.equal(q('#d1-check-operation').getAttribute('aria-disabled'), 'true', 'a second press is still refused, and said so');
+  await settle();
+  assert.notEqual(doc.activeElement.localName, 'body', 'not thrown to the page after a wrong answer');
+  assert.equal(doc.activeElement.id, 'd1-check-operation');
+  assert.equal(run.mistakes(), 1);
+  assert.equal(q('#d1-check-operation').getAttribute('aria-disabled'), null, 'free again once the result is in');
+});
+
+test('focus after a partial pass goes to the next open field; Retry redrawn keeps focus', async () => {
+  const spec = { answers: ['operation', 'faultCode'], fields: [{ key: 'operation', label: 'The operation' }, { key: 'faultCode', label: 'The fault code' }] };
+  const api = fakeApi({ checks: [PASS] });
+  open(playOf(dash0Step('d1', spec)), { api });
+  trackFocus();
+  await start();
+  const doc = globalThis.document;
+  q('#d1-check-operation').focus();
+  click('#d1-check-operation');
+  await settle();
+  assert.notEqual(doc.activeElement.localName, 'body');
+  assert.equal(doc.activeElement.id, 'd1-f-faultCode', 'the next open field');
+  // Retry: a network error draws Retry; pressing it again draws a new Retry that must keep focus
+  const api2 = fakeApi({ checks: [unsure] });
+  open(FULL(), { api: api2 });
+  trackFocus(); // a new level, a new document
+  toTask();
+  await start();
+  const doc2 = globalThis.document;
+  q('#d1-check-operation').focus();
+  click('#d1-check-operation');
+  await settle();
+  q('#d1-retry').focus();
+  click('#d1-retry');
+  await settle();
+  assert.equal(doc2.activeElement.id, 'd1-retry', 'the redrawn Retry has focus');
+});

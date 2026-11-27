@@ -256,6 +256,8 @@
 .level-no { font-size: 11px; font-weight: 700; color: var(--color-accent); letter-spacing: .5px; font-family: var(--font-mono); }
 .level-name { font-weight: 700; font-size: 16px; line-height: 1.2; overflow-wrap: break-word; text-wrap: balance; /* no one-word second line: "Why / OpenTelemetry" */ }
 .level-sub { font-size: 13px; color: var(--color-text-muted); margin-top: 2px; overflow-wrap: break-word; }
+/* The In Dash0 marker sits under the sub line, where a long chip can wrap; the no-wrap status column cannot hold it. */
+.level-task { margin-top: var(--space-1); }
 .level-status {
   flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); white-space: nowrap; margin-inline-start: var(--space-1);
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
@@ -325,6 +327,7 @@
 /* The closing text reads left-aligned; the story and the Dash0 how-to are separate paragraphs. */
 .reward-text { text-align: left; margin-bottom: 4px; }
 .reward-text p { margin-bottom: 10px; }
+.reward-card .reward-notice { text-align: left; }
 .reward-card .reward-stars { font-size: 30px; letter-spacing: 6px; color: var(--color-parent); margin: 6px 0 12px; }
 .reward-cards { margin: 12px 0 6px; text-align: left; }
 .reward-card .reward-cards-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }

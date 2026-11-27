@@ -1,7 +1,7 @@
 // The words of the In Dash0 step (#509, docs/DECLARATIVE-LEVELS.md): its buttons, its answers to Check, and the notice a
 // player reads when a level's In Dash0 task was left out (D7). Strict JSON, plain text only, kept apart from the code that
 // draws it (lib/widgets/dash0-task-view.mjs and app.mjs). The code fills `{seconds}` (retryIn, ready), `{field}` (failedField)
-// and `{n}` (left).
+// and `{n}` (left). `preparing` shows while a level waits for the task server and the account.
 // content-author edits this file; the rules are docs/CONTENT.md.
 export default {
   "start": "Start the task",
@@ -22,6 +22,8 @@ export default {
   "answered": "Right.",
   "left": "{n} to go.",
   "retryIn": "Try again in {seconds} seconds.",
+  "tooLong": "That answer is too long: paste just the value.",
+  "preparing": "Getting your In Dash0 task ready.",
   "offer": "Dash0 is not answering. You can try again, or finish the level without this task.",
   "reasons": {
     "off": "Checking in Dash0 is switched off right now.",
@@ -37,6 +39,7 @@ export default {
     "rate-limited": "That was too many tries in a short time.",
     "expired": "This task ran out of time. Start it again.",
     "stale": "A newer task replaced this one. Start it again.",
+    "refused": "Dash0 could not take that answer. Check it and try again.",
     "unavailable": "Dash0 did not give a usable answer.",
     "default": "The task could not be checked just now."
   },

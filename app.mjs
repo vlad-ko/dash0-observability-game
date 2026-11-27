@@ -33,7 +33,7 @@ import { changeSkipped, readSkipped, SKIPPED_KEY } from './lib/dash0-task/prefs.
 import DASH0_COPY from './content/core/ui/dash0-task.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
 import { NICK_RE } from './lib/account/nickname.mjs';
-import { setFeedback } from './lib/ui/index.mjs';
+import { note, setFeedback } from './lib/ui/index.mjs';
 import { escapeHtml } from './lib/lesson-kit.mjs';
 import { trapTab } from './lib/modal-focus.mjs';
 import { focusFirst } from './lib/widgets/focus.mjs';
@@ -155,6 +155,9 @@ const CONFETTI = 40;
 const STEP_CONTROLS = ['button', 'input', 'select', 'textarea'].map((t) => `#ov-body ${t}`).join(','); // the step's controls, for leaveHowTo
 const FOCUS_FRAMES = 10; // focusSoon waits at most this many frames for its target to be shown
 
+/** The longest a level with an In Dash0 step waits for the task status and the account before it runs without the task. */
+export const DASH0_WAIT_MS = 8000;
+
 /**
  * The Alpine component data for the hub. deps: { registry (§2.4), storage (getter for a
  * Storage), document, window?, deck?, globe? ((host, view) → Promise of a globe handle or
@@ -217,7 +220,7 @@ export function createGame(deps) {
   // game-only level without a word about it. `self` is the component, read for the signed-in state when a level opens.
   let self = null;
   const dash0Client = typeof request === 'function' && debug !== true
-    ? createDash0TaskClient({ fetch: request, signedIn: () => self?.signedIn === true })
+    ? createDash0TaskClient({ fetch: request, signedIn: () => self?.signedIn === true, signedOut: () => self?.account?.state === 'signedOut' })
     : null;
   const skippedMemory = new Map(); // level id -> task ids left out this visit, kept when storage cannot hold them
   let dash0Ready = false; // GET /api/dash0-task has answered (or failed): the task client knows whether the server is on
@@ -1042,9 +1045,19 @@ export function createGame(deps) {
       };
       const waiting = dash0Client !== null && level.surfaces?.includes('dash0') === true && (!dash0Ready || this.account.state === 'unknown');
       if (waiting) {
-        Promise.allSettled([dash0Client.load(), accountKnown]).then(() => {
-          if (session === controller) launch();
-        });
+        // At most DASH0_WAIT_MS: a status or account answer that never comes counts as off (and the level runs without its task).
+        const body = doc.getElementById('ov-body');
+        if (body) body.innerHTML = note(escapeHtml(DASH0_COPY.preparing));
+        let launched = false;
+        let timer = null;
+        const go = () => {
+          if (launched || session !== controller) return;
+          launched = true;
+          if (timer !== null) cancel(timer);
+          launch();
+        };
+        timer = later(go, DASH0_WAIT_MS);
+        Promise.allSettled([dash0Client.load(), accountKnown]).then(go);
       } else launch();
       return true;
     },
