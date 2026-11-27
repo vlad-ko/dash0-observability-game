@@ -185,3 +185,13 @@ test('every shipped ingress host validates for a live export, and lookalikes are
   assert.deepEqual(parseEndpoint(`https://${h}:4318`), { ok: false, reason: 'unexpected-port' });
   assert.deepEqual(parseEndpoint(`https://${h}.evil.example:4318`), { ok: false, reason: 'unknown-host' });
 });
+
+import { signalUrl } from '../lib/dash0/ingress.mjs';
+
+test('signalUrl appends /v1/<signal> with a single slash', () => {
+  assert.equal(signalUrl(`https://${HOST}`, 'logs'), `https://${HOST}/v1/logs`);
+  assert.equal(signalUrl(`https://${HOST}/`, 'metrics'), `https://${HOST}/v1/metrics`);
+  assert.equal(signalUrl(`https://${HOST}///`, 'traces'), `https://${HOST}/v1/traces`);
+  assert.throws(() => signalUrl(`https://${HOST}`, 'profiles'), RangeError);
+  assert.throws(() => signalUrl('', 'logs'), TypeError);
+});

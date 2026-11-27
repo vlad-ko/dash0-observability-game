@@ -114,6 +114,10 @@ test('intValue only for safe integers and bigints: an unsafe number throws, a bi
   // A bigint beyond 2**53 (and the int64 edge) is encoded digit for digit.
   assert.deepEqual(enc(2n ** 53n + 1n), [{ intValue: '9007199254740993' }]);
   assert.deepEqual(enc(9223372036854775807n), [{ intValue: '9223372036854775807' }]);
+  assert.deepEqual(enc(-(2n ** 63n)), [{ intValue: '-9223372036854775808' }]);
+  // One past either int64 bound is refused, not sent as a wrong int.
+  assert.throws(() => enc(2n ** 63n), RangeError);
+  assert.throws(() => enc(-(2n ** 63n) - 1n), RangeError);
 });
 
 test('events encode name, time and attributes', () => {
@@ -165,4 +169,219 @@ test('encodeResourceSpans refuses an empty batch, a resource without service.nam
   for (const stamp of [null, 'abc', ['a'], 5]) {
     assert.throws(() => encodeResourceSpans([root], { ...ok, stamp }), TypeError, JSON.stringify(stamp));
   }
+});
+
+// ---- logs and metrics (#509 P4). Proto: opentelemetry-proto v1.11.1, logs/v1/logs.proto and
+// metrics/v1/metrics.proto. Fixtures are deliberately unequal: a stamp and an attribute differ.
+import { encodeResourceLogs, encodeResourceMetrics } from '../lib/otlp/encode.mjs';
+
+const ENV = {
+  resource: { 'service.name': 'dash0-task' },
+  scope: { name: 'task-seeder', version: '2' },
+  stamp: { 'game.attempt.id': 'y' },
+};
+
+test('a log record: the stamp beats a record attribute, times are decimal strings', () => {
+  const body = encodeResourceLogs(
+    [
+      {
+        timeMs: 1762300800123.5,
+        severity: 'warn',
+        body: 'cache miss',
+        attributes: { 'game.attempt.id': 'x', 'cache.size': 7 },
+        traceId: TRACE,
+        spanId: ROOT_ID,
+      },
+    ],
+    ENV,
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(body)), {
+    resourceLogs: [
+      {
+        resource: { attributes: [{ key: 'service.name', value: { stringValue: 'dash0-task' } }] },
+        scopeLogs: [
+          {
+            scope: { name: 'task-seeder', version: '2' },
+            logRecords: [
+              {
+                timeUnixNano: '1762300800123500000',
+                observedTimeUnixNano: '1762300800123500000',
+                severityNumber: 13,
+                severityText: 'WARN',
+                body: { stringValue: 'cache miss' },
+                attributes: [
+                  { key: 'game.attempt.id', value: { stringValue: 'y' } },
+                  { key: 'cache.size', value: { intValue: '7' } },
+                ],
+                traceId: TRACE,
+                spanId: ROOT_ID,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test('log refusals: envelope, ids, timestamps, body, severity, empty list', () => {
+  const ok = { timeMs: 1, severity: 'info', body: 'b' };
+  assert.throws(() => encodeResourceLogs([ok], { ...ENV, resource: {} }), TypeError);
+  assert.throws(() => encodeResourceLogs([ok], { ...ENV, scope: { name: '' } }), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, traceId: 'ABC' }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, spanId: 'zz' }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, timeMs: -1 }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, body: 5 }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, severity: 'loud' }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, severity: 25 }], ENV), RangeError);
+  assert.throws(() => encodeResourceLogs([{ ...ok, attributes: { a: null } }], ENV), TypeError);
+  assert.throws(() => encodeResourceLogs([], ENV), RangeError);
+});
+
+test('metrics: a sum int is asInt "3" with temporality 2, a gauge 3.5 is asDouble 3.5', () => {
+  const body = encodeResourceMetrics(
+    [
+      {
+        name: 'tasks.done',
+        unit: '1',
+        type: 'sum',
+        temporality: 'cumulative',
+        monotonic: true,
+        points: [{ value: 3, timeMs: 2000, startMs: 1000, attributes: { 'game.attempt.id': 'x', k: 'v' } }],
+      },
+      { name: 'queue.depth', type: 'gauge', points: [{ value: 3.5, timeMs: 2000 }] },
+    ],
+    ENV,
+  );
+  const [sum, gauge] = body.resourceMetrics[0].scopeMetrics[0].metrics;
+  assert.deepEqual(sum, {
+    name: 'tasks.done',
+    unit: '1',
+    sum: {
+      dataPoints: [
+        {
+          timeUnixNano: '2000000000',
+          startTimeUnixNano: '1000000000',
+          asInt: '3',
+          attributes: [
+            { key: 'game.attempt.id', value: { stringValue: 'y' } },
+            { key: 'k', value: { stringValue: 'v' } },
+          ],
+        },
+      ],
+      aggregationTemporality: 2,
+      isMonotonic: true,
+    },
+  });
+  assert.deepEqual(gauge, {
+    name: 'queue.depth',
+    gauge: {
+      dataPoints: [
+        { timeUnixNano: '2000000000', asDouble: 3.5, attributes: [{ key: 'game.attempt.id', value: { stringValue: 'y' } }] },
+      ],
+    },
+  });
+  assert.equal(body.resourceMetrics[0].scopeMetrics[0].scope.name, 'task-seeder');
+});
+
+test('metric refusals: sum without temporality or monotonic, unknown type, bad values, envelope', () => {
+  const pt = { value: 1, timeMs: 1 };
+  const m = (o) => [{ name: 'n', type: 'gauge', points: [pt], ...o }];
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', monotonic: true }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', temporality: 'delta' }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'sum', temporality: 0, monotonic: false }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ type: 'histogram' }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: NaN, timeMs: 1 }] }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: '3', timeMs: 1 }] }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ points: [] }), ENV), RangeError);
+  assert.throws(() => encodeResourceMetrics(m({ name: '' }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m(), { ...ENV, resource: {} }), TypeError);
+  assert.throws(() => encodeResourceMetrics([], ENV), RangeError);
+});
+
+const logOf = (o) => encodeResourceLogs([{ timeMs: 1, severity: 'info', body: 'b', ...o }], ENV).resourceLogs[0].scopeLogs[0].logRecords[0];
+
+test('log severity: a number 1..24 passes through without text, 0 is refused, a name is case-insensitive', () => {
+  const n = logOf({ severity: 14 });
+  assert.equal(n.severityNumber, 14);
+  assert.equal(Object.hasOwn(n, 'severityText'), false);
+  assert.equal(logOf({ severity: 1 }).severityNumber, 1);
+  assert.equal(logOf({ severity: 24 }).severityNumber, 24);
+  assert.throws(() => logOf({ severity: 0 }), RangeError);
+  assert.throws(() => logOf({ severity: 1.5 }), RangeError);
+  const e = logOf({ severity: 'ERROR' });
+  assert.equal(e.severityNumber, 17);
+  assert.equal(e.severityText, 'ERROR');
+});
+
+test('log record: an explicit observedMs differs from timeMs, an explicit severityText wins, a non-string is refused', () => {
+  const r = logOf({ timeMs: 2, observedMs: 5, severity: 'warn', severityText: 'Cache' });
+  assert.equal(r.timeUnixNano, '2000000');
+  assert.equal(r.observedTimeUnixNano, '5000000');
+  assert.equal(r.severityNumber, 13);
+  assert.equal(r.severityText, 'Cache');
+  assert.throws(() => logOf({ severityText: 5 }), TypeError);
+  assert.throws(() => logOf({ observedMs: -1 }), RangeError);
+});
+
+test('a delta, non-monotonic sum is temporality 1 and isMonotonic false', () => {
+  const [m] = encodeResourceMetrics(
+    [{ name: 'n', type: 'sum', temporality: 'delta', monotonic: false, points: [{ value: 1, timeMs: 1 }] }],
+    ENV,
+  ).resourceMetrics[0].scopeMetrics[0].metrics;
+  assert.equal(m.sum.aggregationTemporality, 1);
+  assert.equal(m.sum.isMonotonic, false);
+});
+
+test('metric point values: a bigint is exact asInt, a number beyond 2^53 is asDouble, Infinity is refused', () => {
+  const point = (value) =>
+    encodeResourceMetrics([{ name: 'n', type: 'gauge', points: [{ value, timeMs: 1 }] }], ENV)
+      .resourceMetrics[0].scopeMetrics[0].metrics[0].gauge.dataPoints[0];
+  assert.equal(point(9007199254740993n).asInt, '9007199254740993');
+  assert.equal(point(2n ** 63n - 1n).asInt, '9223372036854775807');
+  assert.equal(point(-(2n ** 63n)).asInt, '-9223372036854775808');
+  assert.throws(() => point(2n ** 63n), RangeError);
+  assert.throws(() => point(-(2n ** 63n) - 1n), RangeError);
+  const big = point(1e16);
+  assert.equal(big.asDouble, 1e16);
+  assert.equal(Object.hasOwn(big, 'asInt'), false);
+  assert.equal(point(-0.5).asDouble, -0.5);
+  assert.equal(point(0).asInt, '0');
+  assert.throws(() => point(Infinity), TypeError);
+});
+
+test('metric description and unit must be strings when given', () => {
+  const m = (o) => [{ name: 'n', type: 'gauge', points: [{ value: 1, timeMs: 1 }], ...o }];
+  assert.throws(() => encodeResourceMetrics(m({ description: 5 }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ unit: 1 }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ unit: null }), ENV), TypeError);
+  const out = encodeResourceMetrics(m({ description: 'd', unit: 'ms' }), ENV).resourceMetrics[0].scopeMetrics[0].metrics[0];
+  assert.equal(out.description, 'd');
+  assert.equal(out.unit, 'ms');
+});
+
+test('the whole metrics envelope: resource attributes, scope name and version, description', () => {
+  const body = encodeResourceMetrics(
+    [{ name: 'q', description: 'queue depth', type: 'gauge', points: [{ value: 1.5, timeMs: 1 }] }],
+    ENV,
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(body.resourceMetrics[0])), {
+    resource: { attributes: [{ key: 'service.name', value: { stringValue: 'dash0-task' } }] },
+    scopeMetrics: [
+      {
+        scope: { name: 'task-seeder', version: '2' },
+        metrics: [
+          {
+            name: 'q',
+            description: 'queue depth',
+            gauge: {
+              dataPoints: [
+                { timeUnixNano: '1000000', asDouble: 1.5, attributes: [{ key: 'game.attempt.id', value: { stringValue: 'y' } }] },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
 });
