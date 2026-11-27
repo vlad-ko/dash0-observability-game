@@ -504,3 +504,23 @@ test('sendOtlp end to end reports a logs rejection, and refuses an unknown signa
   );
   assert.equal(f.calls.length, 1);
 });
+
+test('classifyResponse refuses an unknown signal with a RangeError', async () => {
+  await assert.rejects(classifyResponse(res(200, ''), { token: T, signal: 'profiles' }), RangeError);
+});
+
+test('sendTraces reads rejectedSpans: a 200 with rejectedSpans 1 is rejected', async () => {
+  const t = fakeTimers();
+  const f = fakeFetch(() => res(200, JSON.stringify({ partialSuccess: { rejectedSpans: 1 } })));
+  const out = await sendTraces({ fetch: f.fetch, tracesUrl: URL_, token: T, body: BODY, ...t });
+  assert.deepEqual(out, { kind: 'rejected', status: 200, auth: false });
+});
+
+test('sendTraces with no argument returns a rejected promise and does not throw synchronously', async () => {
+  let p;
+  assert.doesNotThrow(() => {
+    p = sendTraces();
+  });
+  assert.ok(p instanceof Promise);
+  await assert.rejects(p, TypeError);
+});

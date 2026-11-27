@@ -289,9 +289,91 @@ test('metric refusals: sum without temporality or monotonic, unknown type, bad v
   assert.throws(() => encodeResourceMetrics(m({ type: 'histogram' }), ENV), RangeError);
   assert.throws(() => encodeResourceMetrics(m({ points: [{ value: NaN, timeMs: 1 }] }), ENV), TypeError);
   assert.throws(() => encodeResourceMetrics(m({ points: [{ value: '3', timeMs: 1 }] }), ENV), TypeError);
-  assert.throws(() => encodeResourceMetrics(m({ points: [{ value: 2 ** 60, timeMs: 1 }] }), ENV), RangeError);
   assert.throws(() => encodeResourceMetrics(m({ points: [] }), ENV), RangeError);
   assert.throws(() => encodeResourceMetrics(m({ name: '' }), ENV), TypeError);
   assert.throws(() => encodeResourceMetrics(m(), { ...ENV, resource: {} }), TypeError);
   assert.throws(() => encodeResourceMetrics([], ENV), RangeError);
+});
+
+const logOf = (o) => encodeResourceLogs([{ timeMs: 1, severity: 'info', body: 'b', ...o }], ENV).resourceLogs[0].scopeLogs[0].logRecords[0];
+
+test('log severity: a number 1..24 passes through without text, 0 is refused, a name is case-insensitive', () => {
+  const n = logOf({ severity: 14 });
+  assert.equal(n.severityNumber, 14);
+  assert.equal(Object.hasOwn(n, 'severityText'), false);
+  assert.equal(logOf({ severity: 1 }).severityNumber, 1);
+  assert.equal(logOf({ severity: 24 }).severityNumber, 24);
+  assert.throws(() => logOf({ severity: 0 }), RangeError);
+  assert.throws(() => logOf({ severity: 1.5 }), RangeError);
+  const e = logOf({ severity: 'ERROR' });
+  assert.equal(e.severityNumber, 17);
+  assert.equal(e.severityText, 'ERROR');
+});
+
+test('log record: an explicit observedMs differs from timeMs, an explicit severityText wins, a non-string is refused', () => {
+  const r = logOf({ timeMs: 2, observedMs: 5, severity: 'warn', severityText: 'Cache' });
+  assert.equal(r.timeUnixNano, '2000000');
+  assert.equal(r.observedTimeUnixNano, '5000000');
+  assert.equal(r.severityNumber, 13);
+  assert.equal(r.severityText, 'Cache');
+  assert.throws(() => logOf({ severityText: 5 }), TypeError);
+  assert.throws(() => logOf({ observedMs: -1 }), RangeError);
+});
+
+test('a delta, non-monotonic sum is temporality 1 and isMonotonic false', () => {
+  const [m] = encodeResourceMetrics(
+    [{ name: 'n', type: 'sum', temporality: 'delta', monotonic: false, points: [{ value: 1, timeMs: 1 }] }],
+    ENV,
+  ).resourceMetrics[0].scopeMetrics[0].metrics;
+  assert.equal(m.sum.aggregationTemporality, 1);
+  assert.equal(m.sum.isMonotonic, false);
+});
+
+test('metric point values: a bigint is exact asInt, a number beyond 2^53 is asDouble, Infinity is refused', () => {
+  const point = (value) =>
+    encodeResourceMetrics([{ name: 'n', type: 'gauge', points: [{ value, timeMs: 1 }] }], ENV)
+      .resourceMetrics[0].scopeMetrics[0].metrics[0].gauge.dataPoints[0];
+  assert.equal(point(9007199254740993n).asInt, '9007199254740993');
+  const big = point(1e16);
+  assert.equal(big.asDouble, 1e16);
+  assert.equal(Object.hasOwn(big, 'asInt'), false);
+  assert.equal(point(-0.5).asDouble, -0.5);
+  assert.equal(point(0).asInt, '0');
+  assert.throws(() => point(Infinity), TypeError);
+});
+
+test('metric description and unit must be strings when given', () => {
+  const m = (o) => [{ name: 'n', type: 'gauge', points: [{ value: 1, timeMs: 1 }], ...o }];
+  assert.throws(() => encodeResourceMetrics(m({ description: 5 }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ unit: 1 }), ENV), TypeError);
+  assert.throws(() => encodeResourceMetrics(m({ unit: null }), ENV), TypeError);
+  const out = encodeResourceMetrics(m({ description: 'd', unit: 'ms' }), ENV).resourceMetrics[0].scopeMetrics[0].metrics[0];
+  assert.equal(out.description, 'd');
+  assert.equal(out.unit, 'ms');
+});
+
+test('the whole metrics envelope: resource attributes, scope name and version, description', () => {
+  const body = encodeResourceMetrics(
+    [{ name: 'q', description: 'queue depth', type: 'gauge', points: [{ value: 1.5, timeMs: 1 }] }],
+    ENV,
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(body.resourceMetrics[0])), {
+    resource: { attributes: [{ key: 'service.name', value: { stringValue: 'dash0-task' } }] },
+    scopeMetrics: [
+      {
+        scope: { name: 'task-seeder', version: '2' },
+        metrics: [
+          {
+            name: 'q',
+            description: 'queue depth',
+            gauge: {
+              dataPoints: [
+                { timeUnixNano: '1000000', asDouble: 1.5, attributes: [{ key: 'game.attempt.id', value: { stringValue: 'y' } }] },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
 });
