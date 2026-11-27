@@ -303,10 +303,34 @@ test('a Start again during a send does not free Send, and a second Send is dropp
   await settle();
   assert.equal(count(r, 'connect'), 1);
   assert.equal(q('#d1-send-go').disabled, true);
+  assert.equal(q('#d1-token').value, '', 'the early return still scrubs the token field');
+  assert.match(q('#d1-held').textContent, /still held/, 'and the held note shows');
   gate.done({ kind: 'accepted' });
   await settle();
   assert.equal(q('#d1-send-go').disabled, false, 'the old send answered: Send is free again');
   assert.equal(count(r, 'connect'), 1);
+});
+
+test('a send answered while no attempt is open leaves Send off, and Start again frees it', async () => {
+  const stale409 = hold();
+  const gate = hold();
+  const r = rig({ api: { starts: [started(A), started(B)], checks: [stale409.promise] }, tele: { outcomes: [{ kind: 'accepted' }, gate.promise] } });
+  toTask();
+  await start();
+  await send();
+  click('#d1-check'); // the 409 is held
+  type();
+  click('#d1-send-go');
+  await settle();
+  stale409.done(stale);
+  await settle();
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(count(r, 'sendTest'), 2);
+  assert.equal(q('#d1-send-go').disabled, true, 'no attempt is open: Send stays off');
+  click('#d1-retry');
+  await settle();
+  assert.equal(q('#d1-send-go').disabled, false);
 });
 
 test('while a second Send is in flight Check is off, because the replaced session is not connected', async () => {
