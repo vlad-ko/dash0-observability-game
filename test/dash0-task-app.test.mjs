@@ -39,7 +39,7 @@ const PLAY = {
   finish: 'You did it, and the level is done.',
   steps: [
     gameStep('s1'),
-    { intro: 'Now find the slowest route in Dash0.', dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation' }] } },
+    { intro: 'Now find the slowest route in Dash0.', dash0: { id: 'd1', task: 'its-us-find', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation' }] } },
   ],
 };
 const seen = []; // every level's ctx, in the order the levels ran (a test reaches a run's own callbacks through it)
@@ -102,7 +102,7 @@ test('available: the server on and a signed-in player run the In Dash0 step; the
   click({ type: '#d1-f-operation', text: '412' });
   click('#d1-check-operation');
   await settle();
-  assert.deepEqual(dash0Requests(r).map((x) => x.body ?? null), [null, { v: 1, op: 'start', taskId: 'p95-task' }, { v: 1, op: 'check', taskId: 'p95-task', attemptId: 'a1', answer: { question: 'operation', value: '412' } }]);
+  assert.deepEqual(dash0Requests(r).map((x) => x.body ?? null), [null, { v: 1, op: 'start', taskId: 'its-us-find' }, { v: 1, op: 'check', taskId: 'its-us-find', attemptId: 'a1', answer: { question: 'operation', value: '412' } }]);
   click('#dt-finish');
   assert.equal(r.game.rewardNotice, '', 'nothing was left out');
   assert.equal(r.game.taskWaiting('with-task'), false);
@@ -124,7 +124,7 @@ for (const [name, opts, notice] of [
     click('#dt-finish');
     await settle();
     assert.equal(r.game.rewardNotice, notice);
-    assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['p95-task'] } }, 'the skipped task id is saved');
+    assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['its-us-find'] } }, 'the skipped task id is saved');
     assert.equal(r.game.taskWaiting('with-task'), true);
     assert.equal(r.game.taskWaiting('game-only'), false);
     assert.match(r.game.levelLabel('with-task'), new RegExp(COPY.waitingLabel));
@@ -192,7 +192,7 @@ test('the server going down mid-step: "Finish without the In Dash0 task" records
   click('#dt-finish');
   await settle();
   assert.equal(r.game.rewardNotice, COPY.notices.off);
-  assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['p95-task'] } });
+  assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['its-us-find'] } });
   assert.equal(r.game.taskWaiting('with-task'), true);
 });
 
@@ -246,7 +246,7 @@ for (const [name, opts, cause] of [['off', { on: false }, 'off'], ['signed-out',
     click('#dt-finish');
     await settle();
     assert.equal(r.game.rewardNotice, COPY.notices[cause]);
-    assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['p95-task'] } });
+    assert.deepEqual(JSON.parse(r.store.data.get(SKIPPED_KEY)), { v: 1, levels: { 'with-task': ['its-us-find'] } });
   });
 }
 
@@ -290,14 +290,14 @@ test('a stale run cannot skip or pass for the level that is open now', async () 
   r.game.closeOverlay();
   r.game.openLevel('game-only'); // run B
   const before = [r.game.dash0Rev, r.store.data.get(SKIPPED_KEY) ?? null, r.store.sets.length, r.game.taskWaiting('with-task'), r.game.rewardNotice];
-  stale.skip(['p95-task'], 'off');
-  stale.passed('p95-task');
+  stale.skip(['its-us-find'], 'off');
+  stale.passed('its-us-find');
   assert.deepEqual([r.game.dash0Rev, r.store.data.get(SKIPPED_KEY) ?? null, r.store.sets.length, r.game.taskWaiting('with-task'), r.game.rewardNotice], before, 'run B\'s state is unchanged');
   assert.equal(r.game.taskWaiting('with-task'), false);
   // the live run's own callbacks do write
   r.game.closeOverlay();
   r.game.openLevel('with-task');
-  seen.at(-1).dash0Task.skip(['p95-task'], 'off');
+  seen.at(-1).dash0Task.skip(['its-us-find'], 'off');
   assert.equal(r.game.taskWaiting('with-task'), true, 'the guard is about the run, not the callback');
 });
 
@@ -333,8 +333,10 @@ test('a level never waits for the task status or the account for ever: after DAS
   globalThis.window.HTMLElement.prototype.focus = function focus() { focused = this; };
   r.game.openLevel('with-task');
   assert.equal(q('[data-line="user"]') === null, true, 'still waiting');
-  assert.match(q('#ov-body').textContent, new RegExp(COPY.preparing));
   assert.equal(q('#ov-wait').getAttribute('role'), 'status', 'the wait is a live region, so it is announced');
+  assert.equal(q('#ov-wait').textContent.trim(), '', 'the region goes in empty: text that arrives with a live region is not announced');
+  timers.fire(0); // the next tick fills it
+  assert.match(q('#ov-body').textContent, new RegExp(COPY.preparing));
   assert.equal(focused?.id, 'ov-back', 'focus is on Back, not left on the page');
   assert.ok(timers.list.some((t) => t.ms === DASH0_WAIT_MS), 'a timer bounds the wait');
   timers.fire(DASH0_WAIT_MS);

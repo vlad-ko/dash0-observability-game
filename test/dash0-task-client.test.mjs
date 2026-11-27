@@ -178,3 +178,12 @@ test('the client needs fetch and signedIn', () => {
   assert.throws(() => createDash0TaskClient({ fetch: async () => {} }), /signedIn/);
   assert.equal(createDash0TaskClient({ fetch: async () => {}, signedIn: () => { throw new Error('boom'); } }).available(), false);
 });
+
+test('a readback check sends no answer, so a 400 naming the answer field is a contract mismatch: unavailable (an outage), never refused', async () => {
+  for (const [status, body] of [[400, { ok: false, error: 'bad-request', field: 'answer' }], [413, { error: 'too-large' }]]) {
+    const r = rig({ post: json(status, body) });
+    assert.deepEqual(await r.client.check('connect-test-span', 'a1b2'), { charge: false, outcome: 'inconclusive', reason: 'unavailable', retryAfterS: 60 }, `${status} on a readback check`);
+    const seeded = rig({ post: json(status, body) });
+    assert.equal((await seeded.client.check('its-us-find', 'a1b2', { question: 'operation', value: 'x' })).reason, 'refused', `${status} on a seeded check stays refused`);
+  }
+});

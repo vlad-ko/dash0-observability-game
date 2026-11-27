@@ -1050,15 +1050,21 @@ export function createGame(deps) {
         // A live region (the kit's feedback, role=status) so the wait is announced, and focus on Back so it is not left on the page.
         if (body) {
           body.innerHTML = feedback({ id: 'ov-wait' });
-          setFeedback(body.querySelector('#ov-wait'), 'neutral', escapeHtml(DASH0_COPY.preparing), { scroll: false });
           this.focusSoon('#ov-back');
         }
         let launched = false;
         let timer = null;
+        // The region goes in empty and is filled on the next tick: a live region announces a change, not one that arrives with its text.
+        let fill = later(() => {
+          fill = null;
+          const wait = launched || session !== controller ? null : doc.getElementById('ov-wait');
+          if (wait) setFeedback(wait, 'neutral', escapeHtml(DASH0_COPY.preparing), { scroll: false });
+        }, 0);
         const go = () => {
           if (launched || session !== controller) return;
           launched = true;
           if (timer !== null) cancel(timer);
+          if (fill !== null) cancel(fill);
           launch();
         };
         timer = later(go, DASH0_WAIT_MS);

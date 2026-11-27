@@ -25,6 +25,7 @@ export default {
   "tooLong": "That answer is too long: paste just the value.",
   "preparing": "Getting your In Dash0 task ready.",
   "offer": "Dash0 is not answering. You can try again, or finish the level without this task.",
+  "offerNoData": "Your data has not shown up in Dash0 yet. You can keep trying, or finish the level without this task.",
   "reasons": {
     "off": "Checking in Dash0 is switched off right now.",
     "signed-out": "Sign in with your dash0.com account to try again, or finish the level without this task.",

@@ -26,7 +26,7 @@ const choiceStep = (id) => ({
   question: 'Pick one.',
   choice: { id, choices: [{ key: 'a', label: 'A metric', why: 'It aggregates.' }, { key: 'b', label: 'A trace', right: true, why: 'Spans carry timing.' }] },
 });
-const dash0Spec = (id = 'd1', extra = {}) => ({ id, task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read it off the chart.' }], ...extra });
+const dash0Spec = (id = 'd1', extra = {}) => ({ id, task: 'its-us-find', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read it off the chart.' }], ...extra });
 const dash0Step = (id = 'd1', extra) => ({ intro: 'Now find the slowest route in Dash0.', dash0: dash0Spec(id, extra) });
 const playOf = (...steps) => ({ prefix: 'sf', finish: 'You did it, and the level is done.', steps });
 const FULL = () => playOf(choiceStep('c1'), dash0Step('d1'), choiceStep('c2'));
@@ -139,7 +139,7 @@ test('a step with several questions has a Check for each, one question per call,
   await settle();
   assert.equal(q('#sf-finish').disabled, false, 'every question passed');
   assert.deepEqual(api.calls.filter((c) => c[0] === 'check').map((c) => c[3]), [{ question: 'operation', value: 'POST /pay' }, { question: 'faultCode', value: '500' }, { question: 'faultCode', value: '500' }]);
-  assert.deepEqual(api.passes, ['p95-task'], 'passed once, at the end');
+  assert.deepEqual(api.passes, ['its-us-find'], 'passed once, at the end');
 });
 
 test('Check sends the answer fields to the client; the answer is read from the fields, trimmed', async () => {
@@ -148,7 +148,7 @@ test('Check sends the answer fields to the client; the answer is read from the f
   toTask();
   await start();
   await check('  412 ');
-  assert.deepEqual(api.calls, [['start', 'p95-task'], ['check', 'p95-task', 'a1', { question: 'operation', value: '412' }]]);
+  assert.deepEqual(api.calls, [['start', 'its-us-find'], ['check', 'its-us-find', 'a1', { question: 'operation', value: '412' }]]);
 });
 
 test('a charged fail calls mistake once; an uncharged fail and an inconclusive result call it never and say why and when to retry; pass enables Next', async () => {
@@ -184,7 +184,7 @@ test('a charged fail calls mistake once; an uncharged fail and an inconclusive r
   assert.equal(api.calls.filter((c) => c[0] === 'check').length, 4, 'Retry checks again');
   assert.equal(run.mistakes(), 1);
   assert.equal(q('#sf-next').disabled, false, 'pass enables Next');
-  assert.deepEqual(api.passes, ['p95-task']);
+  assert.deepEqual(api.passes, ['its-us-find']);
   assert.equal(q('#d1-check-operation').disabled, true, 'nothing more to check');
   assert.equal(q('#d1-feedback').getAttribute('data-tone'), 'success');
 });
@@ -243,7 +243,7 @@ test('off or signed out: no task call at all, the step is left out, the cause an
     assert.equal(q('#d1-start') === null, true, `${reason}: the middle step is gone`);
     assert.ok(q('[data-pick="b"]'), `${reason}: the next screen is the game step`);
     assert.deepEqual(api.calls, [], `${reason}: nothing asked`);
-    assert.deepEqual(api.skipped, [[['p95-task'], reason]], reason);
+    assert.deepEqual(api.skipped, [[['its-us-find'], reason]], reason);
   }
 });
 
@@ -258,7 +258,7 @@ test('with the real client, a signed-out player sends no POST and the step is sk
   open(FULL(), { api: { ...client, skip: (ids, cause) => skipped.push([ids, cause]) } });
   assert.equal(q('#d1-start') === null, true);
   assert.deepEqual(requests, ['GET'], 'only the status read');
-  assert.deepEqual(skipped, [[['p95-task'], 'signed-out']]);
+  assert.deepEqual(skipped, [[['its-us-find'], 'signed-out']]);
 });
 
 test('with the real client, a Start that gets 400 {field: v} three times is an outage: the skip is offered; a seeded Check with 400 {field: answer} is refused', async () => {
@@ -273,7 +273,7 @@ test('with the real client, a Start that gets 400 {field: v} three times is an o
   for (let i = 0; i < DOWN_AFTER - 1; i++) { click('#d1-retry'); await settle(); }
   assert.ok(q('#d1-skip'), 'three contract 400s: finish without the task');
   click('#d1-skip');
-  assert.deepEqual(skipped, [[['p95-task'], 'off']]);
+  assert.deepEqual(skipped, [[['its-us-find'], 'off']]);
   const okStart = { v: 1, ok: true, attemptId: 'a1', link: GOOD_LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 };
   const refuse = make((b) => (b.op === 'start' ? reply(200, okStart) : reply(400, { ok: false, error: 'bad-request', field: 'answer' })));
   await refuse.load();
@@ -375,7 +375,7 @@ test('validatePlay: a finish text that refers to an In Dash0 step is refused', (
   assert.deepEqual(ok.widgets, ['choice'], 'the In Dash0 step adds no widget, mechanic or help');
   for (const finish of [
     'You found it In Dash0 and the level is done.',
-    'You read the p95-task result and the level is done.',
+    'You read the its-us-find result and the level is done.',
     'Your d1 answer was right, so the level is done.',
   ]) {
     const got = validatePlay({ ...FULL(), finish });
@@ -391,17 +391,17 @@ test('validatePlay: a finish text that refers to an In Dash0 step is refused', (
 test('the In Dash0 spec: id, task, grader and, for a seeded task, answers with a labelled field each', () => {
   assert.deepEqual(validateDash0Spec(dash0Spec()), []);
   assert.deepEqual(validateDash0Spec(dash0Spec('d1', { answers: ['faultCode', 'traceId'], fields: [{ key: 'faultCode', label: 'F' }, { key: 'traceId', label: 'T' }] })), [], 'question ids are plain words, camelCase allowed');
-  assert.deepEqual(validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'readback' }), [], 'a readback task has no answers and no fields');
-  const readback = (extra) => validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'readback', ...extra });
+  assert.deepEqual(validateDash0Spec({ id: 'd1', task: 'connect-test-span', grader: 'readback' }), [], 'a readback task has no answers and no fields');
+  const readback = (extra) => validateDash0Spec({ id: 'd1', task: 'connect-test-span', grader: 'readback', ...extra });
   assert.ok(readback({ answers: ['name'] }).some((p) => /readback task has no answers/.test(p)));
   assert.ok(readback({ fields: [{ key: 'name', label: 'N' }] }).some((p) => /readback task has no fields/.test(p)));
   assert.ok(readback({ answers: [], fields: [] }).length === 2, 'even empty lists are refused');
-  assert.ok(validateDash0Spec({ id: 'd1', task: 'p95-task', grader: 'seeded' }).some((p) => /non-empty/.test(p)), 'a seeded task needs its answers');
+  assert.ok(validateDash0Spec({ id: 'd1', task: 'its-us-find', grader: 'seeded' }).some((p) => /non-empty/.test(p)), 'a seeded task needs its answers');
   // the server's question ids: letters only, 1 to 40 of them (api/dash0-task.mjs)
   for (const key of ['p95', 'fault_code', 'fault-code', '', 'a'.repeat(41), '9a']) {
     assert.ok(validateDash0Spec(dash0Spec('d1', { answers: [key], fields: [{ key, label: 'L' }] })).length > 0, `"${key}" is not a question id`);
   }
-  assert.deepEqual(validateDash0Spec(dash0Spec('d1', { answers: ['a'.repeat(40)], fields: [{ key: 'a'.repeat(40), label: 'L' }] })), [], '40 letters is the longest');
+  assert.deepEqual(validateDash0Spec(dash0Spec('d1', { answers: ['a'.repeat(40)], fields: [{ key: 'a'.repeat(40), label: 'L' }] })).filter((p) => /question ids/.test(p)), [], '40 letters is the longest (the task still has to know the question)');
   const bad = (extra, re) => assert.ok(validateDash0Spec(dash0Spec('d1', extra)).some((p) => re.test(p)), JSON.stringify(extra));
   bad({ grader: 'magic' }, /grader/);
   bad({ task: 'Not Kebab' }, /task/);
@@ -444,7 +444,7 @@ test('findStep finds an In Dash0 step by its widget id, with the real type', () 
   const level = { play: FULL() };
   const got = findStep(level, 'd1');
   assert.equal(got.type, STEP_TYPES.dash0);
-  assert.equal(got.spec.task, 'p95-task');
+  assert.equal(got.spec.task, 'its-us-find');
   assert.equal(findStep(level, 'c2').type, STEP_TYPES.choice);
   assert.equal(findStep(level, 'nope'), null);
 });
@@ -483,7 +483,7 @@ test('a 503 or a 401 on Check offers "Finish without the In Dash0 task" at once;
     assert.equal(q('#d1-skip').textContent, 'Finish without the In Dash0 task');
     assert.equal(q('#sf-next').disabled, true, 'not yet skipped');
     click('#d1-skip');
-    assert.deepEqual(api.skipped, [[['p95-task'], cause]], cause);
+    assert.deepEqual(api.skipped, [[['its-us-find'], cause]], cause);
     assert.equal(q('#sf-next').disabled, false, `${cause}: never stuck`);
     assert.equal(run.mistakes(), 0, 'no star lost');
     assert.equal(feedback(), COPY.notices[cause], 'the player is told what to do later');
@@ -499,7 +499,7 @@ test('Start itself can find the server down: the same offer', async () => {
   assert.ok(q('#d1-skip'));
   assert.equal(q('#d1-info').textContent, '', 'no task was started');
   click('#d1-skip');
-  assert.deepEqual(api.skipped, [[['p95-task'], 'off']]);
+  assert.deepEqual(api.skipped, [[['its-us-find'], 'off']]);
   assert.equal(q('#sf-next').disabled, false);
 });
 
@@ -545,7 +545,7 @@ test('Retry after an inconclusive result keeps working, and a later pass never n
 
 test('after one skip, a later In Dash0 step of the same level is skipped at once, without asking the server again', async () => {
   const api = fakeApi({ checks: [down('off')] });
-  const run = open(playOf(choiceStep('c1'), dash0Step('d1'), dash0Step('d2', { task: 'second-task' }), choiceStep('c2')), { api });
+  const run = open(playOf(choiceStep('c1'), dash0Step('d1'), readbackStep('d2'), choiceStep('c2')), { api });
   toTask();
   await start();
   await check();
@@ -554,7 +554,7 @@ test('after one skip, a later In Dash0 step of the same level is skipped at once
   assert.ok(q('#d2-start'), 'the second In Dash0 step is on screen');
   assert.equal(q('#sf-next').disabled, false, 'already open');
   assert.equal(q('#d2-feedback').textContent, COPY.notices.off);
-  assert.deepEqual(api.skipped, [[['p95-task'], 'off'], [['second-task'], 'off']]);
+  assert.deepEqual(api.skipped, [[['its-us-find'], 'off'], [['connect-test-span'], 'off']]);
   assert.deepEqual(api.calls.map((c) => c[0]), ['start', 'check'], 'no second start');
   assert.equal(run.mistakes(), 0);
   click('#sf-next');
@@ -562,11 +562,11 @@ test('after one skip, a later In Dash0 step of the same level is skipped at once
 });
 
 test('content binds an In Dash0 step: text and field labels from the content, task, grader and answer keys from the logic', () => {
-  const logic = { id: 'lv', play: { prefix: 'p', steps: [{ dash0: { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'] } }] } };
+  const logic = { id: 'lv', play: { prefix: 'p', steps: [{ dash0: { id: 'd1', task: 'its-us-find', grader: 'seeded', answers: ['operation'] } }] } };
   const text = { id: 'lv', play: { finish: 'You did the thing well.', steps: [{ intro: 'Find it.', question: 'How slow?', dash0: { id: 'd1', fields: [{ key: 'operation', label: 'The operation', hint: 'Read the chart.' }] } }] } };
   const got = bindText(text, logic);
   assert.deepEqual(got.errors, []);
-  assert.deepEqual(got.value.play.steps[0].dash0, { id: 'd1', task: 'p95-task', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read the chart.' }] });
+  assert.deepEqual(got.value.play.steps[0].dash0, { id: 'd1', task: 'its-us-find', grader: 'seeded', answers: ['operation'], fields: [{ key: 'operation', label: 'The operation', hint: 'Read the chart.' }] });
   assert.deepEqual(validateDash0Spec(got.value.play.steps[0].dash0), []);
   // the logic-only keys may not be written in the content
   const bad = bindText({ ...text, play: { ...text.play, steps: [{ ...text.play.steps[0], dash0: { id: 'd1', task: 'x-task', fields: [] } }] } }, logic);
@@ -597,7 +597,7 @@ test('the kit link opens a new tab safely, escapes its address, and takes only h
 
 // ---- readback: no answer, no field ----
 
-const readbackStep = (id = 'd1') => ({ intro: 'Build the asset in Dash0.', dash0: { id, task: 'asset-task', grader: 'readback' } });
+const readbackStep = (id = 'd1') => ({ intro: 'Build the asset in Dash0.', dash0: { id, task: 'connect-test-span', grader: 'readback' } });
 
 test('a readback task draws one Check with no field and sends no answer; a wrong asset is a charged fail with its own words', async () => {
   const api = fakeApi({ starts: [{ ...STARTED, name: 'oncall-k3j9x2m4q1-board-a1b2' }], checks: [{ outcome: 'fail', charge: true }, PASS] });
@@ -611,13 +611,13 @@ test('a readback task draws one Check with no field and sends no answer; a wrong
   assert.equal(q('#d1-check').disabled, false);
   click('#d1-check');
   await settle();
-  assert.deepEqual(api.calls[1], ['check', 'asset-task', 'a1'], 'no answer argument at all');
+  assert.deepEqual(api.calls[1], ['check', 'connect-test-span', 'a1'], 'no answer argument at all');
   assert.equal(run.mistakes(), 1);
   assert.equal(feedback(), COPY.failedAsset);
   click('#d1-check');
   await settle();
   assert.equal(q('#sf-finish').disabled, false);
-  assert.deepEqual(api.passes, ['asset-task']);
+  assert.deepEqual(api.passes, ['connect-test-span']);
 });
 
 // ---- a safe restart (a 409 or a 410) ----
@@ -655,7 +655,7 @@ test('Start again after a 409 resets every field: the question that had passed i
   await settle();
   assert.equal(q('#sf-finish').disabled, false, 'every question passed on the new attempt');
   assert.deepEqual(api.calls.filter((c) => c[0] === 'check').map((c) => c[2]), ['a1', 'a1', 'a2', 'a2']);
-  assert.deepEqual(api.passes, ['p95-task']);
+  assert.deepEqual(api.passes, ['its-us-find']);
   assert.equal(run.mistakes(), 0);
 });
 
@@ -691,23 +691,42 @@ test('cooldown, answer, settling, rate-limited and not-sent never count: any num
   }
 });
 
-test('not-visible counts for a seeded task (the data never showed): the third offers the skip as off; for a readback task it never counts', async () => {
+test('not-visible counts for a seeded task only 3 x readyAfterS after its Start (a slow Dash0 is not a missing one): the third then offers the skip, with its own line', async () => {
   const api = fakeApi({ checks: [inconclusive('not-visible')] });
-  const run = open(FULL(), { api });
+  const clock = { t: 1000 };
+  const run = open(FULL(), { api, clock });
   toTask();
-  await start();
-  await check();
-  await check();
-  assert.equal(q('#d1-skip') === null, true, 'two are not enough');
-  await check();
-  assert.ok(q('#d1-skip'), 'the third');
+  await start(); // the attempt starts at t = 1 s
+  const checkAt = async (s) => { clock.t = 1000 + s * 1000; await check(); };
+  for (const s of [31, 37, 43]) await checkAt(s);
+  assert.equal(q('#d1-skip') === null, true, 'three not-visible inside 90 s are a slow Dash0: nothing is offered');
+  // the early ones neither count nor reset: after 90 s it takes DOWN_AFTER more
+  await checkAt(91);
+  await checkAt(97);
+  assert.equal(q('#d1-skip') === null, true, 'two after 90 s are not enough');
+  await checkAt(103);
+  assert.ok(q('#d1-skip'), 'the third after 90 s');
+  assert.ok(feedback().includes(COPY.offerNoData), 'it says the data has not shown up');
+  assert.doesNotMatch(feedback(), /not answering/, 'Dash0 did answer: it found no data');
   click('#d1-skip');
-  assert.deepEqual(api.skipped, [[['p95-task'], 'off']]);
+  assert.deepEqual(api.skipped, [[['its-us-find'], 'off']]);
   assert.equal(run.mistakes(), 0);
-  const rb = fakeApi({ checks: [inconclusive('not-visible')] });
-  open(playOf(choiceStep('c1'), readbackStep()), { api: rb });
+  // an outage in the count keeps the outage line
+  const api2 = fakeApi({ checks: [inconclusive('not-visible'), inconclusive('upstream'), inconclusive('network')] });
+  const clock2 = { t: 0 };
+  open(FULL(), { api: api2, clock: clock2 });
   toTask();
   await start();
+  clock2.t = 100_000;
+  for (let i = 0; i < 3; i++) await check();
+  assert.ok(q('#d1-skip'));
+  assert.ok(feedback().includes(COPY.offer));
+  const rb = fakeApi({ checks: [inconclusive('not-visible')] });
+  const rbClock = { t: 0 };
+  open(playOf(choiceStep('c1'), readbackStep()), { api: rb, clock: rbClock });
+  toTask();
+  await start();
+  rbClock.t = 1e9; // long after the data should have shown
   for (let i = 0; i < DOWN_AFTER + 2; i++) { click('#d1-check'); await settle(); }
   assert.equal(q('#d1-skip') === null, true, 'a readback task never gives up on not-visible');
   assert.deepEqual(rb.skipped, []);
@@ -725,7 +744,7 @@ test('network, unavailable, upstream and ingest do count: the third offers the s
     await check();
     assert.ok(q('#d1-skip'), `${reason}: the third`);
     click('#d1-skip');
-    assert.deepEqual(api.skipped, [[['p95-task'], 'off']], reason);
+    assert.deepEqual(api.skipped, [[['its-us-find'], 'off']], reason);
   }
 });
 
@@ -746,7 +765,7 @@ test('paced results between outages neither reset nor add to the count; a 401 ke
   assert.equal(feedback(), COPY.reasons['signed-out'], 'sign in, or finish without the task; never "not answering"');
   assert.doesNotMatch(feedback(), /not answering/);
   click('#d1-skip');
-  assert.deepEqual(api2.skipped, [[['p95-task'], 'signed-out']]);
+  assert.deepEqual(api2.skipped, [[['its-us-find'], 'signed-out']]);
 });
 
 test(`${DOWN_AFTER} refused answers (the server's 400 or 413) are the player's input, not an outage: no skip offer, no charge, and the words say so`, async () => {
@@ -870,4 +889,19 @@ test('a 409 does not steal focus when the Check did not have it', async () => {
   click('#d1-check-operation');
   await settle();
   assert.equal(globalThis.document.activeElement.id, 'd1-f-operation');
+});
+
+// ---- tasks pinned to their grader (#515 R9) ----
+
+test('validation refuses a task the server does not know, and a grader or a question that does not match the task', () => {
+  const unknown = validateDash0Spec(dash0Spec('d1', { task: 'made-up-task' }));
+  assert.ok(unknown.some((p) => /not a task the server knows/.test(p)), unknown.join('|'));
+  assert.ok(validatePlay(playOf(choiceStep('c1'), dash0Step('d1', { task: 'made-up-task' }))).errors.length > 0, 'a level cannot ship it');
+  const seededAsReadback = validateDash0Spec({ id: 'd1', task: 'its-us-find', grader: 'readback' });
+  assert.ok(seededAsReadback.some((p) => /graded as seeded, not readback/.test(p)), seededAsReadback.join('|'));
+  const readbackAsSeeded = validateDash0Spec(dash0Spec('d1', { task: 'connect-test-span' }));
+  assert.ok(readbackAsSeeded.some((p) => /graded as readback, not seeded/.test(p)), readbackAsSeeded.join('|'));
+  const badQuestion = validateDash0Spec(dash0Spec('d1', { answers: ['whatever'], fields: [{ key: 'whatever', label: 'W' }] }));
+  assert.ok(badQuestion.some((p) => /not a question of task/.test(p)), badQuestion.join('|'));
+  assert.deepEqual(validateDash0Spec(dash0Spec('d1')), []);
 });
