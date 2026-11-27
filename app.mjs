@@ -33,7 +33,7 @@ import { changeSkipped, readSkipped, SKIPPED_KEY } from './lib/dash0-task/prefs.
 import DASH0_COPY from './content/core/ui/dash0-task.mjs';
 import { ACCOUNT_UNAVAILABLE, accountHtml, boardHtml, nudgeText, starsText } from './lib/account/board-view.mjs';
 import { NICK_RE } from './lib/account/nickname.mjs';
-import { note, setFeedback } from './lib/ui/index.mjs';
+import { feedback, setFeedback } from './lib/ui/index.mjs';
 import { escapeHtml } from './lib/lesson-kit.mjs';
 import { trapTab } from './lib/modal-focus.mjs';
 import { focusFirst } from './lib/widgets/focus.mjs';
@@ -1047,7 +1047,12 @@ export function createGame(deps) {
       if (waiting) {
         // At most DASH0_WAIT_MS: a status or account answer that never comes counts as off (and the level runs without its task).
         const body = doc.getElementById('ov-body');
-        if (body) body.innerHTML = note(escapeHtml(DASH0_COPY.preparing));
+        // A live region (the kit's feedback, role=status) so the wait is announced, and focus on Back so it is not left on the page.
+        if (body) {
+          body.innerHTML = feedback({ id: 'ov-wait' });
+          setFeedback(body.querySelector('#ov-wait'), 'neutral', escapeHtml(DASH0_COPY.preparing), { scroll: false });
+          this.focusSoon('#ov-back');
+        }
         let launched = false;
         let timer = null;
         const go = () => {

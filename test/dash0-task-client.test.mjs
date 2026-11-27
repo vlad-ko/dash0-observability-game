@@ -96,7 +96,9 @@ test('start: ok, with the asset name only when the server sends one', async () =
 test('start: an inconclusive answer, an odd body and every HTTP status map to an outcome, never a throw', async () => {
   const cases = [
     [json(200, { v: 1, ok: false, outcome: 'inconclusive', reason: 'settling', retryAfterS: 12 }), { reason: 'settling', retryAfterS: 12 }],
-    [json(400, { ok: false, error: 'bad-request', field: 'taskId' }), { reason: 'refused' }],
+    [json(400, { ok: false, error: 'bad-request', field: 'taskId' }), { reason: 'unavailable', retryAfterS: 60 }],
+    [json(400, { ok: false, error: 'bad-request', field: 'v' }), { reason: 'unavailable', retryAfterS: 60 }],
+    [json(400, { ok: false, error: 'bad-request', field: 'answer' }), { reason: 'refused' }],
     [json(413, { error: 'too-large' }), { reason: 'refused' }],
     [json(404, { error: 'unknown-task' }), { reason: 'unavailable', retryAfterS: 60 }],
     [json(409, { error: 'stale-attempt' }), { reason: 'stale', restart: true }],
@@ -160,8 +162,11 @@ test('check: a network error, a bad status or an odd body is inconclusive and ne
   assert.deepEqual(await check(json(409, { error: 'stale-attempt' })), { charge: false, outcome: 'inconclusive', reason: 'stale', restart: true });
   assert.deepEqual(await check(json(410, { error: 'expired' })), { charge: false, outcome: 'inconclusive', reason: 'expired', restart: true });
   assert.deepEqual(await check(json(429, { error: 'rate-limited', retryAfterS: 5 })), { charge: false, outcome: 'inconclusive', reason: 'rate-limited', retryAfterS: 5 });
-  for (const status of [400, 413]) {
-    assert.deepEqual(await check(json(status, { ok: false, error: 'bad-request', field: 'answer' })), { charge: false, outcome: 'inconclusive', reason: 'refused' }, `${status}: refused, never an outage, no wait`);
+  for (const [status, body] of [[400, { ok: false, error: 'bad-request', field: 'answer' }], [413, { error: 'too-large' }]]) {
+    assert.deepEqual(await check(json(status, body)), { charge: false, outcome: 'inconclusive', reason: 'refused' }, `${status}: refused, never an outage, no wait`);
+  }
+  for (const body of [{ ok: false, error: 'bad-request', field: 'v' }, { ok: false, error: 'bad-request', field: 'attemptId' }, { ok: false, error: 'bad-request', field: 'body' }, {}, null]) {
+    assert.deepEqual(await check(json(400, body)), { charge: false, outcome: 'inconclusive', reason: 'unavailable', retryAfterS: 60 }, `a 400 on ${JSON.stringify(body)} is a contract mismatch: an outage`);
   }
   for (const [status, body] of [[404, { error: 'unknown-task' }], [502, { error: 'store-unavailable' }]]) {
     assert.deepEqual(await check(json(status, body)), { charge: false, outcome: 'inconclusive', reason: 'unavailable', retryAfterS: 60 }, String(status));

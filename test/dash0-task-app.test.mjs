@@ -329,9 +329,13 @@ test('a level never waits for the task status or the account for ever: after DAS
   const timers = fakeTimers();
   const r = rig({ holdAccount: true, timers });
   await settle(); // GET /api/account never answers
+  let focused = null; // linkedom has no focus model: record the focus() calls
+  globalThis.window.HTMLElement.prototype.focus = function focus() { focused = this; };
   r.game.openLevel('with-task');
   assert.equal(q('[data-line="user"]') === null, true, 'still waiting');
   assert.match(q('#ov-body').textContent, new RegExp(COPY.preparing));
+  assert.equal(q('#ov-wait').getAttribute('role'), 'status', 'the wait is a live region, so it is announced');
+  assert.equal(focused?.id, 'ov-back', 'focus is on Back, not left on the page');
   assert.ok(timers.list.some((t) => t.ms === DASH0_WAIT_MS), 'a timer bounds the wait');
   timers.fire(DASH0_WAIT_MS);
   assert.ok(q('[data-line="user"]'), 'the level runs with what is known');

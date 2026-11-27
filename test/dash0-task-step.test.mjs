@@ -261,6 +261,30 @@ test('with the real client, a signed-out player sends no POST and the step is sk
   assert.deepEqual(skipped, [[['p95-task'], 'signed-out']]);
 });
 
+test('with the real client, a Start that gets 400 {field: v} three times is an outage: the skip is offered; a seeded Check with 400 {field: answer} is refused', async () => {
+  const reply = (status, body) => ({ status, json: async () => body });
+  const make = (post) => createDash0TaskClient({ fetch: async (url, init = {}) => (init.method === 'POST' ? post(JSON.parse(init.body)) : reply(200, { v: 1, on: true })), signedIn: () => true });
+  const bad = make(() => reply(400, { ok: false, error: 'bad-request', field: 'v' }));
+  await bad.load();
+  const skipped = [];
+  open(FULL(), { api: { ...bad, skip: (ids, cause) => skipped.push([ids, cause]) } });
+  toTask();
+  await start();
+  for (let i = 0; i < DOWN_AFTER - 1; i++) { click('#d1-retry'); await settle(); }
+  assert.ok(q('#d1-skip'), 'three contract 400s: finish without the task');
+  click('#d1-skip');
+  assert.deepEqual(skipped, [[['p95-task'], 'off']]);
+  const okStart = { v: 1, ok: true, attemptId: 'a1', link: GOOD_LINK, tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1 };
+  const refuse = make((b) => (b.op === 'start' ? reply(200, okStart) : reply(400, { ok: false, error: 'bad-request', field: 'answer' })));
+  await refuse.load();
+  open(FULL(), { api: { ...refuse, skip: () => assert.fail('never skipped') } });
+  toTask();
+  await start();
+  for (let i = 0; i < DOWN_AFTER + 1; i++) await check();
+  assert.equal(q('#d1-skip') === null, true);
+  assert.match(feedback(), new RegExp(COPY.reasons.refused));
+});
+
 test('no ctx.dash0Task (debug, no fetch): the step is left out and nothing is said', () => {
   const run = open(FULL(), {});
   assert.equal(run.ctx.dash0Task, null);
@@ -653,8 +677,8 @@ test('Check stays disabled while there is no attempt: before Start, after a fail
 
 const inconclusive = (reason) => ({ outcome: 'inconclusive', charge: false, reason, retryAfterS: 5 });
 
-test('cooldown, not-visible, answer, settling, rate-limited and not-sent never count: any number of them offers no skip', async () => {
-  for (const reason of ['cooldown', 'not-visible', 'answer', 'settling', 'rate-limited', 'not-sent']) {
+test('cooldown, answer, settling, rate-limited and not-sent never count: any number of them offers no skip', async () => {
+  for (const reason of ['cooldown', 'answer', 'settling', 'rate-limited', 'not-sent']) {
     const api = fakeApi({ checks: [inconclusive(reason)] });
     const run = open(FULL(), { api });
     toTask();
@@ -665,6 +689,28 @@ test('cooldown, not-visible, answer, settling, rate-limited and not-sent never c
     assert.equal(q('#sf-next').disabled, true, `${reason}: the step still has to be done`);
     assert.equal(run.mistakes(), 0);
   }
+});
+
+test('not-visible counts for a seeded task (the data never showed): the third offers the skip as off; for a readback task it never counts', async () => {
+  const api = fakeApi({ checks: [inconclusive('not-visible')] });
+  const run = open(FULL(), { api });
+  toTask();
+  await start();
+  await check();
+  await check();
+  assert.equal(q('#d1-skip') === null, true, 'two are not enough');
+  await check();
+  assert.ok(q('#d1-skip'), 'the third');
+  click('#d1-skip');
+  assert.deepEqual(api.skipped, [[['p95-task'], 'off']]);
+  assert.equal(run.mistakes(), 0);
+  const rb = fakeApi({ checks: [inconclusive('not-visible')] });
+  open(playOf(choiceStep('c1'), readbackStep()), { api: rb });
+  toTask();
+  await start();
+  for (let i = 0; i < DOWN_AFTER + 2; i++) { click('#d1-check'); await settle(); }
+  assert.equal(q('#d1-skip') === null, true, 'a readback task never gives up on not-visible');
+  assert.deepEqual(rb.skipped, []);
 });
 
 test('network, unavailable, upstream and ingest do count: the third offers the skip, and it is recorded as off', async () => {
@@ -788,4 +834,40 @@ test('focus after a partial pass goes to the next open field; Retry redrawn keep
   click('#d1-retry');
   await settle();
   assert.equal(doc2.activeElement.id, 'd1-retry', 'the redrawn Retry has focus');
+});
+
+test('a Check that gets a 409 or a 410 moves focus to Start again, for a seeded and a readback task', async () => {
+  const cases = [
+    ['seeded 409', FULL(), stale, '#d1-check-operation', async () => { click({ type: '#d1-f-operation', text: '412' }); }],
+    ['seeded 410', FULL(), { ...stale, reason: 'expired' }, '#d1-check-operation', async () => { click({ type: '#d1-f-operation', text: '412' }); }],
+    ['readback 409', playOf(choiceStep('c1'), readbackStep()), stale, '#d1-check', async () => {}],
+    ['readback 410', playOf(choiceStep('c1'), readbackStep()), { ...stale, reason: 'expired' }, '#d1-check', async () => {}],
+  ];
+  for (const [name, play, res, btn, fill] of cases) {
+    const api = fakeApi({ checks: [res] });
+    open(play, { api });
+    toTask();
+    await start();
+    trackFocus();
+    await fill();
+    q(btn).focus();
+    click(btn);
+    await settle();
+    assert.equal(q(btn).disabled, true, `${name}: no attempt to check`);
+    assert.equal(globalThis.document.activeElement.id, 'd1-retry', `${name}: focus is on Start again`);
+    assert.equal(q('#d1-retry').textContent, COPY.restart, name);
+  }
+});
+
+test('a 409 does not steal focus when the Check did not have it', async () => {
+  const api = fakeApi({ checks: [stale] });
+  open(FULL(), { api });
+  toTask();
+  await start();
+  trackFocus();
+  q('#d1-f-operation').focus();
+  click({ type: '#d1-f-operation', text: '412' });
+  click('#d1-check-operation');
+  await settle();
+  assert.equal(globalThis.document.activeElement.id, 'd1-f-operation');
 });
