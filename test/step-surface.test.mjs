@@ -43,6 +43,16 @@ test('validatePlay returns the surfaces in order of first appearance', () => {
   assert.deepEqual(validatePlay(playOf(choiceStep('c1'))).surfaces, ['game']);
   assert.deepEqual(validatePlay(playOf(choiceStep('c1'), remoteStep('r1')), TYPES).surfaces, ['game', 'dash0']);
   assert.deepEqual(validatePlay(playOf(choiceStep('c1'), remoteStep('r1'), choiceStep('c2')), TYPES).errors, []);
+  assert.deepEqual(validatePlay(playOf(choiceStep('c1'), remoteStep('r1'), choiceStep('c2')), TYPES).surfaces, ['game', 'dash0'], 'each surface once');
+});
+
+test('a play whose only step has an unknown key reports just the key and the missing type, not a missing game step', () => {
+  const got = validatePlay(playOf({ intro: 'Hello there.', bogus: {} }), TYPES);
+  assert.equal(got.errors.length, 2, got.errors.join('|'));
+  assert.match(got.errors[0], /unknown key "bogus"/);
+  assert.match(got.errors[1], /has no step type/);
+  assert.equal(got.errors.some((e) => /in the game/.test(e)), false);
+  assert.deepEqual(got.surfaces, []);
 });
 
 test('a level needs a game step, and a dash0 step is never step 1', () => {
@@ -69,6 +79,16 @@ test('the registry exposes surfaces, and a run level is in the game', () => {
     { deck: [FIXTURE_CARD], nodeIds: [], play: kit },
   );
   assert.deepEqual(reg.levels['sf-run'].surfaces, ['game']);
+});
+
+test('the registry takes a play level\'s surfaces from its step types', () => {
+  // The registry wants a mechanic step, so the fixture's `sort` type skips its own spec checks.
+  const types = { ...TYPES, sort: { ...STEP_TYPES.sort, validate: () => [] } };
+  const kit = { validatePlay: (play) => validatePlay(play, types), runPlay };
+  const sortStep = { intro: 'Sort them out.', question: 'Sort these.', sort: { id: 's1' } };
+  const level = { id: 'sf-play', no: '0.1', name: 'n', icon: '*', rewardTitle: 'r', play: playOf(sortStep, remoteStep('r1')) };
+  const reg = buildRegistry([{ id: 'a', no: 0, levels: [level], boss: null }], { deck: [FIXTURE_CARD], nodeIds: [], play: kit });
+  assert.deepEqual(reg.levels['sf-play'].surfaces, ['game', 'dash0']);
 });
 
 /** Open `play` with the real ctx; `available` is what the task server says (undefined: no ctx.dash0Task at all). */

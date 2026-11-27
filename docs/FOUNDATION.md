@@ -48,7 +48,7 @@ success = mint `#a8fbbe`; error = purple `#ad46ff` (dash0.com purple-500); dark 
 | mechanics | string[] | required with `run`; with `play` derived, optional | ≥1, unique, from `sort build configure query spot incident tradeoff`; with `play` a declared list must equal the one derived from the steps (docs/DECLARATIVE-LEVELS.md §2) |
 | widgets | string[] | `[]` with `run`; with `play` derived, optional | the widgets the level plays, in play order, for the how-to-play help (#199): unique, from `WIDGETS` (`lib/registry.mjs`: `choice` plus the mechanics); every non-`choice` entry must also be in `mechanics`. Absent means no help card (help is never guessed from `mechanics`). With `play` a declared list must equal the one derived from the steps |
 | hintless | string[] | `[]` with `run`; with `play` derived, optional | the widgets of the level with no Hint button on any step, for the how-to-play help (#199): unique; a `run` level's must be in its `widgets`; with `play` a declared list must equal the one derived from the steps (choice has no Hint button and tradeoff has none, so neither is listed; a choice's 50/50 is not a Hint button). Absent means none |
-| surfaces | string[] | derived, never declared (#509) | where the level's steps happen, `game` and `dash0`, in order of first appearance: a play level from its step types (`STEP_TYPES[k].surface`), a run level `['game']`. Every step frame carries `data-surface` and a chip ("In the game" / "In Dash0"); `step({surface})` requires it. A play level needs a `game` step, step 1 is never `dash0`, and `mechanics`, `widgets` and `hintless` count `game` steps only |
+| surfaces | string[] | derived, never declared (#509) | where the level's steps happen, `game` and `dash0`, in order of first appearance: a play level from its step types (`STEP_TYPES[k].surface`), a run level `['game']`. Every level step frame carries `data-surface` and a chip ("In the game" / "In Dash0"); `step({surface})` requires it and takes `'game'`, `'dash0'` or `null`, where `null` is only for a frame that is not a step (the act primer) and draws no chip. A play level needs a `game` step, step 1 is never `dash0`, and `mechanics`, `widgets` and `hintless` count `game` steps only |
 | cards | string[] | `[]` | ids that exist in DECK, unique |
 | lights | string[] | `[]` | ids in `NODE_IDS` (`hub/map-data.mjs`), unique; not drawn since #150 |
 | scored | boolean | `true` | `false`: always 0 stars, excluded from both sides of star totals |
@@ -142,6 +142,7 @@ ctx = {
   hint(): void             // hintsUsed += 1
   askedGuide(): void       // one answered guide question: hintsUsed += 1 (as hint()), then onGuideHint listeners run
   onGuideHint(fn): off     // listen for answered guide questions; listeners are dropped when signal aborts
+  dash0Task?: {available(): boolean}  // optional; read once when a play level opens (#509); absent = no dash0 steps
   guide: object | null     // {configured, ask} from the app (§2.8), or null: the Ask the guide panel reads it
   finish({text = '', cards = []}): {stars, cards, text} | null
   reduceMotion: boolean
