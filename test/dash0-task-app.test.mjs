@@ -137,9 +137,9 @@ test('the two notices are different and say what to do', () => {
   assert.match(COPY.notices.off, /Come back once the admin restores the connection to Dash0/);
   assert.match(COPY.notices['signed-out'], /Sign in with your dash0\.com account/);
   assert.notEqual(COPY.notices.off, COPY.notices['signed-out']);
-  assert.match(COPY.notices['signed-out'], /then replay this level to do its In Dash0 task/);
+  assert.match(COPY.notices['signed-out'], /then come back and replay this level to do its In Dash0 task/);
   assert.equal(COPY.waiting, 'Come back for the In Dash0 task');
-  assert.equal(COPY.waitingLabel, 'has an In Dash0 task to come back to');
+  assert.equal(COPY.waitingLabel, 'has an In Dash0 task to come back for');
 });
 
 test('a level with no In Dash0 step says nothing and remembers nothing, whatever the server says', async () => {

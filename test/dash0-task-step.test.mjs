@@ -778,7 +778,7 @@ test(`${DOWN_AFTER} refused answers (the server's 400 or 413) are the player's i
   assert.equal(q('#d1-skip') === null, true, 'a healthy server is never given up on for refusing an answer');
   assert.deepEqual(api.skipped, []);
   assert.equal(run.mistakes(), 0);
-  assert.match(q('#d1-feedback').textContent, /Dash0 could not take that answer\. Check it and try again\./);
+  assert.match(q('#d1-feedback').textContent, /Dash0 could not take that answer\. Change it and try again\./);
   assert.doesNotMatch(q('#d1-feedback').textContent, /not answering/);
   assert.doesNotMatch(q('#d1-feedback').textContent, /seconds/, 'no wait is named');
 });
@@ -791,7 +791,7 @@ test('an answer over 200 characters is refused here: a message, no request, no c
   const before = api.calls.length;
   await check('x'.repeat(201));
   assert.equal(api.calls.length, before, 'nothing was sent');
-  assert.match(q('#d1-feedback').textContent, /That answer is too long: paste just the value\./);
+  assert.match(q('#d1-feedback').textContent, /That answer is too long\. Type just the value\./);
   assert.equal(run.mistakes(), 0);
   assert.equal(q('#d1-check-operation').disabled, false, 'the field is still open');
   await check('x'.repeat(200));
