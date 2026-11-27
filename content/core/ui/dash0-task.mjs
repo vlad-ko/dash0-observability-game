@@ -26,6 +26,39 @@ export default {
   "preparing": "Getting your In Dash0 task ready.",
   "offer": "Dash0 is not answering. You can try again, or finish the level without this task and come back to it later.",
   "offerNoData": "Your data has not shown up in Dash0 yet. You can keep trying, or finish the level without this task.",
+  "sendFirst": "Send a test span first",
+  "filterHint": "In the Trace Explorer, filter on {attribute} is {id}.",
+  "send": {
+    "endpointLabel": "Endpoint",
+    "endpointNote": "The OTLP over HTTP address of your organisation, copied exactly as Dash0 shows it. The game adds the signal path itself.",
+    "tokenLabel": "Auth token",
+    "tokenNote": "Paste the Ingesting token you just created. The game keeps it only in this tab's memory and never saves it. It leaves this field the moment you press Send and is forgotten when you reload the page. Your browser may offer to save it. Decline.",
+    "button": "Send test span",
+    "sending": "Sending the test span.",
+    "accepted": "Dash0 accepted the test span. Now press Check.",
+    "held": "Your token is still held in this tab. Leave the field empty to send again with it, or paste another.",
+    "again": "Paste the token again.",
+    "nothingSent": "Nothing was sent.",
+    "refusedToken": "Dash0 refused this token and would not take the test span. Check that you copied all of the token, that it is from this organisation, and that it has the Ingesting permission. Paste it again to try again.",
+    "refusedStatus": "Dash0 refused the test span (HTTP {status}).",
+    "said": "Dash0 said: {message}",
+    "unavailable": "Your own Dash0 cannot be reached from this browser, so the test span cannot be sent.",
+    "unchecked": "That could not be checked.",
+    "fields": {
+      "endpoint": "Endpoint",
+      "token": "Token",
+      "dataset": "Dataset",
+      "other": "Input"
+    },
+    "unreachable": {
+      "network": "The request never got an answer. In a browser that can be a wrong host, a CORS refusal or the page's Content Security Policy, and the browser cannot tell them apart. Try again.",
+      "timeout": "There was no answer within {seconds} seconds. Try again.",
+      "opaque": "Something answered, but not with a usable HTTP response. Try again.",
+      "aborted": "The request was cancelled before it finished. Try again.",
+      "not-connected": "Dash0 answered, but the game is not connected to it, so the test span does not count. Try again.",
+      "fallback": "The test span was not sent. Try again."
+    }
+  },
   "reasons": {
     "off": "The Dash0 check is switched off right now.",
     "signed-out": "Sign in with your dash0.com account to try again, or finish the level without this task.",
