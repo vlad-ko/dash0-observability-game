@@ -1,6 +1,6 @@
 // Level 2.2: Span kinds, a symptom hunt (the pilot for the Build it redesign, #364). An alert fired
 // for payments (2 requests a minute against the 22 it usually handles), finance says the card provider billed a charge for
-// every checkout, and the simulated Dash0 view draws no checkout to payments edge. The player opens
+// every checkout, and the service view draws no checkout to payments edge. The player opens
 // the spans, reads their fields and flags the span that makes the view wrong (payments' POST /charge,
 // recorded INTERNAL although it handles checkout's call), then picks the change that fixes the alert
 // and the map, each option previewing payments' rate after the change (the map shows once a pick is made:
