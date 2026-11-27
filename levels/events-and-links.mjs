@@ -112,6 +112,7 @@ function screens(ctx, say) {
   const stepRecorded = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.recordedIntro)}${codeBlock('catch (err) {\n  span.recordException(err);\n  throw err;\n} finally {\n  span.end();\n}')}${question({ id: 'evl-q', html: say.recordedQuestion })}${choiceHtml(ctx, RECORDED, { id: 'evl', labelledBy: 'evl-q' })}`,
       }),
@@ -131,6 +132,7 @@ function screens(ctx, say) {
     const stories = STORY_HEADS.map(([name, service], i) => `<li><code>${e(name)}</code> (${e(service)}): ${say.stories[i]}</li>`).join('');
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(`${say.errorsIntro}<ul>${stories}</ul>`)}${question({ html: say.errorsQuestion })}${renderBuild(ERRORS, newBuildState(ERRORS), { escapeHtml: e })}`,
       }),
@@ -148,6 +150,7 @@ function screens(ctx, say) {
   const stepBatch = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.batchIntro)}${question({ html: say.batchQuestion })}${renderBuild(BATCH, newBuildState(BATCH), { escapeHtml: e })}`,
       }),

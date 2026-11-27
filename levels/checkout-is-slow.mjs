@@ -111,6 +111,7 @@ function screens(ctx, say) {
   const { scenario: SCENARIO } = contentOf(say); // the same scenario CONTENT holds
   ctx.renderStep(
     step({
+      surface: 'game',
       wide: true,
       bodyHtml: `${ctx.speech(incidentLesson(say.intro))}${renderIncident(SCENARIO, newIncident(SCENARIO), { escapeHtml: ctx.escapeHtml })}`,
     }),

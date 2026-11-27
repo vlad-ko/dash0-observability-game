@@ -61,6 +61,7 @@ function screens(ctx, say) {
   const stepSort = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.sortIntro)}${question({ id: 'mvo-q-sort', html: say.sortQuestion })}${renderSort(SORT, newSortState(SORT), { escapeHtml: ctx.escapeHtml, labelledBy: 'mvo-q-sort' })}`,
       }),
@@ -79,6 +80,7 @@ function screens(ctx, say) {
   const stepAnswerable = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.answerableIntro)}${question({ id: 'mvo-q-why', html: say.answerableQuestion })}${choiceHtml(ctx, ANSWERABLE, { id: 'mvo', labelledBy: 'mvo-q-why' })}`,
       }),

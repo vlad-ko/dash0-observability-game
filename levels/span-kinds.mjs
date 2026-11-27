@@ -204,6 +204,7 @@ function screens(ctx, say) {
     const side = sideColumn({ id: 'kinds-hunt', titleHtml: say.huntSideTitle, counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: RULE });
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.huntIntro)}<div data-kinds-hunt>${split({ mainHtml: `<div id="kinds-alert" class="kinds-late"></div>${split({ mainHtml: board, sideHtml: detailHtml })}${lastView()}`, sideHtml: side })}</div>`,
       }),
@@ -309,6 +310,7 @@ function screens(ctx, say) {
   const stepFix = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.fixIntro)}` +
           `${shell()}${question({ id: 'kinds-q', html: fixStep.question })}${choiceHtml(ctx, fixStep.choices, { id: fixStep.id, labelledBy: 'kinds-q' })}`,

@@ -57,6 +57,7 @@ function screens(ctx, say) {
   const stepShowsUpAs = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.showsUpAsIntro)}<div id="nys-config">${codeBlock(GIVEN, { wrap: true })}</div>${question({ id: 'nys-q-name', html: say.showsUpAsQuestion })}${choiceHtml(ctx, SHOWS_UP_AS, { id: 'nys', labelledBy: 'nys-q-name' })}`,
       }),
@@ -92,6 +93,7 @@ function screens(ctx, say) {
     const side = sideColumn({ id: 'nys', titleHtml: say.fixSideTitle, counts: [{ key: 'wrong', label: '' }], hints: true, ruleHtml: RULE });
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.fixIntro)}<div data-env-config>${split({ mainHtml: chips + editor, sideHtml: side })}</div>`,
       }),
@@ -164,6 +166,7 @@ function screens(ctx, say) {
   const stepWhoWins = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.whoWinsIntro)}${codeBlock(say.clashEnv, { wrap: true })}${question({ id: 'nys-q-wins', html: say.whoWinsQuestion })}${choiceHtml(ctx, WHO_WINS, { id: 'nys', labelledBy: 'nys-q-wins' })}`,
       }),

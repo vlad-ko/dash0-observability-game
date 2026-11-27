@@ -83,6 +83,7 @@ function screens(ctx, say) {
   const sortStep = (spec, intro, questionHtml, then) => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(intro)}${question({ id: `${spec.id}-q`, html: questionHtml })}${renderSort(spec, newSortState(spec), { escapeHtml: ctx.escapeHtml, labelledBy: `${spec.id}-q` })}`,
       }),
@@ -99,6 +100,7 @@ function screens(ctx, say) {
   const stepNewest = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.newestIntro)}${question({ id: 'sig-q-new', html: say.newestQuestion })}${choiceHtml(ctx, NEWEST, { id: 'sig', labelledBy: 'sig-q-new' })}`,
       }),

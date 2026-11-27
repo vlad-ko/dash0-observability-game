@@ -111,6 +111,7 @@ function screens(ctx, say) {
     ).join('');
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.whereIntro)}${prose(`${say.whereHopsTitle}<ul>${hops}</ul>${say.whereRootsTitle}<ul>${roots}</ul>`)}${question({ id: 'prop-q-where', html: say.whereQuestion })}${choiceHtml(ctx, WHERE, { id: 'prop', labelledBy: 'prop-q-where' })}`,
       }),
@@ -129,6 +130,7 @@ function screens(ctx, say) {
   const stepValid = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.validIntro)}${question({ id: 'prop-q-tp', html: say.validQuestion })}${choiceHtml(ctx, VALID, { id: 'prop-tp', labelledBy: 'prop-q-tp' })}`,
       }),
@@ -147,6 +149,7 @@ function screens(ctx, say) {
   const stepTree = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(fillSlots(say.treeIntro, { header: e(TRACEPARENT) }))}${question({ html: say.treeQuestion })}${renderBuild(TREE, newBuildState(TREE), { escapeHtml: e })}`,
       }),

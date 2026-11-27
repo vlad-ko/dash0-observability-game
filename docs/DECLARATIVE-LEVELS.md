@@ -297,6 +297,7 @@ Run when the registry is built; all errors are collected into one `RegistryError
 - `code` and `show` are strings;
 - widget ids unique within the level;
 - `prefix` is a plain token;
+- **surface (#509):** each step type has a `surface`, `'game'` (every type today) or `'dash0'`. It is never written in a step. `validatePlay` returns `surfaces` (order of first appearance); a level needs at least one `game` step, a `dash0` step is never step 1, and `mechanics`, `widgets` and `hintless` come from `game` steps only. `runPlay` reads `ctx.dash0Task?.available?.()` once when the level opens; when it is false or absent the `dash0` steps are left out and the last game step shows Finish. The kit frame shows the surface as a chip and `data-surface`. A `game` screen never titles a heading or panel with a Dash0 screen name (`lib/content/surface.mjs`) or "simulated Dash0" (`test/levels-play.test.mjs` pins it, with a shrink-only allowlist);
 - the `finish` text length;
 - every type's `validate`.
 

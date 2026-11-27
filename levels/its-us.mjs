@@ -85,7 +85,7 @@ function screens(ctx, say) {
   const body = ctx.ovBody;
   const actions = ctx.ovActions;
   const $ = (sel) => body.querySelector(sel);
-  const screen = (...parts) => step({ bodyHtml: parts.join('') });
+  const screen = (...parts) => step({ surface: 'game', bodyHtml: parts.join('') });
   const bar = (buttonsHtml) => actionsBar({ buttonsHtml });
 
   // The incident is built here, on the first open of the boss, and cached by the session: it is the

@@ -62,6 +62,7 @@ function screens(ctx, say) {
   const stepSort = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: true,
         bodyHtml: `${ctx.speech(say.sortIntro)}${question({ id: 'bag-q-sort', html: say.sortQuestion })}${renderSort(SORT, newSortState(SORT), { escapeHtml: ctx.escapeHtml, labelledBy: 'bag-q-sort' })}`,
       }),
@@ -80,6 +81,7 @@ function screens(ctx, say) {
   const stepOnSpans = () => {
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.onSpansIntro)}${question({ id: 'bag-q-spans', html: say.onSpansQuestion })}${choiceHtml(ctx, ON_SPANS, { id: 'bag', labelledBy: 'bag-q-spans' })}`,
       }),

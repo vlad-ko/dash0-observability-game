@@ -28,6 +28,7 @@ import { createTelemetry } from '../lib/telemetry.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
+import { vocabularyHits } from '../lib/content/surface.mjs';
 import { liveRegistry } from '../app.mjs';
 import { GLOSSARY } from '../content/core/glossary/index.mjs';
 import { stepsOf } from './helpers/step-drivers.mjs';
@@ -607,6 +608,7 @@ function click(elOrSel) {
   } finally {
     current = null;
     if (seenClasses) pageClasses(seenClasses);
+    if (recording) recording.shots.push(screenOf(recording.dom.body));
     if (recording) recording.leaks.push(...leakProblems(recording.dom.body, recording.dom.actions).map((p) => `after ${String(elOrSel)}: ${p}`));
   }
 }
@@ -650,11 +652,13 @@ function openLevel(level, { telemetry = null } = {}) {
   // LEVEL_SNAPSHOT=<dir> (test/helpers/snapshot.mjs): the live overlay as each step is left and
   // entered. Collected always (cheap), written only when the variable is set.
   const frames = [];
+  const screens = [];
   ctx.renderStep = (body, actions) => {
     steps.push(`${body}${actions ?? ''}`);
     if (steps.length > 1) frames.push(frameOf('leave', dom.body, dom.actions));
     render(body, actions);
     frames.push(frameOf('step', dom.body, dom.actions));
+    screens.push(screenOf(dom.body));
   };
   const classes = new Set();
   seenClasses = classes;
@@ -662,7 +666,8 @@ function openLevel(level, { telemetry = null } = {}) {
   seenAttrs = attrs;
   const clicks = [];
   const leaks = [];
-  recording = { dom, clicks, leaks };
+  const shots = []; // the page after each click: a level that redraws inside a step (its-us) shows titles renderStep never saw
+  recording = { dom, clicks, leaks, shots };
   let first;
   const injected = [];
   try {
@@ -690,7 +695,7 @@ function openLevel(level, { telemetry = null } = {}) {
       pageClasses(classes);
       frames.push(frameOf('end', dom.body, dom.actions));
       leaks.push(...leakProblems(dom.body, dom.actions).map((p) => `at the end: ${p}`));
-      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames, clicks, leaks };
+      return { calls, steps, first, injected, classes, attrs: [...attrs], widgets, frames, clicks, leaks, screens, shots };
     },
   };
 }
@@ -773,6 +778,33 @@ function alpineAttrs(html) {
     el.getAttributeNames().filter((n) => ALPINE_ATTR.test(n)).map((n) => `<${el.localName} ${n}>`));
 }
 
+// ---- #509: where a screen happens, and the words a game screen may not borrow from Dash0 -----------------
+
+const SURFACE_VALUES = ['game', 'dash0'];
+
+/** What a rendered screen says about itself: its `data-surface` values and the texts that title it (headings, role=heading, panel heads, the step title). */
+function screenOf(body) {
+  const text = (el) => el.textContent.replace(/\s+/g, ' ').trim();
+  return {
+    surfaces: [...body.querySelectorAll('[data-surface]')].map((el) => el.getAttribute('data-surface')),
+    titles: [...body.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"], .ui-step-title, .ui-panel-head')].map(text),
+  };
+}
+
+/** Screens that do not carry exactly one `data-surface` with a valid value, as strings. */
+function surfaceProblems(screens) {
+  return screens.flatMap((s, i) => (s.surfaces.length === 1 && SURFACE_VALUES.includes(s.surfaces[0])
+    ? [] : [`screen ${i + 1} has data-surface ${JSON.stringify(s.surfaces)}`]));
+}
+
+/** level id -> the Dash0 screen names its game screens title (`name`), from every run of the level. */
+const VOCABULARY = new Map();
+function recordVocabulary(id, screens) {
+  const found = VOCABULARY.get(id) ?? new Set();
+  for (const s of screens) if (!s.surfaces.includes('dash0')) for (const h of vocabularyHits(s.titles)) found.add(h.name);
+  VOCABULARY.set(id, found);
+}
+
 /** Every check a play-through must pass; returns the stars earned. */
 function checkRun(level, run, label = 'happy') {
   return assertRun(level, run, playLevel(level, run.play, { telemetry: run.telemetry?.() }), label);
@@ -783,7 +815,12 @@ async function checkRunAsync(level, run, label = 'happy') {
   return assertRun(level, run, await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() }), label);
 }
 
-function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames, clicks, leaks }, label) {
+function assertRun(level, run, { calls, steps, first, injected, classes, attrs, widgets, frames, clicks, leaks, screens, shots }, label) {
+  // Registered levels only: the harness fixtures below render bare markup that is not the game's step frame.
+  if (LIVE.levels[level.id] === level) {
+    assert.deepEqual(surfaceProblems(screens), [], 'every screen has exactly one valid data-surface (#509)');
+    recordVocabulary(level.id, [...screens, ...shots]);
+  }
   assert.deepEqual(leaks, [], 'glossary markup leaked onto the page (#442)');
   // The How to play modal follows the step the player is on: every widget a level declares is
   // reported as its step mounts, and nothing it does not declare (#316).
@@ -1670,4 +1707,29 @@ test('harness T8: a class with no CSS rule fails, in a rendered step or added la
 // Runs last: every level above has played, so an allowed class no level renders is stale.
 test('T8 UNDEFINED_ALLOW is empty: every rendered class has a CSS rule', () => {
   assert.deepEqual(UNDEFINED_ALLOW, []);
+});
+
+// #509 vocabulary rule: a game screen never titles a heading or panel with a Dash0 screen name or "simulated Dash0".
+// Prose that only mentions a Dash0 screen is allowed. The allowlist only shrinks: P7 removes both entries.
+const VOCABULARY_ALLOW = ['connect-to-dash0', 'its-us'];
+
+test('#509 harness: surfaceProblems wants exactly one valid data-surface per screen', () => {
+  assert.deepEqual(surfaceProblems([{ surfaces: ['game'] }, { surfaces: ['dash0'] }]), []);
+  assert.equal(surfaceProblems([{ surfaces: [] }]).length, 1);
+  assert.equal(surfaceProblems([{ surfaces: ['game', 'game'] }]).length, 1);
+  assert.equal(surfaceProblems([{ surfaces: ['both'] }]).length, 1);
+});
+
+test('#509 harness: the screen reader sees headings, role=heading, panel heads and the step title, and not prose', () => {
+  const dom = makeDom();
+  dom.body.innerHTML = '<div data-surface="game"><h3>One</h3><div role="heading">Two</div><div class="ui-panel-head"><span>Three</span></div><p class="ui-step-title">Four</p><p>Trace Explorer in prose</p></div>';
+  assert.deepEqual(screenOf(dom.body), { surfaces: ['game'], titles: ['One', 'Two', 'Three', 'Four'] });
+});
+
+// Runs after every level above has played: it reads what they recorded.
+test('#509 no game screen titles a heading or panel with a Dash0 screen name, outside the shrink-only allowlist', () => {
+  assert.deepEqual([...VOCABULARY.keys()].sort(), [...LIVE.order].sort(), 'every registered level has played before this check');
+  const offenders = [...VOCABULARY].filter(([, names]) => names.size > 0).map(([id]) => id).sort();
+  assert.deepEqual(offenders.filter((id) => !VOCABULARY_ALLOW.includes(id)), [], 'a game screen titles itself with a Dash0 screen name or "simulated Dash0"');
+  assert.deepEqual(VOCABULARY_ALLOW.filter((id) => !offenders.includes(id)), [], 'an allowlisted level no longer needs its entry: remove it');
 });

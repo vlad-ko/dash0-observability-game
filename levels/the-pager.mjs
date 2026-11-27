@@ -123,6 +123,7 @@ function screens(ctx, say) {
     // The note is said at the top of part 2 when the fourth look spent the last of the budget: the player never presses Escalate, and the meter and the look's row are gone with part 1.
     ctx.renderStep(
       step({
+        surface: 'game',
         wide: false,
         bodyHtml: `${ctx.speech(say.litIntro)}${escalatedByBudget ? note(say.budgetSpent) : ''}${alert}${choices(ASKS, 'ask')}${rowsList('pager-answer-rows')}${feedbackRegion({ id: 'pager-answers' })}`,
       }),
@@ -149,6 +150,7 @@ function screens(ctx, say) {
 
   ctx.renderStep(
     step({
+      surface: 'game',
       wide: false,
       bodyHtml: `${ctx.speech(say.intro)}${alert}
         <div id="pager-budget" role="status" aria-live="polite">${meterHtml(say, BUDGET.startPct)}</div>
