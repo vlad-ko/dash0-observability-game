@@ -1,7 +1,7 @@
 // The In Dash0 task server (#509 P5; docs/FOUNDATION.md §2.15). A task asks the player to find something in the real Dash0
 // organisation. POST `{v:1, op:'start', taskId}` makes an attempt: the server draws a seed, sends that attempt's telemetry
-// to Dash0 and answers with a deep link. POST `{v:1, op:'check', taskId, attemptId, answer?}` grades the answer; the verdict
-// is only ever 'fail' when the attempt's data is visible in Dash0 (lib/dash0-task/grade.mjs). GET says whether the tasks are on.
+// to Dash0 and answers with a deep link. POST `{v:1, op:'check', taskId, attemptId, answer?}` grades the answer; an answer
+// is graded only once the attempt's data is confirmed visible in Dash0 (lib/dash0-task/grade.mjs). GET says whether the tasks are on.
 // Off unless all seven DASH0_GAME_* variables validate AND sign-in and the store are configured; off makes no Redis command
 // and no outbound request. Signed-in only, same-origin, 4 KiB. Never in a response, log line, span or Redis: the tokens, the
 // player secret, the seed, the answers, a pid, a nickname or an email. Logs carry the outcome only.
@@ -35,6 +35,7 @@ export const PROBE_TIMEOUT_MS = 5000;
 const BODY_KEYS = ['v', 'op', 'taskId', 'attemptId', 'answer'];
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const sentField = (taskId) => `${taskId}.sent`;
+const seenField = (taskId) => `${taskId}.seen`;
 
 /** The handlers over injected `env`, `redis`, `fetch`, `now`, `random`, `registry`, `log` and `dash0` (the API interface of lib/dash0-task/api.mjs). */
 export function createDash0Task({
@@ -100,17 +101,20 @@ export function createDash0Task({
   const hex = (n) => Buffer.from(random(n)).toString('hex');
 
   // The attempts: one hash per player, a field per task holding the immutable record (attemptId, seed, t0, expiresAt,
-  // grader), and a second field `<task>.sent` holding {attemptId, sentAt}. Marking sent is one script that writes the
-  // marker only while the record is still this attempt (a start that lost a race cannot mark over the winner), and a
-  // marker whose attemptId is not the record's is ignored on read.
+  // grader), and two marker fields: `<task>.sent` holding {attemptId, sentAt} and, for a seeded task, `<task>.seen`
+  // holding {attemptId, at} (the data was confirmed visible, so later checks do not probe again). A marker is written by
+  // one script that writes only while the record is still this attempt (a start that lost a race cannot mark over the
+  // winner), and a marker whose attemptId is not the record's is ignored on read.
   async function loadAttempt(pid, taskId) {
-    const [raw, sent] = await redis.pipeline([['HGET', keys.task(pid), taskId], ['HGET', keys.task(pid), sentField(taskId)]]);
+    const [raw, sent, seen] = await redis.pipeline([['HGET', keys.task(pid), taskId], ['HGET', keys.task(pid), sentField(taskId)], ['HGET', keys.task(pid), seenField(taskId)]]);
     if (raw === null) return null;
     let record;
     let mark = null;
+    let sighting = null;
     try {
       record = JSON.parse(raw);
       if (sent !== null) mark = JSON.parse(sent);
+      if (seen !== null) sighting = JSON.parse(seen);
     } catch {
       throw new RedisError('unreadable task record');
     }
@@ -118,15 +122,17 @@ export function createDash0Task({
       throw new RedisError('unreadable task record');
     }
     const sentAt = isObject(mark) && mark.attemptId === record.attemptId && Number.isFinite(mark.sentAt) ? mark.sentAt : null;
-    return { ...record, sentAt };
+    const seenOk = isObject(sighting) && sighting.attemptId === record.attemptId && Number.isFinite(sighting.at);
+    return { ...record, sentAt, seen: seenOk };
   }
 
   const saveAttempt = (pid, taskId, record) =>
     redis.pipeline([['HSET', keys.task(pid), taskId, JSON.stringify(record)], ['EXPIRE', keys.task(pid), TASK_TTL_S]]);
 
   /** True when marked; false when the record is no longer this attempt (a newer start won). */
-  const markSent = async (pid, taskId, attemptId, sentAt) =>
-    (await redis.script('mark-sent', [keys.task(pid)], [taskId, sentField(taskId), attemptId, JSON.stringify({ attemptId, sentAt })])) === 1;
+  const mark = async (pid, taskId, field, attemptId, value) =>
+    (await redis.script('mark-sent', [keys.task(pid)], [taskId, field, attemptId, JSON.stringify({ attemptId, ...value })])) === 1;
+  const markSent = (pid, taskId, attemptId, sentAt) => mark(pid, taskId, sentField(taskId), attemptId, { sentAt });
 
   const scenarioOf = (taskId, attempt, tag) => buildScenario(taskId, { seed: attempt.seed, t0: attempt.t0, tag, attemptId: attempt.attemptId });
 
@@ -216,6 +222,8 @@ export function createDash0Task({
       now: now(),
       cooldown: async () => (await redis.command(['SET', keys.taskCooldown(pid, attempt.attemptId), '1', 'NX', 'EX', COOLDOWN_S])) !== null,
       probe: () => probe(attempt),
+      seen: attempt.seen,
+      confirm: async () => { await mark(pid, taskId, seenField(taskId), attempt.attemptId, { at: now() }); },
     });
     if (result.outcome === GRADE.pass) return done(200, { v: 1, outcome: GRADE.pass, charge: false }, 'pass');
     if (result.outcome === GRADE.fail) {

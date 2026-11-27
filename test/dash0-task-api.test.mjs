@@ -288,7 +288,7 @@ test('a check response carries no answer, seed or t0', async () => {
   }
 });
 
-test('a right answer passes with charge false and no Dash0 call once the data has settled', async () => {
+test('a right answer passes with charge false once the data has settled and is confirmed visible, with one probe however many checks follow', async () => {
   const t = await taskRig();
   const { body } = await t.start('its-us-find');
   t.noCooldown();
@@ -297,10 +297,30 @@ test('a right answer passes with charge false and no Dash0 call once the data ha
   const { res, body: out } = await t.check('its-us-find', body.attemptId, { question: 'operation', value: `  ${key.operation.toUpperCase()} ` });
   assert.equal(res.status, 200);
   assert.deepEqual(out, { v: 1, outcome: 'pass', charge: false });
-  assert.deepEqual(t.dash0.calls, []);
+  assert.equal(t.dash0.calls.length, 1, 'the data was confirmed visible before the answer was graded');
   for (const [question, value] of [['faultCode', key.faultCode], ['retryCount', key.retryCount], ['traceId', key.traceId]]) {
     assert.equal((await t.check('its-us-find', body.attemptId, { question, value })).body.outcome, 'pass', question);
   }
+  assert.equal(t.dash0.calls.length, 1, 'the confirmation is cached per attempt: later checks do not probe');
+  const stored = JSON.parse(t.r.fake.db.get(keys.task(t.pid)).get('its-us-find.seen'));
+  assert.deepEqual(Object.keys(stored).sort(), ['at', 'attemptId']);
+  assert.equal(stored.attemptId, body.attemptId);
+});
+
+test('a confirmation of another attempt is ignored: the new attempt is probed before anything is graded', async () => {
+  const t = await taskRig();
+  const a = (await t.start('its-us-find')).body;
+  t.noCooldown();
+  t.clock.t += SETTLE_MS;
+  assert.equal((await t.check('its-us-find', a.attemptId, { question: 'operation', value: t.answersOf('its-us-find').operation })).body.outcome, 'pass');
+  assert.equal(t.dash0.calls.length, 1);
+  const b = (await t.start('its-us-find')).body; // a sent attempt starts a fresh one; A's .seen stays in the hash
+  assert.notEqual(b.attemptId, a.attemptId);
+  assert.ok(t.r.fake.db.get(keys.task(t.pid)).has('its-us-find.seen'), 'A\'s confirmation is still in the hash');
+  t.dash0.fail(500, 'api');
+  t.clock.t += SETTLE_MS;
+  const out = (await t.check('its-us-find', b.attemptId, { question: 'operation', value: t.answersOf('its-us-find').operation })).body;
+  assert.deepEqual(out, { v: 1, outcome: 'inconclusive', charge: false, reason: 'upstream', retryAfterS: 15 }, 'not graded on A\'s sighting');
 });
 
 test('no free guesses: while settling EVERY answer, right or wrong, is inconclusive "settling" with a retry time and no charge', async () => {
@@ -327,14 +347,25 @@ test('no free guesses: while settling EVERY answer, right or wrong, is inconclus
   assert.equal((await t.check('its-us-find', body.attemptId, attempts[0])).body.outcome, 'pass', 'at the boundary the right answer grades');
 });
 
-test('a right answer passes with the API down (the probe is not asked)', async () => {
-  const t = await taskRig();
-  const { body } = await t.start('its-us-find');
-  t.dash0.fail(500, 'api');
-  t.clock.t += SETTLE_MS * 10;
-  const { body: out } = await t.check('its-us-find', body.attemptId, { question: 'operation', value: t.answersOf('its-us-find').operation });
-  assert.equal(out.outcome, 'pass');
-  assert.deepEqual(t.dash0.calls, []);
+test('a right answer is graded only once the data is confirmed visible: lag, an API failure and the P8 stub make it inconclusive, never a pass, never charged', async () => {
+  for (const mode of ['lag', 'api-500', 'p8-stub']) {
+    const t = await taskRig(mode === 'lag' ? { lagMs: 10 * 60_000 } : {});
+    const api = mode === 'p8-stub' ? createDash0Task({ ...t.deps, dash0: null }) : null;
+    const call = async (body) => (await (api ?? t.api).POST(post(URL_, body, { cookie: t.cookie }))).json();
+    const { attemptId } = await call({ v: 1, op: 'start', taskId: 'its-us-find' });
+    if (mode === 'api-500') t.dash0.fail(500, 'api');
+    t.noCooldown();
+    t.clock.t += SETTLE_MS * 10;
+    const right = { question: 'operation', value: t.answersOf('its-us-find').operation };
+    const reason = mode === 'lag' ? 'not-visible' : 'upstream';
+    const retryAfterS = mode === 'lag' ? 10 : 15;
+    for (const answer of [right, { question: 'operation', value: t.wrongOperation() }]) {
+      const out = await call({ v: 1, op: 'check', taskId: 'its-us-find', attemptId, answer });
+      assert.deepEqual(out, { v: 1, outcome: 'inconclusive', charge: false, reason, retryAfterS }, `${mode} ${answer.value}`);
+    }
+    assert.equal(t.charged(attemptId).length, 0, mode);
+    assert.equal(t.r.fake.db.get(keys.task(t.pid)).has('its-us-find.seen'), false, `${mode}: nothing is confirmed`);
+  }
 });
 
 test('a wrong answer with the data visible is a fail with a charge, once per distinct value', async () => {
@@ -356,6 +387,20 @@ test('a wrong answer with the data visible is a fail with a charge, once per dis
   assert.equal(t.dash0.calls.every((c) => c.op === 'countAttempt'), true);
   assert.equal(t.r.fake.ttl.get(keys.taskCharged(t.pid)), 30 * 24 * 60 * 60, 'the player\'s charge set expires after 30 days, refreshed on every write');
   assert.ok([...t.r.fake.db.get(keys.taskCharged(t.pid)).set].every((m) => m.startsWith(`${body.attemptId}|`)), 'members are <attemptId>|<value>');
+});
+
+test('charging is per attempt: the same wrong value fails with a charge again on a new attempt', async () => {
+  const t = await taskRig();
+  t.noCooldown();
+  const wrongOn = async (attemptId) => (await t.check('its-us-find', attemptId, { question: 'faultCode', value: 'ZZZZZZ' })).body;
+  const a = (await t.start('its-us-find')).body;
+  t.clock.t += SETTLE_MS;
+  assert.deepEqual(await wrongOn(a.attemptId), { v: 1, outcome: 'fail', charge: true });
+  assert.equal((await wrongOn(a.attemptId)).charge, false, 'the same value on the same attempt is free');
+  const b = (await t.start('its-us-find')).body;
+  assert.notEqual(b.attemptId, a.attemptId);
+  t.clock.t += SETTLE_MS;
+  assert.deepEqual(await wrongOn(b.attemptId), { v: 1, outcome: 'fail', charge: true }, 'a new attempt charges the same value again');
 });
 
 test('two identical wrong checks at once give exactly one charge', async () => {
@@ -519,6 +564,18 @@ test('readback: the connect task passes once the attempt\'s span is visible, and
   assert.equal(t.charged(body.attemptId).length, 0);
 });
 
+test('readback: a held cooldown is "cooldown" with no Dash0 call', async () => {
+  const t = await taskRig();
+  const { body } = await t.start('connect-test-span');
+  t.clock.t += SETTLE_MS;
+  const first = await t.check('connect-test-span', body.attemptId);
+  assert.equal(first.body.reason, 'not-visible', 'the first check takes the cooldown and probes');
+  assert.equal(t.dash0.calls.length, 1);
+  const held = await t.check('connect-test-span', body.attemptId);
+  assert.deepEqual(held.body, { v: 1, outcome: 'inconclusive', charge: false, reason: 'cooldown', retryAfterS: 5 });
+  assert.equal(t.dash0.calls.length, 1, 'the held check made no Dash0 call');
+});
+
 test('delete-account removes the task attempts and the charge set, through the API too', async () => {
   const t = await taskRig();
   await t.start('its-us-find');
@@ -537,48 +594,62 @@ test('delete-account removes the task attempts and the charge set, through the A
   assert.ok(!t.r.fake.keys().some((k) => k.includes(t.pid) && k.includes(':task:')));
 });
 
-test('two starts at once: the second save wins and the survivor is sent and checkable, never stranded by the first start\'s late marker', async () => {
-  const t = await taskRig();
-  // Hold both saves until both starts have read "no attempt", then land A's, then B's; hold A's send until B has finished.
-  let saves = 0;
-  let sends = 0;
-  let bothLoaded;
-  const loaded = new Promise((resolve) => { bothLoaded = resolve; });
-  let releaseSend;
-  const sendGate = new Promise((resolve) => { releaseSend = resolve; });
-  const redis = {
-    ...t.deps.redis,
-    pipeline: async (commands) => {
-      if (commands[0][0] === 'HSET' && commands[0][1] === keys.task(t.pid) && commands[0][2] === 'its-us-find') {
-        if (++saves === 2) bothLoaded();
-        await loaded;
-      }
-      return t.deps.redis.pipeline(commands);
-    },
-  };
-  const fetch = async (url, init) => {
-    if (sends++ === 0) await sendGate; // A's send waits for B's whole start
-    return t.deps.fetch(url, init);
-  };
-  const api = createDash0Task({ ...t.deps, redis, fetch });
-  const start = async () => (await api.POST(post(URL_, { v: 1, op: 'start', taskId: 'its-us-find' }, { cookie: t.cookie }))).json();
-  const a = start();
-  const b = start();
-  const second = await b; // B's save landed after A's, B sent and marked, while A is still held
-  releaseSend();
-  const first = await a;
-  assert.equal(saves, 2, 'both starts reached the save');
-  const survivor = t.attempt('its-us-find').attemptId;
-  assert.equal(second.ok, true);
-  assert.equal(second.attemptId, survivor, 'the second save won');
-  assert.equal(first.error, 'stale-attempt', 'the first start learns it lost');
-  const out = await t.check('its-us-find', survivor, { question: 'operation', value: t.answersOf('its-us-find').operation });
-  assert.equal(out.res.status, 200);
-  assert.notEqual(out.body.reason, 'not-sent', 'the survivor is sent');
-  assert.equal(out.body.reason, 'settling', 'and checkable: it grades once the data has settled');
-  t.noCooldown();
-  t.clock.t += SETTLE_MS;
-  assert.equal((await t.check('its-us-find', survivor, { question: 'operation', value: t.answersOf('its-us-find').operation })).body.outcome, 'pass');
+test('two starts at once: the second save wins and the survivor is sent and checkable, never stranded by the first start\'s late marker', { timeout: 15_000 }, async () => {
+  // The gates follow SAVE order, not call order: both starts are held at their save until both have read "no attempt";
+  // the send of whichever start saved first is held until the other start's save has landed. Run with and without a delay
+  // on the first load, which flips which start reaches its save first.
+  for (const loadDelayMs of [0, 5]) {
+    const t = await taskRig();
+    let saves = 0;
+    let loads = 0;
+    let bothSaving;
+    const saving = new Promise((resolve) => { bothSaving = resolve; });
+    let secondLanded;
+    const landed = new Promise((resolve) => { secondLanded = resolve; });
+    let firstSaved = null;
+    const redis = {
+      ...t.deps.redis,
+      pipeline: async (commands) => {
+        const [verb, key, field, value] = commands[0];
+        if (verb === 'HGET' && key === keys.task(t.pid) && field === 'its-us-find' && loads++ === 0 && loadDelayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, loadDelayMs));
+        }
+        const save = verb === 'HSET' && key === keys.task(t.pid) && field === 'its-us-find';
+        if (save) {
+          if (++saves === 2) bothSaving();
+          await saving;
+        }
+        const out = await t.deps.redis.pipeline(commands);
+        if (save) {
+          const id = JSON.parse(value).attemptId;
+          if (firstSaved === null) firstSaved = id;
+          else secondLanded();
+        }
+        return out;
+      },
+    };
+    const fetch = async (url, init) => {
+      if (firstSaved !== null && String(init.body).includes(firstSaved)) await landed; // the first-saved attempt's send waits for the other save
+      return t.deps.fetch(url, init);
+    };
+    const api = createDash0Task({ ...t.deps, redis, fetch });
+    const start = async () => (await api.POST(post(URL_, { v: 1, op: 'start', taskId: 'its-us-find' }, { cookie: t.cookie }))).json();
+    const both = await Promise.all([start(), start()]);
+    assert.equal(saves, 2, 'both starts reached the save');
+    const survivor = t.attempt('its-us-find').attemptId;
+    assert.notEqual(survivor, firstSaved, 'the second save won');
+    const winner = both.find((x) => x.ok === true);
+    const loser = both.find((x) => x.error !== undefined);
+    assert.equal(winner?.attemptId, survivor);
+    assert.equal(loser?.error, 'stale-attempt', 'the start whose save lost learns it lost');
+    const right = () => ({ question: 'operation', value: t.answersOf('its-us-find').operation });
+    const early = await t.check('its-us-find', survivor, right());
+    assert.equal(early.res.status, 200);
+    assert.equal(early.body.reason, 'settling', 'the survivor is sent and checkable (not "not-sent")');
+    t.noCooldown();
+    t.clock.t += SETTLE_MS;
+    assert.equal((await t.check('its-us-find', survivor, right())).body.outcome, 'pass');
+  }
 });
 
 test('an unsent attempt past its expiry is not resent: the next start is a new attempt from now, and a later check is not 410', async () => {

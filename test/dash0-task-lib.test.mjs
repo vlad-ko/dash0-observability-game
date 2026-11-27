@@ -165,7 +165,17 @@ test('grade: the decision table, with the probe asked only when it must be', asy
     return { out, asked };
   };
   assert.deepEqual((await run({ answer: right })).out, { outcome: 'pass' });
-  assert.deepEqual((await run({ answer: right })).asked, { probe: 0, cooldown: 1 }, 'a right answer takes the cooldown first and needs no probe');
+  assert.deepEqual((await run({ answer: right })).asked, { probe: 1, cooldown: 1 }, 'a right answer takes the cooldown first, then the probe confirms the data before it is graded');
+  assert.deepEqual((await run({ answer: right, seen: true })).asked, { probe: 0, cooldown: 1 }, 'a cached confirmation needs no probe');
+  for (const [probe, reason] of [[async () => ({ count: 0 }), 'not-visible'], [async () => ({ error: true }), 'upstream']]) {
+    const unconfirmed = await run({ answer: right, probe });
+    assert.equal(unconfirmed.out.reason, reason, 'a right answer is not graded while the data is not confirmed');
+    assert.equal(unconfirmed.out.outcome, 'inconclusive');
+  }
+  let confirmed = 0;
+  await run({ answer: right, confirm: async () => { confirmed++; } });
+  await run({ answer: right, seen: true, confirm: async () => { confirmed++; } });
+  assert.equal(confirmed, 1, 'the confirmation is recorded when a probe finds the data, not when it was already cached');
   const early = await run({ answer: right, now: sentAt + 29_999 });
   assert.deepEqual([early.out.reason, early.out.retryAfterS, early.asked], ['settling', 1, { probe: 0, cooldown: 0 }], 'a right answer while settling is not graded: it could only be a guess');
   assert.equal((await run({ answer: right, cooldown: async () => false })).out.reason, 'cooldown', 'a held cooldown refuses a right answer too');

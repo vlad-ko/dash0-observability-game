@@ -471,7 +471,7 @@ nickname field, a listing toggle, Sign out and Delete with a two-step confirm. T
 dismissible, shown at most once per page session and not when `signin-nudge` is hidden through `hideHelp`, with
 buttons Sign in, Not now and Don't ask again. `?signin=` is read once in `main.mjs`, shown as a notice, then stripped
 with `history.replaceState`; `new` shows the welcome line (it promises a leaderboard place only once the player has a star), `ok` shows nothing. Privacy copy: "Optional, @dash0.com Google accounts only. We keep your Google account id,
-a nickname and your level stars and cards, and your In Dash0 task attempts for up to 30 days. We never store or show your name or email. Signed-in players
+a nickname and your level stars and cards, and your In Dash0 task attempts until 30 days after your last In Dash0 task. We never store or show your name or email. Signed-in players
 are listed on the leaderboard by default and can hide themselves in Account. Your default nickname is a fun name made
 from your email; change it any time. Delete your account to remove everything we hold; this browser
 keeps its own copy."
@@ -755,12 +755,14 @@ wires both into the dev server.
   server. Every record carries `game.attempt.id`, `game.player.tag` and `game.task.id` (`stamp.mjs`). `names.mjs` is the only place a name is composed:
   `oncall-<tag>-<task>-<attempt6>`. `links.mjs` builds `<app>/goto/traces/explorer?from&to&dataset&filter` (the filter is JSON on `game.attempt.id`, times absolute ISO 8601).
 - State: Redis `oc:v1:task:<pid>` is a hash with a field per task holding the immutable record `{attemptId, seed, t0, expiresAt, grader}` (written BEFORE
-  anything is sent, 30 day EXPIRE) and a field `<task>.sent` holding `{attemptId, sentAt}`, set after the batches are accepted (the `mark-sent` script writes it only while the record's `attemptId` is still this one, so a start that lost a race cannot mark over the winner, whose own
+  anything is sent, 30 day EXPIRE) and a field `<task>.sent` holding `{attemptId, sentAt}` (and, for a seeded task, `<task>.seen`, below), set after the batches are accepted (the `mark-sent` script writes it only while the record's `attemptId` is still this one, so a start that lost a race cannot mark over the winner, whose own
   start answers 409 `stale-attempt` instead; a marker for another attempt is ignored on read). A `start` while the attempt is unsent resends the identical payload (same seed and t0).
   An attempt lives 24 hours. Answers are derived from the seed on the server (`buildScenario`) and never stored or sent.
 - Grading (`grade.mjs`): a seeded check grades nothing before the data can be there. Before `sentAt + SETTLE_S` (30 s, unmeasured: P8) every answer, right or wrong, is
-  `inconclusive` `settling` with `retryAfterS` and no charge (a right one could only be a guess). After that the cooldown is taken, then a right answer passes with no Dash0 call
-  and a wrong one makes the server probe `countAttempt`; only visible data (a count above 0) allows `fail`; zero is `not-visible`, an API error, a timeout or a non-count is `upstream`.
+  `inconclusive` `settling` with `retryAfterS` and no charge (a right one could only be a guess). After that the cooldown is taken, then the attempt's data must be confirmed visible BEFORE any answer is graded:
+  the server probes `countAttempt` and only a count above 0 confirms it; zero is `not-visible`, an API error, a timeout or a non-count is `upstream`, and in those cases every answer, right or wrong, is
+  inconclusive with no charge. A seeded answer is graded only once the data is confirmed visible. The confirmation is cached per attempt in a third field `<task>.seen` holding `{attemptId, at}`
+  (written by the same `mark-sent` script, so it too is attemptId-guarded), and later checks do not probe again.
   An attempt that was never sent is `not-sent`. A readback task passes when the probe finds the attempt and is otherwise inconclusive, never `fail`. `charge` comes from
   one `SADD oc:v1:task-charged:<pid>` (EXPIRE refreshed to 30 days) of `<attemptId>|<normalised wrong value>` (`normaliseAnswer`), so a distinct wrong value is charged once per attempt
   even when two checks race.
