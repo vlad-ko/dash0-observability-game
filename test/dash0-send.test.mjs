@@ -62,8 +62,9 @@ function fakeTele({ verdicts = [{ ok: true }], outcomes = [{ kind: 'accepted' }]
       return verdict;
     },
     async sendTest(arg) {
-      const outcome = next(outcomes, log.filter((l) => l.fn === 'sendTest').length);
+      const pending = next(outcomes, log.filter((l) => l.fn === 'sendTest').length);
       log.push({ fn: 'sendTest', arg: { attemptId: arg.attemptId } });
+      const outcome = await pending; // a promise holds the send
       if (outcome.kind === 'accepted' && connectsOnAccept) state = 'connected';
       return outcome;
     },
@@ -253,10 +254,130 @@ test('a seeded task with a filter hint tells the player which id to filter on; o
   toTask();
   await start();
   const info = q('#d1-info').textContent;
-  assert.ok(info.includes(`In the Trace Explorer, filter on game.attempt.id is ${A}.`), info);
+  assert.ok(info.includes(`In the Trace Explorer, look for the attribute game.attempt.id with the value ${A}.`), info);
   assert.equal(q('#d1-send') === null, true, 'a seeded task has no send form');
   rig();
   toTask();
   await start();
   assert.equal(q('#d1-info').textContent.includes('Trace Explorer'), false);
+});
+
+/** A promise whose resolution the test controls. */
+const hold = () => {
+  let done;
+  const promise = new Promise((resolve) => { done = resolve; });
+  return { promise, done };
+};
+const count = (r, fn) => r.telemetry.log.filter((l) => l.fn === fn).length;
+
+test('single-flight: two quick Sends give one connect and one sendTest', async () => {
+  const gate = hold();
+  const r = rig({ tele: { outcomes: [gate.promise] } });
+  toTask();
+  await start();
+  type();
+  click('#d1-send-go');
+  q('#d1-send-go').onclick(); // a second press before the first answer
+  await settle();
+  assert.equal(count(r, 'connect'), 1);
+  assert.equal(count(r, 'sendTest'), 1);
+  assert.equal(q('#d1-send-go').disabled, true);
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(q('#d1-send-go').disabled, false);
+});
+
+test('a Start again during a send does not free Send, and a second Send is dropped until the old one answers', async () => {
+  const gate = hold();
+  const r = rig({ api: { starts: [started(A), started(B)] }, tele: { outcomes: [gate.promise] } });
+  toTask();
+  await start();
+  type();
+  click('#d1-send-go');
+  await settle();
+  q('#d1-start').onclick(); // a new attempt begins while the old send is in flight
+  await settle();
+  assert.equal(q('#d1-send-go').disabled, true, 'reset does not clear an in-flight send');
+  type(TOKEN2);
+  q('#d1-send-go').onclick();
+  await settle();
+  assert.equal(count(r, 'connect'), 1);
+  assert.equal(q('#d1-send-go').disabled, true);
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(q('#d1-send-go').disabled, false, 'the old send answered: Send is free again');
+  assert.equal(count(r, 'connect'), 1);
+});
+
+test('while a second Send is in flight Check is off, because the replaced session is not connected', async () => {
+  const gate = hold();
+  const r = rig({ tele: { outcomes: [{ kind: 'accepted' }, gate.promise] } });
+  toTask();
+  await start();
+  await send();
+  assert.equal(q('#d1-check').disabled, false);
+  type();
+  click('#d1-send-go');
+  assert.equal(q('#d1-check').disabled, true, 'off the moment connect replaced the session');
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(q('#d1-check').disabled, false);
+  assert.equal(count(r, 'sendTest'), 2);
+});
+
+test('a late accepted send for an old attempt unlocks nothing for the new one', async () => {
+  const gate = hold();
+  const r = rig({ api: { starts: [started(A), started(B)] }, tele: { outcomes: [gate.promise] } });
+  toTask();
+  await start();
+  type();
+  click('#d1-send-go');
+  await settle();
+  q('#d1-start').onclick();
+  await settle();
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(q('#d1-check').disabled, true, 'the new attempt has sent nothing');
+  assert.equal(q('#d1-send-first').hasAttribute('hidden'), false, 'the send-first note stays');
+  assert.notEqual(feedback(), COPY.send.accepted);
+  assert.equal(r.mistakes(), 0);
+});
+
+test('a token Dash0 refused is forgotten: a 401 from the send, and connect refusing the token', async () => {
+  const paths = [
+    ['401', { outcomes: [{ kind: 'rejected', status: 401, auth: true }, { kind: 'accepted' }] }],
+    ['connect refuses the token', { verdicts: [{ ok: false, field: 'token', reason: 'empty' }, { ok: true }] }],
+  ];
+  for (const [name, tele] of paths) {
+    const r = rig({ tele });
+    toTask();
+    await start();
+    await send(TOKEN);
+    assert.equal(q('#d1-held').textContent, '', `${name}: nothing held`);
+    await send(''); // an empty field
+    const connects = r.telemetry.log.filter((l) => l.fn === 'connect');
+    assert.equal(connects[0].arg.token, TOKEN, name);
+    assert.equal(connects[1].arg.token, '', `${name}: the refused token is not tried again`);
+  }
+});
+
+test('Send reads and empties the token field even when it returns early, and the form is off while there is no attempt', async () => {
+  const r = rig({ api: { starts: [started(A), started(B)], checks: [stale, PASS] } });
+  toTask();
+  await start();
+  await send();
+  click('#d1-check');
+  await settle();
+  assert.equal(q('#d1-token').disabled, true, 'no attempt: the token field is off');
+  assert.equal(q('#d1-endpoint').disabled, true);
+  assert.equal(q('#d1-send-go').disabled, true);
+  q('#d1-token').value = TOKEN2;
+  q('#d1-send-go').onclick(); // dispatched anyway
+  await settle();
+  assert.equal(q('#d1-token').value, '', 'emptied on the early return');
+  assert.equal(count(r, 'connect'), 1, 'nothing sent without an attempt');
+  click('#d1-retry');
+  await settle();
+  assert.equal(q('#d1-token').disabled, false, 'Start again turns the form back on');
+  assert.equal(q('#d1-send-go').disabled, false);
 });
