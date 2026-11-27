@@ -732,7 +732,7 @@ Authoring rules: `docs/CONTENT.md` section 5.1.
 ### 2.15 In Dash0 tasks: the server core (#509 P5)
 
 A task asks the player to find something in the game's own Dash0 organisation. `api/dash0-task.mjs` makes the attempt, sends its
-telemetry and grades the answer; the browser holds no spans and no key. It is dormant: nothing in the game calls it until P6 and P7.
+telemetry and grades the answer; the browser holds no spans and no key. The In Dash0 step (§2.6, #515) is its only caller, and no level uses that step until P7 (#509); §2.6 holds the browser side of this wire contract.
 Code: `lib/dash0-task/` (`config.mjs`, `tag.mjs`, `stamp.mjs`, `names.mjs`, `links.mjs`, `api.mjs` are shared; `scenario.mjs` and `grade.mjs`
 are SERVER ONLY, so `test/dash0-task-server-only.test.mjs` forbids any import of them from `levels/`, `lib/widgets/`, `lib/play.mjs` or
 anything reachable from `main.mjs`), over `lib/otlp/encode.mjs` and `send.mjs` (P4) and `lib/dash0/ingress.mjs`. Tests: `tools/fake-dash0.mjs`
