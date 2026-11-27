@@ -60,6 +60,8 @@ success = mint `#a8fbbe`; error = purple `#ad46ff` (dash0.com purple-500); dark 
 Rule: when `ctx.reduceMotion` is true a level must not wait on any timer (the harness
 plays levels synchronously, as R does).
 
+Rule (par and In Dash0 steps, #509): `scoring.parMs` covers the game steps only, so a level's par is the same whether or not its In Dash0 steps ran. `runPlay` stops the level clock (`ctx.pauseClock()`) when an In Dash0 step is shown and starts it again (`ctx.resumeClock()`) on the next game step; `finish` also leaves out a stop still running, for a level that ends on an In Dash0 step. The level's `finish` text and `cards` are likewise the same either way: `validatePlay` refuses a `play.finish` that says "In Dash0" or names an In Dash0 step's `id` or `task` (a level with no In Dash0 step may say anything). The words the player reads about a task left out are the notice below (§2.6), never the finish text.
+
 ### 2.2 Acts (`levels/index.mjs`)
 
 `export const ACTS = [{ id, no, name, sub, teaser?, badges?, levels: Level[], boss: Level | null }]`.
@@ -130,7 +132,7 @@ so the F4 rules hold (best stars, earliest `at`, card union, never a downgrade).
 (`lib/save-view.mjs` markup, `lib/save-dialog.mjs` wiring, `createGame.openSave`) shows the preview before Import
 and saves through `saveProgress`. `?mode=debug` hides the entry and refuses to open it: nothing is exported or imported.
 
-### 2.6 ctx (`createLevelContext({level, ovBody, ovActions, now, shuffle, reduceMotion, onFinish, signal, reportError?, telemetry?, guide?})`)
+### 2.6 ctx (`createLevelContext({level, ovBody, ovActions, now, shuffle, reduceMotion, onFinish, signal, reportError?, telemetry?, guide?, dash0Task?})`)
 
 ```
 ctx = {
@@ -142,7 +144,9 @@ ctx = {
   hint(): void             // hintsUsed += 1
   askedGuide(): void       // one answered guide question: hintsUsed += 1 (as hint()), then onGuideHint listeners run
   onGuideHint(fn): off     // listen for answered guide questions; listeners are dropped when signal aborts
-  dash0Task?: {available(): boolean}  // optional; read once when a play level opens (#509); absent = no dash0 steps
+  pauseClock(): void       // stop the level clock (an In Dash0 step is on screen, §2.1); idempotent
+  resumeClock(): void      // start it again; the time stopped never counts towards par
+  dash0Task: object | null // the In Dash0 task facade (below), or null (?mode=debug, no fetch): without it a play level leaves its In Dash0 steps out, silently
   guide: object | null     // {configured, ask} from the app (§2.8), or null: the Ask the guide panel reads it
   finish({text = '', cards = []}): {stars, cards, text} | null
   reduceMotion: boolean
@@ -152,6 +156,13 @@ ctx = {
   screen: number           // renderStep calls so far, 0 before the first (the step the feedback dialog names, §2.11)
 }
 ```
+`ctx.dash0Task` (#509) is built by the app from `lib/dash0-task/client.mjs` (the page's `fetch`, the account's signed-in state; none in `?mode=debug`, where the status is never read):
+`available() -> boolean` (the task server is on, from one `GET /api/dash0-task` at init, and the player is signed in), `reason() -> 'off'|'signed-out'|null` (a server that is off, not yet answered or failed counts as `off`, which wins over `signed-out`; `signed-out` only when the account answered that nobody is signed in, so an account that failed or timed out is `off`),
+`start(taskId)` and `check(taskId, attemptId, answer)` (POST `{v:1, op, taskId, attemptId?, answer?}`, nothing else in the body; `answer` is `{question, value}`, one question per call, and a `readback` check sends no `answer` key at all (the server refuses one); a network error or an odd body is `inconclusive`, never a fail; a start that cannot ingest is a 502 `{ok:false, outcome:'inconclusive', reason:'ingest', retryAfterS}`; check is 200 with the reasons `settling`, `cooldown`, `not-visible`, `upstream`, `not-sent`, `answer`; 401 `down: 'signed-out'`, 503 `down: 'off'`, 409 stale-attempt and 410 expired `restart` (a Start again button, no mistake), 429 `retryAfterS`; an inconclusive result carries `retryAfterS` only when the server sent it),
+`isDash0AppUrl(url)` (an https `app.dash0.com` origin allowlist; the widget draws the server's link only when it passes, with `target=_blank` and `rel="noopener noreferrer"`), and from the app `skip(taskIds, cause)`, `passed(taskId)` and `downCause()`.
+Decided once when a level opens, and a level with an In Dash0 step does not run until the task status and the account state have both answered (the overlay is drawn at once with "Getting your In Dash0 task ready"; a level closed meanwhile never runs; after 8 s, `DASH0_WAIT_MS`, it runs with what is known: a status that did not answer is off, an account that did not answer is off too): if `available()` is false `runPlay` leaves the In Dash0 steps out and calls `skip(taskIds, reason())` (D7). The app remembers the ids per level in `oncall.dash0tasks` (`lib/dash0-task/prefs.mjs`, `{"v":1,"levels":{"<level id>":["<task id>"]}}`, a preference like `oncall.primers`, cleared by `?mode=reset`), says on the reward card, in the words of `content/core/ui/dash0-task.mjs`, "This level has an In Dash0 task. Come back once the admin restores the connection to Dash0." (`off`) or "Sign in with your dash0.com account, then come back and replay this level to do its In Dash0 task." (`signed-out`), and marks the level in the hub with a chip ("Come back for the In Dash0 task") and in its accessible name. Replaying the level runs the task once the server is on; a pass (`passed`) takes the id out.
+If the server stops answering while the player is on an In Dash0 step (a 401 or 503, or three results in a row that say Dash0 or the server could not be reached: `network`, `unavailable`, `upstream`, `ingest`; a 400 or 413 is `refused`, the player's answer, never an outage, and an answer over 200 characters is refused in the widget before anything is sent; `settling`, `cooldown`, `rate-limited`, `not-visible`, `not-sent` and `answer` never count), the step offers "Finish without the In Dash0 task": it calls `skip` (with `signed-out` for a 401, else `off`), costs nothing and opens Next or Finish, so a player is never stuck; a later In Dash0 step of the same run is skipped at once. A charged fail calls `ctx.mistake()` once; nothing else on this step costs a star, and Ask the guide is never mounted on it (`guideAllowed`).
+
 `ctx.telemetry` has no token getter. `sessionId`, `status() -> {state: 'off'|'configured'|'connected',
 mode: 'live'|'practice'|null, host}`, `stats() -> {buffered, dropped}`, `liveAvailable()`,
 `connect({mode, endpoint, token, dataset}) -> {ok:true} | {ok:false, field, reason}` (validates, sends

@@ -50,7 +50,7 @@ function setup({ routes = {}, debug, initial, signin, withFetch = true } = {}) {
   const calls = [];
   const timers = [];
   const fetch = async (url, init = {}) => {
-    if (url === '/api/guide' || url === '/api/feedback') return res(404, {}); // the guide's and feedback's own status requests are not this feature's
+    if (url === '/api/guide' || url === '/api/feedback' || url === '/api/dash0-task') return res(404, {}); // the guide's, feedback's and task server's own status requests are not this feature's
     const key = `${init.method ?? 'GET'} ${url}`;
     calls.push(key);
     const r = routes[key];

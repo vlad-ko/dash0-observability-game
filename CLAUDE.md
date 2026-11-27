@@ -11,7 +11,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
   (CSP included) and 404s what `.vercelignore` excludes, plus every dotfile (stricter
   than Vercel); `PORT=8080 npm run dev` to move it.
 - `?mode=debug` on the URL opens every act and level (bosses too) without saving anything; read once in `main.mjs`, never advertised in the UI.
-- `?mode=reset` clears the game's saved state (progress, dismissed help cards, act primer state) once, strips itself from the URL, then loads normally; never advertised in the UI.
+- `?mode=reset` clears the game's saved state (progress, dismissed help cards, act primer state, skipped In Dash0 tasks) once, strips itself from the URL, then loads normally; never advertised in the UI.
 - `npm test` runs `node --test` over `test/**/*.test.mjs`; CI runs the same on Node 22
   and `.nvmrc`, for pushes to `main` and for pull requests.
 
@@ -30,6 +30,7 @@ ES modules, no build step), local-first progress, serverless `api/` later.
 - Content-move checks (#391): `node tools/level-fingerprint.mjs <dir>` writes every level's canonical exports; `LEVEL_SNAPSHOT=<dir>` makes `test/levels-play.test.mjs` write each run's screens. Diff before and after.
 - Play events (epic #18, docs/GAME-EVENTS.md): `lib/play-telemetry.mjs` is the browser client (off in debug, never throws), `lib/play-events.mjs` the wire contract, `api/events.mjs` the receiver; separate from the Act 9 lab `lib/telemetry.mjs`.
 - Act primers (#389, docs/FOUNDATION.md §2.12): `content/core/primers/<act-id>.mjs` is strict-JSON content kept apart from code, `lib/primer.mjs` the pure validator, status and view, `lib/primer-prefs.mjs` the saved state (`oncall.primers`), `lib/primer-view.mjs` the pop-up and zone bodies (`createGame` takes `primers`, default `[]`; `main.mjs` passes `PRIMERS`), `lib/content/` the text rules shared by authored content; authoring guide: docs/PRIMERS.md.
+- In Dash0 step (#509, docs/FOUNDATION.md §2.6, docs/DECLARATIVE-LEVELS.md): a play step done in the real Dash0, checked by the task server; `lib/dash0-task/` the browser client and saved skips, `lib/widgets/dash0-task*.mjs` the step, `content/core/ui/dash0-task.mjs` its words (strict JSON, like primers).
 - Glossary terms in level text (#442): a play step's `intro` and `show` can mark glossary terms; see docs/CONTENT.md §5.1 and docs/FOUNDATION.md §2.14.
 - Level feedback (#370, docs/FOUNDATION.md §2.11): `lib/feedback.mjs` is the wire contract and issue text (pure, browser-importable), `api/feedback.mjs` opens the GitHub issue; off unless `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO` are set; `FEEDBACK_STUB=1` for local dev.
 - In Dash0 tasks (#509, docs/FOUNDATION.md §2.15): `api/dash0-task.mjs` makes an attempt, sends its telemetry and grades the answer; `lib/dash0-task/` is the core (`scenario.mjs` and `grade.mjs` are server only: `test/dash0-task-server-only.test.mjs`); off unless the seven `DASH0_GAME_*` variables validate and sign-in is configured; `DASH0_TASK_STUB=1` (with `AUTH_STUB=1`) wires `tools/fake-dash0.mjs`.
