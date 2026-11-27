@@ -2,7 +2,7 @@
 // headers vercel.json declares (so the CSP bites locally) and refuses whatever
 // .vercelignore keeps out of the deployment (node_modules/ included), plus dotfiles.
 // It also runs `api/<name>.mjs` at `/api/<name>` (GET and POST) through a Node-to-Web Request adapter, as
-// Vercel does (every Set-Cookie and any 3xx with its Location pass through unchanged); `GUIDE_STUB=1` swaps the guide's model call for a canned reply (local dev only, no key needed); `AUTH_STUB=1` gives the sign-in and account functions a stub Google user (dev@dash0.com) and an in-memory Redis (tools/fake-redis.mjs), data gone on restart; `TELEMETRY_STUB=1` prints one `span ...` line per span instead of sending traces (no network, no token; docs/FOUNDATION.md §2.10); `FEEDBACK_STUB=1` makes `/api/feedback` accept a note and print the issue title instead of calling GitHub (docs/FOUNDATION.md §2.11).
+// Vercel does (every Set-Cookie and any 3xx with its Location pass through unchanged); `GUIDE_STUB=1` swaps the guide's model call for a canned reply (local dev only, no key needed); `AUTH_STUB=1` gives the sign-in and account functions a stub Google user (dev@dash0.com) and an in-memory Redis (tools/fake-redis.mjs), data gone on restart; `TELEMETRY_STUB=1` prints one `span ...` line per span instead of sending traces (no network, no token; docs/FOUNDATION.md §2.10); `FEEDBACK_STUB=1` makes `/api/feedback` accept a note and print the issue title instead of calling GitHub (docs/FOUNDATION.md §2.11); `DASH0_TASK_STUB=1` (with `AUTH_STUB=1`, which it needs for sign-in) turns `/api/dash0-task` on over an in-memory Dash0 (tools/fake-dash0.mjs, data visible after 2 s) and the same in-memory Redis (docs/FOUNDATION.md §2.15).
 // Usage: npm run dev   (PORT=8080 npm run dev to change the port)
 import { createServer } from 'node:http';
 import { readFile, realpath, stat } from 'node:fs/promises';
@@ -12,6 +12,7 @@ import { randomBytes } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRedis } from '../lib/account/redis.mjs';
 import { consoleExporter, createServerTelemetry } from '../lib/otel/server.mjs';
+import { createFakeDash0 } from './fake-dash0.mjs';
 import { createFakeRedis } from './fake-redis.mjs';
 
 const REPO = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -37,14 +38,30 @@ const API_MAX_BODY = 16 * 1024;
 export const STUB_REPLY = 'Re-read what the question asks, then look at what each option says about it.';
 
 /** The functions that take an auth-stub env and a Redis client, by file name: the factory each module exports. */
-const AUTH_FACTORIES = { 'auth-start': 'createAuthStart', 'auth-callback': 'createAuthCallback', account: 'createAccount', progress: 'createProgress', leaderboard: 'createLeaderboard' };
+const AUTH_FACTORIES = { 'auth-start': 'createAuthStart', 'auth-callback': 'createAuthCallback', account: 'createAccount', progress: 'createProgress', leaderboard: 'createLeaderboard', 'dash0-task': 'createDash0Task' };
 
 /** What a TELEMETRY_STUB server tells the telemetry config: valid and never contacted, since the exporter is the console. */
 const STUB_TELEMETRY_ENV = Object.freeze({ DASH0_OTLP_ENDPOINT: 'http://localhost:4318', DASH0_AUTH_TOKEN: 'auth_stub' });
 /** The functions that make an outbound call to trace: their factory takes the traced `fetch`. */
-const tracedFetch = (name, t) => (name === 'auth-callback' || name === 'guide' || name === 'feedback' ? { fetch: t.trace(globalThis.fetch) } : {});
+const tracedFetch = (name, t) => (name === 'auth-callback' || name === 'guide' || name === 'feedback' || name === 'dash0-task' ? { fetch: t.trace(globalThis.fetch) } : {});
 /** What a FEEDBACK_STUB server tells the feedback function: configured, and never contacted, since the fetch is the stub below. */
 const STUB_FEEDBACK_ENV = Object.freeze({ FEEDBACK_GITHUB_TOKEN: 'feedback_stub', FEEDBACK_REPO: 'stub/stub' });
+
+/**
+ * What a DASH0_TASK_STUB server tells the task function: all seven variables valid, and never contacted, since the fetch and
+ * the Dash0 interface are the in-memory fake. The fake answers only for these two hosts.
+ */
+const STUB_TASK_HOSTS = Object.freeze(['ingress.eu-west-1.aws.dash0.com', 'api.eu-west-1.aws.dash0.com']);
+const STUB_TASK_LAG_MS = 2000;
+const stubTaskEnv = () => ({
+  DASH0_GAME_INGEST_URL: `https://${STUB_TASK_HOSTS[0]}`,
+  DASH0_GAME_INGEST_TOKEN: 'auth_stub_ingest_token',
+  DASH0_GAME_DATASET: 'oncall-game',
+  DASH0_GAME_API_URL: `https://${STUB_TASK_HOSTS[1]}`,
+  DASH0_GAME_API_TOKEN: 'auth_stub_api_token',
+  DASH0_GAME_APP_URL: 'https://app.dash0.com',
+  DASH0_GAME_PLAYER_SECRET: randomBytes(32).toString('hex'),
+});
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 
@@ -153,7 +170,7 @@ async function resolveFile(root, ignored, decoded) {
   return file;
 }
 
-export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log = console.log, stub = process.env.GUIDE_STUB === '1', authStub = process.env.AUTH_STUB === '1', telemetryStub = process.env.TELEMETRY_STUB === '1', feedbackStub = process.env.FEEDBACK_STUB === '1', env = null } = {}) {
+export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log = console.log, stub = process.env.GUIDE_STUB === '1', authStub = process.env.AUTH_STUB === '1', telemetryStub = process.env.TELEMETRY_STUB === '1', feedbackStub = process.env.FEEDBACK_STUB === '1', dash0TaskStub = process.env.DASH0_TASK_STUB === '1', env = null } = {}) {
   const realRoot = realpathSync(root);
   const config = JSON.parse(readFileSync(join(realRoot, 'vercel.json'), 'utf8'));
   config.headers?.forEach((rule) => sourceRegExp(rule.source)); // fail at startup
@@ -168,6 +185,7 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
   if (stub) log('GUIDE_STUB=1: /api/guide answers with a canned reply, no model is called');
   if (authStub) log('AUTH_STUB=1: sign-in is a stub (dev@dash0.com) over an in-memory Redis; use http://localhost, not 127.0.0.1');
   if (telemetryStub) log('TELEMETRY_STUB=1: every api request prints one span line, no trace is sent');
+  if (dash0TaskStub) log(authStub ? 'DASH0_TASK_STUB=1: /api/dash0-task is on over an in-memory Dash0 (records are visible after 2 s); nothing leaves this machine' : 'DASH0_TASK_STUB=1 needs AUTH_STUB=1 (the tasks are signed-in only): /api/dash0-task stays off');
   if (feedbackStub) log('FEEDBACK_STUB=1: /api/feedback accepts a note and prints the issue title it would open, nothing goes to GitHub (sessions are not stubbed: From is signed out)');
   // The GitHub call under FEEDBACK_STUB: print the issue title and answer as GitHub does for a created issue.
   const stubIssueFetch = async (url, init) => {
@@ -177,6 +195,7 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
   const modules = new Map();
   let authEnv = null; // built on first use: the port is known once listening
   let fakeRedis = null;
+  let fakeDash0 = null;
   // A rebuilt handler set, wrapped as the module wraps its own. Under TELEMETRY_STUB the spans go to `log`
   // through a fake config; otherwise the real env decides, so a configured dev server sends traces.
   const instrumented = (name, build) => {
@@ -196,6 +215,13 @@ export function startServer({ root = REPO, port = 3000, host = '127.0.0.1', log 
         }
         if (feedbackStub && name === 'feedback') {
           return instrumented(name, (t) => mod.createFeedback({ env: STUB_FEEDBACK_ENV, fetch: t.trace(stubIssueFetch), log: t.log }));
+        }
+        if (authStub && dash0TaskStub && name === 'dash0-task') {
+          fakeRedis ??= createFakeRedis();
+          authEnv ??= { AUTH_STUB: '1', AUTH_ORIGIN: `http://localhost:${server.address().port}`, SESSION_SECRET: randomBytes(32).toString('hex') };
+          fakeDash0 ??= createFakeDash0({ now: Date.now, lagMs: STUB_TASK_LAG_MS, hosts: STUB_TASK_HOSTS });
+          const redis = createRedis({ url: fakeRedis.url, token: fakeRedis.token, fetch: fakeRedis.fetch });
+          return instrumented(name, (t) => mod.createDash0Task({ env: { ...authEnv, ...stubTaskEnv() }, redis, fetch: fakeDash0.fetch, dash0: fakeDash0, log: t.log }));
         }
         if (authStub && Object.hasOwn(AUTH_FACTORIES, name)) {
           // One fake store and one secret for every auth function; AUTH_ORIGIN is http://localhost, the only origin the stub accepts.

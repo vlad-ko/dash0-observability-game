@@ -726,6 +726,45 @@ closes an open card, and `focusStepStart` skips a term so that opening a level d
 checked by `checkLevelTerms` (`lib/content/terms.mjs`) in `test/level-terms.test.mjs`, never at bind, which never imports the glossary.
 Authoring rules: `docs/CONTENT.md` section 5.1.
 
+### 2.15 In Dash0 tasks: the server core (#509 P5)
+
+A task asks the player to find something in the game's own Dash0 organisation. `api/dash0-task.mjs` makes the attempt, sends its
+telemetry and grades the answer; the browser holds no spans and no key. It is dormant: nothing in the game calls it until P6 and P7.
+Code: `lib/dash0-task/` (`config.mjs`, `tag.mjs`, `stamp.mjs`, `names.mjs`, `links.mjs`, `api.mjs` are shared; `scenario.mjs` and `grade.mjs`
+are SERVER ONLY, so `test/dash0-task-server-only.test.mjs` forbids any import of them from `levels/`, `lib/widgets/`, `lib/play.mjs` or
+anything reachable from `main.mjs`), over `lib/otlp/encode.mjs` and `send.mjs` (P4) and `lib/dash0/ingress.mjs`. Tests: `tools/fake-dash0.mjs`
+(an in-memory Dash0 that throws a `TypeError` for any host it was not built with) and `tools/fake-redis.mjs`; `DASH0_TASK_STUB=1` with `AUTH_STUB=1`
+wires both into the dev server.
+
+- Env (all separate from the owner's monitoring variables of §2.10): `DASH0_GAME_INGEST_URL`, `_INGEST_TOKEN`, `_DATASET` (required: every deep
+  link names it), `_API_URL`, `_API_TOKEN`, `_APP_URL` and `_PLAYER_SECRET` (32 bytes or more). All seven absent is off; any one set means all must
+  validate, else `invalid`, and the one log line names the variable and the reason, never a value. The API hosts are the ingress hosts with `api.`
+  for `ingress.`; the app origin is exactly `https://app.dash0.com`. The tasks are `on` only when these validate and sign-in with its store (§2.9) is
+  configured: `createDash0Task` computes that once (`enabled`). Off makes no Redis command and no fetch.
+- Wire: `GET` -> `{v:1, on}` (no session). `POST {v:1, op:'start', taskId}` -> `{v:1, ok:true, attemptId, link, tag, readyAfterS, expiresAt}` (plus `name`
+  for a readback task); ingest failure -> 502 `{ok:false, outcome:'inconclusive', reason:'ingest', retryAfterS}`. `POST {v:1, op:'check', taskId, attemptId,
+  answer?}` (`answer` is `{question, value}`, required for a seeded task, refused for a readback one) -> `{v:1, outcome:'pass'|'fail'|'inconclusive', charge,
+  reason?, retryAfterS?}`. Check order: 405, 503 (off or invalid), 403 (`originMatches`), 415, 413 (4 KiB), 401 (502 if the store fails), 400, 404 (unknown
+  task), 429, then 409 (stale or no attempt) and 410 (past `expiresAt`; fine at `expiresAt`). Limits through `store.rateLimit`: start 12 and check 40 per 600 s, plus a
+  per-attempt `SET NX EX 5` cooldown taken only before a Dash0 call (reason `cooldown`).
+- Identity: `playerTag(pid, secret)` is `base32lower(HMAC-SHA256(secret, 'player:' + pid))` cut to 10 characters, the only identifier that leaves the
+  server. Every record carries `game.attempt.id`, `game.player.tag` and `game.task.id` (`stamp.mjs`). `names.mjs` is the only place a name is composed:
+  `oncall-<tag>-<task>-<attempt6>`. `links.mjs` builds `<app>/goto/traces/explorer?from&to&dataset&filter` (the filter is JSON on `game.attempt.id`, times absolute ISO 8601).
+- State: Redis `oc:v1:task:<pid>` is a hash with a field per task holding the immutable record `{attemptId, seed, t0, expiresAt, grader}` (written BEFORE
+  anything is sent, 30 day EXPIRE) and a field `<task>.sent` holding `{attemptId, sentAt}`, set after the batches are accepted (one HSET on its own field, so it
+  can never overwrite a newer attempt; a marker for another attempt is ignored). A `start` while the attempt is unsent resends the identical payload (same seed and t0).
+  An attempt lives 24 hours. Answers are derived from the seed on the server (`buildScenario`) and never stored or sent.
+- Grading (`grade.mjs`): a right answer passes at once with no Dash0 call. A wrong one is `inconclusive` `settling` before `sentAt + SETTLE_S` (30 s, unmeasured: P8),
+  then the server probes `countAttempt`; only visible data (a count above 0) allows `fail`; zero is `not-visible`, an API error, a timeout or a non-count is `upstream`.
+  An attempt that was never sent is `not-sent`. A readback task passes when the probe finds the attempt and is otherwise inconclusive, never `fail`. `charge` comes from
+  one `SADD oc:v1:task-charged:<pid>:<attemptId>` (EXPIRE 86400) of the normalised wrong value (`normaliseAnswer`), so a distinct wrong value is charged once per attempt
+  even when two checks race.
+- Never in a response, log line, span or Redis: the tokens, the player secret, the seed, the answers, a pid, a nickname, an email. A deleted account removes `oc:v1:task:<pid>`
+  (the sixth KEY of the `delete-account` script); the charge and cooldown keys expire by themselves within a day.
+- Not built here (P8): the real Dash0 API adapter (`createDash0Api` throws `not implemented: P8`, so real mode answers `upstream`), the measured `SETTLE_S`,
+  the 60-per-minute outbound budget, the asset cleanup. Switching the tasks on needs the seven variables and the owner decisions D1 to D3 of #509.
+- `lib/` is deployed as static files, so `scenario.mjs` and `grade.mjs` are fetchable by URL: the key is safe because the seed is not in them, not because the code is hidden.
+
 ## 3. Invariants
 
 Registry (`validateRegistry` reports all at once): act and level ids unique across all acts

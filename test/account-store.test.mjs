@@ -392,7 +392,7 @@ test('top is clamped to 1..10: 11 listed players give 10 rows and size 11', asyn
   assert.equal((await store.leaderboard({ top: 3.9 })).top.length, 3);
 });
 
-test('claim-nick and delete-account get their nick and sub keys as KEYS, not ARGV', async () => {
+test('claim-nick and delete-account get their nick, sub and task keys as KEYS, not ARGV', async () => {
   const { store, fake } = setup();
   const pid = await join(store, 'sub-x', 'aaa@dash0.com');
   await store.setNickname(pid, 'Ada');
@@ -402,7 +402,7 @@ test('claim-nick and delete-account get their nick and sub keys as KEYS, not ARG
   const claim = keysOf(evals[0]);
   assert.ok(claim.includes(keys.nick('ada')) && claim.length === 3);
   const del = keysOf(evals.at(-1));
-  assert.ok(del.includes(keys.sub('sub-x')) && del.includes(keys.nick('ada')) && del.length === 5);
+  assert.ok(del.includes(keys.sub('sub-x')) && del.includes(keys.nick('ada')) && del.includes(keys.task(pid)) && del.length === 6);
 });
 
 test('a nickname change racing another one re-reads the old key and releases the right claim', async () => {
