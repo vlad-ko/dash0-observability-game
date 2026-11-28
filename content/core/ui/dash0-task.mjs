@@ -30,7 +30,7 @@ export default {
   "filterHint": "In the Trace Explorer, look for the attribute {attribute} with the value {id}.",
   "send": {
     "endpointLabel": "Endpoint",
-    "endpointNote": "The OTLP over HTTP address of your organisation, the address without a path. The game adds the signal path itself.",
+    "endpointNote": "The OTLP via HTTP address of your organisation, the address without a path. The game adds the signal path itself.",
     "tokenLabel": "Auth token",
     "tokenNote": "Paste the Ingesting token you just created. The game keeps it in this tab's memory only and forgets it on reload. It leaves this field when you press Send. If your browser offers to save it, decline.",
     "button": "Send test span",

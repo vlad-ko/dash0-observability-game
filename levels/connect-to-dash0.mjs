@@ -8,8 +8,9 @@
 // A player who cannot do the In Dash0 step (signed out, task server off) plays the first two steps alone (lib/play.mjs, D7).
 // Spec: https://www.dash0.com/docs/dash0/miscellaneous/glossary/auth-tokens , https://www.dash0.com/docs/dash0/miscellaneous/glossary/endpoints , https://www.dash0.com/docs/dash0/miscellaneous/glossary/datasets , https://www.dash0.com/docs/dash0/miscellaneous/glossary/dash0-api
 // Spec: https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/installation , https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/overview , https://www.dash0.com/hub/integrations/int_otlp/overview
+// Spec: https://www.dash0.com/docs/dash0/telemetry/signal-control/edge/about-signalcontrol-edge
 // Spec: https://opentelemetry.io/docs/languages/js/exporters/ , https://opentelemetry.io/docs/specs/otlp/
-// Dash0 docs: https://www.dash0.com/docs/dash0/miscellaneous/glossary/auth-tokens , https://www.dash0.com/docs/dash0/miscellaneous/glossary/endpoints , https://www.dash0.com/docs/dash0/miscellaneous/glossary/datasets , https://www.dash0.com/docs/dash0/miscellaneous/glossary/dash0-api , https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/installation , https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/overview , https://www.dash0.com/hub/integrations/int_otlp/overview
+// Dash0 docs: https://www.dash0.com/docs/dash0/telemetry/signal-control/edge/about-signalcontrol-edge , https://www.dash0.com/docs/dash0/miscellaneous/glossary/auth-tokens , https://www.dash0.com/docs/dash0/miscellaneous/glossary/endpoints , https://www.dash0.com/docs/dash0/miscellaneous/glossary/datasets , https://www.dash0.com/docs/dash0/miscellaneous/glossary/dash0-api , https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/installation , https://www.dash0.com/docs/dash0/miscellaneous/tooling/web-sdk/overview , https://www.dash0.com/hub/integrations/int_otlp/overview
 // Facts used (read 2026-11-27):
 // - Auth tokens are of the form auth_abc123..., each belongs to one organisation, and are managed in Settings -> Auth Tokens (glossary/auth-tokens).
 //   The Permissions options are All permissions (the default: the full Dash0 API for configuration, ingesting and querying), Ingesting (can only send
@@ -29,10 +30,17 @@
 // - The Dash0 API is how you "configure Dash0 and ... query your data"; the Prometheus APIs are on Dash0's Prometheus API endpoint and take a token
 //   "having the querying permissions" (glossary/dash0-api). Endpoint URLs reflect the organisation's region, and the endpoint reference is in the
 //   organisation's settings (glossary/endpoints).
+// - SignalControl Edge "runs that same reduction inside your own network, before telemetry leaves it", with an edge collector that "connects back to
+//   Dash0 for configuration" (telemetry/signal-control/edge/about-signalcontrol-edge); the Signal Control edge permission grants ingest:* and
+//   edge-settings:read (glossary/auth-tokens). The edge-token answers say it is for that, and that a page reader could read those settings with it.
 // Derived, not stated on a page: that the endpoint address is "not a credential" (an address; the token authorises: glossary/auth-tokens says tokens
 // "authenticate and authorize"); that keeping the address out of the page's code would break the page (the SDK needs it to send); that localhost in a
-// visitor's browser is the visitor's own machine.
-// Not on a Dash0 page, so unverified (#195, P8): that the Create token form preselects a dataset other than All datasets for a player (the page says
+// visitor's browser is the visitor's own machine; that a dataset name is safe in page code (Dash0 says only that a request naming a dataset the token
+// may not write to is rejected); that anyone who reads the page could read the edge settings with an edge token.
+// Naming: the player text says "Settings" throughout (Settings, Auth Tokens; Settings, Endpoints). The auth-tokens page writes "Settings -> Auth Tokens";
+// the Web SDK page writes "Organization Settings > Endpoints > OTLP via HTTP". Whether they are the same menu is unverified.
+// Not on a Dash0 page, so unverified (#195, P8): that the endpoint appears in Dash0 without a path (the send form refuses any path, lib/dash0/ingress.mjs,
+// so the brief asks for "the address without a path"; the Web SDK page does not show the URL); that leaving Dataset at All datasets is the form's default; that the Create token form preselects a dataset other than All datasets for a player (the page says
 // Dash0 "preselects your preferred dataset if it is eligible"; the brief only asks to check the Dataset field); that a player's browser may send to the
 // organisation's ingress (CORS and the game's CSP: vercel.json connect-src, lib/dash0/ingress.mjs, whose INGRESS_HOSTS are inferred); and that a player
 // is an Admin in the game's organisation (the page says only Admins can create tokens; the brief does not name the role).

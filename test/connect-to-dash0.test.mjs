@@ -79,7 +79,7 @@ test('the In Dash0 step is the readback task connect-test-span: no questions, no
 });
 
 test('the brief names the real Dash0 places in words: the Ingesting permission, Settings, Auth Tokens and Endpoints, the OTLP via HTTP address, and the buttons', () => {
-  const brief = dash0Step.intro;
+  const brief = dash0Step.intro.replace(/<span data-gloss="[^"]*">([^<]*)<\/span>/g, '$1');
   for (const word of [/auth token with only the Ingesting permission/, /Settings, then Auth Tokens/, /All datasets/, /Settings, then Endpoints/, /OTLP via HTTP address/, /without a path/, /Start the task/, /Send test span/, /press Check/, /Open in Dash0/, /game's organisation/]) assert.match(brief, word, `the brief says: ${word}`);
   assert.doesNotMatch(brief, /simulated|practice/i, 'it imitates no Dash0 screen');
 });

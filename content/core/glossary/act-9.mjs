@@ -19,6 +19,6 @@ export default {
     {"id": "attribute-filter", "name": "Attribute filter", "variants": ["attribute filters"], "definition": "A filter on one attribute: a key, an operator and one or more values.", "topic": "Dash0"},
     {"id": "waterfall", "name": "Waterfall", "variants": [], "definition": "The view in Dash0's Trace View that lists one trace's spans as rows in a parent-child tree, each with a bar showing when the span started and ended.", "topic": "Dash0"},
     {"id": "errors-tag", "name": "Errors tag", "variants": [], "definition": "A tag in the Waterfall of Dash0's Trace View, shown when the trace has failed spans. Clicking it shows only those spans.", "topic": "Dash0"},
-    {"id": "simulated-dash0", "name": "Simulated Dash0", "variants": ["practice", "practice mode"], "definition": "The game's practice mode, with a simulated Dash0 instead of an account.", "topic": "Dash0"}
+    {"id": "ingesting", "name": "Ingesting", "variants": ["Ingesting permission"], "definition": "A permission an auth token can have in Dash0: a token with only Ingesting can send telemetry and nothing else.", "topic": "Dash0"}
   ]
 };

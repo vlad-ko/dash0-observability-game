@@ -5,7 +5,7 @@ export default {
   "sub": "A token and an endpoint for a browser tab",
   "rewardTitle": "Connected",
   "play": {
-    "finish": "You settled the two things a browser sender needs. The token sits in code that anyone who loads the page can read, so it should only be able to send: Dash0 says to restrict a token you distribute publicly, for example in OpenTelemetry instrumentation running in web browsers, to Ingesting. The address is the OTLP via HTTP endpoint of your organisation's region, because a browser exporter cannot use gRPC.\n\nDash0 lists tokens under Settings, Auth Tokens and endpoints under Settings, Endpoints.",
+    "finish": "You settled the two things a browser sender needs. The token sits in code that anyone who loads the page can read, so it should only be able to send: Dash0 says to restrict a token you distribute publicly to Ingesting. The address is the OTLP via HTTP endpoint of your organisation's region, because the OpenTelemetry JavaScript documentation says gRPC export is not supported in a browser.\n\nDash0 lists tokens under Settings, Auth Tokens and endpoints under Settings, Endpoints.",
     "steps": [
       {
         "intro": "You want a web page of your own to send telemetry to Dash0 from the browser. The page's code goes to every visitor, so whatever it holds, anyone who loads the page can read. Dash0 gives a sender an [[auth token]] and an address to send to.",
@@ -26,14 +26,14 @@ export default {
             {
               "id": "ingest-token",
               "label": "An auth token with only the Ingesting permission, used by one website",
-              "why": "Dash0 says to restrict tokens you distribute publicly to Ingesting, for example in OpenTelemetry instrumentation running in web browsers: such a token is readable by anyone using the app, and an ingestion-only token cannot read your telemetry back or change your configuration. Dash0 also says to give each website its own token and to limit the token's datasets to the one it ingests into.",
+              "why": "Dash0 says to restrict tokens you distribute publicly to [[Ingesting]], for example in OpenTelemetry instrumentation running in web browsers: such a token is readable by anyone using the app, and a token with only Ingesting cannot read your telemetry back or change your configuration. Dash0 also says to give each website its own token and to limit the token's datasets to the one it ingests into.",
               "whyNot": {
                 "keep": "This is the token Dash0 recommends for browser code. Anyone can read it there, but with only the Ingesting permission it can send telemetry and nothing else."
               }
             },
             {
               "id": "endpoint",
-              "label": "The OTLP via HTTP endpoint for your region",
+              "label": "The ingestion endpoint Dash0 gives your organisation",
               "why": "It is an address, not a credential. The page has to use it to send, and the Dash0 Web SDK takes it in the page's own code, next to the token. What authorises a send is the token.",
               "whyNot": {
                 "keep": "Keeping it out would stop nothing and break the page: the page has to use the address to send. What authorises a send is the token, not the address."
@@ -66,9 +66,9 @@ export default {
             {
               "id": "edge-token",
               "label": "An auth token that has the Signal Control edge permission",
-              "why": "It sends telemetry, but it also reads SignalControl Edge settings, which is more than a sender needs. For a token in public code, Dash0 says to restrict it to Ingesting.",
+              "why": "It sends telemetry, but it is meant for SignalControl Edge, which Dash0 describes as running its edge collector inside your own network, and it also reads SignalControl Edge settings. Anyone who can read the page could read those settings with it. For a token in public code, Dash0 says to restrict it to Ingesting.",
               "whyNot": {
-                "ship": "It can send telemetry, but it can also read SignalControl Edge settings. For a token anyone can read, Dash0 says Ingesting, which sends and does nothing else."
+                "ship": "It can send telemetry, but it is the token an edge collector in your own network uses to read SignalControl Edge settings, and anyone who loads the page could read those settings with it. For a token anyone can read, Dash0 says Ingesting, which sends and does nothing else."
               }
             }
           ]
@@ -83,7 +83,7 @@ export default {
             {
               "key": "http",
               "label": "The OTLP via HTTP endpoint of your organisation's region",
-              "why": "A browser exporter cannot export over gRPC, so a page sends OTLP over HTTP, and Dash0's Web SDK asks for the OTLP via HTTP endpoint of your region. Dash0 shows it under Settings, Endpoints. OTLP over HTTP carries spans to the path <code>/v1/traces</code> under that address."
+              "why": "The OpenTelemetry JavaScript documentation says that using gRPC for exporting is not supported in a browser, and Dash0's Web SDK asks for the OTLP via HTTP endpoint of your region. Dash0 shows it under Settings, Endpoints. Over HTTP, spans go to the path <code>/v1/traces</code> under that address."
             },
             {
               "key": "grpc",
@@ -104,7 +104,7 @@ export default {
         }
       },
       {
-        "intro": "Now do it for real. The game has its own Dash0 organisation, and you will send one test span to it from this tab, as the page would. Get two things from Dash0 first:<ol><li>An auth token with only the Ingesting permission. In Dash0, open Settings, then Auth Tokens, and create one for the game's organisation. Check that its Dataset says All datasets, so the token may write to whichever [[dataset]] the test span goes to.</li><li>The endpoint. In Settings, then Endpoints, copy the OTLP via HTTP address, the address without a path.</li></ol>Press Start the task and paste both into the form, then press Send test span. When Dash0 has accepted it, press Check: the game looks for your span in Dash0, which can take a little while. Open in Dash0 opens the [[Trace Explorer]] on your test span.",
+        "intro": "Now do it for real. The game has its own Dash0 organisation, and you will send one test span to it from this tab, as the page would. Get two things from Dash0 first:<ol><li>An auth token with only the [[Ingesting]] permission. In Dash0, open Settings, then Auth Tokens, and create one for the game's organisation. This token is for the game's own organisation, not for a public page, and the game picks the [[dataset]] for the test span, so leave Dataset at All datasets.</li><li>The endpoint. In Settings, then Endpoints, copy the OTLP via HTTP address, the address without a path.</li></ol><p>Press Start the task and paste both into the form, then press Send test span. When Dash0 has accepted it, press Check: the game looks for your span in Dash0, which can take a little while. Open in Dash0 opens the [[Trace Explorer]] on your test span.</p>",
         "dash0": {
           "id": "connect-send"
         }

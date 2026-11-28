@@ -24,7 +24,6 @@ import { definedClasses } from './helpers/css.mjs';
 import { readJsonModule } from './helpers/content-files.mjs';
 import { checkWords, editRun, RUN_FIXTURES } from './helpers/run-edit.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
-import { createTelemetry } from '../lib/telemetry.mjs';
 import { scoreStars } from '../lib/scoring.mjs';
 import { buildRegistry } from '../lib/registry.mjs';
 import { runPlay, validatePlay } from '../lib/play.mjs';
@@ -387,14 +386,6 @@ const DRIVERS = {
   },
 };
 
-// A fixed clock (2023-11-14T22:13:20Z), so the wall-clock times a level shows are the same on every run
-// and a LEVEL_SNAPSHOT before and after a change to the level can be compared (#391).
-const PRACTICE_NOW_MS = 1_700_000_000_000;
-
-function practiceTelemetry() {
-  return createTelemetry({ randomBytes: (n) => new Uint8Array(n).fill(7), now: () => PRACTICE_NOW_MS, setTimeout, clearTimeout });
-}
-
 // The same registry the app boots with (levels/index.mjs, the deck and the map's node ids),
 // so a level the app accepts is a level this file plays, and vice versa.
 const LIVE = liveRegistry();
@@ -616,12 +607,6 @@ async function playLevelAsync(level, play, opts) {
     seenAttrs = null;
     recording = null;
   }
-}
-
-/** Wait (a few event-loop turns) until `sel` is on the page; fails if it never appears. */
-async function until(sel, max = 50) {
-  for (let i = 0; i < max && !q(sel); i++) await new Promise((r) => setImmediate(r));
-  assert.ok(q(sel), `never appeared: ${sel}`);
 }
 
 // ---- T8 (#158): every class a level shows has a CSS rule --------------------------------
