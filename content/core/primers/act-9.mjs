@@ -22,7 +22,7 @@ export default {
     {
       "type": "callout",
       "tone": "note",
-      "text": "You do not need a Dash0 account: choose \"Practice with a simulated Dash0\" instead."
+      "text": "The In Dash0 step uses the game's own Dash0 organisation. To do that step, sign in with your dash0.com account."
     },
     {
       "type": "callout",

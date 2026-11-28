@@ -1,104 +1,114 @@
-// Text of levels/connect-to-dash0.mjs (docs/CONTENT.md). {{timeout-s}} is a figure from the level's VARS table; the other {{name}} marks are slots the code fills while it runs (the session id it marks up, a host, an HTTP status, a server message, the token prefix, which Dash0 an outcome names).
-// A run(ctx) level: levels/connect-to-dash0.mjs reads each entry of "run" as say.<name> (docs/CONTENT.md section 11). The VERIFY (#195) notes on the endpoint row labels, the Create token button and the 401 and 403 wording, and the Permissions list rule (the options are the telemetry session's PRACTICE_SCOPE keys), are in levels/connect-to-dash0.mjs beside the code that uses them. The field name of the dataset is "datasetField" ("dataset" is a logic-only key under run), which connectProblem maps back to the field it names.
+// Text of levels/connect-to-dash0.mjs (docs/CONTENT.md). A play level: a sort step, a choice step, then an In Dash0 step. The In Dash0 step's buttons and status lines come from content/core/ui/dash0-task.mjs, and its send form's labels and notes from the same file; the brief below names the real Dash0 places in words and draws none of them. The finish text says the same whether or not the In Dash0 step ran, so it never mentions it.
 export default {
   "id": "connect-to-dash0",
   "name": "Connect the game to Dash0",
-  "sub": "An endpoint and a token for a browser tab",
+  "sub": "A token and an endpoint for a browser tab",
   "rewardTitle": "Connected",
-  "run": {
-    "startIntro": "The game has no telemetry session in this build, so there is nothing to connect.",
-    "startNote": "Use Back to return to the map.",
-    "modeIntro": "Every level so far ran against a simulation. This one connects the game to a Dash0. A sender needs two things: the <b>endpoint</b> of your organization, and an <b>[[auth token]]</b>. The game sends from a browser tab, and browsers cannot make gRPC calls, so it uses the <b>OTLP via HTTP</b> endpoint. Then it sends one test span, and you will see whether it was accepted.",
-    "modeChip": "Practice: a simulated Dash0, not your account",
-    "modePractice": "<p>Practice shows a simulated Dash0 settings page to read the endpoint from and to create a token in. Nothing leaves this page, and it is scored the same way as your own Dash0.</p>",
-    "modeLive": "<p>Your own Dash0: the game sends one test span, and a level-complete span for each level you finish until you reload the page, to the endpoint you enter. Nothing goes to the game's servers.</p>",
-    "modeLiveWhy": "Your own Dash0 is not available in this browser. Practice works the same way.",
-    "modePracticeButton": "Practice with a simulated Dash0",
-    "modeLiveButton": "Use my own Dash0",
-    "modeLiveReason": "Not available in this browser.",
-    "scopes": [
+  "play": {
+    "finish": "You settled the two things a browser sender needs. The token sits in code that anyone who loads the page can read, so it should only be able to send: Dash0 says to restrict a token you distribute publicly to Ingesting. The address is the OTLP via HTTP endpoint of your organisation's region, because the OpenTelemetry JavaScript documentation says gRPC export is not supported in a browser.\n\nDash0 lists tokens under Settings, Auth Tokens and the endpoint list under Settings, Endpoints.",
+    "steps": [
       {
-        "key": "all",
-        "label": "All permissions",
-        "why": "That token works, but it can also query your data and change your configuration. Dash0 recommends Ingesting-only tokens whenever you distribute a token publicly, for example in browser instrumentation."
+        "intro": "You want a web page of your own to send telemetry to Dash0 from the browser. The page's code goes to every visitor, so whatever it holds, anyone who loads the page can read. Dash0 gives a sender an [[auth token]] and an address to send to.",
+        "question": "Which of these can go in the page's code?",
+        "sort": {
+          "id": "ctd-sort",
+          "buckets": [
+            {
+              "id": "ship",
+              "label": "Can go in the page's code"
+            },
+            {
+              "id": "keep",
+              "label": "Not for the page's code"
+            }
+          ],
+          "items": [
+            {
+              "id": "ingest-token",
+              "label": "An auth token with only the Ingesting permission, used by one website",
+              "why": "Dash0 says to restrict tokens you distribute publicly to [[Ingesting]], for example in OpenTelemetry instrumentation running in web browsers: such a token is readable by anyone using the app, and a token with only Ingesting cannot read your telemetry back or change your configuration. Dash0 also says to give each website its own token and to limit the token's datasets to the one it ingests into.",
+              "whyNot": {
+                "keep": "This is the token Dash0 recommends for browser code. Anyone can read it there, but with only the Ingesting permission it can send telemetry and nothing else."
+              }
+            },
+            {
+              "id": "endpoint",
+              "label": "The ingestion endpoint Dash0 gives your organisation",
+              "why": "It is an address, not a credential. The page has to use it to send, and the Dash0 Web SDK takes it in the page's own code, next to the token. What authorises a send is the token.",
+              "whyNot": {
+                "keep": "Keeping it out would stop nothing and break the page: the page has to use the address to send. What authorises a send is the token, not the address."
+              }
+            },
+            {
+              "id": "dataset-name",
+              "label": "The name of the token's dataset",
+              "why": "It only says where telemetry lands: a request can name a dataset, and Dash0 writes there if the token may write to it. A name grants nothing. What a token may do is set by its own permissions and datasets.",
+              "whyNot": {
+                "keep": "A dataset name is not a credential. Naming a dataset does not give a token access to it: a request that names a dataset the token may not write to is rejected."
+              }
+            },
+            {
+              "id": "all-token",
+              "label": "An auth token with All permissions, the default",
+              "why": "All permissions grants access to the full Dash0 API, for configuration, ingesting and querying. In page code, anyone could use it to read your telemetry back and change your configuration.",
+              "whyNot": {
+                "ship": "It does send telemetry, but it also grants the full Dash0 API, and the page's code is readable by anyone. An Ingesting token sends the same telemetry without the rest."
+              }
+            },
+            {
+              "id": "read-token",
+              "label": "A token with the Reading permission",
+              "why": "Reading lets a token query data. In page code, anyone could use it to query your telemetry. It would not even send the page's spans, because it has no ingest action.",
+              "whyNot": {
+                "ship": "A Reading token can only query data. In public code that lets anyone read your telemetry, and the page's spans would not be stored, because the token has no ingest action."
+              }
+            },
+            {
+              "id": "edge-token",
+              "label": "An auth token that has the Signal Control edge permission",
+              "why": "It sends telemetry, but it also reads SignalControl Edge settings. Dash0 describes SignalControl Edge as running in your own network, with an edge collector that connects back to Dash0 for configuration. Anyone who can read the page could read those settings with this token. For a token in public code, Dash0 says to restrict it to Ingesting.",
+              "whyNot": {
+                "ship": "It can send telemetry, but it also reads SignalControl Edge settings. Anyone who loads the page could read those settings with it. For a token anyone can read, Dash0 says Ingesting, which sends and does nothing else."
+              }
+            }
+          ]
+        }
       },
       {
-        "key": "ingest",
-        "label": "Ingesting",
-        "why": "Right. An Ingesting token can only send telemetry. It cannot read your data back or change your configuration, so a leaked one does little harm."
+        "intro": "The page's token is settled. A sender also needs an [[endpoint]] to send to. Your Dash0 organisation runs in one region, and the addresses it gives you name that region. The page runs in a visitor's browser and sends spans from there.",
+        "question": "Which address does the page send its spans to?",
+        "choice": {
+          "id": "ctd-endpoint",
+          "choices": [
+            {
+              "key": "http",
+              "label": "The OTLP via HTTP endpoint of your organisation's region",
+              "why": "The OpenTelemetry JavaScript documentation says that using gRPC for exporting is not supported in a browser, and Dash0's Web SDK asks for the OTLP via HTTP endpoint of your region. Dash0 shows it under Settings, Endpoints. Over HTTP, spans go to the path <code>/v1/traces</code> under that address."
+            },
+            {
+              "key": "grpc",
+              "label": "The OTLP gRPC endpoint of your organisation's region",
+              "why": "Dash0's ingestion endpoint does take OTLP over gRPC, and services and Collectors use it. A browser is the problem: the OpenTelemetry JavaScript documentation says that using gRPC for exporting is not supported in a browser."
+            },
+            {
+              "key": "prometheus",
+              "label": "The Prometheus API endpoint of your organisation's region",
+              "why": "That endpoint answers queries from tools such as Grafana and Perses, and it takes a token with querying permissions. The page sends spans and queries nothing, so it needs an ingestion endpoint."
+            },
+            {
+              "key": "local",
+              "label": "The default local OTLP via HTTP address, <code>http://localhost:4318</code>",
+              "why": "That is where an OTLP via HTTP sender looks when nothing is configured: 4318 is the default port for OTLP via HTTP, and the JavaScript exporter defaults to <code>http://localhost:4318/v1/traces</code>. In a visitor's browser, localhost is the visitor's own machine, not Dash0. Dash0's address comes from your organisation's settings and names your region."
+            }
+          ]
+        }
       },
       {
-        "key": "read",
-        "label": "Reading",
-        "why": "A Reading token can only query data. It cannot send telemetry, so the test span is not stored. Create an Ingesting token instead."
+        "intro": "Now do it for real. The game has its own Dash0 organisation, and you will send one test span to it from this tab, as the page would. Get two things from Dash0 first:<ol><li>An auth token with only the [[Ingesting]] permission. In Dash0, open Settings, then Auth Tokens, and create one. This token is for the game's organisation, not for a public page, and the game picks the [[dataset]] for the test span, so leave Dataset at All datasets.</li><li>The endpoint. In Settings, then Endpoints, copy the OTLP via HTTP address, the address without a path.</li></ol><p>Press Start the task and paste both into the form, then press Send test span. When Dash0 has accepted it, press Check: the game looks for your span in Dash0, which can take a little while. Open in Dash0 opens the [[Trace Explorer]] on your test span.</p>",
+        "dash0": {
+          "id": "connect-send"
+        }
       }
-    ],
-    "connectSimulated": "Simulated",
-    "connectSimulatedHead": "Dash0 settings. Nothing here is your account.",
-    "connectEndpointsTitle": "Settings, Endpoints",
-    "connectEndpointsCaption": "Endpoints of this organization",
-    "connectEndpointsHead": ["Name", "Address"],
-    "connectEndpointGrpc": "OTLP via gRPC",
-    "connectEndpointHttp": "OTLP via HTTP",
-    "connectTokensTitle": "Settings, Auth Tokens: create a token",
-    "connectPermissionsLegend": "Permissions",
-    "connectMintButton": "Create token",
-    "connectMintedLabel": "Your new token:",
-    "connectGuide": "<p>In Dash0, open the list of ways to send data and pick <b>OTLP via HTTP</b>. Copy its endpoint, the address without a path, such as https://ingress.us-west-2.aws.dash0.com. The game adds /v1/traces itself. Then open Settings, Auth Tokens and create a token for this job. Only Admins can create tokens.</p>",
-    "connectLiveLegend": "Which permission did you give this token?",
-    "connectIntroPractice": "Copy the OTLP via HTTP endpoint and make a token for the job. The token will sit in a browser tab that anyone can open with dev tools.",
-    "connectIntroLive": "Copy the OTLP via HTTP endpoint and make a token for the job. The token will sit in a browser tab that anyone can open with dev tools.",
-    "connectChipPractice": "Practice: a simulated Dash0, not your account",
-    "connectChipLive": "Your own Dash0",
-    "connectEndpointLabel": "Endpoint",
-    "connectEndpointNote": "The address of your organization, copied exactly as Dash0 shows it. The game adds the signal path itself.",
-    "connectTokenLabel": "Auth token",
-    "connectTokenNote": "A token looks like <code>{{prefix}}abc123...</code>. The game keeps it only in this tab's memory and never saves it: it is cleared from this field the moment you press Connect and forgotten when you reload the page. Your browser may offer to save it. Decline.",
-    "connectDatasetLabel": "Dataset (optional)",
-    "connectDatasetNote": "Leave it empty to use the token's default ingestion [[dataset]].",
-    "connectLiveNote": "The test span is named <code>connection.test</code>, and carries your session id and nothing you typed.",
-    "connectButton": "Connect and send a test span",
-    "connectBarButton": "Connect and send a test span",
-    "connectRetryButton": "Send the test span again",
-    "connectSwitchButton": "Practice instead",
-    "connectMintSays": "Pick a permission first.",
-    "connectSendingSays": "Sending the test span.",
-    "connectEndpointFirstSays": "Enter the endpoint first. Nothing was sent.",
-    "connectScopeFirstSays": "Say which permission you gave the token first. Nothing was sent.",
-    "connectReadingSays": "A Reading token cannot send telemetry. Create an Ingesting token. Nothing was sent.",
-    "connectAgainPractice": "Create a token again.",
-    "connectAgainLive": "Paste the token again.",
-    "connectNothingSent": "Nothing was sent.",
-    "fieldName": {
-      "endpoint": "Endpoint",
-      "token": "Token",
-      "datasetField": "Dataset"
-    },
-    "fieldNameOther": "Input",
-    "problemUnavailable": "Your own Dash0 is not available in this browser. Use practice: it works the same way.",
-    "problemMode": "That mode is not known.",
-    "problemUnchecked": "That could not be checked.",
-    "unreachable": {
-      "network": "The request never got an answer. In a browser that can be a wrong host, a CORS refusal or the page's Content Security Policy, and the browser cannot tell them apart.",
-      "timeout": "There was no answer within {{timeout-s}} seconds.",
-      "opaque": "Something answered, but not with a usable HTTP response.",
-      "aborted": "The request was cancelled before it finished."
-    },
-    "unreachableFallback": "The game is not connected, so the test span was not sent.",
-    "whereSimulated": "The simulated Dash0",
-    "whereLive": "Dash0",
-    "outcomeAccepted": "{{where}} accepted the test span.",
-    "outcomeRefusedToken": "{{where}} refused this token and would not take the test span. Check that you copied all of the token, that it is from this organization, and that it has the Ingesting permission.",
-    "outcomeRefusedStatus": "{{where}} refused the test span (HTTP {{status}}).",
-    "outcomeSaid": "Dash0 said: {{message}}",
-    "connectedIntroPractice": "Connected to the simulated Dash0. The test span was accepted. Nothing left this page.",
-    "connectedIntroLive": "Connected. Your Dash0 accepted the test span.",
-    "connectedChipPractice": "Practice: a simulated Dash0, not your account",
-    "connectedChipLive": "Connected to {{host}}",
-    "connectedTitle": "Connected",
-    "connectedBody": "<p>Session id: {{session}}. Every span the game sends carries it as <code>session.id</code>, so you can find your own among everyone else's.</p><p>The game keeps the token only in this tab's memory. It was cleared from the form, and a page reload drops the connection. Levels you finish from now on send a <code>level.complete</code> span to the same place.</p>",
-    "connectedButton": "Finish",
-    "connectedFinishPractice": "You read the endpoint off the settings page, created a token that can only ingest and got a test span accepted by a simulated Dash0. Your own Dash0 takes the same two steps.",
-    "connectedFinishLive": "The game is connected to your Dash0: the endpoint was right, the token can only ingest and the test span was accepted."
+    ]
   }
 };

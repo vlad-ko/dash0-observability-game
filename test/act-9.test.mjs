@@ -206,6 +206,17 @@ test('9.2 fields: scored with no par time, in act-9, lights the collector, award
   assert.deepEqual(starTotals(progressOf([ID]), LIVE), { earned: 3, max: MAX_STARS });
 });
 
+test('9.3 fields: scored with no par time, in act-9, lights the collector, awards no card; a 3-star run is 3 stars', () => {
+  const l = LIVE.levels[ID93];
+  assert.deepEqual(
+    { no: l.no, name: l.name, sub: l.sub, rewardTitle: l.rewardTitle, kind: l.kind, actId: l.actId, scored: l.scored, parMs: l.scoring.parMs },
+    { no: '9.3', name: 'Connect the game to Dash0', sub: 'A token and an endpoint for a browser tab', rewardTitle: 'Connected', kind: 'level', actId: 'act-9', scored: true, parMs: null },
+  );
+  assert.deepEqual([...l.cards], []);
+  assert.deepEqual([...l.lights], ['collector']);
+  assert.deepEqual(starTotals(progressOf([ID93]), LIVE), { earned: 3, max: MAX_STARS });
+});
+
 // ---- step 1: the verdict --------------------------------------------------------------
 
 test('no verdict question in the act has a label that opens with a verdict phrase (#383)', () => {
