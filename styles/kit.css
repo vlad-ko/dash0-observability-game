@@ -549,11 +549,11 @@
 .ui-hints-text:focus { outline: none; }
 
 /* ---------- One rule each: hover, focus, disabled ---------- */
-.ui-btn--ghost:hover:not(:disabled), .ui-option:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--color-text-muted); }
+.ui-btn--ghost:hover:not(:disabled, [aria-disabled="true"]), .ui-option:hover:not(:disabled, [aria-disabled="true"]) { border-color: var(--color-text-muted); }
 .ui-btn:focus-visible, .ui-option:focus-visible, .ui-fold-summary:focus-visible, .ui-fold-title:focus-visible, .ui-term-btn:focus-visible, .ui-input:focus-visible, .ui-check-input:focus-visible, .ui-option-input:focus-visible {
   outline: 2px solid var(--color-focus); outline-offset: 2px;
 }
-.ui-btn:disabled {
+.ui-btn:disabled, .ui-btn[aria-disabled="true"] { /* aria-disabled keeps focus on a busy button, so it must look disabled too */
   cursor: not-allowed; background: var(--color-surface); color: var(--color-text-muted); border: 1px dashed var(--color-text-muted);
 }
 .ui-input:disabled, .ui-check-input:disabled, .ui-option-input:disabled { opacity: var(--opacity-disabled); cursor: not-allowed; }
