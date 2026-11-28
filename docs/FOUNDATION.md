@@ -168,8 +168,7 @@ If the server stops answering while the player is on an In Dash0 step (a 401 or 
 mode: 'live'|'practice'|null, host}`, `stats() -> {buffered, dropped}`, `liveAvailable()`,
 `connect({mode, endpoint, token, dataset}) -> {ok:true} | {ok:false, field, reason}` (validates, sends
 nothing), `sendTest(opts?: {signal, attemptId}) -> Promise<Outcome>` (single-flight per config and per `attemptId`; an `attemptId` that is not 16 lower-case hex characters rejects with a `TypeError` and sends nothing, a valid one is written to the test span as `game.attempt.id`, `lib/dash0-task/stamp.mjs`; `session.id` stays), `emit(draft)` (no-op unless
-connected, never throws), `flush(opts?) -> Promise<Outcome|null>`, `sendBatch(drafts, opts?)`,
-`incident()` (the seeded lab incident, built once per session: docs/DASH0-LAB.md §Incident), `disconnect()`. Contract: docs/DASH0-LAB.md §Telemetry session.
+connected, never throws), `flush(opts?) -> Promise<Outcome|null>`, `disconnect()`. There is no `incident()` or `sendBatch`: the lab incident is the task server's alone (docs/DASH0-LAB.md §Incident). Contract: docs/DASH0-LAB.md §Telemetry session.
 Levels wire buttons by assigning `el.onclick = …` after `renderStep` (CSP-safe), as in R.
 
 Guide questions (#17): one answered question costs one hint (owner choice, provisional).
