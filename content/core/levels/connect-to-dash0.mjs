@@ -104,7 +104,7 @@ export default {
         }
       },
       {
-        "intro": "Now do it for real. The game has its own Dash0 organisation, and you will send one test span to it from this tab, as the page would. Get two things from Dash0 first:<ol><li>An auth token with only the [[Ingesting]] permission. In Dash0, open Settings, then Auth Tokens. This token is for the game's organisation, not for a public page, and the game picks the [[dataset]] for the test span, so leave Dataset at All datasets.</li><li>The endpoint. In Settings, then Endpoints, copy the OTLP via HTTP address, the address without a path.</li></ol><p>Press Start the task and paste both into the form, then press Send test span. When Dash0 has accepted it, press Check: the game looks for your span in Dash0, which can take a little while. Open in Dash0 opens the [[Trace Explorer]] on your test span.</p>",
+        "intro": "Now do it for real. The game has its own Dash0 organisation, and you will send one test span to it from this tab, as the page would. Get two things from Dash0 first:<ol><li>An auth token with only the [[Ingesting]] permission. In Dash0, open Settings, then Auth Tokens, and create one. This token is for the game's organisation, not for a public page, and the game picks the [[dataset]] for the test span, so leave Dataset at All datasets.</li><li>The endpoint. In Settings, then Endpoints, copy the OTLP via HTTP address, the address without a path.</li></ol><p>Press Start the task and paste both into the form, then press Send test span. When Dash0 has accepted it, press Check: the game looks for your span in Dash0, which can take a little while. Open in Dash0 opens the [[Trace Explorer]] on your test span.</p>",
         "dash0": {
           "id": "connect-send"
         }
