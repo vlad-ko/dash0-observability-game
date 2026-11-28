@@ -32,7 +32,7 @@
 //   organisation's settings (glossary/endpoints).
 // - SignalControl Edge "runs that same reduction inside your own network, before telemetry leaves it", with an edge collector that "connects back to
 //   Dash0 for configuration" (telemetry/signal-control/edge/about-signalcontrol-edge); the Signal Control edge permission grants ingest:* and
-//   edge-settings:read (glossary/auth-tokens). The edge-token answers say it is for that, and that a page reader could read those settings with it.
+//   edge-settings:read (glossary/auth-tokens). The edge-token answers say it sends telemetry and reads those settings, give the page's description of SignalControl Edge, and add that a page reader could read those settings with it (a consequence).
 // Derived, not stated on a page: that the endpoint address is "not a credential" (an address; the token authorises: glossary/auth-tokens says tokens
 // "authenticate and authorize"); that keeping the address out of the page's code would break the page (the SDK needs it to send); that localhost in a
 // visitor's browser is the visitor's own machine; that a dataset name is safe in page code (Dash0 says only that a request naming a dataset the token

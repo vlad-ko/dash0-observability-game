@@ -22,7 +22,7 @@ export default {
     {
       "type": "callout",
       "tone": "note",
-      "text": "The live steps use the game's own Dash0 organisation, so you do not need a Dash0 account of your own."
+      "text": "The In Dash0 step uses the game's own Dash0 organisation. To do that step, sign in with your dash0.com account."
     },
     {
       "type": "callout",
