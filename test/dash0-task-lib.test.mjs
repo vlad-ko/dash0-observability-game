@@ -138,6 +138,10 @@ test('scenario: its-us-find is deterministic, stamped on every span, and its ans
   assert.equal(buildScenario('connect-test-span', SCENARIO).linkParams.attemptId, SCENARIO.attemptId);
   assert.equal(a.linkParams.target, 'traces');
   assert.ok(a.linkParams.fromMs < SCENARIO.t0 && a.linkParams.toMs > SCENARIO.t0);
+  assert.equal(a.spans[0].startMs, SCENARIO.t0, 'the root span starts at t0');
+  for (const span of a.spans) {
+    assert.ok(span.startMs >= a.linkParams.fromMs && span.endMs <= a.linkParams.toMs, `${span.name} lies inside the link window`);
+  }
 });
 
 test('scenario: connect-test-span sends nothing and has no answer; bad input throws', () => {

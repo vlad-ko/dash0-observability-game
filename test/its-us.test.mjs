@@ -41,7 +41,7 @@ function open({ api, telemetry }) {
   return { ctx, results };
 }
 
-/** A telemetry session that fails the test on any read: `ctx.telemetry.status()`, `.incident()`, `.sendBatch()`, a property probe. */
+/** A telemetry session that fails the test on any read: `ctx.telemetry.status()`, a property probe. */
 const forbiddenTelemetry = () => new Proxy({}, {
   get: (_, prop) => { throw new Error(`the boss read ctx.telemetry.${String(prop)}`); },
   has: () => { throw new Error('the boss probed ctx.telemetry'); },
