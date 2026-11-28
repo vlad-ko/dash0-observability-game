@@ -1,11 +1,11 @@
 // The telemetry session (lib/telemetry.mjs createTelemetry): the in-memory connection to the
-// player's Dash0 (or the practice ingress), the span buffer and the facade ctx.telemetry is.
+// player's Dash0, the span buffer and the facade ctx.telemetry is.
 // Spec: docs/DASH0-LAB.md and the #195 plan §4 (invariants I1-I3, I8, concurrency).
 // Fake fetch, fixed bytes, fixed clock and fake timers; nothing touches the network.
 // Live mode here injects its own host list; the shipped INGRESS_HOSTS are checked in test/dash0-ingress.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { INGRESS_HOSTS, PRACTICE_HOSTS } from '../lib/dash0/ingress.mjs';
+import { INGRESS_HOSTS } from '../lib/dash0/ingress.mjs';
 import { BUFFER_CAP, createTelemetry } from '../lib/telemetry.mjs';
 
 const HOST = 'ingress.eu-west-1.aws.dash0.com';
@@ -13,7 +13,6 @@ const ENDPOINT = `https://${HOST}`;
 const TRACES = `${ENDPOINT}/v1/traces`;
 const TOKEN = 'auth_Tk9secretValue42xyz';
 const TOKEN2 = 'auth_Other7secretQ99abc';
-const PRACTICE_ENDPOINT = `https://${PRACTICE_HOSTS[0]}`;
 const NOW = 1762300800123;
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
@@ -83,7 +82,7 @@ function make({ fetch = instantFetch().fetch, randomBytes = counterBytes().rando
   return { telemetry, timers, errors };
 }
 
-const live = (token = TOKEN, extra = {}) => ({ mode: 'live', endpoint: ENDPOINT, token, dataset: '', ...extra });
+const live = (token = TOKEN, extra = {}) => ({ endpoint: ENDPOINT, token, dataset: '', ...extra });
 
 // Every span name in a recorded request body.
 const spanNames = (body) => body.resourceSpans.flatMap((r) => r.scopeSpans.flatMap((s) => s.spans.map((sp) => sp.name)));
@@ -148,7 +147,7 @@ test('connect rejects a bad endpoint or token and status() never exposes the tok
     assert.ok(!text.includes(TOKEN), `token visible ${when}`);
     assert.ok(!text.includes(TOKEN.slice(5, 15)), `part of the token visible ${when}`);
   };
-  assert.deepEqual(telemetry.status(), { state: 'off', mode: null, host: null });
+  assert.deepEqual(telemetry.status(), { state: 'off', host: null });
   scan('off');
 
   const badEndpoint = telemetry.connect(live(TOKEN, { endpoint: `${ENDPOINT}/v1/traces` }));
@@ -165,7 +164,7 @@ test('connect rejects a bad endpoint or token and status() never exposes the tok
   scan('after failed connects');
 
   assert.deepEqual(telemetry.connect(live()), { ok: true });
-  assert.deepEqual(telemetry.status(), { state: 'configured', mode: 'live', host: HOST });
+  assert.deepEqual(telemetry.status(), { state: 'configured', host: HOST });
   assert.equal(f.calls.length, 0, 'connect validates; it never sends');
   scan('configured');
 
@@ -182,7 +181,7 @@ test('connect rejects a bad endpoint or token and status() never exposes the tok
   scan('connected');
 
   telemetry.disconnect();
-  assert.deepEqual(telemetry.status(), { state: 'off', mode: null, host: null });
+  assert.deepEqual(telemetry.status(), { state: 'off', host: null });
   scan('disconnected');
   for (const key of Object.keys(telemetry)) assert.doesNotMatch(key, /token|secret|auth/i, `no token getter: ${key}`);
 });
@@ -365,37 +364,25 @@ test('the buffer cap drops overflow and counts it (cap+5 gives 5 dropped)', asyn
   assert.equal(names.at(-1), `s${CAP - 1}`, 'the overflow is what is dropped');
 });
 
-// ---- practice -----------------------------------------------------------------------
+// ---- availability -------------------------------------------------------------------
 
-test('practice mode never calls the injected real fetch', async () => {
-  const f = instantFetch();
-  const { telemetry } = make({ fetch: f.fetch });
-  assert.deepEqual(telemetry.connect({ mode: 'practice', endpoint: PRACTICE_ENDPOINT, token: telemetry.practiceCredential('ingest'), dataset: '' }), { ok: true });
-  assert.deepEqual(telemetry.status(), { state: 'configured', mode: 'practice', host: PRACTICE_HOSTS[0] });
-  assert.deepEqual(await telemetry.sendTest(), { kind: 'accepted' }, 'the practice ingress accepted it');
-  assert.equal(telemetry.status().state, 'connected');
-  telemetry.emit(draft('practice-span'));
-  assert.deepEqual(await telemetry.flush(), { kind: 'accepted' });
-  assert.equal(f.calls.length, 0, 'the real fetch was never called');
-  assert.equal(telemetry.connect({ mode: 'practice', endpoint: ENDPOINT, token: telemetry.practiceCredential('ingest'), dataset: '' }).reason, 'unknown-host', 'practice accepts only the practice host');
+test('connect refuses with field session and reason unavailable without hosts or without fetch, and configures nothing', () => {
+  for (const over of [{ hosts: [] }, { fetch: null }]) {
+    const { telemetry } = make(over);
+    assert.deepEqual(telemetry.connect(live()), { ok: false, field: 'session', reason: 'unavailable' });
+    assert.equal(telemetry.status().state, 'off');
+  }
+  assert.deepEqual(make().telemetry.connect(live()), { ok: true });
 });
 
-test('a wrong practice token is an auth rejection from the practice ingress, not the network', async () => {
+test('the session sends through the injected fetch only, and a host outside the allowlist never reaches it', async () => {
   const f = instantFetch();
   const { telemetry } = make({ fetch: f.fetch });
-  telemetry.connect({ mode: 'practice', endpoint: PRACTICE_ENDPOINT, token: TOKEN, dataset: '' });
-  const out = await telemetry.sendTest();
-  assert.deepEqual(out, { kind: 'rejected', status: 401, auth: true });
-  assert.equal(telemetry.status().state, 'configured');
+  assert.equal(telemetry.connect(live(TOKEN, { endpoint: 'https://ingress.practice.dash0.invalid' })).reason, 'unknown-host');
   assert.equal(f.calls.length, 0);
-});
-
-test('live mode is unavailable without hosts or without fetch', () => {
-  assert.equal(make().telemetry.liveAvailable(), true);
-  assert.equal(make({ hosts: [] }).telemetry.liveAvailable(), false);
-  assert.equal(make({ fetch: null }).telemetry.liveAvailable(), false);
-  const { telemetry } = make({ hosts: [] });
-  assert.equal(telemetry.connect(live()).ok, false, 'no host allowed (the no-fetch fallback): live cannot be configured');
+  assert.deepEqual(telemetry.connect(live()), { ok: true });
+  assert.deepEqual(await telemetry.sendTest(), { kind: 'accepted' });
+  assert.equal(f.calls.length, 1);
 });
 
 test('with the shipped INGRESS_HOSTS, live sends the test span to each host and a lookalike never reaches fetch', async () => {
@@ -410,7 +397,6 @@ test('with the shipped INGRESS_HOSTS, live sends the test span to each host and 
       clearTimeout: timers.clearTimeout,
       reportError: () => {},
     });
-    assert.equal(telemetry.liveAvailable(), true);
     assert.deepEqual(telemetry.connect(live(TOKEN, { endpoint: `https://${host}` })), { ok: true });
     assert.equal((await telemetry.sendTest()).kind, 'accepted');
     assert.equal(f.calls.length, 1);
@@ -579,7 +565,6 @@ test('a reconnect during a flush: the old 500 neither counts as dropped nor touc
   await flushing;
   assert.deepEqual({ ...telemetry.stats() }, { buffered: 0, dropped: 0 });
   assert.equal(telemetry.status().state, 'configured', 'the new config is not connected by the old flush');
-  assert.equal(telemetry.status().mode, 'live');
 });
 
 test('a flush that finishes after the config changed returns unreachable/aborted, as sendBatch does', async () => {

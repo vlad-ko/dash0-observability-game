@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import {
   INGRESS_HOSTS,
   INGRESS_PORTS,
-  PRACTICE_HOSTS,
   REASONS,
   TOKEN_PREFIX,
   checkDataset,
@@ -101,13 +100,9 @@ const LIVE_HOSTS = [
   'ingress.europe-west4.gcp.dash0.com',
 ];
 
-test('the shipped allowlist is the four regional hosts, frozen; practice hosts are never in it', () => {
+test('the shipped allowlist is the four regional hosts, frozen', () => {
   assert.deepEqual([...INGRESS_HOSTS], LIVE_HOSTS);
   assert.ok(Object.isFrozen(INGRESS_HOSTS));
-  for (const h of PRACTICE_HOSTS) {
-    assert.match(h, /\.invalid$/, 'practice hosts are RFC 2606 reserved');
-    assert.ok(!INGRESS_HOSTS.includes(h));
-  }
 });
 
 test('localhost passes only with allowLocal', () => {
