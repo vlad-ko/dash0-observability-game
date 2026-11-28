@@ -429,6 +429,26 @@ test('after an accepted send focus lands on Check, not the page', async () => {
   assert.equal(focused(), 'd1-check');
 });
 
+test('a token typed during a send survives the earlier token being refused, and the next Send uses it', async () => {
+  const gate = hold();
+  const r = rig({ tele: { outcomes: [gate.promise, { kind: 'accepted' }] } });
+  toTask();
+  await start();
+  type();
+  click('#d1-send-go');
+  await settle();
+  click({ type: '#d1-token', text: TOKEN2 });
+  q('#d1-send-go').onclick(); // dropped while in flight, but the token is kept
+  await settle();
+  gate.done({ kind: 'rejected', status: 401, auth: true });
+  await settle();
+  assert.match(q('#d1-held').textContent, /still held/, 'the newer token is still held');
+  click('#d1-send-go');
+  await settle();
+  const connects = r.telemetry.log.filter((l) => l.fn === 'connect');
+  assert.equal(connects[connects.length - 1].arg.token, TOKEN2);
+});
+
 test('Send keeps focus while a send is in flight (aria-disabled, not disabled), and is plain again afterwards', async () => {
   const gate = hold();
   rig({ tele: { outcomes: [gate.promise] } });
@@ -440,6 +460,7 @@ test('Send keeps focus while a send is in flight (aria-disabled, not disabled), 
   click('#d1-send-go');
   assert.equal(focused(), 'd1-send-go', 'focus stays on Send');
   assert.equal(q('#d1-send-go').getAttribute('aria-disabled'), 'true');
+  assert.equal(q('#d1-send-go').disabled, false, 'not disabled, or focus would be lost');
   gate.done({ kind: 'accepted' });
   await settle();
   assert.equal(q('#d1-send-go').hasAttribute('aria-disabled'), false);
