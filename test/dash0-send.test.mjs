@@ -405,3 +405,70 @@ test('Send reads and empties the token field even when it returns early, and the
   assert.equal(q('#d1-token').disabled, false, 'Start again turns the form back on');
   assert.equal(q('#d1-send-go').disabled, false);
 });
+
+// linkedom has no focus model: track focus() calls and serve them as document.activeElement (as test/dash0-task-step.test.mjs does).
+function trackFocus() {
+  let active = globalThis.document.body;
+  Object.defineProperty(globalThis.document, 'activeElement', { get: () => active, configurable: true });
+  globalThis.window.HTMLElement.prototype.focus = function focus() { active = this; };
+}
+// the id (or tag) of the focused element: comparing DOM nodes makes a failing assert diff the whole page
+const focused = () => globalThis.document.activeElement?.id || globalThis.document.activeElement?.localName;
+
+test('after an accepted send focus lands on Check, not the page', async () => {
+  rig();
+  toTask();
+  await start();
+  trackFocus();
+  type();
+  q('#d1-send-go').focus();
+  assert.equal(focused(), 'd1-send-go', 'the rig holds focus on Send');
+  click('#d1-send-go');
+  await settle();
+  assert.equal(q('#d1-send-first').hasAttribute('hidden'), true);
+  assert.equal(focused(), 'd1-check');
+});
+
+test('Send keeps focus while a send is in flight (aria-disabled, not disabled), and is plain again afterwards', async () => {
+  const gate = hold();
+  rig({ tele: { outcomes: [gate.promise] } });
+  toTask();
+  await start();
+  trackFocus();
+  type();
+  q('#d1-send-go').focus();
+  click('#d1-send-go');
+  assert.equal(focused(), 'd1-send-go', 'focus stays on Send');
+  assert.equal(q('#d1-send-go').getAttribute('aria-disabled'), 'true');
+  gate.done({ kind: 'accepted' });
+  await settle();
+  assert.equal(q('#d1-send-go').hasAttribute('aria-disabled'), false);
+  assert.equal(q('#d1-send-go').disabled, false);
+});
+
+test('a send that is not focused is hard-disabled in flight as before', async () => {
+  const gate = hold();
+  rig({ tele: { outcomes: [gate.promise] } });
+  toTask();
+  await start();
+  trackFocus();
+  type();
+  click('#d1-send-go');
+  assert.equal(q('#d1-send-go').disabled, true);
+  gate.done({ kind: 'accepted' });
+  await settle();
+});
+
+test('when the attempt ends (410) with focus in the send form, focus moves to Start again', async () => {
+  rig({ api: { starts: [started(A), started(B)], checks: [stale] }, tele: { outcomes: [{ kind: 'rejected', status: 500 }] } });
+  toTask();
+  await start();
+  trackFocus();
+  await send(); // not accepted: Check stays off
+  q('#d1-send-go').focus();
+  // the attempt ends (410) while Send holds focus: Check is forced on only to reach that path
+  q('#d1-check').disabled = false;
+  q('#d1-check').onclick();
+  await settle();
+  assert.equal(focused(), 'd1-retry');
+});
