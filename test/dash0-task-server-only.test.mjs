@@ -1,4 +1,4 @@
-// (#509 P5) the answer key stays on the server. lib/dash0-task/scenario.mjs and grade.mjs must not be imported by a
+// (#509 P5, P7.4a) the answer key stays on the server. lib/dash0-task/scenario.mjs, grade.mjs and lib/incident-lab.mjs must not be imported by a
 // level, a widget, lib/play.mjs or main.mjs, nor be reachable from main.mjs through any chain of imports.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SERVER_ONLY = ['lib/dash0-task/scenario.mjs', 'lib/dash0-task/grade.mjs'];
+const SERVER_ONLY = ['lib/dash0-task/scenario.mjs', 'lib/dash0-task/grade.mjs', 'lib/incident-lab.mjs'];
 // Static and dynamic relative imports and re-exports.
 const IMPORT = /(?:import|export)\b[^'";]*?from\s*['"](\.[^'"]+)['"]|import\s*['"](\.[^'"]+)['"]|import\(\s*['"](\.[^'"]+)['"]\s*\)/g;
 const importsIn = (text, rel) => [...text.matchAll(IMPORT)].map((m) => relative(ROOT, resolve(ROOT, dirname(rel), m[1] ?? m[2] ?? m[3])));

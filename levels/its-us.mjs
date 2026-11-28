@@ -25,7 +25,7 @@
 // "all available and relevant keys"), and that the deep link's time window still shows the trace. The In Dash0 step's words
 // say to check the time range if the list is empty.
 // Invented: the attempt ids (att-4d27 and the others), the span lines of the spot step, and the attribute names game.attempt.id and game.fault.code
-// (the game's own, set by the task server; lib/dash0-task/stamp.mjs, lib/incident-lab.mjs).
+// (the game's own, set by the task server; lib/dash0-task/stamp.mjs; the server builds the incident, lib/incident-lab.mjs).
 //
 // A play level: its words are in content/core/levels/its-us.mjs (docs/CONTENT.md); this file keeps the answers and the wiring.
 import CORE from '../content/core/levels/its-us.mjs';

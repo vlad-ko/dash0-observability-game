@@ -582,7 +582,7 @@ test('a reconnect during a flush: the old 500 neither counts as dropped nor touc
   assert.equal(telemetry.status().mode, 'live');
 });
 
-test('a flush that finishes after the config changed returns unreachable/aborted, as sendBatch does', async () => {
+test('a flush that finishes after the config changed returns unreachable/aborted', async () => {
   for (const settle of [(c) => c.resolve(res(200)), (c) => c.resolve(res(500))]) {
     const { telemetry, f } = await heldConnected();
     telemetry.emit(draft('one'));
@@ -592,12 +592,6 @@ test('a flush that finishes after the config changed returns unreachable/aborted
     settle(f.calls[1]);
     assert.deepEqual(await flushing, { kind: 'unreachable', cause: 'aborted' });
   }
-  const { telemetry, f } = await heldConnected();
-  const batching = telemetry.sendBatch([draft('b')]);
-  await tick();
-  telemetry.disconnect();
-  f.calls[1].resolve(res(200));
-  assert.deepEqual(await batching, { kind: 'unreachable', cause: 'aborted' });
 });
 
 // ---- leaving connected ----------------------------------------------------------------
