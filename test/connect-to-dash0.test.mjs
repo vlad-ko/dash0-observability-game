@@ -1,766 +1,202 @@
-// Level 9.3 "Connect the game to Dash0": the connect form against a live-shaped session (fake fetch,
-// an injected host list) and the practice one, the outcome copy, the mistake rules and the
-// token isolation invariants of docs/DASH0-LAB.md. The practice play-through (happy and sloppy,
-// the stars) is DRIVERS['connect-to-dash0'] in test/levels-play.test.mjs.
+// Level 9.3 "Connect the game to Dash0" as a declarative play level (#509 P7.3): a sort step (what may go in a page's code), a choice
+// step (which address a browser sender uses), then an In Dash0 step for the readback task 'connect-test-span'. This file rewrites the old
+// hand-written level's test (the practice settings panel, the connect form, ctx.telemetry): the level no longer builds a form or reads
+// the telemetry session; the send form is the widget's (test/dash0-send.test.mjs). It pins the shape, the answers, the words that tell the
+// player what to do in Dash0, the step left out when the task server is off or the player is signed out, and that the source touches
+// nothing it should not. The generic play-through (stars, slips) is the derived driver in test/levels-play.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { levelSource } from './helpers/level-source.mjs';
-import { makeDom, q, qa } from './helpers/dom.mjs';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { makeDom, q, qa, click } from './helpers/dom.mjs';
 import { createLevelContext } from '../lib/level-context.mjs';
-import { createTelemetry } from '../lib/telemetry.mjs';
-import { recordFocus } from './helpers/focus.mjs';
-import { INGRESS_HOSTS } from '../lib/dash0/ingress.mjs';
-import level, { breakableAddress } from '../levels/connect-to-dash0.mjs';
+import { runPlay, STEP_TYPES, validatePlay } from '../lib/play.mjs';
+import { TASKS } from '../lib/dash0-task/tasks.mjs';
+import { isDash0AppUrl } from '../lib/dash0-task/client.mjs';
+import { vocabularyHits } from '../lib/content/surface.mjs';
+import level from '../levels/connect-to-dash0.mjs';
 
-const HOST = 'ingress.eu-west-1.aws.dash0.com';
-const ENDPOINT = `https://${HOST}`;
-const SECRET = 'auth_LIVESECRETvalue0123456789';
-// Any string with the shape of a token: these cases fail on the endpoint or the token's form.
-const SHAPED = 'auth_shapedlike0000';
-const PRACTICE_BANNER = 'Practice: a simulated Dash0, not your account';
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const steps = level.play.steps;
+const sortStep = steps.find((s) => s.sort);
+const choiceStep = steps.find((s) => s.choice);
+const dash0Step = steps.find((s) => s.dash0);
 
-const turn = () => new Promise((r) => setImmediate(r));
-async function settle(sel, max = 50) {
-  for (let i = 0; i < max && !q(sel); i++) await turn();
-  assert.ok(q(sel), `never appeared: ${sel}`);
-}
+const settle = () => new Promise((resolve) => setImmediate(resolve));
 
-const ok = () => ({ status: 200, ok: true, text: async () => '{}' });
-const reply = (status, body = '{}') => ({ status, ok: status < 300, text: async () => body });
-
-/** A live-shaped telemetry: `answers` are consumed one per request (a function throws, a value replies). */
-function liveTelemetry(answers, { reportError = () => {} } = {}) {
-  const sent = [];
-  const queue = [...answers];
-  const fetch = async (url, init) => {
-    sent.push({ url, init });
-    const next = queue.length > 1 ? queue.shift() : queue[0];
-    if (typeof next === 'function') return next(init);
-    return next;
+/** The task client as runPlay sees it. `skip` records what a level without a task says; `start` answers like the task server. */
+function fakeApi({ available, reason = null }) {
+  const api = {
+    skipped: [], calls: [], available: () => available, reason: () => reason, isDash0AppUrl,
+    start: async (task) => { api.calls.push(['start', task]); return { ok: true, attemptId: 'a'.repeat(16), link: 'https://app.dash0.com/goto/traces/explorer?from=now-30m&to=now', tag: 'k3j9x2m4q1', readyAfterS: 30, expiresAt: 1767229200000, name: 'oncall-k3j9x2m4q1-connect-test-span-aaaaaa', dataset: 'game-ds' }; },
+    check: async () => ({ outcome: 'pass', charge: false }),
+    skip: (ids, cause) => api.skipped.push([ids, cause]), passed() {}, downCause: () => null,
   };
-  const tele = createTelemetry({
-    fetch,
-    hosts: [HOST],
-    randomBytes: (n) => new Uint8Array(n).fill(3),
-    setTimeout,
-    clearTimeout,
-    reportError,
-  });
-  return { tele, sent };
+  return api;
 }
 
-function practiceTelemetry(opts = {}) {
-  const sent = [];
-  const tele = createTelemetry({
-    fetch: async (...a) => {
-      sent.push(a);
-      return ok();
-    },
-    randomBytes: (n) => new Uint8Array(n).fill(3),
-    setTimeout,
-    clearTimeout,
-    ...opts,
-  });
-  return { tele, sent };
-}
-
-function open(telemetry) {
+/** Open the level on the real ctx. `telemetry` is handed to the context, so a step that reads it is caught. */
+function open({ api, telemetry }) {
   const dom = makeDom();
-  const finished = [];
-  const reported = [];
-  const abort = new AbortController();
+  const results = [];
   let mistakes = 0;
   const ctx = createLevelContext({
-    level,
-    ovBody: dom.body,
-    ovActions: dom.actions,
-    now: () => 1767225600000,
-    reduceMotion: true,
-    onFinish: (id, result) => finished.push({ id, result }),
-    signal: abort.signal,
-    reportError: (e) => reported.push(e),
-    telemetry,
+    level, ovBody: dom.body, ovActions: dom.actions, now: () => 0, shuffle: (a) => a, reduceMotion: true,
+    onFinish: (id, r) => results.push(r), signal: new AbortController().signal, reportError: (e) => { throw e; }, telemetry,
   });
-  const mistake = ctx.mistake;
-  ctx.mistake = () => {
-    mistakes += 1;
-    mistake();
-  };
-  level.run(ctx);
-  const page = () => `${dom.body.innerHTML}${dom.actions.innerHTML}`;
-  return {
-    dom,
-    ctx,
-    finished,
-    reported,
-    abort,
-    page,
-    mistakes: () => mistakes,
-    text: () => `${dom.body.textContent} ${dom.actions.textContent}`,
-  };
+  const realMistake = ctx.mistake;
+  ctx.mistake = () => { mistakes += 1; realMistake(); };
+  if (api) ctx.dash0Task = api;
+  runPlay(level, ctx, STEP_TYPES);
+  return { ctx, results, mistakes: () => mistakes };
 }
 
-const press = (sel) => {
-  const el = q(sel);
-  assert.ok(el, `expected ${sel}`);
-  assert.ok(!el.disabled, `${sel} is disabled`);
-  el.onclick({ currentTarget: el, target: el });
-};
-const fill = (sel, text) => {
-  q(sel).value = text;
-};
+const SORT_ANSWER = Object.fromEntries(sortStep.sort.items.map((it) => [it.id, it.bucket]));
+/** Place every item the way a player does: pick it, then pick its bucket. */
+const solveSort = (answer = SORT_ANSWER) => { for (const [id, bucket] of Object.entries(answer)) { click(`[data-item="${id}"]`); click(`[data-bucket="${bucket}"]`); } };
+const solveChoice = () => click(`[data-pick="${choiceStep.choice.choices.find((c) => c.right).key}"]`);
 
-/** Live mode, connect form filled with the secret and pressed. */
-async function connectLive(h, { endpoint = ENDPOINT, token = SECRET, dataset = '' } = {}) {
-  press('#ctd-live');
-  press('#ctd-scope-ingest');
-  fill('#ctd-endpoint', endpoint);
-  fill('#ctd-token', token);
-  fill('#ctd-dataset', dataset);
-  press('#ctd-connect');
-}
-
-test('the first screen offers practice, labels it, and disables live when it is not available in this browser', () => {
-  const h = open(practiceTelemetry({ hosts: [] }).tele); // no allowed host (the no-fetch fallback): liveAvailable() is false
-  assert.ok(h.text().includes(PRACTICE_BANNER));
-  assert.equal(q('#ctd-live').disabled, true);
-  assert.match(h.text(), /Your own Dash0 is not available in this browser/);
-  assert.equal(qa('[data-finish]').length, 0);
+test('the play has a sort step, a choice step, then an In Dash0 step, and the registry derives surfaces [game, dash0] and mechanics [sort]', () => {
+  const v = validatePlay(level.play);
+  assert.deepEqual(v.errors, []);
+  assert.deepEqual(v.surfaces, ['game', 'dash0']);
+  assert.deepEqual(v.mechanics, ['sort']);
+  assert.deepEqual(steps.map((s) => Object.keys(s).find((k) => ['sort', 'choice', 'dash0'].includes(k))), ['sort', 'choice', 'dash0'], 'the game steps come first');
+  assert.equal(level.run, undefined, 'a play level has no run');
+  assert.equal(level.no, '9.3');
 });
 
-test('with live open, the first screen enables it and says what is sent', () => {
-  const h = open(liveTelemetry([ok()]).tele);
-  assert.equal(q('#ctd-live').disabled, false);
-  assert.match(h.text(), /level-complete span/);
+test('the In Dash0 step is the readback task connect-test-span: no questions, no fields, and the step draws the send form', () => {
+  assert.ok(dash0Step, 'the level has an In Dash0 step');
+  const spec = dash0Step.dash0;
+  assert.equal(spec.task, 'connect-test-span');
+  assert.equal(spec.grader, 'readback');
+  assert.equal(TASKS['connect-test-span'].grader, 'readback');
+  assert.equal(TASKS['connect-test-span'].send, 'test-span', 'the player sends the span, so the step draws the send form');
+  assert.equal(spec.answers, undefined);
+  assert.equal(spec.fields, undefined);
 });
 
-test('with the shipped hosts and a fetch, live is open on the first screen and reaches a shipped host', async () => {
-  const { tele, sent } = practiceTelemetry(); // no injected hosts: INGRESS_HOSTS
-  assert.equal(tele.liveAvailable(), true);
-  const h = open(tele);
-  assert.equal(q('#ctd-live').disabled, false);
-  assert.doesNotMatch(h.text(), /not available in this browser/);
-  press('#ctd-live');
-  press('#ctd-scope-ingest');
-  fill('#ctd-endpoint', `https://${INGRESS_HOSTS[0]}`);
-  fill('#ctd-token', SECRET);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0][0], `https://${INGRESS_HOSTS[0]}/v1/traces`);
+test('the brief names the real Dash0 places in words: the Ingesting permission, Settings, Auth Tokens and Endpoints, the OTLP via HTTP address, and the buttons', () => {
+  const brief = dash0Step.intro.replace(/<span data-gloss="[^"]*">([^<]*)<\/span>/g, '$1');
+  for (const word of [/auth token with only the Ingesting permission/, /Settings, then Auth Tokens/, /All datasets/, /Settings, then Endpoints/, /OTLP via HTTP address/, /without a path/, /Start the task/, /Send test span/, /press Check/, /Open in Dash0/, /game's organisation/]) assert.match(brief, word, `the brief says: ${word}`);
+  assert.doesNotMatch(brief, /simulated|practice/i, 'it imitates no Dash0 screen');
 });
 
-test('without a telemetry session the level says so and offers no Finish', () => {
-  const h = open(null);
-  assert.match(h.text(), /no telemetry session/);
-  assert.equal(qa('[data-finish]').length, 0);
-  assert.equal(qa('button').length, 0, 'no button at all, not a disabled Close');
-  assert.match(q('.ui-note').textContent, /^Use Back to return to the map\.$/);
+test('no game screen titles itself with a Dash0 screen name or "simulated Dash0", and the words use UK spelling and no em dash', () => {
+  const titles = [sortStep.question, choiceStep.question, ...sortStep.sort.buckets.map((b) => b.label), level.name, level.sub];
+  assert.deepEqual(vocabularyHits(titles), []);
+  const all = JSON.stringify(level.play) + level.name + level.sub;
+  assert.doesNotMatch(all, /organization/i);
+  assert.ok(!all.includes(String.fromCharCode(0x2014)), 'no em dash');
 });
 
-test('the secret field is a labelled password input with no value attribute', () => {
-  const h = open(liveTelemetry([ok()]).tele);
-  press('#ctd-live');
-  const input = q('#ctd-token');
-  assert.equal(input.getAttribute('type'), 'password');
-  assert.equal(input.getAttribute('autocomplete'), 'off');
-  assert.equal(input.hasAttribute('value'), false);
-  assert.equal(q('label[for="ctd-token"]').textContent, 'Auth token');
-  assert.ok(h.page().includes('aria-describedby="ctd-token-note"'));
+test('the finish text is the same whether or not the task ran: it never names the In Dash0 step or the task', () => {
+  assert.doesNotMatch(level.play.finish, /\bin dash0\b/i);
+  assert.ok(!level.play.finish.includes('connect-test-span') && !level.play.finish.includes(dash0Step.dash0.id));
 });
 
-test('practice shows its label on every screen and sends nothing to the real fetch', async () => {
-  const { tele, sent } = practiceTelemetry();
-  const h = open(tele);
-  press('#ctd-practice');
-  assert.ok(h.text().includes(PRACTICE_BANNER));
-  assert.match(h.text(), /Simulated/);
-  press('#ctd-scope-ingest');
-  press('#ctd-mint');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', q('#ctd-minted').textContent);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  assert.ok(h.text().includes(PRACTICE_BANNER));
-  assert.equal(sent.length, 0, 'practice never calls the real fetch');
-  assert.equal(h.mistakes(), 0);
+test('the sort: only an Ingesting-only token, the endpoint and a dataset name may go in the page, and every wrong placement says why', () => {
+  const { items, buckets } = sortStep.sort;
+  assert.deepEqual(buckets.map((b) => b.id), ['ship', 'keep']);
+  assert.deepEqual(items.filter((i) => i.bucket === 'ship').map((i) => i.id), ['ingest-token', 'endpoint', 'dataset-name']);
+  assert.deepEqual(items.filter((i) => i.bucket === 'keep').map((i) => i.id), ['all-token', 'read-token', 'edge-token']);
+  for (const it of items) {
+    const other = it.bucket === 'ship' ? 'keep' : 'ship';
+    assert.ok(typeof it.why === 'string' && it.why.length > 20, `${it.id}: has a why`);
+    assert.ok(it.whyNot?.[other], `${it.id}: a wrong placement in ${other} says why`);
+  }
+  // The one token that may go in the page is the one whose permission is only Ingesting, and the labels of the others name theirs.
+  assert.match(items.find((i) => i.id === 'ingest-token').label, /only the Ingesting permission/);
+  assert.match(items.find((i) => i.id === 'all-token').label, /All permissions/);
+  assert.match(items.find((i) => i.id === 'read-token').label, /Reading permission/);
+  assert.match(items.find((i) => i.id === 'edge-token').label, /Signal Control edge permission/);
 });
 
-// ---- plain-language reasons for a bad form ----
+test('the choice: the OTLP via HTTP endpoint is the one right answer, and the gRPC decoy does not claim Dash0 refuses gRPC', () => {
+  const { choices } = choiceStep.choice;
+  assert.deepEqual(choices.filter((c) => c.right).map((c) => c.key), ['http']);
+  assert.match(choices.find((c) => c.key === 'http').label, /OTLP via HTTP endpoint/);
+  const grpc = choices.find((c) => c.key === 'grpc');
+  assert.equal(grpc.keep, true, 'the gRPC decoy is the tempting near-miss the 50/50 keeps');
+  assert.match(grpc.why, /does take OTLP over gRPC/, 'Dash0 does accept gRPC (hub OTLP page), so the why blames the browser');
+  assert.match(grpc.why, /not supported in a browser/);
+  assert.doesNotMatch(grpc.why, /cannot (accept|take)|does not (accept|take)|refuses/);
+  assert.match(choices.find((c) => c.key === 'local').why, /4318/);
+});
 
-const REASON_CASES = [
-  ['https://ingress.practice.dash0.invalid:4317', SHAPED, /4317 is the default OTLP\/gRPC port.*browser cannot make gRPC calls/],
-  ['ingress.practice.dash0.invalid', SHAPED, /no https:\/\//],
-  ['http://ingress.practice.dash0.invalid', SHAPED, /must be https/],
-  ['https://ingress.practice.dash0.invalid/v1/traces', SHAPED, /already ends in \/v1\/traces/],
-  ['https://evil.example', SHAPED, /not a known Dash0 ingress/],
-  ['https://ingress.practice.dash0.invalid', 'notauth_abcdefgh', /does not look like a Dash0 token/],
-  ['https://ingress.practice.dash0.invalid', `Bearer ${SHAPED}`, /Paste only the token/],
-  ['https://ingress.practice.dash0.invalid', `${SHAPED} `, /space or a line break/],
-];
+test('signed out: the In Dash0 step is left out, the sort and the choice play to Finish, and skip gets connect-test-span with signed-out', async () => {
+  const api = fakeApi({ available: false, reason: 'signed-out' });
+  const { results } = open({ api });
+  assert.deepEqual(api.skipped, [[['connect-test-span'], 'signed-out']]);
+  assert.ok(q('[data-item="ingest-token"]'), 'the sort is the first screen');
+  solveSort();
+  click('#ctd-next');
+  assert.equal(q('#connect-send-start') === null, true, 'no Start for the task');
+  solveChoice();
+  assert.equal(q('#ctd-finish').disabled, false, 'the choice is the last step shown, so Finish is its button');
+  assert.equal(q('#ctd-next') === null, true, 'there is no Next to a third step');
+  click('#ctd-finish');
+  await settle();
+  assert.equal(results.length, 1, 'the level finished once');
+  assert.equal(results[0].text, level.play.finish);
+  assert.equal(results[0].stars, 5, 'a clean run of the two game steps is five stars');
+});
 
-for (const [endpoint, token, expected] of REASON_CASES) {
-  test(`a bad form is explained in plain words and costs one mistake: ${endpoint} / ${token.slice(0, 8)}`, () => {
-    const h = open(practiceTelemetry().tele);
-    press('#ctd-practice');
-    fill('#ctd-endpoint', endpoint);
-    fill('#ctd-token', token);
-    press('#ctd-connect');
-    assert.match(q('#ctd-feedback').textContent, expected);
-    assert.match(q('#ctd-feedback').textContent, /Nothing was sent/);
-    assert.equal(h.mistakes(), 1);
-    // A refused token is cleared and never echoed; a refused endpoint keeps what was typed (#339).
-    assert.equal(q('#ctd-token').value, token === SHAPED ? SHAPED : '');
+test('with the task available the choice leads on to the In Dash0 step, whose Start draws the send form', async () => {
+  const api = fakeApi({ available: true });
+  const { results } = open({ api });
+  solveSort();
+  click('#ctd-next');
+  solveChoice();
+  assert.equal(q('#ctd-finish') === null, true, 'the choice is not the last step');
+  click('#ctd-next');
+  assert.ok(q('#connect-send-start'), 'the task starts on the player\'s press');
+  assert.equal(q('#connect-send-send').hidden, true, 'the send form waits for Start');
+  assert.deepEqual(api.skipped, [], 'nothing skipped');
+  click('#connect-send-start');
+  await settle();
+  assert.deepEqual(api.calls, [['start', 'connect-test-span']]);
+  assert.equal(q('#connect-send-send').hidden, false, 'the send form is drawn after Start');
+  assert.ok(q('#connect-send-endpoint') && q('#connect-send-token'), 'an endpoint field and a token field');
+  assert.equal(results.length, 0);
+});
+
+test('wrong answers cost: a misplaced item and a wrong address each count as a mistake, and the right ones cost nothing', () => {
+  const api = fakeApi({ available: false, reason: 'off' });
+  const { mistakes } = open({ api });
+  click('[data-item="all-token"]');
+  click('[data-bucket="ship"]'); // a token with All permissions in the page
+  assert.equal(mistakes(), 1);
+  solveSort();
+  assert.equal(mistakes(), 1, 'the right placements cost nothing');
+  click('#ctd-next');
+  click('[data-pick="grpc"]');
+  assert.equal(mistakes(), 2);
+  solveChoice();
+  assert.equal(mistakes(), 2);
+});
+
+test('the level never touches ctx.telemetry itself: the sort and the choice read nothing, signed out or with the task available', () => {
+  const forbidden = new Proxy({}, {
+    get: (_, prop) => { throw new Error(`the level read ctx.telemetry.${String(prop)}`); },
+    has: () => { throw new Error('the level probed ctx.telemetry'); },
   });
-}
-
-test('a line that answers the Connect press scrolls the feedback into view (#331)', () => {
-  open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  const calls = [];
-  q('#ctd-feedback').scrollIntoView = (o) => calls.push(o);
-  press('#ctd-connect'); // no endpoint: the neutral nudge
-  assert.match(q('#ctd-feedback').textContent, /Enter the endpoint first/);
-  assert.deepEqual(calls, [{ block: 'nearest' }]);
-});
-
-test('an empty endpoint or token is a nudge, not a mistake; a bad dataset is a mistake', () => {
-  const h = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  press('#ctd-connect');
-  assert.match(q('#ctd-feedback').textContent, /Enter the endpoint first/);
-  fill('#ctd-endpoint', 'https://ingress.practice.dash0.invalid');
-  press('#ctd-connect');
-  assert.equal(h.mistakes(), 0);
-  fill('#ctd-endpoint', 'https://ingress.practice.dash0.invalid');
-  fill('#ctd-token', SHAPED);
-  fill('#ctd-dataset', '-bad dataset');
-  press('#ctd-connect');
-  assert.match(q('#ctd-feedback').textContent, /Dataset: A dataset identifier uses letters/);
-  assert.equal(h.mistakes(), 1);
-});
-
-// ---- the creating-a-token step ----
-
-test('a permission other than Ingesting costs one mistake, once, and the token still comes out', () => {
-  const { tele } = practiceTelemetry();
-  const h = open(tele);
-  press('#ctd-practice');
-  press('#ctd-mint');
-  assert.match(q('#ctd-mint-feedback').textContent, /Pick a permission first/);
-  assert.equal(h.mistakes(), 0);
-  press('#ctd-scope-read');
-  press('#ctd-mint');
-  press('#ctd-mint');
-  assert.equal(h.mistakes(), 1, 'the same wrong permission twice is one mistake');
-  assert.equal(q('#ctd-minted').textContent, tele.practiceCredential('read'));
-  assert.match(q('#ctd-mint-feedback').textContent, /cannot send telemetry/);
-  press('#ctd-scope-all');
-  press('#ctd-mint');
-  assert.equal(h.mistakes(), 2);
-  assert.match(q('#ctd-mint-feedback').textContent, /Dash0 recommends Ingesting-only tokens whenever you distribute a token publicly, for example in browser instrumentation\./);
-  press('#ctd-scope-ingest');
-  press('#ctd-mint');
-  assert.equal(h.mistakes(), 2, 'Ingesting is right and free');
-  assert.equal(q('#ctd-minted').textContent, tele.practiceCredential('ingest'));
-});
-
-test('practice: a read-only token costs the pick and then the refusal, in words that split no status', async () => {
-  const h = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  press('#ctd-scope-read');
-  press('#ctd-mint');
-  assert.equal(h.mistakes(), 1);
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', q('#ctd-minted').textContent);
-  press('#ctd-connect');
-  await settle('#ctd-feedback[data-outcome]');
-  assert.match(q('#ctd-feedback').textContent, /^The simulated Dash0 refused this token and would not take the test span\. Check that you copied all of the token, that it is from this organization, and that it has the Ingesting permission\./);
-  assert.doesNotMatch(q('#ctd-feedback').textContent, /40[13]|knows this token/);
-  assert.equal(h.mistakes(), 2, 'the refusal is charged in practice too');
-  assert.equal(qa('[data-finish]').length, 0);
-});
-
-test('practice: a token that was never minted is refused and costs one mistake, as live does', async () => {
-  const h = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', 'auth_guess12345');
-  press('#ctd-connect');
-  await settle('#ctd-feedback[data-outcome]');
-  assert.match(q('#ctd-feedback').textContent, /refused this token/);
-  assert.equal(h.mistakes(), 1);
-});
-
-test('the same total in both modes: All permissions costs one mistake and the connection still completes', async () => {
-  const practice = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  press('#ctd-scope-all');
-  press('#ctd-mint');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', q('#ctd-minted').textContent);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  press('#ctd-finish');
-  assert.equal(practice.mistakes(), 1);
-  assert.equal(practice.finished[0].result.stars, 4);
-
-  const live = open(liveTelemetry([ok()]).tele);
-  press('#ctd-live');
-  press('#ctd-scope-all');
-  fill('#ctd-endpoint', ENDPOINT);
-  fill('#ctd-token', SECRET);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  press('#ctd-finish');
-  assert.equal(live.mistakes(), 1);
-  assert.equal(live.finished[0].result.stars, 4);
-});
-
-test('live: the declared permission is required before anything is sent, and is charged like the practice mint', async () => {
-  const { tele, sent } = liveTelemetry([ok()]);
-  const h = open(tele);
-  press('#ctd-live');
-  assert.match(q('label[for="ctd-token"]').textContent, /Auth token/);
-  assert.match(h.text(), /Which permission did you give this token\?/);
-  fill('#ctd-endpoint', ENDPOINT);
-  fill('#ctd-token', SECRET);
-  press('#ctd-connect');
-  assert.match(q('#ctd-feedback').textContent, /Say which permission you gave the token first\. Nothing was sent/);
-  assert.equal(h.mistakes(), 0);
-  assert.equal(sent.length, 0);
-  press('#ctd-scope-read');
-  fill('#ctd-token', SECRET);
-  press('#ctd-connect');
-  assert.equal(h.mistakes(), 1);
-  assert.match(q('#ctd-scope-feedback').textContent, /cannot send telemetry/);
-  assert.match(q('#ctd-feedback').textContent, /Create an Ingesting token\. Nothing was sent/);
-  assert.equal(sent.length, 0, 'a Reading declaration stops before sending');
-  press('#ctd-scope-ingest');
-  fill('#ctd-token', SECRET);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  assert.equal(sent.length, 1);
-  assert.equal(h.mistakes(), 1);
-});
-
-test('live: declaring the same wrong permission again is not charged again; Ingesting is free', async () => {
-  const { tele, sent } = liveTelemetry([ok()]);
-  const h = open(tele);
-  press('#ctd-live');
-  press('#ctd-scope-read');
-  fill('#ctd-endpoint', ENDPOINT);
-  for (const t of [SECRET, `${SECRET}2`]) {
-    fill('#ctd-token', t);
-    press('#ctd-connect');
-  }
-  assert.equal(h.mistakes(), 1, 'Reading costs one, however often it is declared, and one press is one charge');
-  assert.equal(sent.length, 0);
-  press('#ctd-scope-ingest');
-  fill('#ctd-token', `${SECRET}3`);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  assert.equal(h.mistakes(), 1);
-});
-
-test('live: a 401 and then a 403 are two causes and cost two mistakes', async () => {
-  const { tele } = liveTelemetry([reply(401), reply(403)]);
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-feedback[data-outcome]');
-  q('#ctd-feedback').removeAttribute('data-outcome');
-  fill('#ctd-token', `${SECRET}2`);
-  press('#ctd-connect');
-  await settle('#ctd-feedback[data-outcome]');
-  assert.equal(h.mistakes(), 2);
-});
-
-test('a fixed endpoint clears the old reason: the token is asked for again, free', () => {
-  for (const [pickMode, again] of [['#ctd-practice', /Create a token again/], ['#ctd-live', /Paste the token again/]]) {
-    const { tele } = liveTelemetry([ok()]);
-    const h = open(pickMode === '#ctd-live' ? tele : practiceTelemetry().tele);
-    press(pickMode);
-    if (pickMode === '#ctd-live') press('#ctd-scope-ingest');
-    const fix = pickMode === '#ctd-live' ? ENDPOINT : q('#ctd-ep-http').textContent;
-    const grpc = pickMode === '#ctd-live' ? `${ENDPOINT}:4317` : q('#ctd-ep-grpc').textContent;
-    fill('#ctd-endpoint', grpc);
-    fill('#ctd-token', SHAPED);
-    press('#ctd-connect');
-    assert.match(q('#ctd-feedback').textContent, /4317/);
-    assert.equal(h.mistakes(), 1);
-    fill('#ctd-endpoint', fix);
-    assert.equal(q('#ctd-token').value, SHAPED, 'a refused endpoint keeps the token (#339)');
-    press('#ctd-connect'); // the kept token is sent with the fixed endpoint
-    assert.doesNotMatch(q('#ctd-feedback').textContent, /4317/);
-    assert.doesNotMatch(q('#ctd-feedback').textContent, /Nothing was sent/);
-    assert.equal(q('#ctd-token').value, '', 'sent: the field is emptied');
-    assert.equal(h.mistakes(), 1, 'no further mistake');
+  for (const api of [fakeApi({ available: false, reason: 'off' }), fakeApi({ available: true })]) {
+    open({ api, telemetry: forbidden });
+    solveSort();
+    click('#ctd-next');
+    solveChoice();
+    assert.ok(qa('[data-pick]').length >= 2);
   }
 });
 
-test('the card subtitle and the intro name no answer', () => {
-  const h = open(practiceTelemetry().tele);
-  for (const text of [level.sub, h.text()]) {
-    assert.doesNotMatch(text, /only send|Ingesting/i);
-  }
-});
-
-// ---- one charge rule for form errors ----
-
-test('the same bad form pressed twice costs one mistake; a different bad form costs another', () => {
-  const h = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  for (let i = 0; i < 2; i++) {
-    fill('#ctd-endpoint', q('#ctd-ep-grpc').textContent);
-    fill('#ctd-token', SHAPED);
-    press('#ctd-connect');
-  }
-  assert.equal(h.mistakes(), 1);
-  fill('#ctd-endpoint', `${q('#ctd-ep-http').textContent}/v1/traces`);
-  fill('#ctd-token', SHAPED);
-  press('#ctd-connect');
-  assert.equal(h.mistakes(), 2);
-});
-
-test('an emptied token right after a form error keeps the useful reason and costs nothing', () => {
-  const h = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', `Bearer ${SHAPED}`);
-  press('#ctd-connect');
-  press('#ctd-connect'); // the field is empty now
-  assert.match(q('#ctd-feedback').textContent, /Paste only the token/);
-  assert.doesNotMatch(q('#ctd-feedback').textContent, /Nothing entered yet/);
-  assert.equal(h.mistakes(), 1);
-});
-
-// ---- the choice is not given away ----
-
-test('the screens give neither answer: the reason is stated, the endpoint and permission are not', () => {
-  const h = open(practiceTelemetry().tele);
-  const first = h.text();
-  assert.match(first, /The game sends from a browser tab/);
-  assert.match(first, /OTLP via HTTP/);
-  assert.doesNotMatch(first, /https:\/\//);
-  press('#ctd-practice');
-  const second = h.text();
-  assert.match(second, /anyone can open with dev tools/);
-  assert.doesNotMatch(second, /can only send|Two of the three|starting with|port 443|4318/);
-  assert.equal(q('label[for="ctd-endpoint"]').textContent, 'Endpoint');
-  assert.match(q('#ctd-endpoint-note').textContent, /copied exactly as Dash0 shows it/);
-  assert.doesNotMatch(q('#ctd-feedback').textContent + [...qa('label')].map((l) => l.textContent).join(' '), /OTLP (over|via) HTTP/);
-  for (const sel of ['#ctd-ep-grpc', '#ctd-ep-http']) assert.match(q(sel).textContent, /^https:\/\/ingress\.practice\.dash0\.invalid(:4317)?$/);
-});
-
-test('endpoint addresses break at punctuation, and what is copied is the plain address', () => {
-  open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  const host = 'ingress.practice.dash0.invalid';
-  assert.equal(q('#ctd-ep-http').textContent, `https://${host}`);
-  assert.equal(q('#ctd-ep-grpc').textContent, `https://${host}:4317`);
-  assert.equal(q('#ctd-ep-http').innerHTML, 'https://<wbr>ingress.<wbr>practice.<wbr>dash0.<wbr>invalid');
-  assert.match(q('#ctd-ep-grpc').innerHTML, /invalid<wbr>:4317$/, 'the port stays together after its break');
-  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  assert.equal(breakableAddress('a<b.c', esc), 'a&lt;b.<wbr>c', 'escaped first, so markup in an address never becomes a tag');
-  fill('#ctd-endpoint', q('#ctd-ep-grpc').textContent);
-  assert.equal(q('#ctd-endpoint').value, `https://${host}:4317`);
-});
-
-test('both fields opt out of autofill and of password managers', () => {
-  open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  assert.equal(q('#ctd-endpoint').getAttribute('autocomplete'), 'off');
-  for (const [name, value] of [['data-1p-ignore', ''], ['data-lpignore', 'true'], ['data-bwignore', ''], ['data-form-type', 'other']]) {
-    assert.equal(q('#ctd-token').getAttribute(name), value, name);
-  }
-  assert.doesNotMatch(q('#ctd-token-note').textContent, /memory only|held in/);
-  assert.match(q('#ctd-token-note').textContent, /never saves it.*browser may offer to save it\. Decline/);
-});
-
-test('practice tokens are opaque, differ per permission and per session, and only the minted ones are accepted', async () => {
-  const mk = (fill) => practiceTelemetry({ randomBytes: (n) => new Uint8Array(n).fill(fill) }).tele;
-  const a = mk(3);
-  const names = ['all', 'ingest', 'read'].map((k) => a.practiceCredential(k));
-  assert.equal(new Set(names).size, 3);
-  for (const n of names) assert.match(n, /^auth_practice_[0-9a-f]{12}$/, 'nothing in the name says what it can do');
-  assert.notEqual(mk(4).practiceCredential('ingest'), a.practiceCredential('ingest'), 'not a fixed string');
-  assert.equal(a.practiceCredential('nope'), null);
-  assert.equal(a.practiceCredential('constructor'), null);
-  // the other session's token is unknown here
-  const h = open(a);
-  press('#ctd-practice');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', mk(4).practiceCredential('ingest'));
-  press('#ctd-connect');
-  await settle('#ctd-feedback[data-outcome]');
-  assert.equal(q('#ctd-feedback').getAttribute('data-outcome'), 'rejected');
-  assert.equal(h.mistakes(), 1);
-});
-
-// ---- outcomes, one per OUTCOME shape ----
-
-const OUTCOME_CASES = [
-  ['a thrown fetch', () => { throw new TypeError('Failed to fetch'); }, 'unreachable', /never got an answer.*CORS.*Content Security Policy/, { mistakes: 0, retry: true, practice: true }],
-  ['no usable response', undefined, 'unreachable', /not with a usable HTTP response/, { mistakes: 0, retry: true, practice: true }],
-  ['401', reply(401), 'rejected', /^Dash0 refused this token and would not take the test span\. .*copied all of the token.*from this organization.*Ingesting permission/, { mistakes: 1, retry: false, practice: false }],
-  ['403', reply(403), 'rejected', /^Dash0 refused this token and would not take the test span\. .*Ingesting permission/, { mistakes: 1, retry: false, practice: false }],
-  ['500', reply(500, '{"message":"boom"}'), 'rejected', /^Dash0 refused the test span \(HTTP 500\)\..*Dash0 said: boom/, { mistakes: 0, retry: true, practice: false }],
-  ['500 with markup in its message', reply(500, '{"message":"<b id=x>hi</b>"}'), 'rejected', /Dash0 said: <b id=x>hi<\/b>/, { mistakes: 0, retry: true, practice: false, noElement: '#x' }],
-  ['rejected spans in a 200', reply(200, '{"partialSuccess":{"rejectedSpans":"2"}}'), 'rejected', /refused the test span \(HTTP 200\)/, { mistakes: 0, retry: true, practice: false }],
-];
-
-for (const [name, answer, kind, copy, want] of OUTCOME_CASES) {
-  test(`live outcome ${name}: the words, the mistake rule and what is offered`, async () => {
-    const { tele } = liveTelemetry([answer]);
-    const h = open(tele);
-    await connectLive(h);
-    await settle('#ctd-feedback[data-outcome]');
-    assert.equal(q('#ctd-feedback').getAttribute('data-outcome'), kind);
-    assert.equal(q('#ctd-feedback').getAttribute('data-tone'), 'error');
-    assert.match(q('#ctd-feedback').textContent, copy);
-    assert.equal(h.mistakes(), want.mistakes);
-    if (want.noElement) assert.equal(q(want.noElement) === null, true, 'the server message is escaped, not parsed');
-    assert.equal(qa('#ctd-retry').length, want.retry ? 1 : 0);
-    assert.equal(qa('#ctd-switch').length, want.practice ? 1 : 0);
-    assert.equal(qa('[data-finish]').length, 0, 'Finish only after accepted');
-    assert.equal(tele.status().state, 'configured');
-    assert.equal(q('#ctd-token').value, '');
-    assert.ok(!h.page().includes(SECRET));
-  });
-}
-
-test('a timeout and a cancelled request say so, with no mistake', async () => {
-  const hang = (init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new Error('x'))));
-  const sent = [];
-  const tele = createTelemetry({
-    fetch: (u, init) => (sent.push(u), hang(init)),
-    hosts: [HOST],
-    randomBytes: (n) => new Uint8Array(n),
-    setTimeout: (fn) => setImmediate(fn) && 1,
-    clearTimeout() {},
-  });
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-feedback[data-outcome]');
-  assert.match(q('#ctd-feedback').textContent, /no answer within 10 seconds/);
-  assert.equal(h.mistakes(), 0);
-});
-
-test('accepted live: Finish appears, only then, and the result names Dash0', async () => {
-  const { tele, sent } = liveTelemetry([ok()]);
-  const h = open(tele);
-  assert.equal(qa('[data-finish]').length, 0);
-  await connectLive(h, { dataset: 'default' });
-  await settle('#ctd-finish');
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0].url, `${ENDPOINT}/v1/traces`);
-  assert.equal(sent[0].init.headers['Dash0-Dataset'], 'default');
-  assert.match(h.text(), new RegExp(`Connected to ${HOST.replaceAll('.', '\\.')}`));
-  assert.ok(h.text().includes(tele.sessionId));
-  assert.equal(h.finished.length, 0, 'showing the screen does not finish');
-  press('#ctd-finish');
-  assert.equal(h.finished.length, 1);
-  assert.equal(h.finished[0].result.stars, 5);
-  assert.match(h.finished[0].result.text, /connected to your Dash0/);
-});
-
-test('after unreachable, retry sends again with no token typed, then Finish scores five stars', async () => {
-  const { tele, sent } = liveTelemetry([() => { throw new TypeError('Failed to fetch'); }, ok()]);
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-retry');
-  assert.equal(q('#ctd-token').value, '');
-  press('#ctd-retry');
-  await settle('#ctd-finish');
-  assert.equal(sent.length, 2);
-  assert.equal(sent[1].init.headers.Authorization, `Bearer ${SECRET}`, 'the held token went out again');
-  press('#ctd-finish');
-  assert.equal(h.finished[0].result.stars, 5);
-});
-
-test('a rejected live token costs one mistake; a new token then connects', async () => {
-  const { tele } = liveTelemetry([reply(401), ok()]);
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-feedback[data-outcome]');
-  fill('#ctd-token', `${SECRET}2`);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  press('#ctd-finish');
-  assert.equal(h.finished[0].result.stars, 4);
-});
-
-test('unreachable offers practice, and practice then completes', async () => {
-  const { tele } = liveTelemetry([() => { throw new TypeError('Failed to fetch'); }]);
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-switch');
-  press('#ctd-switch');
-  assert.ok(h.text().includes(PRACTICE_BANNER));
-  press('#ctd-scope-ingest');
-  press('#ctd-mint');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', q('#ctd-minted').textContent);
-  press('#ctd-connect');
-  await settle('#ctd-finish');
-  press('#ctd-finish');
-  assert.equal(h.finished[0].result.stars, 5);
-  assert.match(h.finished[0].result.text, /simulated Dash0/);
-});
-
-test('a second press while the test span is in flight sends nothing more', async () => {
-  let release;
-  const gate = new Promise((r) => { release = r; });
-  const { tele, sent } = liveTelemetry([() => gate.then(ok)]);
-  const h = open(tele);
-  press('#ctd-live');
-  press('#ctd-scope-ingest');
-  fill('#ctd-endpoint', ENDPOINT);
-  fill('#ctd-token', SECRET);
-  const stale = q('#ctd-connect');
-  press('#ctd-connect');
-  assert.equal(q('#ctd-connect').disabled, true, 'Connect is disabled while sending');
-  stale.onclick({ currentTarget: stale, target: stale }); // a double click on the old button
-  assert.equal(h.mistakes(), 0, 'the emptied field is a nudge, not a mistake');
-  release();
-  await settle('#ctd-finish');
-  assert.equal(sent.length, 1);
-});
-
-test('closing the level while the request is out renders nothing further and does not throw', async () => {
-  let release;
-  const gate = new Promise((r) => { release = r; });
-  const { tele } = liveTelemetry([() => gate.then(ok)]);
-  const h = open(tele);
-  await connectLive(h);
-  const before = h.page();
-  h.abort.abort();
-  release();
-  for (let i = 0; i < 5; i++) await turn();
-  assert.equal(h.page(), before, 'the closed level is left alone');
-  assert.equal(h.finished.length, 0);
-});
-
-// ---- token isolation (docs/DASH0-LAB.md invariants) ----
-
-test('the token is in no part of the page, at any step, success or failure', async () => {
-  const stages = [];
-  for (const answer of [ok(), reply(401), reply(500), () => { throw new TypeError(`Failed to fetch ${SECRET}`); }]) {
-    const { tele } = liveTelemetry([answer], { reportError: () => {} });
-    const h = open(tele);
-    press('#ctd-live');
-    press('#ctd-scope-ingest');
-    fill('#ctd-endpoint', ENDPOINT);
-    fill('#ctd-token', SECRET);
-    press('#ctd-connect');
-    stages.push(h.page()); // pending
-    await settle('#ctd-feedback[data-outcome], #ctd-finish');
-    stages.push(h.page(), h.text());
-  }
-  for (const s of stages) assert.ok(!s.includes('LIVESECRET'), 'the token reached the DOM');
-});
-
-test('a token that fails validation is cleared and never echoed either', () => {
-  for (const bad of ['LIVESECRET', `Bearer ${SECRET}`, `${SECRET} x`, `x${SECRET}`]) {
-    const h = open(liveTelemetry([ok()]).tele);
-    press('#ctd-live');
-    press('#ctd-scope-ingest');
-    fill('#ctd-endpoint', ENDPOINT);
-    fill('#ctd-token', bad);
-    press('#ctd-connect');
-    assert.equal(q('#ctd-token').value, '');
-    assert.ok(!h.page().includes('LIVESECRET'), bad);
-  }
-});
-
-test('the token reaches no error report, no status, no result and no hint to ctx', async () => {
-  const reported = [];
-  const { tele } = liveTelemetry([() => { throw new Error(`boom ${SECRET}`); }], { reportError: (e) => reported.push(e.message) });
-  const h = open(tele);
-  await connectLive(h);
-  await settle('#ctd-feedback[data-outcome]');
-  assert.ok(!JSON.stringify([reported, tele.status(), h.reported.map(String)]).includes('LIVESECRET'));
-  assert.ok(!Object.keys(tele).includes('token'));
-});
-
-test('the practice token shown after Create token is gone from the page once Connect is pressed', async () => {
-  const { tele } = practiceTelemetry();
-  const shown = tele.practiceCredential('ingest');
-  const h = open(tele);
-  press('#ctd-practice');
-  press('#ctd-scope-ingest');
-  press('#ctd-mint');
-  assert.ok(h.page().includes(shown), 'shown once, as a copyable value');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', shown);
-  press('#ctd-connect');
-  assert.ok(!h.page().includes(shown), 'gone while the request is out');
-  await settle('#ctd-finish');
-  assert.ok(!h.page().includes(shown), 'and after');
-  assert.equal(qa('#ctd-token').length, 0, 'the form is gone on the connected screen');
-});
-
-test('the level file never touches storage, the URL, the console or the cookie jar', () => {
-  const src = levelSource('connect-to-dash0');
-  const code = src.split('\n').filter((l) => !l.trimStart().startsWith('//')).join('\n');
-  for (const banned of [/localStorage/, /sessionStorage/, /document\.cookie/, /\blocation\b/, /\bhistory\b/, /console\./, /indexedDB/, /reportError/, /fetch\(/, /innerHTML\s*=\s*[^;]*token/i]) {
-    assert.doesNotMatch(code, banned);
-  }
-});
-
-test('the permission radios sit in a group named by the question, in practice and in live', () => {
-  const names = (h) => {
-    const groups = qa('fieldset.ui-group');
-    assert.equal(groups.length, 1, h);
-    assert.equal(qa('input[name="ctd-scope"]').length, 3);
-    for (const r of qa('input[name="ctd-scope"]')) assert.ok(r.closest('fieldset') === groups[0], 'every radio is inside the group');
-    return groups[0].querySelector('legend').textContent;
-  };
-  const a = open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  assert.equal(names('practice'), 'Permissions');
-  const b = open(liveTelemetry([ok()]).tele);
-  press('#ctd-live');
-  assert.equal(names('live'), 'Which permission did you give this token?');
-  assert.ok(a && b);
-});
-
-test('the endpoint table is a labelled scroll region', () => {
-  open(practiceTelemetry().tele);
-  press('#ctd-practice');
-  const region = q('.ui-table-wrap');
-  assert.equal(region.getAttribute('role'), 'region');
-  assert.equal(region.getAttribute('aria-label'), 'Endpoints of this organization');
-});
-
-test('a disabled live button has its reason right under it, spoken once (no describedBy); enabled, it has none', () => {
-  open(practiceTelemetry({ hosts: [] }).tele);
-  assert.equal(q('#ctd-live').hasAttribute('aria-describedby'), false);
-  assert.equal(q('#ctd-live').nextElementSibling.textContent, 'Not available in this browser.');
-  assert.match(q('#ctd-live-why').textContent, /not available in this browser/);
-  open(liveTelemetry([ok()]).tele);
-  assert.equal(q('#ctd-live').nextElementSibling, null, 'enabled: nothing to explain');
-});
-
-test('focus lands on the connected screen heading after an accepted Connect, in both modes', async () => {
-  let focus;
-  const check = async () => {
-    await settle('#ctd-finish');
-    assert.equal(focus.last(), '#ctd-connected-title');
-    assert.deepEqual(focus.unfocusable(), [], 'the target can take focus');
-    assert.equal(q('#ctd-connected-title').getAttribute('tabindex'), '-1');
-  };
-  const p = open(practiceTelemetry().tele);
-  focus = recordFocus(p.dom.window);
-  press('#ctd-practice');
-  press('#ctd-scope-ingest');
-  press('#ctd-mint');
-  fill('#ctd-endpoint', q('#ctd-ep-http').textContent);
-  fill('#ctd-token', q('#ctd-minted').textContent);
-  press('#ctd-connect');
-  await check();
-  const l = open(liveTelemetry([ok()]).tele);
-  focus = recordFocus(l.dom.window);
-  await connectLive(l);
-  await check();
+test('the source keeps no form, no practice mode and no telemetry import, and never reads ctx.telemetry', () => {
+  const src = readFileSync(join(ROOT, 'levels', 'connect-to-dash0.mjs'), 'utf8');
+  const imports = [...src.matchAll(/^\s*import\s[^;]*?from\s+['"]([^'"]+)['"]/gms)].map((m) => m[1]);
+  assert.ok(imports.length >= 2, `the scan reads the imports (${imports.join(', ')})`);
+  for (const spec of imports) assert.doesNotMatch(spec, /telemetry|otlp|dash0-task|ingress|practice/, `import ${spec}`);
+  const code = src.replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(!/ctx\.telemetry|PRACTICE|liveAvailable|sendBatch|\.incident\(/.test(code), 'no code reads the session or the practice ingress');
 });

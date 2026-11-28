@@ -1,6 +1,6 @@
 // The Sort it help ladder per level (#156): every Sort it step
 // declares its helps explicitly, and the Sort levels follow the default ladder. Hints are on
-// in the first lessons (0.1, 0.2, 0.3, 1.1, 2.3) and off later (2.5, 2.7, 3.1, 4.1, 5.6, 9.1). A step
+// in the first lessons (0.1, 0.2, 0.3, 1.1, 2.3) and off later (2.5, 2.7, 3.1, 4.1, 5.6, 9.1, 9.3). A step
 // with no helps key would have hints off (sortHelps), but the ladder is a decision, so it is
 // written down on each step. The specs are read from each level's `play` and its CONTENT export.
 import { test } from 'node:test';
@@ -28,6 +28,7 @@ const LADDER = {
   '7.4': false,
   '8.3': false,
   '9.1': false,
+  '9.3': false,
 };
 
 const LEVELS = join(dirname(fileURLToPath(import.meta.url)), '..', 'levels');

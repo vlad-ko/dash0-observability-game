@@ -658,6 +658,14 @@ test('a disabled button reads as inactive: muted label at 4.5:1, a dashed border
   }
 });
 
+test('an aria-disabled button (a busy Send that keeps focus) looks disabled and gets no ghost hover', () => {
+  const a = Object.fromEntries(kitDecls('.ui-btn[aria-disabled="true"]'));
+  const d = Object.fromEntries(kitDecls('.ui-btn:disabled'));
+  assert.deepEqual(a, d, 'one shared rule');
+  assert.match(a.border, /dashed/);
+  assert.ok(sheetRules('kit.css').some((r) => /\.ui-btn--ghost:hover:not\(:disabled, \[aria-disabled="true"\]\)/.test(r.selector)), 'ghost hover skips it');
+});
+
 test('questions are always left-aligned, and the narrow step starts at the same edge as the wide one', () => {
   assert.equal(kitDecls('.ui-question').some(([p, v]) => p === 'text-align' && v === 'center'), false);
   assert.equal(sheetRules('kit.css').some((r) => /\.ui-step--wide \.ui-question/.test(r.selector)), false, 'no per-width alignment');
