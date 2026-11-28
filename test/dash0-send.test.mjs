@@ -53,8 +53,7 @@ function fakeTele({ verdicts = [{ ok: true }], outcomes = [{ kind: 'accepted' }]
   return {
     log,
     sessionId: 's',
-    status: () => ({ state, mode: 'live', host: 'h' }),
-    liveAvailable: () => true,
+    status: () => ({ state, host: 'h' }),
     connect(arg) {
       const verdict = next(verdicts, log.filter((l) => l.fn === 'connect').length);
       log.push({ fn: 'connect', arg: { ...arg }, fieldAtCall: q('#d1-token')?.value });
@@ -129,7 +128,7 @@ test('Send empties the token field before any await, the token goes only to tele
   assert.equal(q('#d1-token').value, '', 'emptied in the same click, before the first await');
   assert.equal(r.telemetry.log[0].fn, 'connect', 'connect ran synchronously in the click');
   assert.equal(r.telemetry.log[0].fieldAtCall, '', 'the field was already empty when connect ran');
-  assert.deepEqual(r.telemetry.log[0].arg, { mode: 'live', endpoint: ENDPOINT, token: TOKEN, dataset: 'game-ds' });
+  assert.deepEqual(r.telemetry.log[0].arg, { endpoint: ENDPOINT, token: TOKEN, dataset: 'game-ds' });
   await settle();
   assert.deepEqual(r.telemetry.log.find((l) => l.fn === 'sendTest').arg, { attemptId: A });
   click('#d1-check');
@@ -211,7 +210,7 @@ test('a form error, a refused token (401 or 403) and an unreachable Dash0 cost n
 });
 
 test('when the player\'s own Dash0 is unavailable in this browser, "Finish without the In Dash0 task" is offered with cause off', async () => {
-  const r = rig({ tele: { verdicts: [{ ok: false, field: 'mode', reason: 'unavailable' }] } });
+  const r = rig({ tele: { verdicts: [{ ok: false, field: 'session', reason: 'unavailable' }] } });
   toTask();
   await start();
   assert.equal(q('#d1-skip') === null, true);

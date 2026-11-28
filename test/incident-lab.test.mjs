@@ -8,8 +8,8 @@ import {
   matchTraces, normaliseAnswer, QUESTION, START_MAX_AGO_MS, START_MIN_AGO_MS, startAgoMs, TRACE_LIST_SIZE,
 } from '../lib/incident-lab.mjs';
 import { encodeTraces, SPAN_KIND, STATUS_CODE } from '../lib/otlp/encode.mjs';
-import { createTelemetry, PRACTICE_SCOPE } from '../lib/telemetry.mjs';
-import { PRACTICE_HOSTS } from '../lib/dash0/ingress.mjs';
+import { createTelemetry } from '../lib/telemetry.mjs';
+import { INGRESS_HOSTS } from '../lib/dash0/ingress.mjs';
 
 const NOW = 1762300800123;
 const clock = () => NOW;
@@ -258,7 +258,6 @@ test('telemetry.incident() is lazy, seeded by the big-endian uint32 of randomByt
   assert.equal(tel.incident(), inc);
   assert.deepEqual(asked.slice(before), [4]);
   assert.equal(reads, 1);
-  assert.ok(!JSON.stringify(inc).includes(tel.practiceCredential(PRACTICE_SCOPE.ingest)));
 });
 
 test('telemetry.incident() seed reads the bytes, not the buffer: subarray and plain array', () => {
@@ -271,14 +270,22 @@ test('telemetry.incident() seed reads the bytes, not the buffer: subarray and pl
 test('telemetry.incident() spans go out through sendBatch', async () => {
   let k = 3;
   const randomBytes = (n) => Uint8Array.from({ length: n }, () => (k++ * 41) & 0xff);
-  const tel = createTelemetry({ randomBytes, now: clock, setTimeout, clearTimeout });
+  const sent = [];
+  const fetch = async (url, init) => {
+    sent.push({ url, body: JSON.parse(init.body) });
+    return { status: 200, ok: true, text: async () => '' };
+  };
+  const token = 'auth_live_token_1234';
+  const tel = createTelemetry({ fetch, randomBytes, now: clock, setTimeout, clearTimeout });
   const first = tel.incident();
   assert.equal(first.spans.length, 5);
   assert.equal(first.spans[0].startMs, NOW - startAgoMs(first.seed));
-  assert.ok(tel.connect({ mode: 'practice', token: tel.practiceCredential(PRACTICE_SCOPE.ingest), endpoint: `https://${PRACTICE_HOSTS[0]}` }).ok);
+  assert.ok(tel.connect({ token, endpoint: `https://${INGRESS_HOSTS[0]}` }).ok);
   assert.equal((await tel.sendTest()).kind, 'accepted');
   assert.equal((await tel.sendBatch(first.spans)).kind, 'accepted');
-  assert.ok(!JSON.stringify(tel.status()).includes(tel.practiceCredential(PRACTICE_SCOPE.ingest)));
+  assert.equal(sent.length, 2, 'the test span, then the incident batch');
+  assert.equal(sent[1].body.resourceSpans.flatMap((r) => r.scopeSpans.flatMap((x) => x.spans)).length, first.spans.length);
+  assert.ok(!JSON.stringify(tel.status()).includes(token));
 });
 
 test('normaliseAnswer: one spelling per answer, so "02" and "2" are the same retry count', () => {

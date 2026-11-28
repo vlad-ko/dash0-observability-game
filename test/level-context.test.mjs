@@ -298,7 +298,7 @@ test('createLevelContext refuses missing deps', () => {
 });
 
 test('ctx.telemetry is the injected facade, null when absent', () => {
-  const facade = { sessionId: 's-1', status: () => ({ state: 'off', mode: null, host: null }) };
+  const facade = { sessionId: 's-1', status: () => ({ state: 'off', host: null }) };
   const dom = makeDom();
   const base = {
     level: LEVEL_A,

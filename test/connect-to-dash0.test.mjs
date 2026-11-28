@@ -196,7 +196,7 @@ test('the source keeps no form, no practice mode and no telemetry import, and ne
   const src = readFileSync(join(ROOT, 'levels', 'connect-to-dash0.mjs'), 'utf8');
   const imports = [...src.matchAll(/^\s*import\s[^;]*?from\s+['"]([^'"]+)['"]/gms)].map((m) => m[1]);
   assert.ok(imports.length >= 2, `the scan reads the imports (${imports.join(', ')})`);
-  for (const spec of imports) assert.doesNotMatch(spec, /telemetry|otlp|dash0-task|ingress|practice/, `import ${spec}`);
+  for (const spec of imports) assert.doesNotMatch(spec, /telemetry|otlp|dash0-task|ingress/, `import ${spec}`);
   const code = src.replace(/^\s*\/\/.*$/gm, '');
-  assert.ok(!/ctx\.telemetry|PRACTICE|liveAvailable|sendBatch|\.incident\(/.test(code), 'no code reads the session or the practice ingress');
+  assert.ok(!/ctx\.telemetry|sendBatch|\.incident\(/.test(code), 'no code reads the session');
 });

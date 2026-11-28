@@ -735,7 +735,7 @@ function telemetrySession(answer = () => 200) {
     clearTimeout: () => {},
     hosts: [TEL_HOST],
   });
-  telemetry.connect({ mode: 'live', endpoint: `https://${TEL_HOST}`, token: TEL_TOKEN, dataset: '' });
+  telemetry.connect({ endpoint: `https://${TEL_HOST}`, token: TEL_TOKEN, dataset: '' });
   return { telemetry, calls };
 }
 const spansOf = (body) => body.resourceSpans.flatMap((r) => r.scopeSpans.flatMap((s) => s.spans));
