@@ -21,14 +21,6 @@ const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace
 
 /** Literals a run level keeps on purpose because they are fixture data (docs/CONTENT.md 11.1): level id -> the literals' text. */
 export const RUN_FIXTURES = {
-  'connect-to-dash0': [
-    // The addresses the simulated settings page shows (the host is a code value): the player copies one into the form and the session validates it.
-    'https:// :4317',
-    'https://',
-    // The causes `charge` counts one mistake per, compared in a Set and never shown.
-    'scope:',
-    'rejected:',
-  ],
   // The attribute keys the triage view groups the requests by (compareAttribute reads them); the views' words are content.
   'checkout-is-slow': ['service.version', 'cloud.region'],
   // Span fixtures: the kinds, status and names of the spans the Build it board draws and grades, and the hop and root data the screen quotes.

@@ -203,6 +203,8 @@ const ANSWERS = {
   ],
   // The In Dash0 step has no driver and no answer here: the task server derives its answers (test/its-us.test.mjs pins its task and questions).
   'its-us': ['spot its-spot: mine-error'],
+  // The In Dash0 step has no driver and no answer here either: the task server looks for the player's own test span (test/connect-to-dash0.test.mjs pins its task).
+  'connect-to-dash0': ['sort ctd-sort: ingest-token=ship endpoint=ship dataset-name=ship all-token=keep read-token=keep edge-token=keep', 'choice ctd-endpoint: http'],
   'play-fixture': [
     'choice fx-pick: trace',
     'sort fx-sort: server=auto loyalty=manual',

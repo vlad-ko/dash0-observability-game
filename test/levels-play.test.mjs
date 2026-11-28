@@ -385,37 +385,6 @@ const DRIVERS = {
       expect: { stars: 3, cards: ['unknown-service'] },
     },
   },
-  // Practice mode against the simulated Dash0 (no network). Plays what the player does: reads the
-  // endpoint and the minted token off the screen, types them in, waits for the test span.
-  'connect-to-dash0': {
-    async: true,
-    telemetry: practiceTelemetry,
-    async play() {
-      await connectPractice('ingest');
-      click('#ctd-finish');
-    },
-    expect: { stars: 5, cards: [] },
-    sloppy: {
-      telemetry: practiceTelemetry,
-      async play() {
-        click('#ctd-practice');
-        const ep = practiceEndpoint();
-        type('#ctd-endpoint', q('#ctd-ep-grpc').textContent.trim()); // the gRPC row: a mistake
-        type('#ctd-token', 'auth_whatever_0000');
-        click('#ctd-connect');
-        type('#ctd-endpoint', `${ep}/v1/traces`); // the signal path already added: a mistake
-        type('#ctd-token', 'auth_whatever_0000');
-        click('#ctd-connect');
-        await sendPractice('read', ep); // a read-only token: a mistake at the pick, then a 403
-        await until('#ctd-feedback[data-outcome="rejected"]');
-        assert.ok(q('#ctd-feedback').textContent.includes('refused this token'), 'the refusal is explained');
-        await sendPractice('ingest', ep);
-        await until('#ctd-finish');
-        click('#ctd-finish');
-      },
-      expect: { stars: 2, cards: [] },
-    },
-  },
 };
 
 // A fixed clock (2023-11-14T22:13:20Z), so the wall-clock times a level shows are the same on every run
@@ -424,27 +393,6 @@ const PRACTICE_NOW_MS = 1_700_000_000_000;
 
 function practiceTelemetry() {
   return createTelemetry({ randomBytes: (n) => new Uint8Array(n).fill(7), now: () => PRACTICE_NOW_MS, setTimeout, clearTimeout });
-}
-
-/** The OTLP/HTTP endpoint the simulated Dash0 settings panel shows. */
-function practiceEndpoint() {
-  return q('#ctd-ep-http').textContent.trim();
-}
-
-/** Pick a permission, create the token, type endpoint and the shown token, press Connect. */
-async function sendPractice(scope, endpoint) {
-  click(`#ctd-scope-${scope}`);
-  click('#ctd-mint');
-  type('#ctd-endpoint', endpoint);
-  type('#ctd-token', q('#ctd-minted').textContent.trim());
-  click('#ctd-connect');
-}
-
-/** The happy path through screen 2: practice, the right permission, the shown endpoint. */
-async function connectPractice(scope) {
-  click('#ctd-practice');
-  await sendPractice(scope, practiceEndpoint());
-  await until('#ctd-finish');
 }
 
 // The same registry the app boots with (levels/index.mjs, the deck and the map's node ids),
@@ -868,47 +816,6 @@ const UNREACHED = {
     'run.sort.items[4].whyNot.ok',
     'run.onSpans[1].why',
   ],
-  // Both drivers connect to the simulated Dash0 (practice). Never on a screen: the no-telemetry build, everything
-  // live (your own Dash0), the wrong pick the sloppy run does not make (All permissions), the form errors it does
-  // not trigger, a token or dataset named in a form error, the failures of a send and the accepted line (an accepted
-  // send moves on to the Connected screen).
-  'connect-to-dash0': [
-    'run.startIntro',
-    'run.startNote',
-    'run.modeLive',
-    'run.scopes[0].why',
-    'run.connectGuide',
-    'run.connectLiveLegend',
-    'run.connectIntroLive',
-    'run.connectChipLive',
-    'run.connectLiveNote',
-    'run.connectRetryButton',
-    'run.connectSwitchButton',
-    'run.connectMintSays',
-    'run.connectEndpointFirstSays',
-    'run.connectScopeFirstSays',
-    'run.connectReadingSays',
-    'run.connectAgainPractice',
-    'run.connectAgainLive',
-    'run.fieldName.token',
-    'run.fieldName.datasetField',
-    'run.fieldNameOther',
-    'run.problemUnavailable',
-    'run.problemMode',
-    'run.problemUnchecked',
-    'run.unreachable.network',
-    'run.unreachable.timeout',
-    'run.unreachable.opaque',
-    'run.unreachable.aborted',
-    'run.unreachableFallback',
-    'run.whereLive',
-    'run.outcomeAccepted',
-    'run.outcomeRefusedStatus',
-    'run.outcomeSaid',
-    'run.connectedIntroLive',
-    'run.connectedChipLive',
-    'run.connectedFinishLive',
-  ],
   // The runs open the two clue views and the herring and make one wrong pick: the other views' notes, the explanations of
   // the other wrong picks and the triage table's "no data" (no row lacks data) are never on a screen. The hint is: HINT_PLAYS presses the Hint button.
   'checkout-is-slow': [
@@ -1136,7 +1043,7 @@ const HINT_PLAYS = {
 };
 
 test('a converted run level plays every screen, happy and sloppy, with the words it was given and no others', async () => {
-  for (const id of ['baggage', 'checkout-is-slow', 'connect-to-dash0', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'naming-your-service', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
+  for (const id of ['baggage', 'checkout-is-slow', 'context-propagation', 'events-and-links', 'monitoring-vs-observability', 'naming-your-service', 'span-kinds', 'spans-and-traces', 'status-and-errors', 'the-pager', 'the-signals', 'why-opentelemetry']) assert.ok(RUN_CONTENT_IDS.includes(id), `${id} is a converted run level`);
   for (const id of RUN_CONTENT_IDS) {
     const core = readJsonModule(join(CONTENT_DIR, `${id}.mjs`)).value;
     const mod = await import(pathToFileURL(join(CONTENT_DIR, '..', '..', '..', 'levels', `${id}.mjs`)).href);
@@ -1144,7 +1051,7 @@ test('a converted run level plays every screen, happy and sloppy, with the words
     const shown = [];
     const runs = [['happy', DRIVERS[id]], ['sloppy', DRIVERS[id].sloppy], ...(HINT_PLAYS[id] ? [['hinted', { play: HINT_PLAYS[id] }]] : [])];
     for (const [label, run] of runs) {
-      // A level that sends a request (connect-to-dash0) has an async driver and a telemetry session.
+      // A run level that sends a request would have an async driver and a telemetry session.
       const { calls, frames, clicks } = DRIVERS[id].async
         ? await playLevelAsync(level, run.play, { telemetry: run.telemetry?.() })
         : playLevel(level, run.play);
@@ -1246,6 +1153,7 @@ const FIFTY_PINNED = [
   'migrating-vendors:mv-fix-fifty',
   'frontend-rum:frum-cors-fifty',
   'ai-assisted-debugging:aad-why-fifty',
+  'connect-to-dash0:ctd-endpoint-fifty',
   'the-trace-that-starts-in-the-middle:ttsm-verdict-fifty',
 ];
 
@@ -1607,10 +1515,8 @@ test('T8 UNDEFINED_ALLOW is empty: every rendered class has a CSS rule', () => {
 });
 
 // #509 vocabulary rule: a game screen never titles a heading or panel with a Dash0 screen name or "simulated Dash0".
-// Prose that only mentions a Dash0 screen is allowed. The allowlist only shrinks: P7 removes both entries.
-const VOCABULARY_ALLOW = [
-  'connect-to-dash0',
-];
+// Prose that only mentions a Dash0 screen is allowed. The allowlist only shrinks, and is now empty (#509 P7).
+const VOCABULARY_ALLOW = [];
 
 test('#509 harness: surfaceProblems wants exactly one valid data-surface per screen', () => {
   assert.deepEqual(surfaceProblems([{ surfaces: ['game'] }, { surfaces: ['dash0'] }]), []);
